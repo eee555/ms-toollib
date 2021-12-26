@@ -412,7 +412,7 @@ pub fn cal3BV(Board: &Vec<Vec<i32>>) -> usize {
 }
 
 /// 依据左击位置刷新局面
-pub fn refreshBoard(
+pub fn refresh_board(
     Board: &Vec<Vec<i32>>,
     BoardofGame: &mut Vec<Vec<i32>>,
     mut ClickedPoses: Vec<(usize, usize)>,

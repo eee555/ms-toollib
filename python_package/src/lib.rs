@@ -5,20 +5,22 @@ use pyo3::class::basic::PyObjectProtocol;
 use std::cmp::{max, min};
 
 use ms_toollib as ms_toollib_rs;
+use ms_toollib::refreshBoard as refresh_board_;
+
 
 // pip install maturin
 // maturin publish
 
 #[pyfunction]
 fn refresh_matrix(
-    BoardofGame: Vec<Vec<i32>>,
+    board_of_game: Vec<Vec<i32>>,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<i32>)> {
-    Ok(ms_toollib_rs::refresh_matrix(&BoardofGame))
+    Ok(ms_toollib_rs::refresh_matrix(&board_of_game))
 }
 
 #[pyfunction]
 fn refresh_matrixs(
-    BoardofGame: Vec<Vec<i32>>,
+    board_of_game: Vec<Vec<i32>>,
 ) -> PyResult<(
     Vec<Vec<Vec<i32>>>,
     Vec<Vec<(usize, usize)>>,
@@ -26,30 +28,30 @@ fn refresh_matrixs(
     usize,
     usize,
 )> {
-    Ok(ms_toollib_rs::refresh_matrixs(&BoardofGame))
+    Ok(ms_toollib_rs::refresh_matrixs(&board_of_game))
 }
 
 #[pyfunction]
-fn cal_op(mut Board: Vec<Vec<i32>>) -> PyResult<usize> {
-    Ok(ms_toollib_rs::cal_op(Board))
+fn cal_op(board: Vec<Vec<i32>>) -> PyResult<usize> {
+    Ok(ms_toollib_rs::cal_op(board))
 }
 
 #[pyfunction]
 fn laymine_number(
     row: usize,
     column: usize,
-    MineNum: usize,
-    X0: usize,
-    Y0: usize,
+    mine_num: usize,
+    x0: usize,
+    y0: usize,
 ) -> PyResult<Vec<Vec<i32>>> {
     // 通用标准埋雷引擎
     // 输出为二维的局面
-    Ok(ms_toollib_rs::laymine_number(row, column, MineNum, X0, Y0))
+    Ok(ms_toollib_rs::laymine_number(row, column, mine_num, x0, y0))
 }
 
 #[pyfunction]
-fn cal3BV(Board: Vec<Vec<i32>>) -> PyResult<usize> {
-    Ok(ms_toollib_rs::cal3BV(&Board))
+fn cal3BV(board: Vec<Vec<i32>>) -> PyResult<usize> {
+    Ok(ms_toollib_rs::cal3BV(&board))
 }
 
 #[pyfunction]
@@ -57,20 +59,20 @@ fn solve_minus(
     mut MatrixA: Vec<Vec<i32>>,
     mut Matrixx: Vec<(usize, usize)>,
     mut Matrixb: Vec<i32>,
-    mut BoardofGame: Vec<Vec<i32>>,
+    mut board_of_game: Vec<Vec<i32>>,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, bool)> {
-    let (notMine, flag) = ms_toollib_rs::solve_minus(&mut MatrixA, &mut Matrixx, &mut Matrixb, &mut BoardofGame);
-    Ok((BoardofGame, notMine, flag))
+    let (notMine, flag) = ms_toollib_rs::solve_minus(&mut MatrixA, &mut Matrixx, &mut Matrixb, &mut board_of_game);
+    Ok((board_of_game, notMine, flag))
 }
 
 #[pyfunction]
-fn refreshBoard(
+fn refresh_board(
     board: Vec<Vec<i32>>,
-    mut BoardofGame: Vec<Vec<i32>>,
+    mut board_of_game: Vec<Vec<i32>>,
     ClickedPoses: Vec<(usize, usize)>,
 ) -> PyResult<Vec<Vec<i32>>> {
-    ms_toollib_rs::refreshBoard(&board, &mut BoardofGame, ClickedPoses);
-    Ok(BoardofGame)
+    refresh_board_(&board, &mut board_of_game, ClickedPoses);
+    Ok(board_of_game)
 }
 
 #[pyfunction]
@@ -78,21 +80,21 @@ fn solve_direct(
     mut MatrixA: Vec<Vec<i32>>,
     mut Matrixx: Vec<(usize, usize)>,
     mut Matrixb: Vec<i32>,
-    mut BoardofGame: Vec<Vec<i32>>,
+    mut board_of_game: Vec<Vec<i32>>,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, bool)> {
-    let (notMine, flag) = ms_toollib_rs::solve_direct(&mut MatrixA, &mut Matrixx, &mut Matrixb, &mut BoardofGame);
-    Ok((BoardofGame, notMine, flag))
+    let (notMine, flag) = ms_toollib_rs::solve_direct(&mut MatrixA, &mut Matrixx, &mut Matrixb, &mut board_of_game);
+    Ok((board_of_game, notMine, flag))
 }
 
 #[pyfunction]
 fn laymine_op_number(
     row: usize,
     column: usize,
-    MineNum: usize,
-    X0: usize,
-    Y0: usize,
+    mine_num: usize,
+    x0: usize,
+    y0: usize,
 ) -> PyResult<Vec<Vec<i32>>> {
-    Ok(ms_toollib_rs::lay_mine_op_number(row, column, MineNum, X0, Y0))
+    Ok(ms_toollib_rs::laymine_op_number(row, column, mine_num, x0, y0))
 }
 
 #[pyfunction(enuLimit = 30)]
@@ -100,17 +102,17 @@ fn solve_enumerate(
     Matrix_as: Vec<Vec<Vec<i32>>>,
     Matrix_xs: Vec<Vec<(usize, usize)>>,
     Matrix_bs: Vec<Vec<i32>>,
-    mut BoardofGame: Vec<Vec<i32>>,
+    mut board_of_game: Vec<Vec<i32>>,
     enuLimit: usize,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, bool)> {
     let (notMine, flag) = ms_toollib_rs::solve_enumerate(
         &Matrix_as,
         &Matrix_xs,
         &Matrix_bs,
-        &mut BoardofGame,
+        &mut board_of_game,
         enuLimit,
     );
-    Ok((BoardofGame, notMine, flag))
+    Ok((board_of_game, notMine, flag))
 }
 
 // #[pyfunction]
@@ -123,80 +125,80 @@ fn solve_enumerate(
 // }
 
 #[pyfunction]
-fn unsolvable_structure(BoardCheck: Vec<Vec<i32>>) -> PyResult<bool> {
-    Ok(ms_toollib_rs::unsolvable_structure(&BoardCheck))
+fn unsolvable_structure(boardCheck: Vec<Vec<i32>>) -> PyResult<bool> {
+    Ok(ms_toollib_rs::unsolvable_structure(&boardCheck))
 }
 
 #[pyfunction(enuLimit = 30)]
-fn is_solvable(Board: Vec<Vec<i32>>, X0: usize, Y0: usize, enuLimit: usize) -> PyResult<bool> {
-    Ok(ms_toollib_rs::is_solvable(&Board, X0, Y0, enuLimit))
+fn is_solvable(board: Vec<Vec<i32>>, x0: usize, y0: usize, enuLimit: usize) -> PyResult<bool> {
+    Ok(ms_toollib_rs::is_solvable(&board, x0, y0, enuLimit))
 }
 
-#[pyfunction(Min3BV = 0, Max3BV = 1000_000, MaxTimes = 1000_000, method = 0)]
+#[pyfunction(min3BV = 0, max3BV = 1000_000, max_times = 1000_000, method = 0)]
 pub fn laymine_op(
     row: usize,
     column: usize,
-    MineNum: usize,
-    X0: usize,
-    Y0: usize,
-    Min3BV: usize,
-    Max3BV: usize,
-    MaxTimes: usize,
+    mine_num: usize,
+    x0: usize,
+    y0: usize,
+    min3BV: usize,
+    max3BV: usize,
+    max_times: usize,
     method: usize,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<usize>)> {
     Ok(ms_toollib_rs::laymine_op(
-        row, column, MineNum, X0, Y0, Min3BV, Max3BV, MaxTimes, method,
+        row, column, mine_num, x0, y0, min3BV, max3BV, max_times, method,
     ))
 }
 
-#[pyfunction(Min3BV = 0, Max3BV = 1000000, MaxTimes = 1000000, enuLimit = 30)]
+#[pyfunction(min3BV = 0, max3BV = 1000000, max_times = 1000000, enuLimit = 30)]
 pub fn laymine_solvable(
     row: usize,
     column: usize,
-    MineNum: usize,
-    X0: usize,
-    Y0: usize,
-    Min3BV: usize,
-    Max3BV: usize,
-    MaxTimes: usize,
+    mine_num: usize,
+    x0: usize,
+    y0: usize,
+    min3BV: usize,
+    max3BV: usize,
+    max_times: usize,
     method: usize,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<usize>)> {
     Ok(ms_toollib_rs::laymine_solvable(
-        row, column, MineNum, X0, Y0, Min3BV, Max3BV, MaxTimes, method,
+        row, column, mine_num, x0, y0, min3BV, max3BV, max_times, method,
     ))
 }
 
-#[pyfunction(Min3BV = 0, Max3BV = 1000_000, MaxTimes = 1000_000, method = 0)]
+#[pyfunction(min3BV = 0, max3BV = 1000_000, max_times = 1000_000, method = 0)]
 pub fn laymine(
     row: usize,
     column: usize,
-    MineNum: usize,
-    X0: usize,
-    Y0: usize,
-    Min3BV: usize,
-    Max3BV: usize,
-    MaxTimes: usize,
+    mine_num: usize,
+    x0: usize,
+    y0: usize,
+    min3BV: usize,
+    max3BV: usize,
+    max_times: usize,
     method: usize,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<usize>)> {
     Ok(ms_toollib_rs::laymine(
-        row, column, MineNum, X0, Y0, Min3BV, Max3BV, MaxTimes, method,
+        row, column, mine_num, x0, y0, min3BV, max3BV, max_times, method,
     ))
 }
 
-#[pyfunction(Min3BV = 0, Max3BV = 1000000, MaxTimes = 1000000, enuLimit = 30)]
+#[pyfunction(min3BV = 0, max3BV = 1000000, max_times = 1000000, enuLimit = 30)]
 pub fn laymine_solvable_thread(
     row: usize,
     column: usize,
-    MineNum: usize,
-    X0: usize,
-    Y0: usize,
-    Min3BV: usize,
-    Max3BV: usize,
-    mut MaxTimes: usize,
+    mine_num: usize,
+    x0: usize,
+    y0: usize,
+    min3BV: usize,
+    max3BV: usize,
+    mut max_times: usize,
     enuLimit: usize,
 ) -> PyResult<(Vec<Vec<i32>>, [usize; 3])> {
     Ok(ms_toollib_rs::laymine_solvable_thread(
-        row, column, MineNum, X0, Y0, Min3BV, Max3BV, MaxTimes, enuLimit,
+        row, column, mine_num, x0, y0, min3BV, max3BV, max_times, enuLimit,
     ))
 }
 
@@ -230,8 +232,8 @@ fn cal_possibility_onboard(
 }
 
 #[pyfunction]
-fn sample_3BVs_exp(X0: usize, Y0: usize, n: usize) -> PyResult<Vec<usize>> {
-    Ok((&ms_toollib_rs::sample_3BVs_exp(X0, Y0, n)).to_vec())
+fn sample_3BVs_exp(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
+    Ok((&ms_toollib_rs::sample_3BVs_exp(x0, y0, n)).to_vec())
 }
 
 #[pyfunction]
@@ -245,11 +247,11 @@ fn OBR_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<
 }
 
 #[pyclass]
-struct MinesweeperBoard {
+struct Minesweeperboard {
     // 局面类，分析操作与局面的交互
     #[pyo3(get)]
     board: Vec<Vec<i32>>,
-    gameBoard: Vec<Vec<i32>>,
+    gameboard: Vec<Vec<i32>>,
     flagedList: Vec<(usize, usize)>, //记录哪些雷曾经被标过，则再标这些雷不记为ce
     left: usize,
     right: usize,
@@ -264,16 +266,16 @@ struct MinesweeperBoard {
 }
 
 #[pymethods]
-impl MinesweeperBoard {
+impl Minesweeperboard {
     #[new]
-    pub fn new(board: Vec<Vec<i32>>) -> MinesweeperBoard {
+    pub fn new(board: Vec<Vec<i32>>) -> Minesweeperboard {
         let row = board.len();
         let column = board[0].len();
-        MinesweeperBoard {
+        Minesweeperboard {
             board: board,
             row: row,
             column: column,
-            gameBoard: vec![vec![10; column]; row],
+            gameboard: vec![vec![10; column]; row],
             left: 0,
             right: 0,
             chording: 0,
@@ -287,21 +289,21 @@ impl MinesweeperBoard {
     }
     fn leftClick(&mut self, x: usize, y: usize) {
         self.left += 1;
-        if self.gameBoard[x][y] != 10 {
+        if self.gameboard[x][y] != 10 {
             return;
         }
         match self.board[x][y] {
             0 => {
                 self.solved3BV += 1;
                 self.ces += 1;
-                ms_toollib_rs::refreshBoard(&self.board, &mut self.gameBoard, vec![(x, y)]);
+                refresh_board_(&self.board, &mut self.gameboard, vec![(x, y)]);
                 return;
             }
             -1 => {
                 return;
             }
             _ => {
-                ms_toollib_rs::refreshBoard(&self.board, &mut self.gameBoard, vec![(x, y)]);
+                refresh_board_(&self.board, &mut self.gameboard, vec![(x, y)]);
                 if self.numIs3BV(x, y) {
                     self.solved3BV += 1;
                     self.ces += 1;
@@ -315,26 +317,26 @@ impl MinesweeperBoard {
     }
     fn rightClick(&mut self, x: usize, y: usize) {
         self.right += 1;
-        if self.gameBoard[x][y] < 10 {
+        if self.gameboard[x][y] < 10 {
             return;
         } else {
             if self.board[x][y] != -1 {
-                match self.gameBoard[x][y] {
+                match self.gameboard[x][y] {
                     10 => {
-                        self.gameBoard[x][y] = 11;
+                        self.gameboard[x][y] = 11;
                         self.flag += 1;
                     }
                     11 => {
-                        self.gameBoard[x][y] = 10;
+                        self.gameboard[x][y] = 10;
                         self.flag -= 1;
                     }
                     _ => return,
                 }
                 return;
             } else {
-                match self.gameBoard[x][y] {
+                match self.gameboard[x][y] {
                     10 => {
-                        self.gameBoard[x][y] = 11;
+                        self.gameboard[x][y] = 11;
                         self.flag += 1;
                         self.flagedList.push((x, y));
                         let mut not_flag_flaged = true;
@@ -349,7 +351,7 @@ impl MinesweeperBoard {
                         }
                     }
                     11 => {
-                        self.gameBoard[x][y] = 10;
+                        self.gameboard[x][y] = 10;
                         self.flag -= 1;
                     }
                     _ => return,
@@ -360,7 +362,7 @@ impl MinesweeperBoard {
     }
     fn chordingClick(&mut self, x: usize, y: usize) {
         self.chording += 1;
-        if self.gameBoard[x][y] == 0 || self.gameBoard[x][y] > 8 {
+        if self.gameboard[x][y] == 0 || self.gameboard[x][y] > 8 {
             return;
         }
         let mut flagChordingUseful = false; // 双击有效的基础上，周围是否有未打开的格子
@@ -371,10 +373,10 @@ impl MinesweeperBoard {
         for i in max(1, x) - 1..min(self.row, x + 2) {
             for j in max(1, y) - 1..min(self.column, y + 2) {
                 if i != x || j != y {
-                    if self.gameBoard[i][j] == 11 {
+                    if self.gameboard[i][j] == 11 {
                         flagedNum += 1
                     }
-                    if self.gameBoard[i][j] == 10 && self.board[i][j] != -1 {
+                    if self.gameboard[i][j] == 10 && self.board[i][j] != -1 {
                         if self.board[i][j] == 0 {
                             flag_ch_op = true;
                         }
@@ -387,13 +389,13 @@ impl MinesweeperBoard {
                 }
             }
         }
-        if flagedNum == self.gameBoard[x][y] && flagChordingUseful {
+        if flagedNum == self.gameboard[x][y] && flagChordingUseful {
             self.ces += 1;
             self.solved3BV += surround3BV;
             if flag_ch_op {
                 self.solved3BV += 1;
             }
-            ms_toollib_rs::refreshBoard(&self.board, &mut self.gameBoard, chordingCells);
+            refresh_board_(&self.board, &mut self.gameboard, chordingCells);
         }
     }
     pub fn numIs3BV(&self, x: usize, y: usize) -> bool {
@@ -447,7 +449,7 @@ impl MinesweeperBoard {
 }
 
 #[pyproto]
-impl PyObjectProtocol for MinesweeperBoard {
+impl PyObjectProtocol for Minesweeperboard {
     fn __getattr__(&self, name: &str) -> PyResult<usize> {
         match name {
             "left" => return Ok(self.left),
@@ -463,28 +465,28 @@ impl PyObjectProtocol for MinesweeperBoard {
 
 #[pymodule]
 fn ms_toollib(py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(refreshMatrix, m)?)?;
+    m.add_function(wrap_pyfunction!(refresh_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(refresh_matrixs, m)?)?;
-    m.add_function(wrap_pyfunction!(calOp, m)?)?;
+    m.add_function(wrap_pyfunction!(cal_op, m)?)?;
     m.add_function(wrap_pyfunction!(cal3BV, m)?)?;
     m.add_function(wrap_pyfunction!(laymine_number, m)?)?;
-    m.add_function(wrap_pyfunction!(refreshBoard, m)?)?;
-    m.add_function(wrap_pyfunction!(layMine, m)?)?;
-    m.add_function(wrap_pyfunction!(SolveMinus, m)?)?;
-    m.add_function(wrap_pyfunction!(layMineOpNumber, m)?)?;
-    m.add_function(wrap_pyfunction!(layMineOp, m)?)?;
-    m.add_function(wrap_pyfunction!(SolveDirect, m)?)?;
-    m.add_function(wrap_pyfunction!(SolveEnumerate, m)?)?;
-    m.add_function(wrap_pyfunction!(unsolvableStructure, m)?)?;
-    m.add_function(wrap_pyfunction!(isSolvable, m)?)?;
-    m.add_function(wrap_pyfunction!(enuOneStep, m)?)?;
-    m.add_function(wrap_pyfunction!(layMineSolvable, m)?)?;
-    m.add_function(wrap_pyfunction!(layMineSolvable_thread, m)?)?;
+    m.add_function(wrap_pyfunction!(refresh_board, m)?)?;
+    m.add_function(wrap_pyfunction!(laymine, m)?)?;
+    m.add_function(wrap_pyfunction!(solve_minus, m)?)?;
+    m.add_function(wrap_pyfunction!(laymine_op_number, m)?)?;
+    m.add_function(wrap_pyfunction!(laymine_op, m)?)?;
+    m.add_function(wrap_pyfunction!(solve_direct, m)?)?;
+    m.add_function(wrap_pyfunction!(solve_enumerate, m)?)?;
+    m.add_function(wrap_pyfunction!(unsolvable_structure, m)?)?;
+    m.add_function(wrap_pyfunction!(is_solvable, m)?)?;
+    // m.add_function(wrap_pyfunction!(enuOneStep, m)?)?;
+    m.add_function(wrap_pyfunction!(laymine_solvable, m)?)?;
+    m.add_function(wrap_pyfunction!(laymine_solvable_thread, m)?)?;
     m.add_function(wrap_pyfunction!(cal_possibility, m)?)?;
     m.add_function(wrap_pyfunction!(sample_3BVs_exp, m)?)?;
     m.add_function(wrap_pyfunction!(OBR_board, m)?)?;
     m.add_function(wrap_pyfunction!(cal_possibility_onboard, m)?)?;
-    m.add_class::<MinesweeperBoard>()?;
+    m.add_class::<Minesweeperboard>()?;
     Ok(())
 }
 

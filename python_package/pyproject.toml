@@ -1,0 +1,53 @@
+[project]
+name = "ms_toollib"
+version = "1.2.7"
+description = "Algorithms for minesweeper."
+readme = "readme.md"
+requires-python = ">=3.0"
+keywords = ["minesweeper", "possibility", "mine", "laymine"]
+authors = [
+  {email = "wangjianing@88.com"},
+  {name = "Wang Jianing"}
+]
+maintainers = [
+  {name = "Wang Jianing", email = "wangjianing@88.com"}
+]
+classifiers = [
+  "Development Status :: 1 - Beta",
+  "Programming Language :: Python"
+]
+
+# dependencies = [
+#   "httpx",
+#   "gidgethub[httpx]>4.0.0",
+#   "django>2.1; os_name != 'nt'",
+#   "django>2.0; os_name == 'nt'"
+# ]
+
+[project.optional-dependencies]
+# test = [
+#   "pytest < 5.0.0",
+#   "pytest-cov[all]"
+# ]
+
+[project.urls]
+homepage = "https://github.com/eee555/ms_toollib"
+documentation = "https://docs.rs/ms_toollib/latest/ms_toollib/"
+repository = "github.com"
+# changelog = "github.com/me/spam/blob/master/CHANGELOG.md"
+
+# [project.scripts]
+# spam-cli = "spam:main_cli"
+
+# [project.gui-scripts]
+# spam-gui = "spam:main_gui"
+
+# [project.entry-points."spam.magical"]
+# tomatoes = "spam:main_tomatoes"
+
+
+[build-system]
+requires = ["maturin>=0.12,<0.13"]
+build-backend = "maturin"
+
+

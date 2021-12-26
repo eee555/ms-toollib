@@ -1,11 +1,11 @@
 [package]
 name = "ms_toollib"
-version = "1.2.6"
+version = "1.2.7"
 description = "Algorithms  for Minesweeper"
 documentation = "https://docs.rs/ms_toollib/"
 license = "MIT"
 readme = "README.md"
-keywords = ["minesweeper", "game", "eee555"]
+keywords = ["minesweeper", "possibility", "mine", "laymine"]
 edition = "2018"
 authors = ["Wang Jianing <wangjianing@88.com>"]
 
@@ -13,7 +13,7 @@ authors = ["Wang Jianing <wangjianing@88.com>"]
 
 [dependencies]
 pyo3 = { version ="0.13.2", features = ["extension-module"] }
-ms_toollib = { version ="1.2.6", features = ["py"] }
+ms_toollib = { version ="1.2.7", features = ["py"] }
 
 
 [lib]

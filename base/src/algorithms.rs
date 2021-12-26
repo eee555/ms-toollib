@@ -1,7 +1,7 @@
 
 use crate::utils::{
     cal3BV, cal3BV_exp, cal_table_minenum_enum, cal_table_minenum_recursion, combine, enuOneStep,
-    enum_comb, laymine_op_number, laymine_number, legalize_board, refreshBoard, refresh_matrix,
+    enum_comb, laymine_op_number, laymine_number, legalize_board, refresh_board, refresh_matrix,
     refresh_matrixs, sum, unsolvable_structure, BigNumber, C_query, C,
 };
 
@@ -515,7 +515,7 @@ pub fn is_solvable(Board: &Vec<Vec<i32>>, x0: usize, y0: usize, enuLimit: usize)
     let mut BoardofGame = vec![vec![10; column]; row];
     // 10是未打开，11是标雷
     // 局面大小必须超过6*6
-    refreshBoard(&Board, &mut BoardofGame, vec![(x0, y0)]);
+    refresh_board(&Board, &mut BoardofGame, vec![(x0, y0)]);
     if isVictory(&BoardofGame, &Board) {
         return true; // 暂且认为点一下就扫开也是可以的
     }
@@ -548,7 +548,7 @@ pub fn is_solvable(Board: &Vec<Vec<i32>>, x0: usize, y0: usize, enuLimit: usize)
                 }
             }
         }
-        refreshBoard(&Board, &mut BoardofGame, NotMine);
+        refresh_board(&Board, &mut BoardofGame, NotMine);
         if isVictory(&BoardofGame, &Board) {
             return true;
         }

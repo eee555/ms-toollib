@@ -9,7 +9,7 @@
 mod utils;
 pub use utils::{
     cal3BV, cal_op, cal_table_minenum_recursion, combine, laymine_number, laymine_op_number,
-    refreshBoard, refresh_matrix, refresh_matrixs, unsolvable_structure,
+    refresh_board, refresh_matrix, refresh_matrixs, unsolvable_structure,
 };
 
 mod algorithms;

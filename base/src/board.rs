@@ -1,4 +1,4 @@
-use crate::utils::refreshBoard;
+use crate::utils::refresh_board;
 use std::cmp::{max, min};
 
 /// 局面类，分析操作与局面的交互
@@ -47,14 +47,14 @@ impl MinesweeperBoard {
             0 => {
                 self.solved3BV += 1;
                 self.ces += 1;
-                refreshBoard(&self.board, &mut self.gameBoard, vec![(x, y)]);
+                refresh_board(&self.board, &mut self.gameBoard, vec![(x, y)]);
                 return;
             }
             -1 => {
                 return;
             }
             _ => {
-                refreshBoard(&self.board, &mut self.gameBoard, vec![(x, y)]);
+                refresh_board(&self.board, &mut self.gameBoard, vec![(x, y)]);
                 if self.numIs3BV(x, y) {
                     self.solved3BV += 1;
                     self.ces += 1;
@@ -146,7 +146,7 @@ impl MinesweeperBoard {
             if flag_ch_op {
                 self.solved3BV += 1;
             }
-            refreshBoard(&self.board, &mut self.gameBoard, chordingCells);
+            refresh_board(&self.board, &mut self.gameBoard, chordingCells);
         }
     }
     pub fn numIs3BV(&self, x: usize, y: usize) -> bool {

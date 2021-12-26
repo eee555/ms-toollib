@@ -1,0 +1,51 @@
+[package]
+name = "ms_toollib"
+version = "1.2.6"
+description = "Algorithms for Minesweeper"
+documentation = "https://docs.rs/ms_toollib"
+license = "MIT"
+readme = "README.md"
+keywords = ["minesweeper", "game", "rust"]
+edition = "2018"
+authors = ["Wang Jianing <wangjianing@88.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["rs"]
+js = ["getrandom"]
+py = ["rand", "tract-onnx"]
+rs = ["rand", "tract-onnx"]
+
+[dependencies.rand]
+version = "0.8.3"
+optional  = true
+
+[dependencies.getrandom]
+version = "0.2.3"
+features = ["js"]
+optional  = true
+
+[dependencies.tract-onnx]
+version = "0.15.8"
+optional  = true
+
+[dependencies]
+itertools = "0.10.3"
+
+[dev-dependencies]
+ms_toollib = { path = "." }
+bencher = "0.1.5"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[[bench]]
+name = "sample_boards"
+harness = false
+
+
+
+
+

@@ -4,7 +4,7 @@ import * as wasm from "wasm-main";
 const a = [[0, 0, 1, -1, 2, -1, 1, 0], [0, 0, 2, 2, 3, 1, 1, 0], [0, 1, 2, -1, 1, 0, 0, 0],
 [0, 1, -1, 3, 2, 0, 0, 0], [2, 3, 3, -1, 2, 1, 1, 0], [-1, -1, 2, 2, 3, -1, 1, 0],
 [2, 2, 1, 1, -1, 3, 2, 0], [0, 0, 0, 1, 2, -1, 1, 0]];
-let bv = wasm.wasm_cal3BV(JSON.stringify(a));
+let bv = wasm.cal3BV(JSON.stringify(a));
 console.log(bv);
 
 const b = [[ 1, 10, 10, 10, 10, 10, 10, 10, 10],
@@ -16,9 +16,11 @@ const b = [[ 1, 10, 10, 10, 10, 10, 10, 10, 10],
 [10, 10, 10, 10, 10, 10, 10, 10, 10],
 [10, 10, 10, 10, 10, 10, 10, 10, 10],
 [10, 10, 10, 10, 10, 10, 10, 10, 10]]
-let poss = wasm.wasm_cal_possibility_onboard(JSON.stringify(b), 10);
+let poss = wasm.cal_possibility_onboard(JSON.stringify(b), 10);
 console.log(poss);
 
+const board = wasm.laymine_number(6, 8, 8, 0, 0)
+console.log(board);
 
 
 

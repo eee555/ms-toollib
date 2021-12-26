@@ -5,6 +5,7 @@
 // cargo build --release --features py
 // cargo bench
 // cargo publish --features rs --features py --features js
+// cargo yank --vers 0.0.1
 mod utils;
 pub use utils::{
     cal3BV, cal_op, cal_table_minenum_recursion, combine, laymine_number, laymine_op_number,

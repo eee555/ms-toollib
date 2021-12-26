@@ -1,26 +1,16 @@
-﻿mod utils;
-pub use utils::{
-    cal3BV, calOp, cal_table_minenum_recursion, combine, enuOneStep, layMineOpNumber,
-    lay_mine_number, refreshBoard, refresh_matrix, refresh_matrixs, set_panic_hook,
-    unsolvableStructure,
-};
-mod algorithms;
-pub use algorithms::{
-    cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, isSolvable, layMine,
-    layMineOp, layMineSolvable, layMineSolvable_thread, mark_board, SolveDirect, SolveEnumerate,
-    SolveMinus,
-};
+﻿use ms_toollib as ms_toollib_js;
+
 // cargo generate --git https://github.com/rustwasm/wasm-pack-template
 // wasm-pack build
 // npm init wasm-app www
+// cd www
 // npm install
 // npm start
 // 教程：https://www.secondstate.io/articles/getting-started-with-rust-function/
 // npm config set registry https://registry.npm.taobao.org
 // npm config set registry https://registry.npmjs.org
 
-
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json;
 
 use wasm_bindgen::prelude::*;
@@ -42,7 +32,7 @@ pub fn greet() {
 }
 
 #[wasm_bindgen]
-pub fn wasm_cal3BV(board_json: &str) -> i32 {
+pub fn cal3BV(board_json: &str) -> i32 {
     // set_panic_hook();
     let board_: serde_json::Value = serde_json::from_str(&board_json).unwrap();
     let board__ = board_.as_array().unwrap();
@@ -58,11 +48,11 @@ pub fn wasm_cal3BV(board_json: &str) -> i32 {
                 .collect::<Vec<_>>(),
         );
     }
-    cal3BV(&res) as i32
+    ms_toollib_js::cal3BV(&res) as i32
 }
 
 #[wasm_bindgen]
-pub fn wasm_cal_possibility_onboard(board_json: &str, mine_num: i32) -> String {
+pub fn cal_possibility_onboard(board_json: &str, mine_num: i32) -> String {
     // set_panic_hook();
     let board_: serde_json::Value = serde_json::from_str(&board_json).unwrap();
     let board__ = board_.as_array().unwrap();
@@ -79,9 +69,21 @@ pub fn wasm_cal_possibility_onboard(board_json: &str, mine_num: i32) -> String {
         );
     }
     // mine_num为局面中雷的总数，不管有没有标
-    mark_board(&mut board_of_game);
-    match cal_possibility_onboard(&board_of_game, mine_num as f64) {
+    ms_toollib_js::mark_board(&mut board_of_game);
+    match ms_toollib_js::cal_possibility_onboard(&board_of_game, mine_num as f64) {
         Ok(t) => return serde_json::to_string(&t).unwrap(),
-        Err(e) => return serde_json::to_string(&(Vec::<i32>::new(), [0, 0, 0])).unwrap(),
+        Err(_) => return serde_json::to_string(&(Vec::<i32>::new(), [0, 0, 0])).unwrap(),
     };
+}
+
+#[wasm_bindgen]
+pub fn laymine_number(row: i32, column: i32, mine_num: i32, x0: i32, y0: i32) -> String {
+    serde_json::to_string(&ms_toollib_js::lay_mine_number(
+        row as usize,
+        column as usize,
+        mine_num as usize,
+        x0 as usize,
+        y0 as usize,
+    ))
+    .unwrap()
 }

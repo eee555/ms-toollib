@@ -10,14 +10,14 @@ use ms_toollib as ms_toollib_rs;
 // maturin publish
 
 #[pyfunction]
-fn py_refreshMatrix(
+fn refresh_matrix(
     BoardofGame: Vec<Vec<i32>>,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<i32>)> {
     Ok(ms_toollib_rs::refresh_matrix(&BoardofGame))
 }
 
 #[pyfunction]
-fn py_refresh_matrixs(
+fn refresh_matrixs(
     BoardofGame: Vec<Vec<i32>>,
 ) -> PyResult<(
     Vec<Vec<Vec<i32>>>,
@@ -30,12 +30,12 @@ fn py_refresh_matrixs(
 }
 
 #[pyfunction]
-fn py_calOp(mut Board: Vec<Vec<i32>>) -> PyResult<usize> {
+fn cal_op(mut Board: Vec<Vec<i32>>) -> PyResult<usize> {
     Ok(ms_toollib_rs::cal_op(Board))
 }
 
 #[pyfunction]
-fn py_layMineNumber(
+fn laymine_number(
     row: usize,
     column: usize,
     MineNum: usize,
@@ -44,16 +44,16 @@ fn py_layMineNumber(
 ) -> PyResult<Vec<Vec<i32>>> {
     // 通用标准埋雷引擎
     // 输出为二维的局面
-    Ok(ms_toollib_rs::lay_mine_number(row, column, MineNum, X0, Y0))
+    Ok(ms_toollib_rs::laymine_number(row, column, MineNum, X0, Y0))
 }
 
 #[pyfunction]
-fn py_cal3BV(Board: Vec<Vec<i32>>) -> PyResult<usize> {
+fn cal3BV(Board: Vec<Vec<i32>>) -> PyResult<usize> {
     Ok(ms_toollib_rs::cal3BV(&Board))
 }
 
 #[pyfunction]
-fn py_SolveMinus(
+fn solve_minus(
     mut MatrixA: Vec<Vec<i32>>,
     mut Matrixx: Vec<(usize, usize)>,
     mut Matrixb: Vec<i32>,
@@ -64,7 +64,7 @@ fn py_SolveMinus(
 }
 
 #[pyfunction]
-fn py_refreshBoard(
+fn refreshBoard(
     board: Vec<Vec<i32>>,
     mut BoardofGame: Vec<Vec<i32>>,
     ClickedPoses: Vec<(usize, usize)>,
@@ -74,7 +74,7 @@ fn py_refreshBoard(
 }
 
 #[pyfunction]
-fn py_SolveDirect(
+fn solve_direct(
     mut MatrixA: Vec<Vec<i32>>,
     mut Matrixx: Vec<(usize, usize)>,
     mut Matrixb: Vec<i32>,
@@ -85,18 +85,18 @@ fn py_SolveDirect(
 }
 
 #[pyfunction]
-fn py_layMineOpNumber(
+fn laymine_op_number(
     row: usize,
     column: usize,
     MineNum: usize,
     X0: usize,
     Y0: usize,
 ) -> PyResult<Vec<Vec<i32>>> {
-    Ok(ms_toollib_rs::laymine_op_number(row, column, MineNum, X0, Y0))
+    Ok(ms_toollib_rs::lay_mine_op_number(row, column, MineNum, X0, Y0))
 }
 
 #[pyfunction(enuLimit = 30)]
-fn py_SolveEnumerate(
+fn solve_enumerate(
     Matrix_as: Vec<Vec<Vec<i32>>>,
     Matrix_xs: Vec<Vec<(usize, usize)>>,
     Matrix_bs: Vec<Vec<i32>>,
@@ -123,17 +123,17 @@ fn py_SolveEnumerate(
 // }
 
 #[pyfunction]
-fn py_unsolvableStructure(BoardCheck: Vec<Vec<i32>>) -> PyResult<bool> {
+fn unsolvable_structure(BoardCheck: Vec<Vec<i32>>) -> PyResult<bool> {
     Ok(ms_toollib_rs::unsolvable_structure(&BoardCheck))
 }
 
 #[pyfunction(enuLimit = 30)]
-fn py_isSolvable(Board: Vec<Vec<i32>>, X0: usize, Y0: usize, enuLimit: usize) -> PyResult<bool> {
+fn is_solvable(Board: Vec<Vec<i32>>, X0: usize, Y0: usize, enuLimit: usize) -> PyResult<bool> {
     Ok(ms_toollib_rs::is_solvable(&Board, X0, Y0, enuLimit))
 }
 
 #[pyfunction(Min3BV = 0, Max3BV = 1000_000, MaxTimes = 1000_000, method = 0)]
-pub fn py_layMineOp(
+pub fn laymine_op(
     row: usize,
     column: usize,
     MineNum: usize,
@@ -150,7 +150,7 @@ pub fn py_layMineOp(
 }
 
 #[pyfunction(Min3BV = 0, Max3BV = 1000000, MaxTimes = 1000000, enuLimit = 30)]
-pub fn py_layMineSolvable(
+pub fn laymine_solvable(
     row: usize,
     column: usize,
     MineNum: usize,
@@ -167,7 +167,7 @@ pub fn py_layMineSolvable(
 }
 
 #[pyfunction(Min3BV = 0, Max3BV = 1000_000, MaxTimes = 1000_000, method = 0)]
-pub fn py_layMine(
+pub fn laymine(
     row: usize,
     column: usize,
     MineNum: usize,
@@ -184,7 +184,7 @@ pub fn py_layMine(
 }
 
 #[pyfunction(Min3BV = 0, Max3BV = 1000000, MaxTimes = 1000000, enuLimit = 30)]
-pub fn py_layMineSolvable_thread(
+pub fn laymine_solvable_thread(
     row: usize,
     column: usize,
     MineNum: usize,
@@ -201,7 +201,7 @@ pub fn py_layMineSolvable_thread(
 }
 
 #[pyfunction]
-fn py_cal_possibility(
+fn cal_possibility(
     board_of_game: Vec<Vec<i32>>,
     mine_num: f64,
 ) -> PyResult<(Vec<((usize, usize), f64)>, f64, [usize; 3])> {
@@ -216,7 +216,7 @@ fn py_cal_possibility(
 }
 
 #[pyfunction]
-fn py_cal_possibility_onboard(
+fn cal_possibility_onboard(
     board_of_game: Vec<Vec<i32>>,
     mine_num: f64,
 ) -> PyResult<(Vec<Vec<f64>>, [usize; 3])> {
@@ -230,12 +230,12 @@ fn py_cal_possibility_onboard(
 }
 
 #[pyfunction]
-fn py_sample_3BVs_exp(X0: usize, Y0: usize, n: usize) -> PyResult<Vec<usize>> {
+fn sample_3BVs_exp(X0: usize, Y0: usize, n: usize) -> PyResult<Vec<usize>> {
     Ok((&ms_toollib_rs::sample_3BVs_exp(X0, Y0, n)).to_vec())
 }
 
 #[pyfunction]
-fn py_OBR_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
+fn OBR_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
     // Ok(OBR_board(data_vec, height, width).unwrap())
     match ms_toollib_rs::OBR_board(data_vec, height, width) {
         //判断方法结果
@@ -463,27 +463,27 @@ impl PyObjectProtocol for MinesweeperBoard {
 
 #[pymodule]
 fn ms_toollib(py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(py_refreshMatrix, m)?)?;
-    m.add_function(wrap_pyfunction!(py_refresh_matrixs, m)?)?;
-    m.add_function(wrap_pyfunction!(py_calOp, m)?)?;
-    m.add_function(wrap_pyfunction!(py_cal3BV, m)?)?;
-    m.add_function(wrap_pyfunction!(py_layMineNumber, m)?)?;
-    m.add_function(wrap_pyfunction!(py_refreshBoard, m)?)?;
-    m.add_function(wrap_pyfunction!(py_layMine, m)?)?;
-    m.add_function(wrap_pyfunction!(py_SolveMinus, m)?)?;
-    m.add_function(wrap_pyfunction!(py_layMineOpNumber, m)?)?;
-    m.add_function(wrap_pyfunction!(py_layMineOp, m)?)?;
-    m.add_function(wrap_pyfunction!(py_SolveDirect, m)?)?;
-    m.add_function(wrap_pyfunction!(py_SolveEnumerate, m)?)?;
-    m.add_function(wrap_pyfunction!(py_unsolvableStructure, m)?)?;
-    m.add_function(wrap_pyfunction!(py_isSolvable, m)?)?;
-    m.add_function(wrap_pyfunction!(py_enuOneStep, m)?)?;
-    m.add_function(wrap_pyfunction!(py_layMineSolvable, m)?)?;
-    m.add_function(wrap_pyfunction!(py_layMineSolvable_thread, m)?)?;
-    m.add_function(wrap_pyfunction!(py_cal_possibility, m)?)?;
-    m.add_function(wrap_pyfunction!(py_sample_3BVs_exp, m)?)?;
-    m.add_function(wrap_pyfunction!(py_OBR_board, m)?)?;
-    m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
+    m.add_function(wrap_pyfunction!(refreshMatrix, m)?)?;
+    m.add_function(wrap_pyfunction!(refresh_matrixs, m)?)?;
+    m.add_function(wrap_pyfunction!(calOp, m)?)?;
+    m.add_function(wrap_pyfunction!(cal3BV, m)?)?;
+    m.add_function(wrap_pyfunction!(laymine_number, m)?)?;
+    m.add_function(wrap_pyfunction!(refreshBoard, m)?)?;
+    m.add_function(wrap_pyfunction!(layMine, m)?)?;
+    m.add_function(wrap_pyfunction!(SolveMinus, m)?)?;
+    m.add_function(wrap_pyfunction!(layMineOpNumber, m)?)?;
+    m.add_function(wrap_pyfunction!(layMineOp, m)?)?;
+    m.add_function(wrap_pyfunction!(SolveDirect, m)?)?;
+    m.add_function(wrap_pyfunction!(SolveEnumerate, m)?)?;
+    m.add_function(wrap_pyfunction!(unsolvableStructure, m)?)?;
+    m.add_function(wrap_pyfunction!(isSolvable, m)?)?;
+    m.add_function(wrap_pyfunction!(enuOneStep, m)?)?;
+    m.add_function(wrap_pyfunction!(layMineSolvable, m)?)?;
+    m.add_function(wrap_pyfunction!(layMineSolvable_thread, m)?)?;
+    m.add_function(wrap_pyfunction!(cal_possibility, m)?)?;
+    m.add_function(wrap_pyfunction!(sample_3BVs_exp, m)?)?;
+    m.add_function(wrap_pyfunction!(OBR_board, m)?)?;
+    m.add_function(wrap_pyfunction!(cal_possibility_onboard, m)?)?;
     m.add_class::<MinesweeperBoard>()?;
     Ok(())
 }

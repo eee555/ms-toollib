@@ -20,12 +20,12 @@
     "rust",
     "webpack"
   ],
-  "author": "Ashley Williams <ashley666ashley@gmail.com>",
+  "author": "eee555 <2234208506@qq.com>",
   "license": "(MIT OR Apache-2.0)",
   "bugs": {
-    "url": "https://github.com/rustwasm/create-wasm-app/issues"
+    "url": "https://github.com/eee555/ms_toollib/issues"
   },
-  "homepage": "https://github.com/rustwasm/create-wasm-app#readme",
+  "homepage": "https://docs.rs/ms_toollib/latest/ms_toollib/",
   "dependencies": {
     "wasm-main": "file:../pkg"
   },

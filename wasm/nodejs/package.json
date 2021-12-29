@@ -1,0 +1,22 @@
+{
+  "name": "node_demo",
+  "version": "0.0.1",
+  "description": "nodejs用法示例",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index",
+    "start": "node index"
+  },
+  "keywords": [
+    "node"
+  ],
+  "author": "eee555 <2234208506@qq.com>",
+  "license": "(MIT OR Apache-2.0)",
+  "bugs": {
+    "url": "https://github.com/eee555/ms_toollib/issues"
+  },
+  "homepage": "https://docs.rs/ms_toollib/latest/ms_toollib/",
+  "dependencies": {
+    "ms-toollib": "file:../pkg"
+  }
+}

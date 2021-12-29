@@ -10,6 +10,11 @@
 // npm config set registry https://registry.npm.taobao.org
 // npm config set registry https://registry.npmjs.org
 
+// 打包给webpack等bundler使用：wasm-pack build
+// 打包给nodejs使用：wasm-pack build --target nodejs
+// 发布wasm-pack publish
+
+
 use serde::{Deserialize, Serialize};
 use serde_json;
 

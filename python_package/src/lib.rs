@@ -9,7 +9,7 @@ use ms_toollib::refreshBoard as refresh_board_;
 
 
 // pip install maturin
-// maturin publish
+// maturin publish --manylinux 2014
 
 #[pyfunction]
 fn refresh_matrix(

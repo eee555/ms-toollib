@@ -3,7 +3,7 @@ name = "ms_toollib"
 version = "1.2.7"
 description = "Algorithms for minesweeper."
 readme = "readme.md"
-requires-python = ">=3.0"
+requires-python = ">=3.6"
 keywords = ["minesweeper", "possibility", "mine", "laymine"]
 authors = [
   {email = "wangjianing@88.com"},
@@ -12,10 +12,7 @@ authors = [
 maintainers = [
   {name = "Wang Jianing", email = "wangjianing@88.com"}
 ]
-classifiers = [
-  "Development Status :: 1 - Beta",
-  "Programming Language :: Python"
-]
+classifiers = [ "Programming Language :: Python" ]
 
 # dependencies = [
 #   "httpx",
@@ -32,8 +29,8 @@ classifiers = [
 
 [project.urls]
 homepage = "https://github.com/eee555/ms_toollib"
-documentation = "https://docs.rs/ms_toollib/latest/ms_toollib/"
-repository = "github.com"
+documentation = "https://docs.rs/ms_toollib/latest/ms_toollib"
+repository = "https://github.com/eee555/ms_toollib"
 # changelog = "github.com/me/spam/blob/master/CHANGELOG.md"
 
 # [project.scripts]
@@ -49,5 +46,11 @@ repository = "github.com"
 [build-system]
 requires = ["maturin>=0.12,<0.13"]
 build-backend = "maturin"
+
+# [tool.maturin]
+# bindings = "cffi"
+# compatibility = "linux"
+
+
 
 

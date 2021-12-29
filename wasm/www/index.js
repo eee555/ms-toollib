@@ -19,7 +19,7 @@ const b = [[ 1, 10, 10, 10, 10, 10, 10, 10, 10],
 let poss = wasm.cal_possibility_onboard(JSON.stringify(b), 10);
 console.log(poss);
 
-const board = wasm.laymine_number(6, 8, 8, 0, 0)
+const board = wasm.laymine_solvable(16, 30, 99, 0, 0, 100, 381, 10000, 40)
 console.log(board);
 
 

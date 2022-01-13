@@ -1010,6 +1010,7 @@ fn OBR_cell(
 /// poss_ = ms_toollib.cal_possibility_onboard(board, 0.20625)
 /// print(poss_)# 用雷的密度计算概率
 /// ```
+/// 细节：对于标雷、游戏结束后的红雷、叉雷，一律识别成10，即没有打开。
 /// 注意：必须配合“params.onnx”参数文件调用。  
 /// 注意：由于利用了神经网络技术，可能发生识别错误，此时输出是不一定合法的局面。
 #[cfg(any(feature = "py", feature = "rs"))]

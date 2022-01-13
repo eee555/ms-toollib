@@ -42,8 +42,8 @@ fn infectBoard(mut Board: Vec<Vec<i32>>, x: usize, y: usize) -> Vec<Vec<i32>> {
     Board
 }
 
-/// 输入的必须保证是合法的游戏局面  
-/// 根据游戏局面生成矩阵，不分块
+/// 根据游戏局面生成矩阵，不分块。输入必须保证是合法的游戏局面。  
+/// - 注意：优点是含义明确，便于理解。但由于不分块，拟弃用
 pub fn refresh_matrix(
     BoardofGame: &Vec<Vec<i32>>,
 ) -> (Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<i32>) {
@@ -100,8 +100,7 @@ pub fn refresh_matrix(
     (MatrixA, Matrixx, Matrixb)
 }
 
-/// 输入的必须保证是合法的游戏局面  
-/// 根据游戏局面生成矩阵，分块
+/// 根据游戏局面生成矩阵，分块。输入的必须保证是合法的游戏局面。  
 pub fn refresh_matrixs(
     board_of_game: &Vec<Vec<i32>>,
 ) -> (
@@ -112,7 +111,7 @@ pub fn refresh_matrixs(
     usize,
 ) {
     // 根据游戏局面分块生成矩阵。分块的数据结构是最外面再套一层Vec
-    // board_of_game必须且肯定是正确标雷的游戏局面，但不需要标全
+    // board_of_game必须且肯定是正确标雷的游戏局面，但不需要标全，不能标非雷
     // 矩阵的行和列都可能有重复
     // unknow_block是未知格子数量, is_mine_num是标出的是雷的数量
     let row = board_of_game.len();
@@ -200,7 +199,7 @@ pub fn refresh_matrixs(
                     for m in max(1, x_t) - 1..min(row, x_t + 2) {
                         for n in max(1, y_t) - 1..min(column, y_t + 2) {
                             if board_of_game[m][n] == 10 {
-                                if !matrix_xs[p].iter().any(|x| x.0 == m && x.1 == n) {
+                                if !matrix_xs[p].contains(&(m, n)) {
                                     matrix_xs[p].push((m, n));
                                 }
                             }
@@ -272,8 +271,9 @@ impl js_shuffle for Vec<i32> {
     }
 }
 
-/// 通用标准埋雷引擎，起手位置非雷，其余位置的雷服从均匀分布  
-/// 输出为二维的局面，其中0代表空，1~8代表1~8，-1代表雷
+/// 通用标准埋雷引擎。
+/// - 标准埋雷规则：起手位置非雷，其余位置的雷服从均匀分布。
+/// - 输出：二维的局面，其中0代表空，1~8代表1~8，-1代表雷。
 pub fn laymine_number(
     row: usize,
     column: usize,
@@ -324,8 +324,9 @@ pub fn laymine_number(
     Board
 }
 
-/// 通用win7埋雷引擎，起手位置开空，其余位置的雷服从均匀分布  
-/// 输出为二维的局面，其中0代表空，1~8代表1~8，-1代表雷
+/// 通用win7规则埋雷引擎。
+/// - win7规则：起手位置开空，其余位置的雷服从均匀分布。
+/// - 输出：二维的局面，其中0代表空，1~8代表1~8，-1代表雷。
 pub fn laymine_op_number(
     row: usize,
     column: usize,
@@ -436,14 +437,6 @@ pub fn refresh_board(
             }
         }
     }
-}
-
-pub fn sum(v: &Vec<i32>) -> i32 {
-    let mut ret = 0;
-    for i in v {
-        ret += *i;
-    }
-    ret
 }
 
 #[derive(Clone, Debug)]
@@ -993,8 +986,10 @@ pub fn cal_table_minenum_enum(
     Ok((table_minenum, table_cell_minenum))
 }
 
-/// 用几种模板，检测实际局面中是否有明显的死猜的结构。不考虑起手位置，因为起手必开空。  
-/// 局面至少大于4*4。
+/// 用几种模板，检测实际局面中是否有明显的死猜的结构。  
+/// - 使用模板包括：工型、回型、器型。  
+/// - 注意：对于一个局面，即使该检测返回true，也不能判断其必然是无猜的局面。想要真正判断一个局面无猜，请使用[is_solvable](#is_solvable)  
+/// - 注意：局面至少大于4*4。
 pub fn unsolvable_structure(BoardCheck: &Vec<Vec<i32>>) -> bool {
     let row = BoardCheck.len();
     let column = BoardCheck[0].len();
@@ -1343,4 +1338,137 @@ pub fn legalize_board(board: &mut Vec<Vec<i32>>) {
             }
         }
     }
+}
+
+// 重新分块矩阵
+// 这些矩阵必须非空、没有空的块、没有b=0的情况
+pub fn chunk_matrixes(
+    matrix_as: &mut Vec<Vec<Vec<i32>>>,
+    matrix_xs: &mut Vec<Vec<(usize, usize)>>,
+    matrix_bs: &mut Vec<Vec<i32>>,
+) {
+    let block_num = matrix_bs.len();
+    let mut aas = vec![];
+    let mut xxs = vec![];
+    let mut bbs = vec![];
+    for _ in 0..block_num {
+        let aa = matrix_as.pop().unwrap();
+        let xx = matrix_xs.pop().unwrap();
+        let bb = matrix_bs.pop().unwrap();
+        let (mut a_, mut x_, mut b_) = chunk_matrix(aa, xx, bb);
+        aas.append(&mut a_);
+        xxs.append(&mut x_);
+        bbs.append(&mut b_);
+    }
+    *matrix_as = aas;
+    *matrix_xs = xxs;
+    *matrix_bs = bbs;
+}
+
+// 重新分块一个矩阵
+// 这些矩阵必须非空、没有空的块、没有b=0的情况
+pub fn chunk_matrix(
+    mut matrix_a: Vec<Vec<i32>>,
+    mut matrix_x: Vec<(usize, usize)>,
+    mut matrix_b: Vec<i32>,
+) -> (Vec<Vec<Vec<i32>>>, Vec<Vec<(usize, usize)>>, Vec<Vec<i32>>) {
+    let mut block_id = 0;
+    let mut matrix_as = vec![];
+    let mut matrix_xs = vec![];
+    let mut matrix_bs = vec![];
+
+    loop {
+        let row_num = matrix_a.len();
+        let column_num = matrix_a[0].len();
+        let mut current_rows_bool = vec![false; row_num];
+        let mut current_columns_bool = vec![false; column_num];
+        current_columns_bool[0] = true;
+        let mut column_buffer = vec![0];
+        loop {
+            let mut row_buffer = vec![];
+            if column_buffer.is_empty() {
+                break;
+            }
+            for i in &column_buffer {
+                for idr in 0..matrix_a.len() {
+                    if matrix_a[idr][*i] >= 1 && !current_rows_bool[idr] {
+                        row_buffer.push(idr);
+                        current_rows_bool[idr] = true;
+                    }
+                }
+            }
+            column_buffer.clear();
+            if row_buffer.is_empty() {
+                break;
+            }
+            for i in row_buffer {
+                for (idc, &c) in matrix_a[i].iter().enumerate() {
+                    if c >= 1 && !current_columns_bool[idc] {
+                        column_buffer.push(idc);
+                        current_columns_bool[idc] = true;
+                    }
+                }
+            }
+        }
+        let mut current_rows = vec![];
+        let mut current_columns = vec![];
+        for (idx, &x) in current_columns_bool.iter().enumerate() {
+            if x {
+                current_columns.push(idx)
+            }
+        }
+        for (idx, &x) in current_rows_bool.iter().enumerate() {
+            if x {
+                current_rows.push(idx)
+            }
+        }
+        current_rows.sort_by(|a, b| b.cmp(a));
+        current_rows.dedup();
+        current_columns.sort_by(|a, b| b.cmp(a));
+        current_columns.dedup();
+        matrix_as.push(vec![vec![0; current_columns.len()]; current_rows.len()]);
+        matrix_bs.push(vec![0; current_rows.len()]);
+        matrix_xs.push(vec![(0, 0); current_columns.len()]);
+        for (idx, x) in current_rows.iter().enumerate() {
+            for (idy, y) in current_columns.iter().enumerate() {
+                matrix_as[block_id][idx][idy] = matrix_a[*x][*y];
+            }
+        }
+        for (idx, x) in current_rows.iter().enumerate() {
+            matrix_bs[block_id][idx] = matrix_b[*x];
+        }
+        for (idy, y) in current_columns.iter().enumerate() {
+            matrix_xs[block_id][idy] = matrix_x[*y];
+        }
+        for i in current_rows {
+            matrix_a.remove(i);
+            matrix_b.remove(i);
+        }
+        for j in current_columns {
+            for k in 0..matrix_a.len() {
+                matrix_a[k].remove(j);
+            }
+            matrix_x.remove(j);
+        }
+
+        if matrix_b.is_empty() {
+            break;
+        }
+        block_id += 1;
+    }
+    (matrix_as, matrix_xs, matrix_bs)
+}
+
+#[test]
+fn chunk_matrix_works() {
+    let mut a = vec![
+        vec![1, 1, 0, 0],
+        vec![0, 0, 1, 1],
+        vec![0, 1, 0, 0],
+        vec![0, 0, 0, 1],
+    ];
+    let mut x = vec![(1, 2), (3, 4), (5, 6), (7, 8)];
+    let mut b = vec![1, 2, 3, 4];
+    let (aa, xx, bb) = chunk_matrix(a, x, b);
+    println!("{:?}", xx);
 }

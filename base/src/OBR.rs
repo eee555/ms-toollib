@@ -2,7 +2,10 @@ use std::cmp::{max, min};
 
 // Optical Cell Recognition
 
-/// 局面光学识别引擎
+/// 局面光学分割引擎。  
+/// - 局限：仅实现了扫雷局面的图片的分割，而不包含识别部分。  
+/// - 原理：使用了索贝尔(Sobel)算子、中值滤波、动态规划求解最短路径、霍夫(Hough)变换等。  
+/// - 注意：这个类用到的魔法数字太多，源码不宜查阅。建议直接看[OBR_board](#OBR_board)这个函数。
 pub struct ImageBoard {
     data_vec: Vec<usize>,
     height: usize,

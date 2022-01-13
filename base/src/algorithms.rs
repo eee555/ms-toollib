@@ -1,10 +1,8 @@
-
 use crate::utils::{
-    cal3BV, cal3BV_exp, cal_table_minenum_enum, cal_table_minenum_recursion, combine, enuOneStep,
-    enum_comb, laymine_op_number, laymine_number, legalize_board, refresh_board, refresh_matrix,
-    refresh_matrixs, sum, unsolvable_structure, BigNumber, C_query, C,
+    cal3BV, cal3BV_exp, cal_table_minenum_enum, cal_table_minenum_recursion, chunk_matrixes,
+    combine, enuOneStep, enum_comb, laymine_number, laymine_op_number, legalize_board,
+    refresh_board, refresh_matrix, refresh_matrixs, unsolvable_structure, BigNumber, C_query, C,
 };
-
 
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::OBR::ImageBoard;
@@ -29,123 +27,174 @@ use tract_onnx::prelude::*;
 
 // 中高级的算法，例如无猜埋雷、判雷引擎、计算概率
 
-
-/// 双集合判雷引擎，除判雷外，还会修改输入的局面，在局面上标是雷（11），但不标非雷（12）
+/// 双集合判雷引擎。
+/// - 输入：3个矩阵、局面。
+/// - 返回：是雷、非雷的格子，在传入的局面上标是雷（11）和非雷（12）。  
+/// - 注意：会维护系数矩阵、格子矩阵和数字矩阵，删、改、分块。
 pub fn solve_minus(
-    MatrixA: &Vec<Vec<i32>>,
-    Matrixx: &Vec<(usize, usize)>,
-    Matrixb: &Vec<i32>,
-    BoardofGame: &mut Vec<Vec<i32>>,
-) -> (Vec<(usize, usize)>, bool) {
-    let mut flag = false;
-    let mut NotMine = vec![];
-    let mut NotMineRel = vec![];
-    let mut IsMineRel = vec![];
-    let mut MatrixColumn = Matrixx.len();
-    let mut MatrixRow = Matrixb.len();
-    if MatrixRow <= 1 {
-        return (NotMine, false);
-    }
-    for i in 1..MatrixRow {
-        for j in 0..i {
-            let mut ADval1 = vec![];
-            let mut ADvaln1 = vec![];
-            let mut FlagAdj = false;
-            for k in 0..MatrixColumn {
-                if MatrixA[i][k] >= 1 && MatrixA[j][k] >= 1 {
-                    FlagAdj = true;
-                    continue;
-                }
-                if MatrixA[i][k] - MatrixA[j][k] == 1 {
-                    ADval1.push(k)
-                } else if MatrixA[i][k] - MatrixA[j][k] == -1 {
-                    ADvaln1.push(k)
-                }
-            }
-            if FlagAdj {
-                let bDval = Matrixb[i] - Matrixb[j];
-                if ADval1.len() as i32 == bDval {
-                    IsMineRel.append(&mut ADval1);
-                    NotMineRel.append(&mut ADvaln1);
-                } else if ADvaln1.len() as i32 == -bDval {
-                    IsMineRel.append(&mut ADvaln1);
-                    NotMineRel.append(&mut ADval1);
-                }
-            }
+    matrix_as: &mut Vec<Vec<Vec<i32>>>,
+    matrix_xs: &mut Vec<Vec<(usize, usize)>>,
+    matrix_bs: &mut Vec<Vec<i32>>,
+    board_of_game: &mut Vec<Vec<i32>>,
+) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
+    let block_num = matrix_bs.len();
+    // let mut flag = false;
+    let mut not_mine = vec![];
+    let mut is_mine = vec![];
+    let mut remove_blocks_id = vec![];
+    for b in (0..block_num).rev() {
+        let mut not_mine_rel = vec![];
+        let mut is_mine_rel = vec![];
+        let mut matrixColumn = matrix_xs[b].len();
+        let mut matrixRow = matrix_bs[b].len();
+        if matrixRow <= 1 {
+            continue; // 整块只有一个数字，比如角落的1
         }
-    }
-    if IsMineRel.len() > 0 || NotMineRel.len() > 0 {
-        flag = true;
-    }
-    IsMineRel.dedup();
-    NotMineRel.dedup();
-    for i in 0..NotMineRel.len() {
-        NotMine.push(Matrixx[NotMineRel[i]]);
-    }
-    for i in IsMineRel {
-        BoardofGame[Matrixx[i].0][Matrixx[i].1] = 11;
-    }
-    (NotMine, flag)
-}
-
-/// 单集合判雷引擎，除判雷外，会在局面上标是雷（11），但不标非雷（12）
-pub fn solve_direct(
-    MatrixA: &mut Vec<Vec<i32>>,
-    Matrixx: &mut Vec<(usize, usize)>,
-    Matrixb: &mut Vec<i32>,
-    BoardofGame: &mut Vec<Vec<i32>>,
-) -> (Vec<(usize, usize)>, bool) {
-    // 这三个矩阵被消费掉了比较可惜，待优化
-    let mut flag = false;
-    let mut NotMine = vec![];
-    let mut MatrixColumn = Matrixx.len();
-    let mut MatrixRow = Matrixb.len();
-    for i in (0..MatrixRow).rev() {
-        if sum(&MatrixA[i]) == Matrixb[i] {
-            flag = true;
-            for k in (0..MatrixColumn).rev() {
-                if MatrixA[i][k] == 1 {
-                    BoardofGame[Matrixx[k].0][Matrixx[k].1] = 11;
-                    Matrixx.remove(k);
-                    for t in 0..MatrixRow {
-                        if MatrixA[t][k] == 0 {
-                            MatrixA[t].remove(k);
-                        } else {
-                            MatrixA[t].remove(k);
-                            Matrixb[t] -= 1;
-                        }
+        for i in 1..matrixRow {
+            for j in 0..i {
+                let mut ADval1 = vec![];
+                let mut ADvaln1 = vec![];
+                let mut FlagAdj = false;
+                for k in 0..matrixColumn {
+                    if matrix_as[b][i][k] >= 1 && matrix_as[b][j][k] >= 1 {
+                        FlagAdj = true;
+                        continue;
                     }
-                    MatrixColumn -= 1;
+                    if matrix_as[b][i][k] - matrix_as[b][j][k] == 1 {
+                        ADval1.push(k)
+                    } else if matrix_as[b][i][k] - matrix_as[b][j][k] == -1 {
+                        ADvaln1.push(k)
+                    }
+                }
+                if FlagAdj {
+                    let bDval = matrix_bs[b][i] - matrix_bs[b][j];
+                    if ADval1.len() as i32 == bDval {
+                        is_mine_rel.append(&mut ADval1);
+                        not_mine_rel.append(&mut ADvaln1);
+                    } else if ADvaln1.len() as i32 == -bDval {
+                        is_mine_rel.append(&mut ADvaln1);
+                        not_mine_rel.append(&mut ADval1);
+                    }
                 }
             }
-            MatrixA.remove(i);
-            Matrixb.remove(i);
-            MatrixRow -= 1;
         }
-    }
-    for i in 0..MatrixRow {
-        if Matrixb[i] == 0 {
-            flag = true;
-            for k in 0..MatrixColumn {
-                if MatrixA[i][k] == 1 {
-                    NotMine.push(Matrixx[k]);
-                }
+        is_mine_rel.sort();
+        is_mine_rel.dedup();
+        not_mine_rel.sort();
+        not_mine_rel.dedup();
+        for i in &not_mine_rel {
+            not_mine.push(matrix_xs[b][*i]);
+            board_of_game[matrix_xs[b][*i].0][matrix_xs[b][*i].1] = 12;
+        }
+        for i in &is_mine_rel {
+            is_mine.push(matrix_xs[b][*i]);
+            board_of_game[matrix_xs[b][*i].0][matrix_xs[b][*i].1] = 11;
+            for j in 0..matrix_as[b].len() {
+                matrix_bs[b][j] -= matrix_as[b][j][*i];
             }
         }
+        let mut del_id = not_mine_rel;
+        del_id.append(&mut is_mine_rel);
+        del_id.sort_by(|a, b| b.cmp(a));
+        del_id.dedup();
+        for i in del_id {
+            matrix_xs[b].remove(i);
+            for jj in 0..matrix_as[b].len() {
+                matrix_as[b][jj].remove(i);
+            }
+        }
+        if matrix_xs[b].is_empty() {
+            remove_blocks_id.push(b);
+        }
     }
-    NotMine.dedup(); // 去重
-                     // for i in &NotMine {
-                     //     BoardofGame[i.0][i.1] = 12;
-                     // }
-    (NotMine, flag)
+
+    for b in remove_blocks_id {
+        matrix_as.remove(b);
+        matrix_bs.remove(b);
+        matrix_xs.remove(b);
+    }
+    let (mut not, mut is) = solve_direct(
+        matrix_as,
+        matrix_xs,
+        matrix_bs,
+        board_of_game,
+    ); // 没错，双集合判雷的最后一步是用单集合再过一轮。理由：（1）这样才不会报错（2）单集合复杂度很低，不费事
+    not_mine.append(&mut not);
+    is_mine.append(&mut is);
+    chunk_matrixes(matrix_as, matrix_xs, matrix_bs);
+    (not_mine, is_mine)
 }
 
-/// 输入局面、未被标出的雷数  
-/// 局面中可以标雷（11），但必须全部标对  
-/// 未知雷数 = 总雷数 - 已经标出的雷  
-/// 若超出枚举长度，返回空向量  
-/// 返回所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数的范围  
-/// 若没有内部未知区域，返回NaN
+/// 单集合判雷引擎。
+/// - 输入：3个矩阵、局面。
+/// - 返回：是雷、非雷的格子，在传入的局面上标是雷（11）和非雷（12）。  
+/// - 注意：会维护系数矩阵、格子矩阵和数字矩阵，删、改、分块。
+pub fn solve_direct(
+    matrix_as: &mut Vec<Vec<Vec<i32>>>,
+    matrix_xs: &mut Vec<Vec<(usize, usize)>>,
+    matrix_bs: &mut Vec<Vec<i32>>,
+    board_of_game: &mut Vec<Vec<i32>>,
+) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
+    let mut is_mine = vec![];
+    let mut not_mine = vec![];
+
+    let block_num = matrix_bs.len();
+    for b in (0..block_num).rev() {
+        let mut matrixColumn = matrix_xs[b].len();
+        let mut matrixRow = matrix_bs[b].len();
+        for i in (0..matrixRow).rev() {
+            if matrix_as[b][i].iter().sum::<i32>() == matrix_bs[b][i] {
+                for k in (0..matrixColumn).rev() {
+                    if matrix_as[b][i][k] >= 1 {
+                        is_mine.push((matrix_xs[b][k].0, matrix_xs[b][k].1));
+                        board_of_game[matrix_xs[b][k].0][matrix_xs[b][k].1] = 11;
+                        matrix_xs[b].remove(k);
+                        for t in 0..matrixRow {
+                            matrix_bs[b][t] -= matrix_as[b][t][k];
+                            matrix_as[b][t].remove(k);
+                        }
+                        matrixColumn -= 1;
+                    }
+                }
+                matrix_as[b].remove(i);
+                matrix_bs[b].remove(i);
+                matrixRow -= 1;
+            }
+        }
+        for i in (0..matrixRow).rev() {
+            if matrix_bs[b][i] == 0 {
+                for k in (0..matrixColumn).rev() {
+                    if matrix_as[b][i][k] >= 1 {
+                        not_mine.push(matrix_xs[b][k]);
+                        board_of_game[matrix_xs[b][k].0][matrix_xs[b][k].1] = 12;
+                        matrix_xs[b].remove(k);
+                        for t in 0..matrixRow {
+                            matrix_as[b][t].remove(k);
+                        }
+                        matrixColumn -= 1;
+                    }
+                }
+                matrix_as[b].remove(i);
+                matrix_bs[b].remove(i);
+                matrixRow -= 1;
+            }
+        }
+        if matrix_bs[b].is_empty() {
+            matrix_as.remove(b);
+            matrix_bs.remove(b);
+            matrix_xs.remove(b);
+        }
+    }
+    chunk_matrixes(matrix_as, matrix_xs, matrix_bs);
+    (not_mine, is_mine)
+}
+
+/// 游戏局面概率计算引擎。  
+/// - 输入：局面、未被标出的雷数。未被标出的雷数大于等于1时，理解成实际数量；小于1时理解为比例。  
+/// - 注意：局面中可以标雷（11）和非类（12），但必须全部标对。  
+/// - 注意：若超出枚举长度，返回空向量。  
+/// - 返回：所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数（未知雷数 = 总雷数 - 已经标出的雷）的范围。  
+/// - 注意：若没有内部未知区域，返回NaN。
 pub fn cal_possibility(
     board_of_game: &Vec<Vec<i32>>,
     mut mine_num: f64,
@@ -314,17 +363,58 @@ pub fn cal_possibility(
     ))
 }
 
-/// 计算局面中各位置是雷的概率，按照所在的位置返回
+/// 计算局面中各位置是雷的概率，按照所在的位置返回。
+/// # Example
+/// - 用rust调用时的示例：
+/// ```rust
+/// let mut game_board = vec![
+///     vec![10, 10, 1, 1, 10, 1, 0, 0],
+///     vec![10, 10, 1, 10, 10, 3, 2, 1],
+///     vec![10, 10, 10, 10, 10, 10, 10, 10],
+///     vec![10, 10, 10, 10, 10, 10, 10, 10],
+///     vec![10, 10, 10, 10, 10, 10, 10, 10],
+///     vec![10, 10, 10, 10, 2, 10, 10, 10],
+///     vec![10, 10, 10, 10, 10, 10, 10, 10],
+///     vec![10, 10, 10, 10, 10, 10, 10, 10],
+/// ];
+/// let ans = cal_possibility(&game_board, 10.0);
+/// print!("设置雷数为10，概率计算引擎的结果为：{:?}", ans);
+/// let ans = cal_possibility(&game_board, 0.15625);
+/// print!("设置雷的比例为15.625%，概率计算引擎的结果为：{:?}", ans);
+/// // 对局面预标记，以加速计算
+/// mark_board(&mut game_board);
+/// let ans = cal_possibility_onboard(&game_board, 10.0);
+/// print!("设置雷的比例为10，与局面位置对应的概率结果为：{:?}", ans); 
+/// ```
+/// - 用Python调用时的示例：
+/// ```python
+/// import ms_toollib as ms
+///
+/// game_board = [
+///     [10, 10, 1, 1, 10, 1, 0, 0],
+///     [10, 10, 1, 10, 10, 3, 2, 1],
+///     [10, 10, 10, 10, 10, 10, 10, 10],
+///     [10, 10, 10, 10, 10, 10, 10, 10],
+///     [10, 10, 10, 10, 10, 10, 10, 10],
+///     [10, 10, 10, 10, 2, 10, 10, 10],
+///     [10, 10, 10, 10, 10, 10, 10, 10],
+///     [10, 10, 10, 10, 10, 10, 10, 10],
+///     ];
+/// ans = ms.cal_possibility(game_board, 10);
+/// print("设置雷数为10，概率计算引擎的结果为：", ans);
+/// ans = ms.cal_possibility(game_board, 0.15625);
+/// print("设置雷的比例为15.625%，概率计算引擎的结果为：", ans);
+/// # 对局面预标记，以加速计算
+/// ms.mark_board(game_board);
+/// ans = ms.cal_possibility_onboard(game_board, 10.0);
+/// print("设置雷的比例为10，与局面位置对应的概率结果为：", ans);
+/// ```
 pub fn cal_possibility_onboard(
     board_of_game: &Vec<Vec<i32>>,
     mine_num: f64,
 ) -> Result<(Vec<Vec<f64>>, [usize; 3]), usize> {
     let mut p = vec![vec![-1.0; board_of_game[0].len()]; board_of_game.len()];
-    let pp;
-    match cal_possibility(&board_of_game, mine_num) {
-        Ok(ppp) => pp = ppp,
-        Err(e) => return Err(e),
-    }
+    let pp = cal_possibility(&board_of_game, mine_num)?;
     for i in pp.0 {
         p[i.0 .0][i.0 .1] = i.1;
     }
@@ -336,15 +426,17 @@ pub fn cal_possibility_onboard(
                 p[r][c] = pp.1;
             } else if board_of_game[r][c] == 12 {
                 p[r][c] = 0.0;
+            } else if p[r][c] < -0.5 {
+                p[r][c] = 0.0;
             }
         }
     }
     Ok((p, pp.2))
 }
 
-/// 计算单点开空概率  
-/// 输入局面、未被标出的雷数、坐标  
-/// 返回坐标处开空的概率  
+/// 计算开空概率算法。  
+/// - 输入：局面、未被标出的雷数、坐标（可以同时输入多个）。  
+/// - 返回：坐标处开空的概率。  
 /// # Example
 /// ```
 /// let game_board = vec![
@@ -397,12 +489,12 @@ pub fn cal_is_op_possibility_cells(
     poss
 }
 
-/// 埋雷，使得起手位置必为空  
-/// 输入行数、列数、雷数、起手位置行数、起手位置列数、最小3BV、最大3BV、最大尝试次数、模式（保留）  
-/// 输出局面和参数，分别为：是否满足3BV上下限、3BV、尝试次数  
+/// 埋雷，使得起手位置必为空。  
+/// - 输入：行数、列数、雷数、起手位置行数、起手位置列数、最小3BV、最大3BV、最大尝试次数、模式（保留）。  
+/// - 输出：局面和参数，分别为：是否满足3BV上下限、3BV、尝试次数。  
 /// # Example
 /// ```
-/// layMineOp(16, 30, 99, 0, 0, 100, 381, 10000, 0)
+/// laymine_op(16, 30, 99, 0, 0, 100, 381, 10000, 0)
 /// ```
 pub fn laymine_op(
     row: usize,
@@ -436,34 +528,57 @@ pub fn laymine_op(
     (Board, Parameters)
 }
 
-/// 枚举法判雷引擎  
-/// 输入分块好的矩阵、局面、枚举长度限制  
-/// 输出不是雷的位置  
-/// 注意：不修改输入进来的局面，即不帮助标雷
+/// 枚举法判雷引擎。  
+/// - 输入：分块好的矩阵、局面、枚举长度限制。  
+/// - 输出：是雷、不是雷的位置。  
+/// # Example
+/// ```rust
+/// let mut game_board = vec![
+///     vec![0, 0, 1, 10, 10, 10, 10, 10],
+///     vec![0, 0, 2, 10, 10, 10, 10, 10],
+///     vec![1, 1, 3, 11, 10, 10, 10, 10],
+///     vec![10, 10, 4, 10, 10, 10, 10, 10],
+///     vec![10, 10, 10, 10, 10, 10, 10, 10],
+///     vec![10, 10, 10, 10, 10, 10, 10, 10],
+///     vec![10, 10, 10, 10, 10, 10, 10, 10],
+///     vec![10, 10, 10, 10, 10, 10, 10, 10],
+/// ];
+/// let (matrix_as, matrix_xs, matrix_bs, _, _) = refresh_matrixs(&game_board);
+/// let ans = solve_enumerate(&matrix_as, &matrix_xs, &matrix_bs, 30);
+/// print!("{:?}", ans);
+/// ```
+/// - 注意：不修改输入进来的局面，即不帮助标雷（这个设计后续可能修改）；也不维护3个矩阵。因为枚举引擎是最后使用的  
+/// - 注意：超出枚举长度限制是未定义的行为，算法不一定会得到足够多的结果  
 pub fn solve_enumerate(
     matrix_as: &Vec<Vec<Vec<i32>>>,
     matrix_xs: &Vec<Vec<(usize, usize)>>,
     matrix_bs: &Vec<Vec<i32>>,
-    board_of_game: &Vec<Vec<i32>>,
     enuLimit: usize,
-) -> (Vec<(usize, usize)>, bool) {
-    let mut flag = false;
-    let mut NotMine = vec![];
-    let block_num = matrix_xs.len();
-    if block_num > enuLimit {
-        return (vec![], false);
+) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
+    if matrix_bs.is_empty() {
+        return (vec![], vec![]);
     }
+    let mut not_mine = vec![];
+    let mut is_mine = vec![];
+    let block_num = matrix_xs.len();
 
     let mut comb_relp_s = vec![];
     let mut matrixA_squeeze_s: Vec<Vec<Vec<i32>>> = vec![];
     let mut matrixx_squeeze_s: Vec<Vec<(usize, usize)>> = vec![];
     for i in 0..block_num {
+        if matrix_xs[i].len() > enuLimit {
+            return (not_mine, is_mine);
+        }
         let (matrixA_squeeze, matrixx_squeeze, combination_relationship) =
             combine(&matrix_as[i], &matrix_xs[i]);
         comb_relp_s.push(combination_relationship);
         matrixA_squeeze_s.push(matrixA_squeeze);
         matrixx_squeeze_s.push(matrixx_squeeze);
     }
+    // println!("matrix_as{:?}", matrix_as);
+    // println!("matrixA_squeeze_s{:?}", matrixA_squeeze_s);
+    // println!("matrixx_squeeze_s{:?}", matrixx_squeeze_s);
+    // println!("matrix_bs{:?}", matrix_bs);
     for i in 0..block_num {
         let (table_minenum_i, table_cell_minenum_i) = cal_table_minenum_recursion(
             &matrixA_squeeze_s[i],
@@ -472,18 +587,23 @@ pub fn solve_enumerate(
             &comb_relp_s[i],
         )
         .unwrap();
-        'outer: for jj in 0..table_cell_minenum_i[0].len() {
+        for jj in 0..table_cell_minenum_i[0].len() {
+            let mut s_num = 0; // 该合成格子的总情况数
             for ii in 0..table_cell_minenum_i.len() {
-                if table_cell_minenum_i[ii][jj] > 0 {
-                    continue 'outer;
-                }
+                s_num += table_cell_minenum_i[ii][jj];
             }
-            for kk in &comb_relp_s[i][jj] {
-                NotMine.push(matrix_xs[i][*kk]);
+            if s_num == 0 {
+                for kk in &comb_relp_s[i][jj] {
+                    not_mine.push(matrix_xs[i][*kk]);
+                }
+            } else if s_num == table_minenum_i[1].iter().sum::<usize>() * comb_relp_s[i][jj].len() {
+                for kk in &comb_relp_s[i][jj] {
+                    is_mine.push(matrix_xs[i][*kk]);
+                }
             }
         }
     }
-    (NotMine, flag)
+    (not_mine, is_mine)
 }
 
 // 判断当前是否获胜
@@ -502,8 +622,9 @@ fn isVictory(BoardofGame: &Vec<Vec<i32>>, Board: &Vec<Vec<i32>>) -> bool {
     return true;
 }
 
-/// 从指定位置开始扫，判断局面是否无猜  
-/// 注意：周围一圈都是雷，那么若中间是雷不算猜，若中间不是雷算猜
+/// <span id="is_solvable">从指定位置开始扫，判断局面是否无猜。  
+/// - 注意：周围一圈都是雷，那么若中间是雷不算猜，若中间不是雷算有猜。  
+/// - 注意：不考虑剩余雷数。
 pub fn is_solvable(Board: &Vec<Vec<i32>>, x0: usize, y0: usize, enuLimit: usize) -> bool {
     if unsolvable_structure(&Board) {
         //若包含不可判雷结构，则不是无猜
@@ -519,45 +640,47 @@ pub fn is_solvable(Board: &Vec<Vec<i32>>, x0: usize, y0: usize, enuLimit: usize)
     if isVictory(&BoardofGame, &Board) {
         return true; // 暂且认为点一下就扫开也是可以的
     }
-    let mut NotMine;
-    let mut flag;
+    let mut not_mine;
     loop {
-        let (mut MatrixA, mut Matrixx, mut Matrixb) = refresh_matrix(&BoardofGame);
-        let ans = solve_direct(&mut MatrixA, &mut Matrixx, &mut Matrixb, &mut BoardofGame);
-        NotMine = ans.0;
-        flag = ans.1;
-        if !flag {
-            let ans = solve_minus(&MatrixA, &Matrixx, &Matrixb, &mut BoardofGame);
-            NotMine = ans.0;
-            flag = ans.1;
-            if !flag {
-                let (mut Matrix_as, mut Matrix_xs, mut Matrix_bs, _, _) =
-                    refresh_matrixs(&BoardofGame);
-                // print!("BoardofGame: {:?}", BoardofGame);
+        let (mut matrix_as, mut matrix_xs, mut matrix_bs, _, _) = refresh_matrixs(&BoardofGame);
+        let ans = solve_direct(
+            &mut matrix_as,
+            &mut matrix_xs,
+            &mut matrix_bs,
+            &mut BoardofGame,
+        );
+        not_mine = ans.0;
+        if !(not_mine.is_empty() && ans.1.is_empty()) {
+            let ans = solve_minus(
+                &mut matrix_as,
+                &mut matrix_xs,
+                &mut matrix_bs,
+                &mut BoardofGame,
+            );
+            not_mine = ans.0;
+            if !(not_mine.is_empty() && ans.1.is_empty()) {
                 let ans = solve_enumerate(
-                    &Matrix_as,
-                    &Matrix_xs,
-                    &Matrix_bs,
-                    &mut BoardofGame,
+                    &matrix_as,
+                    &matrix_xs,
+                    &matrix_bs,
                     enuLimit,
                 );
-                NotMine = ans.0;
-                flag = ans.1;
-                if !flag {
+                if !(ans.0.is_empty() && ans.1.is_empty()) {
                     return false;
                 }
             }
         }
-        refresh_board(&Board, &mut BoardofGame, NotMine);
+        refresh_board(&Board, &mut BoardofGame, not_mine);
         if isVictory(&BoardofGame, &Board) {
             return true;
         }
     }
 }
 
-/// 删选法多（10）线程无猜埋雷  
-/// 3BV下限、上限，最大尝试次数，返回是否成功  
-/// 若不成功返回最后生成的局面，此时则不一定无猜
+/// 删选法多（10）线程无猜埋雷。  
+/// - 输入：3BV下限、上限，最大尝试次数。  
+/// - 返回:是否成功。  
+/// - 注意：若不成功返回最后生成的局面，此时则不一定无猜。
 #[cfg(any(feature = "py", feature = "rs"))]
 pub fn laymine_solvable_thread(
     row: usize,
@@ -636,9 +759,10 @@ pub fn laymine_solvable_thread(
     (game_board, parameters)
 }
 
-/// 删选法单线程无猜埋雷  
-/// 3BV下限、上限，最大尝试次数，返回是否成功  
-/// 若不成功返回最后生成的局面，此时则不一定无猜
+/// 删选法单线程无猜埋雷。  
+/// - 输入：高、宽、雷数、起手行数、起手列数、3BV下限、上限、最大尝试次数、最大枚举长度。  
+/// - 返回：是否成功。  
+/// - 注意：若不成功返回最后生成的局面，此时则不一定无猜。
 pub fn laymine_solvable(
     row: usize,
     column: usize,
@@ -713,11 +837,21 @@ pub fn laymine_solvable_adjust(
     (vec![], [0, 0, 0])
 }
 
-/// 标准埋雷，参数依次是行、列、雷数、起手位置的第几行、第几列  
-/// 适用于游戏的埋雷算法  
-/// 起手不开空，必不为雷  
-/// 返回二维列表，0~8代表数字，-1代表雷  
-/// method = 0筛选算法；1调整算法（保留）
+/// 适用于游戏的标准埋雷。  
+/// - 输入：依次为行、列、雷数、起手位置的第几行、第几列  
+/// - 共识：标准埋雷规则为起手不一定开空，但必不为雷  
+/// - 返回：二维可变长的向量，用0~8代表数字，-1代表雷  
+/// method = 0筛选算法；1调整算法（目前无效并保留）  
+/// # Example
+/// - 用rust调用时的示例：
+/// ```rust
+/// laymine(16, 30, 99, 0, 0, 100, 381, 1000, "");
+/// ```
+/// - 用python调用时的示例：
+/// ```python
+/// import ms_toollib as ms
+/// ms.laymine(16, 30, 99, 0, 0, 100, 381, 1000, '');
+/// ```
 pub fn laymine(
     row: usize,
     column: usize,
@@ -729,7 +863,6 @@ pub fn laymine(
     MaxTimes: usize,
     method: usize,
 ) -> (Vec<Vec<i32>>, Vec<usize>) {
-    
     let mut times = 0;
     let mut Parameters = vec![];
     let mut Num3BV = 0;
@@ -855,9 +988,11 @@ fn OBR_cell(
     }
 }
 
-/// 输入列向量形式的三通道的像素数据，图像的高度、宽度；  
-/// 以下提供一段用python调用时的demo  
+/// <span id="OBR_board">光学局面识别引擎。  
+/// - 输入：依次为列向量形式的三通道的像素数据、图像的高度、宽度。  
+/// - 以下提供一段用python调用时的示例：  
 /// ```python
+/// # pip install ms_toollib --upgrade
 /// import ms_toollib
 /// import matplotlib.image as mpimg
 /// import numpy as np
@@ -866,17 +1001,17 @@ fn OBR_cell(
 /// (height, width) = lena.shape[:2]
 /// lena = np.concatenate((lena, 255.0 * np.ones((height, width, 1))), 2)
 /// lena = (np.reshape(lena, -1) * 255).astype(np.uint32)
-/// board = ms_toollib.py_OBR_board(lena, height, width)
+/// board = ms_toollib.OBR_board(lena, height, width)
 /// print(np.array(board))# 打印识别出的局面
-/// poss = ms_toollib.py_cal_possibility(board, 99)
+/// poss = ms_toollib.cal_possibility(board, 99)
 /// print(poss)# 用雷的总数计算概率
-/// poss_onboard = ms_toollib.py_cal_possibility_onboard(board, 99)
+/// poss_onboard = ms_toollib.cal_possibility_onboard(board, 99)
 /// print(poss_onboard)# 用雷的总数计算概率，输出局面对应的位置
-/// poss_ = ms_toollib.py_cal_possibility_onboard(board, 0.20625)
+/// poss_ = ms_toollib.cal_possibility_onboard(board, 0.20625)
 /// print(poss_)# 用雷的密度计算概率
 /// ```
-/// 注意：必须配合"params.onnx"参数文件调用  
-/// 注意：由于利用了神经网络技术，可能发生识别错误，此时输出是不一定合法的局面
+/// 注意：必须配合“params.onnx”参数文件调用。  
+/// 注意：由于利用了神经网络技术，可能发生识别错误，此时输出是不一定合法的局面。
 #[cfg(any(feature = "py", feature = "rs"))]
 pub fn OBR_board(
     data_vec: Vec<usize>,
@@ -918,65 +1053,21 @@ pub fn OBR_board(
 /// 对局面用单集合、双集合判雷引擎，快速标雷、标非雷，以供概率计算引擎处理  
 /// 相当于一种预处理，即先标出容易计算的
 pub fn mark_board(board: &mut Vec<Vec<i32>>) {
-    
-    let (mut matrix_a, mut matrix_x, mut matrix_b) = refresh_matrix(&board);
-    let ans = solve_direct(&mut matrix_a, &mut matrix_x, &mut matrix_b, board);
-    let not_mine = ans.0;
-    for i in not_mine {
-        board[i.0][i.1] = 12;
-    }
-    let (matrix_a, matrix_x, matrix_b) = refresh_matrix(&board);
-    let ans = solve_minus(&matrix_a, &matrix_x, &matrix_b, board);
-    let not_mine = ans.0;
-    for i in not_mine {
-        board[i.0][i.1] = 12;
-    }
+    let (mut matrix_as, mut matrix_xs, mut matrix_bs, _, _) = refresh_matrixs(&board);
+    let ans = solve_direct(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, board);
+    let ans = solve_minus(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, board);
 }
 
 /// 求出所有非雷的位置
-pub fn solve_all_notmine_on_board(board_: &Vec<Vec<i32>>, enuLimit: usize) -> Vec<(usize, usize)> {
+pub fn get_all_not_mine_on_board(board_: &Vec<Vec<i32>>, enuLimit: usize) -> Vec<(usize, usize)> {
     let mut board = board_.clone();
-    let (mut matrix_a, mut matrix_x, mut matrix_b) = refresh_matrix(&board);
-    let ans = solve_direct(&mut matrix_a, &mut matrix_x, &mut matrix_b, &mut board);
+    let (mut matrix_as, mut matrix_xs, mut matrix_bs, _, _) = refresh_matrixs(&board);
+    let mut ans = solve_direct(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, &mut board);
     let mut not_mine = vec![];
-    for i in ans.0 {
-        board[i.0][i.1] = 12;
-        not_mine.push(i);
-    }
-    let (matrix_a, matrix_x, matrix_b) = refresh_matrix(&board);
-    let ans = solve_minus(&matrix_a, &matrix_x, &matrix_b, &mut board);
-    for i in ans.0 {
-        board[i.0][i.1] = 12;
-        not_mine.push(i);
-    }
-    let (matrix_as, matrix_xs, matrix_bs, _, _) = refresh_matrixs(&board);
-    let ans = solve_enumerate(&matrix_as, &matrix_xs, &matrix_bs, &mut board, enuLimit);
-    for i in ans.0 {
-        board[i.0][i.1] = 12;
-        not_mine.push(i);
-    }
+    not_mine.append(&mut ans.0);
+    let mut ans = solve_minus(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, &mut board);
+    not_mine.append(&mut ans.0);
+    let mut ans = solve_enumerate(&matrix_as, &matrix_xs, &matrix_bs, enuLimit);
+    not_mine.append(&mut ans.0);
     not_mine
 }
-
-// pub fn solve_all_notmine(matrix_a: Vec<Vec<i32>>, matrix_x: Vec<(usize, usize)>, matrix_b: Vec<i32>, enuLimit: usize) ->Vec<(usize, usize)> {
-// 依据方程求出所有是雷和非雷的位置
-//     let ans = SolveDirect(&mut matrix_a, &mut matrix_x, &mut matrix_b, &mut board);
-//     let mut not_mine = vec![];
-//     for i in ans.0 {
-//         board[i.0][i.1] = 12;
-//         not_mine.push(i);
-//     }
-//     let (matrix_a, matrix_x, matrix_b) = refresh_matrix(&board);
-//     let ans = SolveMinus(&matrix_a, &matrix_x, &matrix_b, &mut board);
-//     for i in ans.0 {
-//         board[i.0][i.1] = 12;
-//         not_mine.push(i);
-//     }
-//     let (matrix_as, matrix_xs, matrix_bs, _, _) = refresh_matrixs(&board);
-//     let ans = SolveEnumerate(&matrix_as, &matrix_xs, &matrix_bs, &mut board, enuLimit);
-//     for i in ans.0 {
-//         board[i.0][i.1] = 12;
-//         not_mine.push(i);
-//     }
-//     not_mine
-// }

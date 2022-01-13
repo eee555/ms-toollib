@@ -202,6 +202,8 @@ pub fn laymine_solvable_thread(
     ))
 }
 
+mark_board
+
 #[pyfunction]
 fn cal_possibility(
     board_of_game: Vec<Vec<i32>>,

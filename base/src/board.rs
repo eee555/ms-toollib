@@ -1,9 +1,9 @@
-use crate::algorithms::{
+﻿use crate::algorithms::{
     cal_possibility_onboard, mark_board, solve_direct, solve_enumerate, solve_minus,
 };
 use crate::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
-    analyse_vision_transfer,
+    analyse_vision_transfer, analyse_survive_poss
 };
 use crate::utils::{refresh_board, refresh_matrixs};
 use std::cmp::{max, min};
@@ -15,8 +15,7 @@ pub struct MinesweeperBoard<'a> {
     board: &'a Vec<Vec<i32>>,
     /// 局面
     pub game_board: Vec<Vec<i32>>,
-    // 记录哪些雷曾经被标过，则再标这些雷不记为ce
-    flagedList: Vec<(usize, usize)>, 
+    flagedList: Vec<(usize, usize)>, // 记录哪些雷曾经被标过，则再标这些雷不记为ce
     /// 左键数
     pub left: usize,
     /// 右键数
@@ -169,6 +168,10 @@ impl MinesweeperBoard<'_> {
         true
     }
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
+        if pos.0 == self.row && pos.1 == self.column {
+            self.mouse_state = MouseState::UpUp;
+            return Ok(0u8)
+        }
         match e {
             "lc" => match self.mouse_state {
                 MouseState::UpUp => self.mouse_state = MouseState::DownUp,
@@ -323,7 +326,6 @@ trait BaseParser {
 
 /// avf录像解析器。  
 /// - 功能：解析avf格式的录像，有详细分析录像的方法。  
-/// - 注意：不是十分成熟，目前还有少量录像解析失败。
 pub struct AvfVideo<'a> {
     file_name: &'a str,
     width: usize,
@@ -611,6 +613,7 @@ impl AvfVideo<'_> {
                 "needless_guess" => analyse_needless_guess(self),
                 "mouse_trace" => analyse_mouse_trace(self),
                 "vision_transfer" => analyse_vision_transfer(self),
+                "survive_poss" => analyse_survive_poss(self),
                 _ => continue,
             };
         }
@@ -618,7 +621,7 @@ impl AvfVideo<'_> {
     pub fn print_event(&self) {
         for e in &self.events {
             if e.mouse != "mv" {
-                println!("操作类型为{:?}, x = {:?}, y = {:?}", e.mouse, e.x, e.y);
+                println!("time = {:?}, mouse = {:?}, x = {:?}, y = {:?}", e.time, e.mouse, e.x, e.y);
                 e.posteriori_game_board
                     .game_board
                     .iter()

@@ -259,3 +259,28 @@ pub fn analyse_vision_transfer(video: &mut AvfVideo) {
         }
     }
 }
+
+pub fn analyse_survive_poss(video: &mut AvfVideo) {
+    // 计算扫开这局的后验开率
+    let mut s_poss = 1.0;
+    let mut message = "".to_string();
+    let mut click_last_id = 0;
+    for ide in 2..video.events.len() {
+        if video.events[ide].mouse == "lr" && video.events[ide].useful_level > 0 {
+            let l_x = (video.events[ide].y / 16) as usize;
+            let l_y = (video.events[ide].x / 16) as usize;
+            let p = video.events[click_last_id].posteriori_game_board.get_poss()[l_x][l_y];
+            if p > 0.0 && p < 1.0 {
+                s_poss *= 1.0 - p;
+                message.push_str(&format!("{:.3} * ", 1.0 - p));
+                println!("{:?} ==> {:?}", video.events[ide].time, 1.0 - p);
+            }
+            click_last_id = ide;
+        }
+    }
+    message.pop();
+    message.pop();
+    message.push_str("= ");
+    message.push_str(&format!("{:.6}", s_poss));
+    video.events.last_mut().unwrap().comments = message;
+}

@@ -5,7 +5,7 @@ use pyo3::class::basic::PyObjectProtocol;
 use std::cmp::{max, min};
 
 use ms_toollib as ms_toollib_rs;
-use ms_toollib::refreshBoard as refresh_board_;
+// use ms_toollib::refreshBoard as refresh_board_;
 
 
 // pip install maturin
@@ -56,13 +56,13 @@ fn cal3BV(board: Vec<Vec<i32>>) -> PyResult<usize> {
 
 #[pyfunction]
 fn solve_minus(
-    mut MatrixA: Vec<Vec<i32>>,
-    mut Matrixx: Vec<(usize, usize)>,
-    mut Matrixb: Vec<i32>,
+    mut matrix_as: Vec<Vec<Vec<i32>>>,
+    mut matrix_xs: Vec<Vec<(usize, usize)>>,
+    mut matrix_bs: Vec<Vec<i32>>,
     mut board_of_game: Vec<Vec<i32>>,
-) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, bool)> {
-    let (notMine, flag) = ms_toollib_rs::solve_minus(&mut MatrixA, &mut Matrixx, &mut Matrixb, &mut board_of_game);
-    Ok((board_of_game, notMine, flag))
+) -> PyResult<(Vec<Vec<Vec<i32>>>, Vec<Vec<(usize, usize)>>, Vec<Vec<i32>>, Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<(usize, usize)>)> {
+    let (not_mine, is_mine) = ms_toollib_rs::solve_minus(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, &mut board_of_game);
+    Ok((matrix_as, matrix_xs, matrix_bs, board_of_game, not_mine, is_mine))
 }
 
 #[pyfunction]
@@ -109,20 +109,10 @@ fn solve_enumerate(
         &Matrix_as,
         &Matrix_xs,
         &Matrix_bs,
-        &mut board_of_game,
         enuLimit,
     );
     Ok((board_of_game, notMine, flag))
 }
-
-// #[pyfunction]
-// fn py_enuOneStep(
-//     AllTable: Vec<Vec<usize>>,
-//     TableId: Vec<usize>,
-//     b: i32,
-// ) -> PyResult<Vec<Vec<usize>>> {
-//     Ok(ms_toollib_rs::enuone_step(AllTable, TableId, b))
-// }
 
 #[pyfunction]
 fn unsolvable_structure(boardCheck: Vec<Vec<i32>>) -> PyResult<bool> {
@@ -202,8 +192,6 @@ pub fn laymine_solvable_thread(
     ))
 }
 
-mark_board
-
 #[pyfunction]
 fn cal_possibility(
     board_of_game: Vec<Vec<i32>>,
@@ -247,6 +235,9 @@ fn OBR_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<
         Err(e) => Ok(vec![vec![200]]),
     }
 }
+
+// #[pyclass]
+// ms_toollib_rs::AvfVideo;
 
 #[pyclass]
 struct Minesweeperboard {

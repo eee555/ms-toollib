@@ -12,8 +12,8 @@ use std::fs;
 /// 局面状态机，分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。
 /// - 局限：目前不能计算path。  
 /// - 注意：ce的计算与扫雷网是不同的，本工具箱中，重复标同一个雷只算一个ce，即反复标雷、取消标雷不算作ce。
-pub struct MinesweeperBoard<'a> {
-    board: &'a Vec<Vec<i32>>,
+pub struct MinesweeperBoard {
+    board: Vec<Vec<i32>>,
     /// 局面
     pub game_board: Vec<Vec<i32>>,
     flagedList: Vec<(usize, usize)>, // 记录哪些雷曾经被标过，则再标这些雷不记为ce
@@ -34,8 +34,8 @@ pub struct MinesweeperBoard<'a> {
     mouse_state: MouseState,
 }
 
-impl MinesweeperBoard<'_> {
-    pub fn new(board: &Vec<Vec<i32>>) -> MinesweeperBoard {
+impl MinesweeperBoard {
+    pub fn new(board: Vec<Vec<i32>>) -> MinesweeperBoard {
         let row = board.len();
         let column = board[0].len();
         MinesweeperBoard {
@@ -267,9 +267,9 @@ pub enum ErrReadVideoReason {
     InvalidVideoEvent,
 }
 
-pub struct VideoEvent<'a> {
+pub struct VideoEvent {
     pub time: f64,
-    pub mouse: &'a str,
+    pub mouse: String,
     column: usize,
     row: usize,
     pub x: u16, // 单位是像素不是格
@@ -327,23 +327,23 @@ trait BaseParser {
 
 /// avf录像解析器。  
 /// - 功能：解析avf格式的录像，有详细分析录像的方法。  
-pub struct AvfVideo<'a> {
-    file_name: &'a str,
+pub struct AvfVideo {
+    file_name: String,
     width: usize,
     height: usize,
     mine_num: usize,
     marks: bool,
     level: usize,
     board: Vec<Vec<i32>>,
-    pub events: Vec<VideoEvent<'a>>,
-    player: &'a str,
+    pub events: Vec<VideoEvent>,
+    player: String,
     video_data: Vec<u8>,
     offset: usize,
     pub static_params: StaticParams,
     pub dynamic_params: DynamicParams,
 }
 
-impl BaseParser for AvfVideo<'_> {
+impl BaseParser for AvfVideo {
     fn get_unsized_int(&mut self) -> Result<u8, ErrReadVideoReason> {
         let t = self.video_data.get(self.offset);
         self.offset += 1;
@@ -369,14 +369,14 @@ impl BaseParser for AvfVideo<'_> {
         Ok(a as char)
     }
 }
-impl AvfVideo<'_> {
+impl AvfVideo {
     pub fn new(file_name: &str) -> AvfVideo {
         let video_data: Vec<u8> = fs::read(file_name).unwrap();
         // for i in 42642 - 500..42641 {
         //     print!("{:?}", video_data[i] as char);
         // }
         AvfVideo {
-            file_name: file_name,
+            file_name: file_name.to_string(),
             width: 0,
             height: 0,
             mine_num: 0,
@@ -384,7 +384,7 @@ impl AvfVideo<'_> {
             level: 0,
             board: vec![],
             events: vec![],
-            player: "",
+            player: "".to_string(),
             video_data: video_data,
             offset: 0,
             static_params: StaticParams {
@@ -532,17 +532,17 @@ impl AvfVideo<'_> {
                 time: ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
                     + (buffer[4] as f64) / 100.0,
                 mouse: match buffer[0] {
-                    1 => "mv",
-                    3 => "lc",
-                    5 => "lr",
-                    9 => "rc",
-                    17 => "rr",
-                    33 => "mc",
-                    65 => "mr",
-                    145 => "rc",
-                    193 => "mr",
-                    11 => "sc",
-                    21 => "lr",
+                    1 => "mv".to_string(),
+                    3 => "lc".to_string(),
+                    5 => "lr".to_string(),
+                    9 => "rc".to_string(),
+                    17 => "rr".to_string(),
+                    33 => "mc".to_string(),
+                    65 => "mr".to_string(),
+                    145 => "rc".to_string(),
+                    193 => "mr".to_string(),
+                    11 => "sc".to_string(),
+                    21 => "lr".to_string(),
                     _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
                 },
                 column: 0,
@@ -571,12 +571,12 @@ impl AvfVideo<'_> {
     }
     /// 进行局面的推衍，计算基本的局面参数。不包含概率计算。
     pub fn analyse(&mut self) {
-        let mut b = MinesweeperBoard::new(&self.board);
+        let mut b = MinesweeperBoard::new(self.board.clone());
         for ide in 0..self.events.len() {
             if self.events[ide].mouse != "mv" {
                 self.events[ide].useful_level = b
                     .step(
-                        self.events[ide].mouse,
+                        &self.events[ide].mouse,
                         (
                             (self.events[ide].y / 16) as usize,
                             (self.events[ide].x / 16) as usize,

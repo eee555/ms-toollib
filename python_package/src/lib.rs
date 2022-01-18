@@ -5,17 +5,11 @@ use pyo3::class::basic::PyObjectProtocol;
 use std::cmp::{max, min};
 
 use ms_toollib::*;
-// use ms_toollib::refreshBoard as refresh_board_;
+mod board;
+pub use board::{PyAvfVideo, PyMinesweeperBoard};
 
 // pip install maturin
 // maturin publish --manylinux 2014
-
-// #[pyfunction]
-// #[pyo3(name = "mark_board")]
-// fn py_mark_board(mut board_of_game: Vec<Vec<i32>>) -> PyResult<()> {
-//     mark_board(&mut board_of_game);
-//     Ok(())
-// }
 
 #[pyfunction]
 #[pyo3(name = "refresh_matrix")]
@@ -85,6 +79,12 @@ fn py_refresh_board(
 ) -> PyResult<Vec<Vec<i32>>> {
     refresh_board(&board, &mut board_of_game, ClickedPoses);
     Ok(board_of_game)
+}
+
+#[pyfunction]
+#[pyo3(name = "get_all_not_mine_on_board")]
+fn py_get_all_not_mine_on_board(game_board: Vec<Vec<i32>>) -> PyResult<Vec<(usize, usize)>> {
+    Ok(get_all_not_mine_on_board(&game_board, 40))
 }
 
 // #[pyfunction]
@@ -283,7 +283,7 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_laymine_number, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine, m)?)?;
-    // m.add_function(wrap_pyfunction!(py_mark_board, m)?)?;
+    m.add_function(wrap_pyfunction!(py_get_all_not_mine_on_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine_op_number, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine_op, m)?)?;
     // m.add_function(wrap_pyfunction!(solve_direct, m)?)?;
@@ -297,11 +297,7 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_sample_3BVs_exp, m)?)?;
     m.add_function(wrap_pyfunction!(py_OBR_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
-    // m.add_class::<Minesweeperboard>()?;
-    #[pyfn(m)]
-    #[pyo3(pass_module)]
-    fn name(module: &PyModule) -> PyResult<&str> {
-        module.name()
-    }
+    m.add_class::<MinesweeperBoard>()?;
+    m.add_class::<AvfVideo>()?;
     Ok(())
 }

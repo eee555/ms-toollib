@@ -48,7 +48,7 @@ pub use algorithms::{
 };
 
 mod board;
-pub use board::{AvfVideo, MinesweeperBoard};
+pub use board::{AvfVideo, MinesweeperBoard, GameBoard};
 
 #[cfg(any(feature = "py", feature = "rs"))]
 mod OBR;

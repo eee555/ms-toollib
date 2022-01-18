@@ -12,6 +12,29 @@ use std::fs;
 /// 局面状态机，分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。
 /// - 局限：目前不能计算path。  
 /// - 注意：ce的计算与扫雷网是不同的，本工具箱中，重复标同一个雷只算一个ce，即反复标雷、取消标雷不算作ce。
+/// - 用python调用时的示例：
+/// ```python
+/// import ms_toollib as ms
+/// board = [
+///     [0, 0, 1, -1, 2, 1, 1, -1],
+///     [0, 0, 2, 3, -1, 3, 3, 2],
+///     [1, 1, 3, -1, 4, -1, -1, 2],
+///     [2, -1, 4, -1, 3, 4, -1, 4],
+///     [3, -1, 5, 2, 1, 3, -1, -1],
+///     [3, -1, -1, 2, 1, 2, -1, 3],
+///     [-1, 5, 4, -1, 1, 1, 2, 2],
+///     [-1, 3, -1, 2, 1, 0, 1, -1],
+///     ];
+/// v = ms.MinesweeperBoard(board)
+/// v.step('lc', (0, 0))
+/// v.step('lr', (0, 0))
+/// print('左键次数: ', v.left)
+/// print('右键次数: ', v.right)
+/// print('ce数: ', v.ces)
+/// print('标雷数: ', v.flag)
+/// print('解决3BV数: ', v.solved3BV)
+/// print('局面: ', v.game_board)
+/// ```
 pub struct MinesweeperBoard {
     board: Vec<Vec<i32>>,
     /// 局面
@@ -270,8 +293,6 @@ pub enum ErrReadVideoReason {
 pub struct VideoEvent {
     pub time: f64,
     pub mouse: String,
-    column: usize,
-    row: usize,
     pub x: u16, // 单位是像素不是格
     pub y: u16,
     pub useful_level: u8, // 0代表完全没用，
@@ -289,15 +310,15 @@ pub struct StaticParams {
     pub openings: usize,
     pub islands: usize,
     pub hizi: usize,
-    pub cell_0: usize,
-    pub cell_1: usize,
-    pub cell_2: usize,
-    pub cell_3: usize,
-    pub cell_4: usize,
-    pub cell_5: usize,
-    pub cell_6: usize,
-    pub cell_7: usize,
-    pub cell_8: usize,
+    pub cell0: usize,
+    pub cell1: usize,
+    pub cell2: usize,
+    pub cell3: usize,
+    pub cell4: usize,
+    pub cell5: usize,
+    pub cell6: usize,
+    pub cell7: usize,
+    pub cell8: usize,
 }
 
 pub struct DynamicParams {
@@ -392,15 +413,15 @@ impl AvfVideo {
                 openings: 0,
                 islands: 0,
                 hizi: 0,
-                cell_0: 0,
-                cell_1: 0,
-                cell_2: 0,
-                cell_3: 0,
-                cell_4: 0,
-                cell_5: 0,
-                cell_6: 0,
-                cell_7: 0,
-                cell_8: 0,
+                cell0: 0,
+                cell1: 0,
+                cell2: 0,
+                cell3: 0,
+                cell4: 0,
+                cell5: 0,
+                cell6: 0,
+                cell7: 0,
+                cell8: 0,
             },
             dynamic_params: DynamicParams {
                 r_time: 0.0,
@@ -545,8 +566,8 @@ impl AvfVideo {
                     21 => "lr".to_string(),
                     _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
                 },
-                column: 0,
-                row: 0,
+                // column: 0,
+                // row: 0,
                 x: (buffer[1] as u16) << 8 | buffer[3] as u16,
                 y: (buffer[5] as u16) << 8 | buffer[7] as u16,
                 useful_level: 0,
@@ -643,8 +664,8 @@ impl AvfVideo {
     }
 }
 
-/// 静态游戏局面的包装类
-/// 所有计算过的属性都会保存在这里
+/// 静态游戏局面的包装类。  
+/// 所有计算过的属性都会保存在这里。  
 pub struct GameBoard {
     game_board: Vec<Vec<i32>>,
     game_board_marked: Vec<Vec<i32>>,

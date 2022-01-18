@@ -1,8 +1,8 @@
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 // use pyo3::PyTraverseError;
-use pyo3::class::basic::PyObjectProtocol;
-use std::cmp::{max, min};
+// use pyo3::class::basic::PyObjectProtocol;
+// use std::cmp::{max, min};
 
 use ms_toollib::*;
 mod board;
@@ -297,7 +297,7 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_sample_3BVs_exp, m)?)?;
     m.add_function(wrap_pyfunction!(py_OBR_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
-    m.add_class::<MinesweeperBoard>()?;
-    m.add_class::<AvfVideo>()?;
+    m.add_class::<PyMinesweeperBoard>()?;
+    m.add_class::<PyAvfVideo>()?;
     Ok(())
 }

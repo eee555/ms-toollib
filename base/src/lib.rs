@@ -12,8 +12,12 @@
 //! - 变量名+冒号+格式：表明参数的格式。例如i32代表有符号4字节的整数、u8代表无符号1字节的整数；Vec<>代表内存分配在堆上的可变长度的向量。
 //! - mut：代表这个参数是可变的。例如pub fn mark_board(board: &mut Vec<Vec<i32>>)中，会对传入的局面直接修改。如果不带mut，则不会修改。
 //! ## API命名原则
+//! 约定如下原则：
 //! - 原则1：为方便开发人员使用，本工具箱在所有平台所有的api都是相同的。
-//! - 原则2：类名均使用大驼峰命名法、方法名和函数名均使用蛇形命名法（亦称下划线命名法）。
+//! - 原则2：所有平台的版本号原则上相同，如果不相同，代表还未更新到。
+//! - 原则3：结构体和类名均使用大驼峰命名法(CamelCase)、方法名和函数名均使用蛇形命名法（snake_case亦称下划线命名法）。
+//! ## 伙伴项目
+//! ms_toollib工具箱由[黑猫扫雷](https://github.com/eee555/Solvable-Minesweeper)项目的算法部分拆分而来，因此互为伙伴项目。
 //! ## 安全性
 //! 本工具箱不直接提供机扫相关工具；同时，不提倡纯粹机扫相关的研究，尤其不提倡那些通过机扫模拟人类扫雷的研究；使用机扫的录像攻击排名网站的审查体系是严格禁止的，任何相关尝试都是不道德的！
 
@@ -34,9 +38,13 @@ mod analyse_methods;
 #[cfg(any(feature = "py", feature = "rs"))]
 pub use algorithms::{laymine_solvable_thread, sample_3BVs_exp, OBR_board};
 // #[cfg(feature = "js")]
+#[cfg(any(feature = "rs"))]
+pub use algorithms::{
+    mark_board, solve_direct, solve_enumerate, solve_minus
+};
 pub use algorithms::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, is_solvable, laymine,
-    laymine_op, laymine_solvable, mark_board, solve_direct, solve_enumerate, solve_minus,
+    laymine_op, laymine_solvable, get_all_not_mine_on_board
 };
 
 mod board;

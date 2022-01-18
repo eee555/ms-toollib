@@ -9,8 +9,9 @@ use crate::utils::{refresh_board, refresh_matrixs};
 use std::cmp::{max, min};
 use std::fs;
 
-/// 局面状态机，分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。  
-/// - 注意：ce的计算与扫雷网是不同的，本工具箱中，重复标同一个雷只算一个ce，即反复标雷、取消标雷不算作ce
+/// 局面状态机，分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。
+/// - 局限：目前不能计算path。  
+/// - 注意：ce的计算与扫雷网是不同的，本工具箱中，重复标同一个雷只算一个ce，即反复标雷、取消标雷不算作ce。
 pub struct MinesweeperBoard<'a> {
     board: &'a Vec<Vec<i32>>,
     /// 局面

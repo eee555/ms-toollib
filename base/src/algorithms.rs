@@ -31,6 +31,7 @@ use tract_onnx::prelude::*;
 /// - 输入：3个矩阵、局面。
 /// - 返回：是雷、非雷的格子，在传入的局面上标是雷（11）和非雷（12）。  
 /// - 注意：会维护系数矩阵、格子矩阵和数字矩阵，删、改、分块。
+#[cfg(any(feature = "rs"))]
 pub fn solve_minus(
     matrix_as: &mut Vec<Vec<Vec<i32>>>,
     matrix_xs: &mut Vec<Vec<(usize, usize)>>,
@@ -129,6 +130,7 @@ pub fn solve_minus(
 /// - 输入：3个矩阵、局面。
 /// - 返回：是雷、非雷的格子，在传入的局面上标是雷（11）和非雷（12）。  
 /// - 注意：会维护系数矩阵、格子矩阵和数字矩阵，删、改、分块。
+#[cfg(any(feature = "rs"))]
 pub fn solve_direct(
     matrix_as: &mut Vec<Vec<Vec<i32>>>,
     matrix_xs: &mut Vec<Vec<(usize, usize)>>,
@@ -549,6 +551,7 @@ pub fn laymine_op(
 /// ```
 /// - 注意：不修改输入进来的局面，即不帮助标雷（这个设计后续可能修改）；也不维护3个矩阵。因为枚举引擎是最后使用的  
 /// - 注意：超出枚举长度限制是未定义的行为，算法不一定会得到足够多的结果  
+#[cfg(any(feature = "rs"))]
 pub fn solve_enumerate(
     matrix_as: &Vec<Vec<Vec<i32>>>,
     matrix_xs: &Vec<Vec<(usize, usize)>>,
@@ -884,6 +887,7 @@ pub fn laymine(
     (Board, Parameters)
 }
 
+// 对高级3BV做采样。16线程。
 #[cfg(any(feature = "py", feature = "rs"))]
 pub fn sample_3BVs_exp(x0: usize, y0: usize, n: usize) -> [usize; 382] {
     // 从标准高级中采样计算3BV
@@ -1051,15 +1055,19 @@ pub fn OBR_board(
     Ok(board)
 }
 
-/// 对局面用单集合、双集合判雷引擎，快速标雷、标非雷，以供概率计算引擎处理  
-/// 相当于一种预处理，即先标出容易计算的
+/// 对局面用单集合、双集合判雷引擎，快速标雷、标非雷，以供概率计算引擎处理。  
+/// 相当于一种预处理，即先标出容易计算的。  
+/// - 可用范围：仅rust底层。
+/// - 注意：在rust中，cal_possibility往往需要和mark_board搭配使用，而在其他语言（python）中可能不需要如此！这是由于其ffi不支持原地操作。
+#[cfg(any(feature = "rs"))]
 pub fn mark_board(board: &mut Vec<Vec<i32>>) {
     let (mut matrix_as, mut matrix_xs, mut matrix_bs, _, _) = refresh_matrixs(&board);
-    let ans = solve_direct(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, board);
-    let ans = solve_minus(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, board);
+    solve_direct(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, board);
+    solve_minus(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, board);
 }
 
-/// 求出所有非雷的位置
+/// 求出所有非雷的位置。  
+/// - 注意：局面中可以有标雷，但不能有错误！
 pub fn get_all_not_mine_on_board(board_: &Vec<Vec<i32>>, enuLimit: usize) -> Vec<(usize, usize)> {
     let mut board = board_.clone();
     let (mut matrix_as, mut matrix_xs, mut matrix_bs, _, _) = refresh_matrixs(&board);

@@ -92,39 +92,39 @@ impl PyAvfVideo {
     }
     #[getter]
     fn get_cell0(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell_0)
+        Ok(self.core.static_params.cell0)
     }
     #[getter]
     fn get_cell1(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell_1)
+        Ok(self.core.static_params.cell1)
     }
     #[getter]
     fn get_cell2(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell_2)
+        Ok(self.core.static_params.cell2)
     }
     #[getter]
     fn get_cell3(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell_3)
+        Ok(self.core.static_params.cell3)
     }
     #[getter]
     fn get_cell4(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell_4)
+        Ok(self.core.static_params.cell4)
     }
     #[getter]
     fn get_cell5(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell_5)
+        Ok(self.core.static_params.cell5)
     }
     #[getter]
     fn get_cell6(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell_6)
+        Ok(self.core.static_params.cell6)
     }
     #[getter]
     fn get_cell7(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell_7)
+        Ok(self.core.static_params.cell7)
     }
     #[getter]
     fn get_cell8(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell_8)
+        Ok(self.core.static_params.cell8)
     }
     #[getter]
     fn get_r_time(&self) -> PyResult<f64> {
@@ -190,25 +190,76 @@ impl PyAvfVideo {
     fn get_events_len(&self) -> PyResult<usize> {
         Ok(self.core.events.len())
     }
-    // pub fn events_time(&self, index: usize) -> PyResult<f64> {
-    //     Ok(self.core.events[index].time)
-    // }
-    // pub fn events_mouse(&self, index: usize) -> PyResult<String> {
-    //     Ok(self.core.events[index].mouse.clone())
-    // }
-    // pub fn events_x(&self, index: usize) -> PyResult<u16> {
-    //     Ok(self.core.events[index].x)
-    // }
-    // pub fn events_y(&self, index: usize) -> PyResult<u16> {
-    //     Ok(self.core.events[index].y)
-    // }
-    // pub fn events_useful_level(&self, index: usize) -> PyResult<usize> {
-    //     Ok(self.core.events[index].useful_level)
-    // }
-    // pub fn events_posteriori_game_board(&self, index: usize) -> PyResult<u16> {
-    //     Ok(self.core.events[index].posteriori_game_board)
-    // }
-
+    pub fn events_time(&self, index: usize) -> PyResult<f64> {
+        Ok(self.core.events[index].time)
+    }
+    pub fn events_mouse(&self, index: usize) -> PyResult<String> {
+        Ok(self.core.events[index].mouse.clone())
+    }
+    pub fn events_x(&self, index: usize) -> PyResult<u16> {
+        Ok(self.core.events[index].x)
+    }
+    pub fn events_y(&self, index: usize) -> PyResult<u16> {
+        Ok(self.core.events[index].y)
+    }
+    pub fn events_useful_level(&self, index: usize) -> PyResult<u8> {
+        Ok(self.core.events[index].useful_level)
+    }
+    pub fn events_posteriori_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
+        // Ok(self.core.events[index].posteriori_game_board)
+        Ok(PyGameBoard::new(self.core.mine_num+++++====))
+    }
 }
+
+#[pyclass(name = "GameBoard")]
+pub struct PyGameBoard {
+    pub core: GameBoard,
+}
+
+impl PyGameBoard {
+    fn set_core(&mut self, value: GameBoard) {
+        self.core = value;
+    }
+}
+
+#[pymethods]
+impl PyGameBoard {
+    #[new]
+    pub fn new(mine_num: usize) -> PyGameBoard {
+        let c = GameBoard::new(mine_num);
+        PyGameBoard {
+            core: c,
+        }
+    }
+    #[setter]
+    fn set_game_board(&mut self, board: Vec<Vec<i32>>) {
+        self.core.set_game_board(&board);
+    }
+    #[getter]
+    fn get_poss(&mut self) -> PyResult<Vec<Vec<f64>>> {
+        Ok(self.core.get_poss().to_vec())
+    }
+    #[getter]
+    fn get_basic_not_mine(&mut self) -> PyResult<Vec<(usize, usize)>> {
+        Ok(self.core.get_basic_not_mine().to_vec())
+    }
+    #[getter]
+    fn get_basic_is_mine(&mut self) -> PyResult<Vec<(usize, usize)>> {
+        Ok(self.core.get_basic_is_mine().to_vec())
+    }
+    #[getter]
+    fn get_enum_not_mine(&mut self) -> PyResult<Vec<(usize, usize)>> {
+        Ok(self.core.get_enum_not_mine().to_vec())
+    }
+    #[getter]
+    fn get_enum_is_mine(&mut self) -> PyResult<Vec<(usize, usize)>> {
+        Ok(self.core.get_enum_is_mine().to_vec())
+    }
+}
+
+
+
+
+
 
 

@@ -6,7 +6,7 @@ use pyo3::wrap_pyfunction;
 
 use ms_toollib::*;
 mod board;
-pub use board::{PyAvfVideo, PyMinesweeperBoard};
+pub use board::{PyAvfVideo, PyMinesweeperBoard, PyGameBoard};
 
 // pip install maturin
 // maturin publish --manylinux 2014
@@ -298,6 +298,7 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_OBR_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
     m.add_class::<PyMinesweeperBoard>()?;
-    m.add_class::<PyAvfVideo>()?;
+    m.add_class::<PyAvfVideo>()?;  
+    m.add_class::<PyGameBoard>()?;
     Ok(())
 }

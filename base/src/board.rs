@@ -349,15 +349,15 @@ trait BaseParser {
 /// avf录像解析器。  
 /// - 功能：解析avf格式的录像，有详细分析录像的方法。  
 pub struct AvfVideo {
-    file_name: String,
-    width: usize,
-    height: usize,
-    mine_num: usize,
-    marks: bool,
-    level: usize,
-    board: Vec<Vec<i32>>,
+    pub file_name: String,
+    pub width: usize,
+    pub height: usize,
+    pub mine_num: usize,
+    pub marks: bool,
+    pub level: usize,
+    pub board: Vec<Vec<i32>>,
     pub events: Vec<VideoEvent>,
-    player: String,
+    pub player: String,
     video_data: Vec<u8>,
     offset: usize,
     pub static_params: StaticParams,

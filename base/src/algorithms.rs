@@ -680,9 +680,9 @@ pub fn is_solvable(Board: &Vec<Vec<i32>>, x0: usize, y0: usize, enuLimit: usize)
     }
 }
 
-/// 删选法多（10）线程无猜埋雷。  
+/// 删选法多（8）线程无猜埋雷。  
 /// - 输入：3BV下限、上限，最大尝试次数。  
-/// - 返回:是否成功。  
+/// - 返回: (是否成功、3BV、该线程的尝试次数)。  
 /// - 注意：若不成功返回最后生成的局面，此时则不一定无猜。
 #[cfg(any(feature = "py", feature = "rs"))]
 pub fn laymine_solvable_thread(
@@ -701,7 +701,7 @@ pub fn laymine_solvable_thread(
     let mut handles = vec![];
     let flag_exit = Arc::new(Mutex::new(0));
     let (tx, rx) = mpsc::channel(); // mpsc 是多个发送者，一个接收者
-    for ii in (1..11).rev() {
+    for ii in (1..9).rev() {
         let tx_ = mpsc::Sender::clone(&tx);
         let max_time = MaxTimes / ii;
         MaxTimes -= max_time;

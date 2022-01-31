@@ -100,7 +100,8 @@ pub fn refresh_matrix(
     (MatrixA, Matrixx, Matrixb)
 }
 
-/// 根据游戏局面生成矩阵，分块。输入的必须保证是合法的游戏局面。  
+/// 根据游戏局面生成矩阵，分段。输入的必须保证是合法的游戏局面。  
+/// - *基于数字生成，矩阵的行可能有重复。  
 pub fn refresh_matrixs(
     board_of_game: &Vec<Vec<i32>>,
 ) -> (
@@ -110,7 +111,7 @@ pub fn refresh_matrixs(
     usize,
     usize,
 ) {
-    // 根据游戏局面分块生成矩阵。分块的数据结构是最外面再套一层Vec
+    // 根据游戏局面分块生成矩阵。分段的数据结构是最外面再套一层Vec
     // board_of_game必须且肯定是正确标雷的游戏局面，但不需要标全，不能标非雷
     // 矩阵的行和列都可能有重复
     // unknow_block是未知格子数量, is_mine_num是标出的是雷的数量
@@ -158,7 +159,7 @@ pub fn refresh_matrixs(
         matrix_bs.push(vec![]);
         let x_0 = all_cell[0].0;
         let y_0 = all_cell[0].1;
-        let mut num_cells = vec![]; // 记录了当前块的数字格的坐标
+        let mut num_cells = vec![]; // 记录了当前段的数字格的坐标
         let mut temp_cells = vec![]; // 记录了待查找的数字格的坐标
         let mut flag_num = 0;
         for m in max(1, x_0) - 1..min(row, x_0 + 2) {
@@ -231,6 +232,22 @@ pub fn refresh_matrixs(
         p += 1;
     }
     (matrix_as, matrix_xs, matrix_bs, unknow_block, is_mine_num)
+}
+
+pub fn refresh_matrixses(
+    board_of_game: &Vec<Vec<i32>>,
+) -> (
+    Vec<Vec<Vec<Vec<i32>>>>,
+    Vec<Vec<Vec<(usize, usize)>>>,
+    Vec<Vec<Vec<i32>>>
+) {
+    let Ases = vec![];
+    let xses = vec![];
+    let bses = vec![];
+    let (As, xs, bs, _, _) = refresh_matrixs(board_of_game);
+    let adjacency_matrix = vec![vec![false; As.len()]; As.len()];
+    // 邻接矩阵，相邻性用A*算法判断
+    (Ases, xses, bses)
 }
 
 // 获取0~limit-1范围内的随机整数

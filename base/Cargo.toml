@@ -45,6 +45,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 name = "sample_boards"
 harness = false
 
+[[bench]]
+name = "lay_mine"
+harness = false
+
+[[bench]]
+name = "refresh_matrix"
+harness = false
 
 
 

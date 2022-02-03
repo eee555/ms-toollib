@@ -206,8 +206,12 @@ impl PyAvfVideo {
         Ok(self.core.events[index].useful_level)
     }
     pub fn events_posteriori_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
-        // Ok(self.core.events[index].posteriori_game_board)
-        Ok(PyGameBoard::new(self.core.mine_num+++++====))
+        let mut t = PyGameBoard::new(self.core.mine_num);
+        t.set_core(self.core.events[index].posteriori_game_board.clone());
+        Ok(t)
+    }
+    pub fn events_comments(&self, index: usize) -> PyResult<String> {
+        Ok(self.core.events[index].comments.clone())
     }
 }
 

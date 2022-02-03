@@ -1,5 +1,5 @@
 ﻿use crate::algorithms::{
-    cal_possibility_onboard, mark_board, solve_direct, solve_enumerate, solve_minus,
+    cal_possibility_onboard, mark_board, solve_direct_mut, solve_enumerate, solve_minus_mut,
 };
 use crate::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
@@ -348,6 +348,21 @@ trait BaseParser {
 
 /// avf录像解析器。  
 /// - 功能：解析avf格式的录像，有详细分析录像的方法。  
+/// - 以下是在python中调用的示例。
+/// ```python
+/// v = ms.AvfVideo("arbiter_beg.avf");
+/// v.parse_video()
+/// v.analyse()
+/// print(v.bbbv)
+/// print(v.clicks)
+/// print(v.clicks_s)
+/// v.analyse_for_features(["high_risk_guess"])
+/// for i in range(v.events_len):
+///     print(v.events_time(i), v.events_x(i), v.events_y(i), v.events_mouse(i))
+/// for i in range(v.events_len):
+///     if v.events_useful_level(i) >= 2:
+///         print(v.events_posteriori_game_board(i).poss)
+/// ```
 pub struct AvfVideo {
     pub file_name: String,
     pub width: usize,
@@ -666,6 +681,7 @@ impl AvfVideo {
 
 /// 静态游戏局面的包装类。  
 /// 所有计算过的属性都会保存在这里。  
+#[derive(Clone)]
 pub struct GameBoard {
     game_board: Vec<Vec<i32>>,
     game_board_marked: Vec<Vec<i32>>,
@@ -710,10 +726,10 @@ impl GameBoard {
         // 一旦被标记，那么就会用3大判雷引擎都分析一遍
         // 相关参数都会计算并记录下来，is_marked也会改成true
         let (mut a_s, mut x_s, mut b_s, _, _) = refresh_matrixs(&self.game_board_marked);
-        let mut ans = solve_direct(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked).0;
+        let mut ans = solve_direct_mut(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked).0;
         self.basic_not_mine.append(&mut ans);
 
-        let mut ans = solve_minus(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked).0;
+        let mut ans = solve_minus_mut(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked).0;
         self.basic_not_mine.append(&mut ans);
         for i in &self.basic_not_mine {
             self.game_board_marked[i.0][i.1] = 12;
@@ -725,7 +741,7 @@ impl GameBoard {
                 }
             }
         }
-        self.enum_not_mine = solve_enumerate(&a_s, &x_s, &b_s, 40).0;
+        self.enum_not_mine = solve_enumerate(&a_s, &x_s, &b_s).0;
         // println!("yyyyyyyyyyyyyyyyy");
         for i in 0..self.game_board_marked.len() {
             for j in 0..self.game_board_marked[0].len() {

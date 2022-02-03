@@ -298,7 +298,7 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_OBR_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
     m.add_class::<PyMinesweeperBoard>()?;
-    m.add_class::<PyAvfVideo>()?;  
+    m.add_class::<PyAvfVideo>()?;
     m.add_class::<PyGameBoard>()?;
     Ok(())
 }

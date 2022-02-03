@@ -8,6 +8,8 @@ use std::cmp::{max, min};
 #[cfg(feature = "js")]
 use getrandom::getrandom;
 
+use crate::board;
+
 // 整个模块是最底层的一些小工具，如埋雷、局面分块、计算3BV等
 
 /// 输入局面，计算空，即0的8连通域数
@@ -234,19 +236,119 @@ pub fn refresh_matrixs(
     (matrix_as, matrix_xs, matrix_bs, unknow_block, is_mine_num)
 }
 
+/// 根据游戏局面生成矩阵，分段、且分块。输入的必须保证是合法的游戏局面。  
 pub fn refresh_matrixses(
     board_of_game: &Vec<Vec<i32>>,
 ) -> (
     Vec<Vec<Vec<Vec<i32>>>>,
     Vec<Vec<Vec<(usize, usize)>>>,
-    Vec<Vec<Vec<i32>>>
+    Vec<Vec<Vec<i32>>>,
 ) {
-    let Ases = vec![];
-    let xses = vec![];
-    let bses = vec![];
-    let (As, xs, bs, _, _) = refresh_matrixs(board_of_game);
-    let adjacency_matrix = vec![vec![false; As.len()]; As.len()];
-    // 邻接矩阵，相邻性用A*算法判断
+    let row = board_of_game.len();
+    let column = board_of_game[0].len();
+    let mut Ases = vec![];
+    let mut xses = vec![];
+    let mut bses = vec![];
+    let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(board_of_game);
+    if As.len() == 1 {
+        // 不可能为0，至少为1
+        return (vec![As], vec![xs], vec![bs]);
+    }
+    let mut adjacency_matrix = vec![vec![false; As.len()]; As.len()];
+    // 邻接矩阵
+    let mut board_mark = board_of_game.clone();
+    // 局面的复刻，用于标记遍历过的格子
+    let mut cell_10 = vec![];
+    for i in 0..row {
+        for j in 0..column {
+            if board_mark[i][j] == 10 {
+                board_mark[i][j] = 21;
+                let mut flag_c = false;
+                // cell_10.push(vec![]);
+                // cell_10.last_mut().unwrap().push((i, j));
+                let mut buffer = vec![];
+                buffer.push((i, j));
+                // 标志是否搜索完的缓冲区
+                while !buffer.is_empty() {
+                    let (t_i, t_j) = buffer.pop().unwrap();
+                    let mut flag_is_side = false;
+                    for m in max(1, t_i) - 1..min(row, t_i + 2) {
+                        for n in max(1, t_j) - 1..min(column, t_j + 2) {
+                            if board_mark[m][n] == 10 {
+                                board_mark[m][n] = 21;
+                                buffer.push((m, n));
+                            } else if board_mark[m][n] < 10 {
+                                flag_is_side = true;
+                            }
+                        }
+                    }
+                    if flag_is_side {
+                        if !flag_c {
+                            cell_10.push(vec![]);
+                            flag_c = true;
+                        }
+                        cell_10.last_mut().unwrap().push((t_i, t_j));
+                    }
+                }
+            } else {
+                continue;
+            }
+        }
+    }
+    // println!("{:?}", cell_10);
+    if cell_10.len() == 1 {
+        // 不可能为0，至少为1
+        return (vec![As], vec![xs], vec![bs]);
+    }
+    for mut block in cell_10 {
+        let mut seed_id = -1;
+        while !block.is_empty() {
+            let seed = block.pop().unwrap();
+            let t = xs.iter().position(|r| r.contains(&seed)).unwrap();
+            if seed_id >= 0 {
+                adjacency_matrix[seed_id as usize][t] = true;
+                adjacency_matrix[t][seed_id as usize] = true;
+            }
+            seed_id = t as i32;
+            block.retain(|x| !xs[seed_id as usize].contains(x))
+        }
+    } // 整理完邻接矩阵。无向图。
+    for i in 0..As.len() {
+        if As[i].is_empty() {
+            continue;
+        }
+        Ases.push(vec![]);
+        xses.push(vec![]);
+        bses.push(vec![]);
+        let mut buffer = vec![i];
+
+        while !buffer.is_empty() {
+            let t = buffer.pop().unwrap();
+            Ases.last_mut().unwrap().push(vec![]);
+            Ases.last_mut()
+                .unwrap()
+                .last_mut()
+                .unwrap()
+                .append(&mut As[t]);
+            xses.last_mut().unwrap().push(vec![]);
+            xses.last_mut()
+                .unwrap()
+                .last_mut()
+                .unwrap()
+                .append(&mut xs[t]);
+            bses.last_mut().unwrap().push(vec![]);
+            bses.last_mut()
+                .unwrap()
+                .last_mut()
+                .unwrap()
+                .append(&mut bs[t]);
+            for idj in t..As.len() {
+                if adjacency_matrix[t][idj] {
+                    buffer.push(idj);
+                }
+            }
+        }
+    }
     (Ases, xses, bses)
 }
 

@@ -30,7 +30,7 @@
 mod utils;
 pub use utils::{
     cal3BV, cal_op, cal_table_minenum_recursion, combine, laymine_number, laymine_op_number,
-    refresh_board, refresh_matrix, refresh_matrixs, unsolvable_structure,
+    refresh_board, refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure,
 };
 
 mod algorithms;
@@ -40,7 +40,7 @@ pub use algorithms::{laymine_solvable_thread, sample_3BVs_exp, OBR_board};
 // #[cfg(feature = "js")]
 #[cfg(any(feature = "rs"))]
 pub use algorithms::{
-    mark_board, solve_direct, solve_enumerate, solve_minus
+    mark_board, solve_direct_mut, solve_enumerate, solve_minus_mut
 };
 pub use algorithms::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, is_solvable, laymine,
@@ -54,3 +54,7 @@ pub use board::{AvfVideo, MinesweeperBoard, GameBoard};
 mod OBR;
 #[cfg(any(feature = "py", feature = "rs"))]
 pub use OBR::ImageBoard;
+
+
+const ENUM_LIMIT: usize = 40;
+

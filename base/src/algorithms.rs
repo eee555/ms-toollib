@@ -1048,7 +1048,7 @@ pub fn mark_board(board_of_game: &mut Vec<Vec<i32>>) {
 /// 求出游戏局面中所有非雷、是雷的位置。  
 /// - 注意：局面中可以有标雷，但不能有错误！
 #[cfg(any(feature = "rs"))]
-pub fn get_all_is_and_not_mine_on_board(
+pub fn get_all_not_and_is_mine_on_board(
     As: &mut Vec<Vec<Vec<i32>>>,
     xs: &mut Vec<Vec<(usize, usize)>>,
     bs: &mut Vec<Vec<i32>>,
@@ -1150,3 +1150,26 @@ pub fn is_able_to_solve(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) 
     }
     false
 }
+
+// 
+#[cfg(any(feature = "rs"))]
+pub fn each_block_is_able_to_judge(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> Vec<bool> {
+    vec![true]
+    // let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+    // solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
+    // if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {
+    //     return true;
+    // }
+    // solve_minus(&mut As, &mut xs, &mut bs, board_of_game);
+    // if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {
+    //     return true;
+    // }
+    // let (n, i) = solve_enumerate(&As, &xs, &bs);
+    // if i.contains(xy) || n.contains(xy) {
+    //     return true;
+    // }
+    // false
+}
+
+
+

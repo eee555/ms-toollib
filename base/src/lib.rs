@@ -40,11 +40,11 @@ pub use algorithms::{laymine_solvable_thread, sample_3BVs_exp, OBR_board};
 // #[cfg(feature = "js")]
 #[cfg(any(feature = "rs"))]
 pub use algorithms::{
-    mark_board, solve_direct_mut, solve_enumerate, solve_minus_mut
+    mark_board, solve_direct, solve_enumerate, solve_minus
 };
 pub use algorithms::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, is_solvable, laymine,
-    laymine_op, laymine_solvable, get_all_not_mine_on_board
+    laymine_op, laymine_solvable, get_all_is_and_not_mine_on_board
 };
 
 mod board;

@@ -1,6 +1,6 @@
 use ms_toollib::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, is_solvable,
-    solve_enumerate, solve_direct_mut, mark_board
+    solve_enumerate, solve_direct, mark_board
 };
 use ms_toollib::{cal_table_minenum_recursion, combine, refresh_matrix, refresh_matrixs, 
 refresh_matrixses};

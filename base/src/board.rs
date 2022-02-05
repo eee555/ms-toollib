@@ -1,5 +1,5 @@
 ﻿use crate::algorithms::{
-    cal_possibility_onboard, mark_board, solve_direct_mut, solve_enumerate, solve_minus_mut,
+    cal_possibility_onboard, mark_board, solve_direct, solve_enumerate, solve_minus,
 };
 use crate::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
@@ -726,10 +726,10 @@ impl GameBoard {
         // 一旦被标记，那么就会用3大判雷引擎都分析一遍
         // 相关参数都会计算并记录下来，is_marked也会改成true
         let (mut a_s, mut x_s, mut b_s, _, _) = refresh_matrixs(&self.game_board_marked);
-        let mut ans = solve_direct_mut(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked).0;
+        let mut ans = solve_direct(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked).0;
         self.basic_not_mine.append(&mut ans);
 
-        let mut ans = solve_minus_mut(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked).0;
+        let mut ans = solve_minus(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked).0;
         self.basic_not_mine.append(&mut ans);
         for i in &self.basic_not_mine {
             self.game_board_marked[i.0][i.1] = 12;

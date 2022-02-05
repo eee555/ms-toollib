@@ -1,4 +1,4 @@
-use crate::algorithms::{solve_direct_mut, solve_enumerate, solve_minus_mut};
+use crate::algorithms::{solve_direct, solve_enumerate, solve_minus};
 use crate::board;
 use crate::utils::{refresh_matrix, refresh_matrixs};
 use board::{AvfVideo, VideoEvent};

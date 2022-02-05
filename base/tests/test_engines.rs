@@ -1,6 +1,6 @@
 use ms_toollib::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, is_solvable,
-    solve_enumerate, solve_direct_mut, mark_board
+    solve_enumerate, solve_direct, mark_board
 };
 use ms_toollib::{cal_table_minenum_recursion, combine, refresh_matrix, refresh_matrixs};
 
@@ -45,7 +45,7 @@ fn solve_direct_works() {
         vec![10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
     ];
     let (mut matrix_as, mut matrix_xs, mut matrix_bs, _, _) = refresh_matrixs(&game_board);
-    let ans = solve_direct_mut(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, &mut game_board);
+    let ans = solve_direct(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, &mut game_board);
     print!("{:?}", ans)
 }
 

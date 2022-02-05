@@ -6,6 +6,9 @@ use crate::utils::{
 };
 
 #[cfg(any(feature = "py", feature = "rs"))]
+use rand::thread_rng;
+
+#[cfg(any(feature = "py", feature = "rs"))]
 use crate::OBR::ImageBoard;
 
 use itertools::Itertools;
@@ -25,7 +28,6 @@ use tract_ndarray::Array;
 
 #[cfg(any(feature = "py", feature = "rs"))]
 use tract_onnx::prelude::*;
-
 
 // 中高级的算法，例如无猜埋雷、判雷引擎、计算概率
 
@@ -889,18 +891,19 @@ pub fn laymine_solvable(
 }
 
 /// 调整法无猜埋雷（没写好）
-pub fn laymine_solvable_modify(
+/// 返回局面、是否成功
+pub fn laymine_solvable_adjust(
     row: usize,
     column: usize,
     mine_num: usize,
     x0: usize,
     y0: usize,
-    min_3BV: usize,
-    max_3BV: usize,
-    max_times: usize,
-    enu_limit: usize,
-) -> (Vec<Vec<i32>>, [usize; 3]) {
+) -> (Vec<Vec<i32>>, bool) {
     // 利用局面调整算法，无猜埋雷
+    let mut board = vec![vec![0; column]; row];
+    let mut board_of_game = vec![vec![10; column]; row];
+    let mut mine_num_reduce = 0;
+    board_of_game[x0][y0] = 0;
     let mut area_op = 9;
     if x0 == 0 || y0 == 0 || x0 == row - 1 || y0 == column - 1 {
         if x0 == 0 && y0 == 0
@@ -915,15 +918,61 @@ pub fn laymine_solvable_modify(
     }
     if row * column - area_op < mine_num {
         // 雷数太多以致起手无法开空，此时放弃无猜，返回任意一种局面
-        let t = laymine(
-            row, column, mine_num, x0, y0, min_3BV, max_3BV, max_times, 0,
-        );
-        return (t.0, [0, t.1[1], t.1[2]]);
+        let t = laymine_number(row, column, mine_num, x0, y0);
+        return (t, false);
     }
     let remain_mine_num = mine_num;
     let remain_not_mine_num = row * column - area_op;
-    for time in 0..max_times {}
-    (vec![], [0, 0, 0])
+    let mut cells_plan_to_click = vec![];
+    for j in max(1, x0) - 1..min(row, x0 + 2) {
+        for k in max(1, y0) - 1..min(column, y0 + 2) {
+            if j != x0 && k != y0 {
+                cells_plan_to_click.push((j, k));
+                board[j][k] = 22;
+            }
+        }
+    }
+
+    for time in 0..10 {
+        let mut area_current_adjust = get_adjust_area(&board);
+        let mine_num = (area_current_adjust.len() as f64 * remain_mine_num as f64
+            / remain_not_mine_num as f64) as usize
+            - mine_num_reduce;
+        if mine_num < 0 || mine_num > remain_mine_num {
+            continue;
+        }
+        adjust_the_area_on_board(&mut board, &area_current_adjust, mine_num);
+    }
+    (vec![], false)
+}
+
+fn adjust_the_area_on_board(
+    board: &mut Vec<Vec<i32>>,
+    area_current_adjust: &Vec<(usize, usize)>,
+    mine_num: usize,
+) {
+
+}
+
+fn get_adjust_area(board_of_game: &Vec<Vec<i32>>) -> Vec<(usize, usize)> {
+    let row = board_of_game.len();
+    let column = board_of_game[0].len();
+    let mut a = vec![];
+    for x in 0..row {
+        for y in 0..column {
+            if board_of_game[x][y] == 10 {
+                'o: for m in max(1, x) - 1..min(row, x + 2) {
+                    for n in max(1, y) - 1..min(column, y + 2) {
+                        if board_of_game[m][n] == 22 {
+                            a.push((x, y));
+                            break 'o;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    a
 }
 
 /// 适用于游戏的标准埋雷。  
@@ -1154,7 +1203,12 @@ pub fn mark_board(board: &mut Vec<Vec<i32>>) {
 
 /// 求出游戏局面中所有非雷的位置。  
 /// - 注意：局面中可以有标雷，但不能有错误！
-pub fn get_all_not_mine_on_board(As:&mut Vec<Vec<Vec<i32>>>, xs: &mut Vec<Vec<(usize, usize)>>, bs: &mut Vec<Vec<i32>>, board_of_game: &mut Vec<Vec<i32>>) -> Vec<(usize, usize)> {
+pub fn get_all_not_mine_on_board(
+    As: &mut Vec<Vec<Vec<i32>>>,
+    xs: &mut Vec<Vec<(usize, usize)>>,
+    bs: &mut Vec<Vec<i32>>,
+    board_of_game: &mut Vec<Vec<i32>>,
+) -> Vec<(usize, usize)> {
     let mut ans = solve_direct_mut(As, xs, bs, board_of_game);
     let mut not_mine = vec![];
     not_mine.append(&mut ans.0);
@@ -1168,7 +1222,7 @@ pub fn get_all_not_mine_on_board(As:&mut Vec<Vec<Vec<i32>>>, xs: &mut Vec<Vec<(u
 // // 求出该块所有的解。
 // // 一块(block)包含多段(segment)
 // fn get_all_not_mine_on_block(As: &Vec<Vec<Vec<i32>>>, xs: &Vec<Vec<(usize, usize)>>, bs: &Vec<Vec<i32>>) -> bool {
-    
+
 //     let (n, i) = solve_direct(As, xs, bs);
 //     if n.is_empty() {
 //         let (n, i) = solve_minus(As, xs, bs);

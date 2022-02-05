@@ -157,8 +157,8 @@ pub fn solve_direct(
                         matrixColumn -= 1;
                     }
                 }
-                matrix_as[b].remove(i);
-                matrix_bs[b].remove(i);
+                As[b].remove(i);
+                bs[b].remove(i);
                 matrixRow -= 1;
             }
         }
@@ -1089,6 +1089,10 @@ pub fn OBR_board(
 /// - 可用范围：仅rust底层。
 /// - 注意：在rust中，cal_possibility往往需要和mark_board搭配使用，而在其他语言（python）中可能不需要如此！这是由于其ffi不支持原地操作。
 #[cfg(any(feature = "rs"))]
+pub fn mark_board(board_of_game: &mut Vec<Vec<i32>>) {
+    let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+    solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
+    solve_minus(&mut As, &mut xs, &mut bs, board_of_game);
 }
 
 /// 求出游戏局面中所有非雷、是雷的位置。  
@@ -1135,6 +1139,10 @@ pub fn get_all_not_and_is_mine_on_board(
 /// 情况表：1 -> 正确的判雷。  
 /// 2 -> 必要的猜雷。  
 /// 3 -> 不必要的猜雷。  
+/// 4 -> 踩到必然的雷。
+#[cfg(any(feature = "rs"))]
+pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> i32 {
+    let mut flag_need = true;
     let (mut Ases, mut xses, mut bses) = refresh_matrixses(&board_of_game);
     let t = xses
         .iter()

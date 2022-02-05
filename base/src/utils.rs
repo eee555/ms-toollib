@@ -373,7 +373,7 @@ fn get_random_int(limit: usize) -> usize {
 }
 
 #[cfg(feature = "js")]
-trait js_shuffle {
+pub trait js_shuffle {
     fn shuffle_(&mut self);
 }
 

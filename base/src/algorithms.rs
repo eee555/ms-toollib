@@ -5,8 +5,8 @@ use crate::utils::{
     BigNumber, C_query, C,
 };
 
-#[cfg(any(feature = "py", feature = "rs"))]
-use rand::thread_rng;
+#[cfg(feature = "js")]
+use crate::utils::js_shuffle;
 
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::OBR::ImageBoard;
@@ -35,7 +35,6 @@ use tract_onnx::prelude::*;
 /// - 输入：3个矩阵、局面。
 /// - 返回：是雷、非雷的格子，在传入的局面上标是雷（11）和非雷（12）。  
 /// - 注意：会维护系数矩阵、格子矩阵和数字矩阵，删、改、分段。
-#[cfg(any(feature = "rs"))]
 pub fn solve_minus(
     As: &mut Vec<Vec<Vec<i32>>>,
     xs: &mut Vec<Vec<(usize, usize)>>,
@@ -129,7 +128,6 @@ pub fn solve_minus(
 /// - 输入：3个矩阵、局面。
 /// - 返回：是雷、非雷的格子，在传入的局面上标是雷（11）和非雷（12）。  
 /// - 注意：会维护系数矩阵、格子矩阵和数字矩阵，删、改、分段。
-#[cfg(any(feature = "rs"))]
 pub fn solve_direct(
     As: &mut Vec<Vec<Vec<i32>>>,
     xs: &mut Vec<Vec<(usize, usize)>>,
@@ -550,7 +548,6 @@ pub fn laymine_op(
 /// ```
 /// - 注意：不修改输入进来的局面，即不帮助标雷（这个设计后续可能修改）；也不维护3个矩阵。因为枚举引擎是最后使用的  
 /// - 注意：超出枚举长度限制是未定义的行为，算法不一定会得到足够多的结果  
-#[cfg(any(feature = "rs"))]
 pub fn solve_enumerate(
     As: &Vec<Vec<Vec<i32>>>,
     xs: &Vec<Vec<(usize, usize)>>,
@@ -796,7 +793,6 @@ pub fn laymine_solvable_adjust(
     // 利用局面调整算法，无猜埋雷
     let mut board = vec![vec![0; column]; row];
     let mut board_of_game = vec![vec![10; column]; row];
-    let mut mine_num_reduce = 0;
     board_of_game[x0][y0] = 0;
     let mut area_op = 9;
     if x0 == 0 || y0 == 0 || x0 == row - 1 || y0 == column - 1 {
@@ -815,37 +811,91 @@ pub fn laymine_solvable_adjust(
         let t = laymine_number(row, column, mine_num, x0, y0);
         return (t, false);
     }
-    let remain_mine_num = mine_num;
-    let remain_not_mine_num = row * column - area_op;
-    let mut cells_plan_to_click = vec![];
-    for j in max(1, x0) - 1..min(row, x0 + 2) {
-        for k in max(1, y0) - 1..min(column, y0 + 2) {
-            if j != x0 && k != y0 {
-                cells_plan_to_click.push((j, k));
-                board[j][k] = 22;
+    'o: for time in 0..10 {
+        let remain_mine_num = mine_num;
+        let remain_not_mine_num = row * column - area_op;
+        let mut cells_plan_to_click = vec![];
+        for j in max(1, x0) - 1..min(row, x0 + 2) {
+            for k in max(1, y0) - 1..min(column, y0 + 2) {
+                if j != x0 && k != y0 {
+                    cells_plan_to_click.push((j, k));
+                    board[j][k] = 22;
+                }
             }
         }
-    }
 
-    for time in 0..10 {
         let mut area_current_adjust = get_adjust_area(&board);
-        let mine_num = (area_current_adjust.len() as f64 * remain_mine_num as f64
-            / remain_not_mine_num as f64) as usize
-            - mine_num_reduce;
-        if mine_num < 0 || mine_num > remain_mine_num {
-            continue;
+        loop {
+            // 每一次代表点开一批格子
+            let mut mine_num_reduce = 0;
+            let mut mine_num_reduce_plus_time_left = 3;
+
+            loop {
+                // 每一次循环代表对局部一次调整
+                let mine_num = (area_current_adjust.len() as f64 * remain_mine_num as f64
+                    / remain_not_mine_num as f64) as usize
+                    - mine_num_reduce;
+                if mine_num < 0 || mine_num > remain_mine_num {
+                    continue 'o;
+                }
+                mine_num_reduce_plus_time_left -= 1;
+                if mine_num_reduce_plus_time_left <= 0 {
+                    mine_num_reduce_plus_time_left = 3;
+                    mine_num_reduce += 1;
+                }
+                adjust_the_area_on_board(
+                    &mut board,
+                    &area_current_adjust,
+                    &cells_plan_to_click,
+                    mine_num,
+                );
+                let mut board_of_game_clone = board_of_game.clone();
+                for &(x, y) in &cells_plan_to_click {
+                    board_of_game_clone[x][y] = board[x][y];
+                }
+            }
         }
-        adjust_the_area_on_board(&mut board, &area_current_adjust, mine_num);
     }
     (vec![], false)
 }
 
+// 在指定的局部（area_current_adjust）埋雷，并刷新board上（cells_plan_to_click）
+// 处的数字
 fn adjust_the_area_on_board(
     board: &mut Vec<Vec<i32>>,
     area_current_adjust: &Vec<(usize, usize)>,
+    cells_plan_to_click: &Vec<(usize, usize)>,
     mine_num: usize,
 ) {
+    let row = board.len();
+    let column = board[0].len();
+    let mut b = vec![0; area_current_adjust.len() - mine_num];
+    b.append(&mut vec![-1; mine_num]);
 
+    #[cfg(any(feature = "py", feature = "rs"))]
+    let mut rng = thread_rng();
+    #[cfg(any(feature = "py", feature = "rs"))]
+    b.shuffle(&mut rng);
+
+    #[cfg(feature = "js")]
+    b.shuffle_();
+
+    for id in 0..area_current_adjust.len() {
+        let x = area_current_adjust[id].0;
+        let y = area_current_adjust[id].1;
+        board[x][y] = b[id];
+    }
+    for (x, y) in cells_plan_to_click {
+        let mut number = 0;
+        for m in max(1, *x) - 1..min(row, *x + 2) {
+            for n in max(1, *y) - 1..min(column, *y + 2) {
+                if board[m][n] == -1 {
+                    number += 1;
+                }
+            }
+        }
+        board[*x][*y] = number;
+    }
 }
 
 fn get_adjust_area(board_of_game: &Vec<Vec<i32>>) -> Vec<(usize, usize)> {
@@ -1086,9 +1136,7 @@ pub fn OBR_board(
 
 /// 对局面用单集合、双集合判雷引擎，快速标雷、标非雷，以供概率计算引擎处理。  
 /// 相当于一种预处理，即先标出容易计算的。  
-/// - 可用范围：仅rust底层。
 /// - 注意：在rust中，cal_possibility往往需要和mark_board搭配使用，而在其他语言（python）中可能不需要如此！这是由于其ffi不支持原地操作。
-#[cfg(any(feature = "rs"))]
 pub fn mark_board(board_of_game: &mut Vec<Vec<i32>>) {
     let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
     solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
@@ -1097,7 +1145,6 @@ pub fn mark_board(board_of_game: &mut Vec<Vec<i32>>) {
 
 /// 求出游戏局面中所有非雷、是雷的位置。  
 /// - 注意：局面中可以有标雷，但不能有错误！
-#[cfg(any(feature = "rs"))]
 pub fn get_all_not_and_is_mine_on_board(
     As: &mut Vec<Vec<Vec<i32>>>,
     xs: &mut Vec<Vec<(usize, usize)>>,
@@ -1140,7 +1187,6 @@ pub fn get_all_not_and_is_mine_on_board(
 /// 2 -> 必要的猜雷。  
 /// 3 -> 不必要的猜雷。  
 /// 4 -> 踩到必然的雷。
-#[cfg(any(feature = "rs"))]
 pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> i32 {
     let mut flag_need = true;
     let (mut Ases, mut xses, mut bses) = refresh_matrixses(&board_of_game);
@@ -1151,19 +1197,19 @@ pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, u
     let mut As = &mut Ases[t];
     let mut xs = &mut xses[t];
     let mut bs = &mut bses[t];
-    let (i, n) = solve_direct(As, xs, bs, board_of_game);
+    let (n, _) = solve_direct(As, xs, bs, board_of_game);
     flag_need = n.is_empty();
     match board_of_game[xy.0][xy.1] {
         12 => return 1,
         11 => return 4,
         _ => {
-            let (i, n) = solve_minus(As, xs, bs, board_of_game);
+            let (n, _) = solve_minus(As, xs, bs, board_of_game);
             flag_need = flag_need || n.is_empty();
             match board_of_game[xy.0][xy.1] {
                 12 => return 1,
                 11 => return 4,
                 _ => {
-                    let (i, n) = solve_enumerate(As, xs, bs);
+                    let (n, i) = solve_enumerate(As, xs, bs);
                     flag_need = flag_need || n.is_empty();
                     if n.contains(xy) {
                         return 1;
@@ -1183,7 +1229,6 @@ pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, u
 /// 判断是否为判雷；对应强无猜规则。
 /// - 前提：对打开非雷或标记是雷的行为判断。   
 /// - 不仅可以判断是雷，也可以判断非雷。
-#[cfg(any(feature = "rs"))]
 pub fn is_able_to_solve(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> bool {
     let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
     solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
@@ -1201,25 +1246,20 @@ pub fn is_able_to_solve(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) 
     false
 }
 
-// 
-#[cfg(any(feature = "rs"))]
-pub fn each_block_is_able_to_judge(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> Vec<bool> {
-    vec![true]
-    // let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
-    // solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
-    // if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {
-    //     return true;
-    // }
-    // solve_minus(&mut As, &mut xs, &mut bs, board_of_game);
-    // if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {
-    //     return true;
-    // }
-    // let (n, i) = solve_enumerate(&As, &xs, &bs);
-    // if i.contains(xy) || n.contains(xy) {
-    //     return true;
-    // }
-    // false
-}
-
-
-
+// pub fn each_block_is_able_to_judge(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> Vec<bool> {
+//     vec![true]
+// let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+// solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
+// if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {
+//     return true;
+// }
+// solve_minus(&mut As, &mut xs, &mut bs, board_of_game);
+// if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {
+//     return true;
+// }
+// let (n, i) = solve_enumerate(&As, &xs, &bs);
+// if i.contains(xy) || n.contains(xy) {
+//     return true;
+// }
+// false
+// }

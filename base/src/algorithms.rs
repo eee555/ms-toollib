@@ -29,6 +29,8 @@ use tract_ndarray::Array;
 #[cfg(any(feature = "py", feature = "rs"))]
 use tract_onnx::prelude::*;
 
+use crate::ENUM_LIMIT;
+
 // 中高级的算法，例如无猜埋雷、判雷引擎、计算概率
 
 /// 双集合判雷引擎。
@@ -577,7 +579,6 @@ pub fn solve_enumerate(
     // println!("matrixx_squeeze_s{:?}", matrixx_squeeze_s);
     // println!("bs{:?}", bs);
 
-    use crate::ENUM_LIMIT;
     for i in 0..block_num {
         let (table_minenum_i, table_cell_minenum_i) = cal_table_minenum_recursion(
             &matrixA_squeeze_s[i],
@@ -824,52 +825,66 @@ pub fn laymine_solvable_adjust(
             }
         }
 
-        let mut area_current_adjust = get_adjust_area(&board);
+        // let mut area_current_adjust = get_adjust_area(&board);
         loop {
             // 每一次代表点开一批格子
             let mut mine_num_reduce = 0;
             let mut mine_num_reduce_plus_time_left = 3;
-
-            loop {
-                // 每一次循环代表对局部一次调整
-                let mine_num = (area_current_adjust.len() as f64 * remain_mine_num as f64
-                    / remain_not_mine_num as f64) as usize
-                    - mine_num_reduce;
-                if mine_num < 0 || mine_num > remain_mine_num {
+            for &(x, y) in &cells_plan_to_click {
+                board_of_game[x][y] = 0;
+            }
+            let (mut Ases, mut xses, mut bses) = refresh_matrixses(&board_of_game);
+            for id in 0..xses.len() {
+                let xs_cell_num = xses[id].iter().fold(0, |acc, x| acc + x.len());
+                let mine_num_except = (xs_cell_num as f64 * remain_mine_num as f64
+                    / remain_not_mine_num as f64) as usize;
+                let mut success_flag = false;
+                'i: for i in (0..xs_cell_num + 1).rev() {
+                    for t in 0..3 {
+                        let mine_num = (i + mine_num_except + 1) % (xs_cell_num + 1);
+                        if mine_num > remain_mine_num {
+                            continue;
+                        }
+                        adjust_the_area_on_board(&mut board, &xses[id], mine_num);
+                        // 以下的循环用来修正b向量
+                        for bb in 0..bses[id].len() {
+                            for ss in 0..bses[id][bb].len() {
+                                for aa in 0..Ases[id][ss].len() {
+                                    if Ases[id][ss][aa][bb] == 1 {
+                                        bses[id][ss][bb] -=
+                                            board[xses[id][ss][bb].0][xses[id][ss][bb].1];
+                                    }
+                                }
+                            }
+                        }
+                        let (n, i) = get_all_not_and_is_mine_on_board(&mut Ases[id], &mut xses[id], &mut bses[id], &mut board_of_game);
+                        if n.len() > 0 || i.len() == xs_cell_num {
+                            success_flag = true;
+                            break 'i;
+                        }
+                    }
+                }
+                if !success_flag {
                     continue 'o;
                 }
-                mine_num_reduce_plus_time_left -= 1;
-                if mine_num_reduce_plus_time_left <= 0 {
-                    mine_num_reduce_plus_time_left = 3;
-                    mine_num_reduce += 1;
-                }
-                adjust_the_area_on_board(
-                    &mut board,
-                    &area_current_adjust,
-                    &cells_plan_to_click,
-                    mine_num,
-                );
-                let mut board_of_game_clone = board_of_game.clone();
-                for &(x, y) in &cells_plan_to_click {
-                    board_of_game_clone[x][y] = board[x][y];
-                }
             }
+
+            
         }
     }
     (vec![], false)
 }
 
-// 在指定的局部（area_current_adjust）埋雷，并刷新board上（cells_plan_to_click）
-// 处的数字
+// 在指定的局部（area_current_adjust）埋雷，不刷新board上的数字
 fn adjust_the_area_on_board(
     board: &mut Vec<Vec<i32>>,
-    area_current_adjust: &Vec<(usize, usize)>,
-    cells_plan_to_click: &Vec<(usize, usize)>,
+    area_current_adjust: &Vec<Vec<(usize, usize)>>,
     mine_num: usize,
 ) {
     let row = board.len();
     let column = board[0].len();
-    let mut b = vec![0; area_current_adjust.len() - mine_num];
+    let cell_num = area_current_adjust.iter().fold(0, |acc, x| acc + x.len());
+    let mut b = vec![0; cell_num - mine_num];
     b.append(&mut vec![-1; mine_num]);
 
     #[cfg(any(feature = "py", feature = "rs"))]
@@ -880,21 +895,12 @@ fn adjust_the_area_on_board(
     #[cfg(feature = "js")]
     b.shuffle_();
 
-    for id in 0..area_current_adjust.len() {
-        let x = area_current_adjust[id].0;
-        let y = area_current_adjust[id].1;
-        board[x][y] = b[id];
-    }
-    for (x, y) in cells_plan_to_click {
-        let mut number = 0;
-        for m in max(1, *x) - 1..min(row, *x + 2) {
-            for n in max(1, *y) - 1..min(column, *y + 2) {
-                if board[m][n] == -1 {
-                    number += 1;
-                }
-            }
+    let mut id = 0;
+    for i in area_current_adjust {
+        for &(x, y) in i {
+            board[x][y] = b[id];
+            id += 1;
         }
-        board[*x][*y] = number;
     }
 }
 
@@ -1246,7 +1252,7 @@ pub fn is_able_to_solve(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) 
     false
 }
 
-// pub fn each_block_is_able_to_judge(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> Vec<bool> {
+// fn each_block_is_able_to_judge(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> Vec<bool> {
 //     vec![true]
 // let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
 // solve_direct(&mut As, &mut xs, &mut bs, board_of_game);

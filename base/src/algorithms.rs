@@ -812,9 +812,12 @@ pub fn laymine_solvable_adjust(
         let t = laymine_number(row, column, mine_num, x0, y0);
         return (t, false);
     }
-    'o: for time in 0..10 {
-        let remain_mine_num = mine_num;
-        let remain_not_mine_num = row * column - area_op;
+    'o: for time in 0..11 {
+        if time == 10 {
+            return (laymine_op_number(row, column, mine_num, x0, y0), false);
+        }
+        let mut remain_mine_num = mine_num;
+        let mut remain_not_mine_num = row * column - area_op;
         let mut cells_plan_to_click = vec![];
         for j in max(1, x0) - 1..min(row, x0 + 2) {
             for k in max(1, y0) - 1..min(column, y0 + 2) {
@@ -828,20 +831,23 @@ pub fn laymine_solvable_adjust(
         // let mut area_current_adjust = get_adjust_area(&board);
         loop {
             // 每一次代表点开一批格子
-            let mut mine_num_reduce = 0;
-            let mut mine_num_reduce_plus_time_left = 3;
             for &(x, y) in &cells_plan_to_click {
                 board_of_game[x][y] = 0;
             }
+            cells_plan_to_click.clear();
             let (mut Ases, mut xses, mut bses) = refresh_matrixses(&board_of_game);
+            if xses.is_empty() && remain_not_mine_num > 0 {
+                continue 'o;
+            }
             for id in 0..xses.len() {
                 let xs_cell_num = xses[id].iter().fold(0, |acc, x| acc + x.len());
                 let mine_num_except = (xs_cell_num as f64 * remain_mine_num as f64
                     / remain_not_mine_num as f64) as usize;
+                let mut mine_num = 0;
                 let mut success_flag = false;
                 'i: for i in (0..xs_cell_num + 1).rev() {
-                    for t in 0..3 {
-                        let mine_num = (i + mine_num_except + 1) % (xs_cell_num + 1);
+                    for _ in 0..3 {
+                        mine_num = (i + mine_num_except + 1) % (xs_cell_num + 1);
                         if mine_num > remain_mine_num {
                             continue;
                         }
@@ -857,22 +863,55 @@ pub fn laymine_solvable_adjust(
                                 }
                             }
                         }
-                        let (n, i) = get_all_not_and_is_mine_on_board(&mut Ases[id], &mut xses[id], &mut bses[id], &mut board_of_game);
+                        let (mut n, i) = get_all_not_and_is_mine_on_board(
+                            &mut Ases[id],
+                            &mut xses[id],
+                            &mut bses[id],
+                            &mut board_of_game,
+                        );
                         if n.len() > 0 || i.len() == xs_cell_num {
                             success_flag = true;
+                            cells_plan_to_click.append(&mut n);
+                            remain_mine_num -= mine_num;
+                            remain_not_mine_num -= xs_cell_num - mine_num;
                             break 'i;
                         }
                     }
                 }
                 if !success_flag {
+                    // 如果失败，代表没有合适的雷数，使得局面接下来无猜。
                     continue 'o;
                 }
             }
-
-            
+            if remain_not_mine_num <= 0 {
+                // 进来代表埋雷成功。
+                // 按理不可能小于0，然而不自信。
+                for i in 0..row {
+                    for j in 0..column {
+                        if board_of_game[i][j] == 10 {
+                            board[i][j] = -1;
+                        }
+                    }
+                }
+                break 'o;
+            }
         }
     }
-    (vec![], false)
+    // 最后，算数字
+    for i in 0..row {
+        for j in 0..column {
+            if board[i][j] == -1 {
+                for m in max(1, i) - 1..min(row, i + 2) {
+                    for n in max(1, j) - 1..min(column, j + 2) {
+                        if board[m][n] >= 0 {
+                            board[m][n] += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    (board, true)
 }
 
 // 在指定的局部（area_current_adjust）埋雷，不刷新board上的数字

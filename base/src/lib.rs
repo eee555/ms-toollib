@@ -44,7 +44,7 @@ pub use algorithms::{
 };
 pub use algorithms::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, is_solvable, laymine,
-    laymine_op, laymine_solvable, get_all_not_and_is_mine_on_board
+    laymine_op, laymine_solvable, get_all_not_and_is_mine_on_board, laymine_solvable_adjust
 };
 
 mod board;

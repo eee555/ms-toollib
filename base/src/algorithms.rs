@@ -18,6 +18,9 @@ use rand::seq::SliceRandom;
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::thread_rng;
 
+// use rand::prelude::*;
+// use rand::{rngs::StdRng, Rng, SeedableRng};
+
 use std::cmp::{max, min};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
@@ -782,7 +785,7 @@ pub fn laymine_solvable(
     (Board, Parameters)
 }
 
-/// 调整法无猜埋雷（没写好）
+/// 调整法无猜埋雷
 /// 返回局面、是否成功
 pub fn laymine_solvable_adjust(
     row: usize,
@@ -792,9 +795,7 @@ pub fn laymine_solvable_adjust(
     y0: usize,
 ) -> (Vec<Vec<i32>>, bool) {
     // 利用局面调整算法，无猜埋雷
-    let mut board = vec![vec![0; column]; row];
-    let mut board_of_game = vec![vec![10; column]; row];
-    board_of_game[x0][y0] = 0;
+    let mut board = vec![];
     let mut area_op = 9;
     if x0 == 0 || y0 == 0 || x0 == row - 1 || y0 == column - 1 {
         if x0 == 0 && y0 == 0
@@ -812,18 +813,21 @@ pub fn laymine_solvable_adjust(
         let t = laymine_number(row, column, mine_num, x0, y0);
         return (t, false);
     }
-    'o: for time in 0..11 {
-        if time == 10 {
+    'o: for time in 0..101 {
+        println!("尝试: {:?}", time);
+        board = vec![vec![0; column]; row];
+        let mut board_of_game = vec![vec![10; column]; row];
+        board_of_game[x0][y0] = 0;
+        if time == 100 {
             return (laymine_op_number(row, column, mine_num, x0, y0), false);
         }
         let mut remain_mine_num = mine_num;
-        let mut remain_not_mine_num = row * column - area_op;
+        let mut remain_not_mine_num = row * column - area_op - mine_num;
         let mut cells_plan_to_click = vec![];
         for j in max(1, x0) - 1..min(row, x0 + 2) {
             for k in max(1, y0) - 1..min(column, y0 + 2) {
-                if j != x0 && k != y0 {
+                if j != x0 || k != y0 {
                     cells_plan_to_click.push((j, k));
-                    board[j][k] = 22;
                 }
             }
         }
@@ -832,41 +836,76 @@ pub fn laymine_solvable_adjust(
         loop {
             // 每一次代表点开一批格子
             for &(x, y) in &cells_plan_to_click {
-                board_of_game[x][y] = 0;
+                board_of_game[x][y] = 1;
             }
             cells_plan_to_click.clear();
-            let (mut Ases, mut xses, mut bses) = refresh_matrixses(&board_of_game);
+            let (Ases, xses, mut bses) = refresh_matrixses(&board_of_game);
             if xses.is_empty() && remain_not_mine_num > 0 {
                 continue 'o;
             }
             for id in 0..xses.len() {
                 let xs_cell_num = xses[id].iter().fold(0, |acc, x| acc + x.len());
                 let mine_num_except = (xs_cell_num as f64 * remain_mine_num as f64
-                    / remain_not_mine_num as f64) as usize;
-                let mut mine_num = 0;
+                    / (remain_not_mine_num + remain_mine_num) as f64)
+                    as usize;
                 let mut success_flag = false;
-                'i: for i in (0..xs_cell_num + 1).rev() {
-                    for _ in 0..3 {
-                        mine_num = (i + mine_num_except + 1) % (xs_cell_num + 1);
-                        if mine_num > remain_mine_num {
-                            continue;
+                'inner: for i in 0..xs_cell_num + 1 {
+                    let mine_num;
+                    if mine_num_except == 0 || xs_cell_num == 0 {
+                        mine_num = 0;
+                    } else if mine_num_except == xs_cell_num {
+                        mine_num = mine_num_except;
+                    } else if i == xs_cell_num - 1 {
+                        mine_num = 0;
+                    } else if i == xs_cell_num {
+                        mine_num = xs_cell_num;
+                    } else if xs_cell_num > mine_num_except * 2 {
+                        let z = mine_num_except * 2 - 1;
+                        if i < z {
+                            if i % 2 == 1 {
+                                mine_num = mine_num_except + (i + 1) / 2;
+                            } else {
+                                mine_num = mine_num_except - i / 2;
+                            }
+                        } else {
+                            mine_num = i + 1;
                         }
+                    } else {
+                        let z = (xs_cell_num - mine_num_except) * 2 - 1;
+                        if i < z {
+                            if i % 2 == 1 {
+                                mine_num = mine_num_except + (i + 1) / 2;
+                            } else {
+                                mine_num = mine_num_except - i / 2;
+                            }
+                        } else {
+                            mine_num = xs_cell_num - i - 1;
+                        }
+                    }
+
+                    // let mine_num = (i + mine_num_except + 1) % (xs_cell_num + 1);
+                    if mine_num > remain_mine_num || xs_cell_num - mine_num > remain_not_mine_num {
+                        continue;
+                    }
+                    for _ in 0..5 {
                         adjust_the_area_on_board(&mut board, &xses[id], mine_num);
                         // 以下的循环用来修正b向量
                         for bb in 0..bses[id].len() {
                             for ss in 0..bses[id][bb].len() {
-                                for aa in 0..Ases[id][ss].len() {
-                                    if Ases[id][ss][aa][bb] == 1 {
-                                        bses[id][ss][bb] -=
-                                            board[xses[id][ss][bb].0][xses[id][ss][bb].1];
+                                bses[id][bb][ss] = 0;
+                                for aa in 0..Ases[id][bb][0].len() {
+                                    if Ases[id][bb][ss][aa] == 1 {
+                                        if board[xses[id][bb][aa].0][xses[id][bb][aa].1] == -1 {
+                                            bses[id][bb][ss] += 1;
+                                        }
                                     }
                                 }
                             }
                         }
                         let (mut n, i) = get_all_not_and_is_mine_on_board(
-                            &mut Ases[id],
-                            &mut xses[id],
-                            &mut bses[id],
+                            &mut Ases[id].clone(),
+                            &mut xses[id].clone(),
+                            &mut bses[id].clone(),
                             &mut board_of_game,
                         );
                         if n.len() > 0 || i.len() == xs_cell_num {
@@ -874,7 +913,16 @@ pub fn laymine_solvable_adjust(
                             cells_plan_to_click.append(&mut n);
                             remain_mine_num -= mine_num;
                             remain_not_mine_num -= xs_cell_num - mine_num;
-                            break 'i;
+                            for segment in &xses[id] {
+                                for &(xx, yy) in segment {
+                                    if board[xx][yy] == -1 {
+                                        board_of_game[xx][yy] = 11;
+                                    } else {
+                                        board_of_game[xx][yy] = 12;
+                                    }
+                                }
+                            }
+                            break 'inner;
                         }
                     }
                 }
@@ -920,14 +968,15 @@ fn adjust_the_area_on_board(
     area_current_adjust: &Vec<Vec<(usize, usize)>>,
     mine_num: usize,
 ) {
-    let row = board.len();
-    let column = board[0].len();
+    // let row = board.len();
+    // let column = board[0].len();
     let cell_num = area_current_adjust.iter().fold(0, |acc, x| acc + x.len());
     let mut b = vec![0; cell_num - mine_num];
     b.append(&mut vec![-1; mine_num]);
 
     #[cfg(any(feature = "py", feature = "rs"))]
     let mut rng = thread_rng();
+    // let mut rng = StdRng::seed_from_u64(2);
     #[cfg(any(feature = "py", feature = "rs"))]
     b.shuffle(&mut rng);
 
@@ -941,27 +990,6 @@ fn adjust_the_area_on_board(
             id += 1;
         }
     }
-}
-
-fn get_adjust_area(board_of_game: &Vec<Vec<i32>>) -> Vec<(usize, usize)> {
-    let row = board_of_game.len();
-    let column = board_of_game[0].len();
-    let mut a = vec![];
-    for x in 0..row {
-        for y in 0..column {
-            if board_of_game[x][y] == 10 {
-                'o: for m in max(1, x) - 1..min(row, x + 2) {
-                    for n in max(1, y) - 1..min(column, y + 2) {
-                        if board_of_game[m][n] == 22 {
-                            a.push((x, y));
-                            break 'o;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    a
 }
 
 /// 适用于游戏的标准埋雷。  

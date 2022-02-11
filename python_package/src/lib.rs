@@ -40,8 +40,8 @@ fn py_cal_op(board: Vec<Vec<i32>>) -> PyResult<usize> {
 }
 
 #[pyfunction]
-#[pyo3(name = "laymine_number")]
-fn py_laymine_number(
+#[pyo3(name = "laymine")]
+fn py_laymine(
     row: usize,
     column: usize,
     mine_num: usize,
@@ -50,7 +50,7 @@ fn py_laymine_number(
 ) -> PyResult<Vec<Vec<i32>>> {
     // 通用标准埋雷引擎
     // 输出为二维的局面
-    Ok(laymine_number(row, column, mine_num, x0, y0))
+    Ok(laymine(row, column, mine_num, x0, y0))
 }
 
 #[pyfunction]
@@ -82,9 +82,9 @@ fn py_refresh_board(
 }
 
 #[pyfunction]
-#[pyo3(name = "get_all_not_mine_on_board")]
-fn py_get_all_not_mine_on_board(game_board: Vec<Vec<i32>>) -> PyResult<Vec<(usize, usize)>> {
-    Ok(get_all_not_mine_on_board(&game_board, 40))
+#[pyo3(name = "get_all_not_and_is_mine_on_board")]
+fn py_get_all_not_and_is_mine_on_board(game_board: Vec<Vec<i32>>) -> PyResult<Vec<(usize, usize)>> {
+    Ok(get_all_not_and_is_mine_on_board(&game_board, 40))
 }
 
 // #[pyfunction]

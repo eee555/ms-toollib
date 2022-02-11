@@ -393,7 +393,7 @@ impl js_shuffle for Vec<i32> {
 /// 通用标准埋雷引擎。
 /// - 标准埋雷规则：起手位置非雷，其余位置的雷服从均匀分布。
 /// - 输出：二维的局面，其中0代表空，1~8代表1~8，-1代表雷。
-pub fn laymine_number(
+pub fn laymine(
     row: usize,
     column: usize,
     MineNum: usize,
@@ -446,7 +446,7 @@ pub fn laymine_number(
 /// 通用win7规则埋雷引擎。
 /// - win7规则：起手位置开空，其余位置的雷服从均匀分布。
 /// - 输出：二维的局面，其中0代表空，1~8代表1~8，-1代表雷。
-pub fn laymine_op_number(
+pub fn laymine_op(
     row: usize,
     column: usize,
     MineNum: usize,

@@ -29,8 +29,8 @@
 // cargo yank --vers 0.0.1
 mod utils;
 pub use utils::{
-    cal3BV, cal_op, cal_table_minenum_recursion, combine, laymine_number, laymine_op_number,
-    refresh_board, refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure,
+    cal3BV, cal_op, cal_table_minenum_recursion, combine, laymine, laymine_op, refresh_board,
+    refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure,
 };
 
 mod algorithms;
@@ -38,23 +38,19 @@ mod analyse_methods;
 #[cfg(any(feature = "py", feature = "rs"))]
 pub use algorithms::{laymine_solvable_thread, sample_3BVs_exp, OBR_board};
 // #[cfg(feature = "js")]
+pub use algorithms::{
+    cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard,
+    get_all_not_and_is_mine_on_board, is_solvable, laymine_solvable, laymine_solvable_adjust,
+};
 #[cfg(any(feature = "rs"))]
-pub use algorithms::{
-    mark_board, solve_direct, solve_enumerate, solve_minus
-};
-pub use algorithms::{
-    cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, is_solvable, laymine,
-    laymine_op, laymine_solvable, get_all_not_and_is_mine_on_board, laymine_solvable_adjust
-};
+pub use algorithms::{mark_board, solve_direct, solve_enumerate, solve_minus};
 
 mod board;
-pub use board::{AvfVideo, MinesweeperBoard, GameBoard};
+pub use board::{AvfVideo, GameBoard, MinesweeperBoard};
 
 #[cfg(any(feature = "py", feature = "rs"))]
 mod OBR;
 #[cfg(any(feature = "py", feature = "rs"))]
 pub use OBR::ImageBoard;
 
-
 const ENUM_LIMIT: usize = 40;
-

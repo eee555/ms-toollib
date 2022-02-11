@@ -746,7 +746,7 @@ pub fn laymine_solvable_thread(
     (game_board, parameters)
 }
 
-/// 删选法单线程无猜埋雷。  
+/// 删选法单线程无猜埋雷。不可以生成任意雷密度的无猜局面。但雷满足均匀分布。  
 /// - 输入：高、宽、雷数、起手行数、起手列数、3BV下限、上限、最大尝试次数、最大枚举长度。  
 /// - 返回：是否成功。  
 /// - 注意：若不成功返回最后生成的局面，此时则不一定无猜。
@@ -785,8 +785,8 @@ pub fn laymine_solvable(
     (Board, Parameters)
 }
 
-/// 调整法无猜埋雷
-/// 返回局面、是否成功
+/// 调整法无猜埋雷。可以生成任意雷密度的无猜局面。但雷不满足均匀分布。  
+/// - 返回局面、是否成功  
 pub fn laymine_solvable_adjust(
     row: usize,
     column: usize,

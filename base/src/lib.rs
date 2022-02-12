@@ -41,9 +41,10 @@ pub use algorithms::{laymine_solvable_thread, sample_3BVs_exp, OBR_board};
 pub use algorithms::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard,
     get_all_not_and_is_mine_on_board, is_solvable, laymine_solvable, laymine_solvable_adjust,
+    is_guess_while_needless, is_able_to_solve, mark_board, solve_direct, solve_enumerate, solve_minus
 };
-#[cfg(any(feature = "rs"))]
-pub use algorithms::{mark_board, solve_direct, solve_enumerate, solve_minus};
+// #[cfg(any(feature = "rs"))]
+// pub use algorithms::{mark_board, solve_direct, solve_enumerate, solve_minus};
 
 mod board;
 pub use board::{AvfVideo, GameBoard, MinesweeperBoard};

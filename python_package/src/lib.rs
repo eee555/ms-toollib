@@ -6,7 +6,7 @@ use pyo3::wrap_pyfunction;
 
 use ms_toollib::*;
 mod board;
-pub use board::{PyAvfVideo, PyMinesweeperBoard, PyGameBoard};
+pub use board::{PyAvfVideo, PyGameBoard, PyMinesweeperBoard};
 
 // pip install maturin
 // maturin publish --manylinux 2014
@@ -40,7 +40,7 @@ fn py_cal_op(board: Vec<Vec<i32>>) -> PyResult<usize> {
 }
 
 #[pyfunction]
-#[pyo3(name = "laymine")]
+#[pyo3(name = "laymine", text_signature = "(row, column, mine_num, x0, y0)")]
 fn py_laymine(
     row: usize,
     column: usize,
@@ -59,16 +59,16 @@ fn py_cal3BV(board: Vec<Vec<i32>>) -> PyResult<usize> {
     Ok(cal3BV(&board))
 }
 
-// #[pyfunction]
-// fn solve_minus(
-//     mut matrix_as: Vec<Vec<Vec<i32>>>,
-//     mut matrix_xs: Vec<Vec<(usize, usize)>>,
-//     mut matrix_bs: Vec<Vec<i32>>,
-//     mut board_of_game: Vec<Vec<i32>>,
-// ) -> PyResult<(Vec<Vec<Vec<i32>>>, Vec<Vec<(usize, usize)>>, Vec<Vec<i32>>, Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<(usize, usize)>)> {
-//     let (not_mine, is_mine) = ms_toollib_rs::solve_minus(&mut matrix_as, &mut matrix_xs, &mut matrix_bs, &mut board_of_game);
-//     Ok((matrix_as, matrix_xs, matrix_bs, board_of_game, not_mine, is_mine))
-// }
+#[pyfunction]
+#[pyo3(name = "solve_minus")]
+fn py_solve_minus(
+    mut board_of_game: Vec<Vec<i32>>,
+) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<(usize, usize)>)> {
+    let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+    let mut g = board_of_game.clone();
+    let (not, is) = solve_minus(&mut As, &mut xs, &mut bs, &mut g);
+    Ok((g, not, is))
+}
 
 #[pyfunction]
 #[pyo3(name = "refresh_board")]
@@ -83,49 +83,47 @@ fn py_refresh_board(
 
 #[pyfunction]
 #[pyo3(name = "get_all_not_and_is_mine_on_board")]
-fn py_get_all_not_and_is_mine_on_board(game_board: Vec<Vec<i32>>) -> PyResult<Vec<(usize, usize)>> {
-    Ok(get_all_not_and_is_mine_on_board(&game_board, 40))
+fn py_get_all_not_and_is_mine_on_board(
+    board_of_game: Vec<Vec<i32>>,
+) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<(usize, usize)>)> {
+    let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+    let mut g = board_of_game.clone();
+    let (not, is) = get_all_not_and_is_mine_on_board(&mut As, &mut xs, &mut bs, &mut g);
+    Ok((g, not, is))
 }
 
-// #[pyfunction]
-// fn solve_direct(
-//     mut MatrixA: Vec<Vec<i32>>,
-//     mut Matrixx: Vec<(usize, usize)>,
-//     mut Matrixb: Vec<i32>,
-//     mut board_of_game: Vec<Vec<i32>>,
-// ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<(usize, usize)>)> {
-//     let (notMine, is_mine) = ms_toollib_rs::solve_direct(&mut MatrixA, &mut Matrixx, &mut Matrixb, &mut board_of_game);
-//     Ok((board_of_game, notMine, is_mine))
-// }
+#[pyfunction]
+#[pyo3(name = "solve_direct")]
+fn py_solve_direct(
+    mut board_of_game: Vec<Vec<i32>>,
+) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<(usize, usize)>)> {
+    let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+    let mut g = board_of_game.clone();
+    let (not, is) = solve_direct(&mut As, &mut xs, &mut bs, &mut g);
+    Ok((g, not, is))
+}
 
 #[pyfunction]
-#[pyo3(name = "laymine_op_number")]
-fn py_laymine_op_number(
+#[pyo3(name = "laymine_op", text_signature = "(row, column, mine_num, x0, y0)")]
+fn py_laymine_op(
     row: usize,
     column: usize,
     mine_num: usize,
     x0: usize,
     y0: usize,
 ) -> PyResult<Vec<Vec<i32>>> {
-    Ok(laymine_op_number(row, column, mine_num, x0, y0))
+    Ok(laymine_op(row, column, mine_num, x0, y0))
 }
 
-// #[pyfunction(enuLimit = 30)]
-// fn solve_enumerate(
-//     Matrix_as: Vec<Vec<Vec<i32>>>,
-//     Matrix_xs: Vec<Vec<(usize, usize)>>,
-//     Matrix_bs: Vec<Vec<i32>>,
-//     mut board_of_game: Vec<Vec<i32>>,
-//     enuLimit: usize,
-// ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<(usize, usize)>)> {
-//     let (notMine, is_mine) = ms_toollib_rs::solve_enumerate(
-//         &Matrix_as,
-//         &Matrix_xs,
-//         &Matrix_bs,
-//         enuLimit,
-//     );
-//     Ok((board_of_game, notMine, is_mine))
-// }
+#[pyfunction]
+#[pyo3(name = "solve_enumerate")]
+fn py_solve_enumerate(
+    board_of_game: Vec<Vec<i32>>,
+) -> PyResult<(Vec<(usize, usize)>, Vec<(usize, usize)>)> {
+    let (As, xs, bs, _, _) = refresh_matrixs(&board_of_game);
+    let (not, is) = solve_enumerate(&As, &xs, &bs);
+    Ok((not, is))
+}
 
 #[pyfunction]
 #[pyo3(name = "unsolvable_structure")]
@@ -133,82 +131,50 @@ fn py_unsolvable_structure(boardCheck: Vec<Vec<i32>>) -> PyResult<bool> {
     Ok(unsolvable_structure(&boardCheck))
 }
 
-#[pyfunction(enuLimit = 30)]
+#[pyfunction]
 #[pyo3(name = "is_solvable")]
-fn py_is_solvable(board: Vec<Vec<i32>>, x0: usize, y0: usize, enuLimit: usize) -> PyResult<bool> {
-    Ok(is_solvable(&board, x0, y0, enuLimit))
+fn py_is_solvable(board: Vec<Vec<i32>>, x0: usize, y0: usize) -> PyResult<bool> {
+    Ok(is_solvable(&board, x0, y0))
 }
 
-#[pyfunction(min3BV = 0, max3BV = 1000_000, max_times = 1000_000, method = 0)]
-#[pyo3(name = "laymine_op")]
-pub fn py_laymine_op(
-    row: usize,
-    column: usize,
-    mine_num: usize,
-    x0: usize,
-    y0: usize,
-    min3BV: usize,
-    max3BV: usize,
-    max_times: usize,
-    method: usize,
-) -> PyResult<(Vec<Vec<i32>>, Vec<usize>)> {
-    Ok(laymine_op(
-        row, column, mine_num, x0, y0, min3BV, max3BV, max_times, method,
-    ))
-}
-
-#[pyfunction(min3BV = 0, max3BV = 1000000, max_times = 1000000, enuLimit = 30)]
-#[pyo3(name = "laymine_solvable")]
+#[pyfunction(max_times = 1000000)]
+#[pyo3(name = "laymine_solvable", text_signature = "(row, column, mine_num, x0, y0, max_times)")]
 pub fn py_laymine_solvable(
     row: usize,
     column: usize,
     mine_num: usize,
     x0: usize,
     y0: usize,
-    min3BV: usize,
-    max3BV: usize,
     max_times: usize,
-    method: usize,
-) -> PyResult<(Vec<Vec<i32>>, Vec<usize>)> {
-    Ok(laymine_solvable(
-        row, column, mine_num, x0, y0, min3BV, max3BV, max_times, method,
-    ))
+) -> PyResult<(Vec<Vec<i32>>, bool)> {
+    Ok(laymine_solvable(row, column, mine_num, x0, y0, max_times))
 }
 
-#[pyfunction(min3BV = 0, max3BV = 1000_000, max_times = 1000_000, method = 0)]
-#[pyo3(name = "laymine")]
-pub fn py_laymine(
-    row: usize,
-    column: usize,
-    mine_num: usize,
-    x0: usize,
-    y0: usize,
-    min3BV: usize,
-    max3BV: usize,
-    max_times: usize,
-    method: usize,
-) -> PyResult<(Vec<Vec<i32>>, Vec<usize>)> {
-    Ok(laymine(
-        row, column, mine_num, x0, y0, min3BV, max3BV, max_times, method,
-    ))
-}
-
-#[pyfunction(min3BV = 0, max3BV = 1000000, max_times = 1000000, enuLimit = 30)]
-#[pyo3(name = "laymine_solvable_thread")]
+#[pyfunction(max_times = 1000000)]
+#[pyo3(name = "laymine_solvable_thread", text_signature = "(row, column, mine_num, x0, y0, max_times)")]
 pub fn py_laymine_solvable_thread(
     row: usize,
     column: usize,
     mine_num: usize,
     x0: usize,
     y0: usize,
-    min3BV: usize,
-    max3BV: usize,
-    mut max_times: usize,
-    enuLimit: usize,
-) -> PyResult<(Vec<Vec<i32>>, [usize; 3])> {
+    max_times: usize,
+) -> PyResult<(Vec<Vec<i32>>, bool)> {
     Ok(laymine_solvable_thread(
-        row, column, mine_num, x0, y0, min3BV, max3BV, max_times, enuLimit,
+        row, column, mine_num, x0, y0, max_times
     ))
+}
+
+#[pyfunction]
+#[pyo3(name = "laymine_solvable_adjust", text_signature = "(row, column, mine_num, x0, y0)")]
+pub fn py_laymine_solvable_adjust(
+    row: usize,
+    column: usize,
+    mine_num: usize,
+    x0: usize,
+    y0: usize,
+) -> PyResult<(Vec<Vec<i32>>, bool)> {
+    Ok(laymine_solvable_adjust(row, column, mine_num, x0, y0))
 }
 
 #[pyfunction]
@@ -259,6 +225,25 @@ fn py_OBR_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<V
     }
 }
 
+#[pyfunction]
+#[pyo3(name = "mark_board")]
+fn py_mark_board(mut board_of_game: Vec<Vec<i32>>) -> PyResult<Vec<Vec<i32>>> {
+    mark_board(&mut board_of_game);
+    Ok(board_of_game)
+}
+
+#[pyfunction]
+#[pyo3(name = "is_guess_while_needless")]
+fn py_is_guess_while_needless(mut board_of_game: Vec<Vec<i32>>, xy: (usize, usize)) -> PyResult<i32> {
+    Ok(is_guess_while_needless(&mut board_of_game, &xy))
+}
+
+#[pyfunction]
+#[pyo3(name = "is_able_to_solve")]
+fn py_is_able_to_solve(mut board_of_game: Vec<Vec<i32>>, xy: (usize, usize)) -> PyResult<bool> {
+    Ok(is_able_to_solve(&mut board_of_game, &xy))
+}
+
 // #[pyproto]
 // impl PyObjectProtocol for Minesweeperboard {
 //     fn __getattr__(&self, name: &str) -> PyResult<usize> {
@@ -280,23 +265,25 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_refresh_matrixs, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_op, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal3BV, m)?)?;
-    m.add_function(wrap_pyfunction!(py_laymine_number, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine, m)?)?;
-    m.add_function(wrap_pyfunction!(py_get_all_not_mine_on_board, m)?)?;
-    m.add_function(wrap_pyfunction!(py_laymine_op_number, m)?)?;
+    m.add_function(wrap_pyfunction!(py_get_all_not_and_is_mine_on_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine_op, m)?)?;
-    // m.add_function(wrap_pyfunction!(solve_direct, m)?)?;
-    // m.add_function(wrap_pyfunction!(solve_enumerate, m)?)?;
+    m.add_function(wrap_pyfunction!(py_solve_direct, m)?)?;
+    m.add_function(wrap_pyfunction!(py_solve_minus, m)?)?;
+    m.add_function(wrap_pyfunction!(py_solve_enumerate, m)?)?;
     m.add_function(wrap_pyfunction!(py_unsolvable_structure, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_solvable, m)?)?;
-    // m.add_function(wrap_pyfunction!(enuOneStep, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine_solvable, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine_solvable_thread, m)?)?;
+    m.add_function(wrap_pyfunction!(py_laymine_solvable_adjust, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility, m)?)?;
     m.add_function(wrap_pyfunction!(py_sample_3BVs_exp, m)?)?;
     m.add_function(wrap_pyfunction!(py_OBR_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
+    m.add_function(wrap_pyfunction!(py_mark_board, m)?)?;
+    m.add_function(wrap_pyfunction!(py_is_guess_while_needless, m)?)?;
+    m.add_function(wrap_pyfunction!(py_is_able_to_solve, m)?)?;
     m.add_class::<PyMinesweeperBoard>()?;
     m.add_class::<PyAvfVideo>()?;
     m.add_class::<PyGameBoard>()?;

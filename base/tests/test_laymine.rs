@@ -14,7 +14,7 @@ fn laymine_solvable_thread_works() {
 #[test]
 fn laymine_solvable_works() {
     // 测试筛选法无猜埋雷
-    let game_board = laymine_solvable(8, 8, 15, 0, 0, 100000);
+    let game_board = laymine_solvable(16, 30, 99, 0, 0, 100000);
     game_board.0.iter().for_each(|i| println!("{:?}", i));
     print!("{:?}", game_board.1);
 }

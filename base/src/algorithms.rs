@@ -555,7 +555,8 @@ pub fn solve_enumerate(
                 for kk in &comb_relp_s[i][jj] {
                     not_mine.push(xs[i][*kk]);
                 }
-            } else if s_num == table_mine_num_i[1].iter().sum::<usize>() * comb_relp_s[i][jj].len() {
+            } else if s_num == table_mine_num_i[1].iter().sum::<usize>() * comb_relp_s[i][jj].len()
+            {
                 for kk in &comb_relp_s[i][jj] {
                     is_mine.push(xs[i][*kk]);
                 }
@@ -568,12 +569,12 @@ pub fn solve_enumerate(
 // 判断当前是否获胜
 // 游戏局面中必须没有标错的雷
 // 这个函数不具备普遍意义
-fn isVictory(BoardofGame: &Vec<Vec<i32>>, Board: &Vec<Vec<i32>>) -> bool {
-    let row = BoardofGame.len();
-    let col = BoardofGame[0].len();
+fn isVictory(board_of_game: &Vec<Vec<i32>>, Board: &Vec<Vec<i32>>) -> bool {
+    let row = board_of_game.len();
+    let col = board_of_game[0].len();
     for i in 0..row {
         for j in 0..col {
-            if BoardofGame[i][j] == 10 && Board[i][j] != -1 {
+            if board_of_game[i][j] == 10 && Board[i][j] != -1 {
                 return false;
             }
         }
@@ -589,33 +590,41 @@ pub fn is_solvable(Board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
         //若包含不可判雷结构，则不是无猜
         return false;
     }
-    // println!("Board: {:?}", Board);
     let row = Board.len();
     let column = Board[0].len();
-    let mut BoardofGame = vec![vec![10; column]; row];
+    let mut board_of_game = vec![vec![10; column]; row];
     // 10是未打开，11是标雷
     // 局面大小必须超过6*6
-    refresh_board(&Board, &mut BoardofGame, vec![(x0, y0)]);
-    if isVictory(&BoardofGame, &Board) {
+    refresh_board(&Board, &mut board_of_game, vec![(x0, y0)]);
+    if isVictory(&board_of_game, &Board) {
         return true; // 暂且认为点一下就扫开也是可以的
     }
-    let mut not_mine;
     loop {
-        let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&BoardofGame);
-        let ans = solve_direct(&mut As, &mut xs, &mut bs, &mut BoardofGame);
-        not_mine = ans.0;
-        if !(not_mine.is_empty() && ans.1.is_empty()) {
-            let ans = solve_minus(&mut As, &mut xs, &mut bs, &mut BoardofGame);
-            not_mine = ans.0;
-            if !(not_mine.is_empty() && ans.1.is_empty()) {
+        let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+        let ans = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game);
+        let mut not_mine;
+        if ans.0.is_empty() && ans.1.is_empty() {
+            let ans = solve_minus(&mut As, &mut xs, &mut bs, &mut board_of_game);
+            if ans.0.is_empty() && ans.1.is_empty() {
                 let ans = solve_enumerate(&As, &xs, &bs);
-                if !(ans.0.is_empty() && ans.1.is_empty()) {
+                if ans.0.is_empty() && ans.1.is_empty() {
                     return false;
+                } else {
+                    not_mine = ans.0
                 }
+                if !ans.1.is_empty() {
+                    for (o, p) in ans.1 {
+                        board_of_game[o][p] = 11;
+                    }
+                }
+            } else {
+                not_mine = ans.0
             }
+        } else {
+            not_mine = ans.0
         }
-        refresh_board(&Board, &mut BoardofGame, not_mine);
-        if isVictory(&BoardofGame, &Board) {
+        refresh_board(&Board, &mut board_of_game, not_mine);
+        if isVictory(&board_of_game, &Board) {
             return true;
         }
     }

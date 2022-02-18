@@ -816,6 +816,7 @@ fn enumerateSub(Col: usize, MineNum: usize) -> Vec<Vec<usize>> {
     Out
 }
 
+/// 忘了干嘛用的，有待重构。和弱可猜有关。
 pub fn enuOneStep(mut AllTable: Vec<Vec<usize>>, TableId: Vec<usize>, b: i32) -> Vec<Vec<usize>> {
     // AllTable不能为空
     let mut NewId: Vec<usize> = vec![];

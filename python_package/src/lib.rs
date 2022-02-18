@@ -272,6 +272,12 @@ fn py_is_able_to_solve(mut board_of_game: Vec<Vec<i32>>, xy: (usize, usize)) -> 
     Ok(is_able_to_solve(&mut board_of_game, &xy))
 }
 
+#[pyfunction]
+#[pyo3(name = "enuOneStep")]
+fn py_enuOneStep(AllTable: Vec<Vec<usize>>, TableId: Vec<usize>, b: i32) -> PyResult<Vec<Vec<usize>>> {
+    Ok(enuOneStep(AllTable, TableId, b))
+}
+
 // #[pyproto]
 // impl PyObjectProtocol for Minesweeperboard {
 //     fn __getattr__(&self, name: &str) -> PyResult<usize> {
@@ -312,6 +318,7 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_mark_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_guess_while_needless, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_able_to_solve, m)?)?;
+    m.add_function(wrap_pyfunction!(py_enuOneStep, m)?)?;
     m.add_class::<PyMinesweeperBoard>()?;
     m.add_class::<PyAvfVideo>()?;
     m.add_class::<PyGameBoard>()?;

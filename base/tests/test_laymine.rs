@@ -22,7 +22,7 @@ fn laymine_solvable_works() {
 #[test]
 fn laymine_solvable_adjust_works() {
     // 测试调整法无猜埋雷
-    let game_board = laymine_solvable_adjust(16, 30, 200, 0, 0);
+    let game_board = laymine_solvable_adjust(8, 8, 30, 0, 0);
     game_board.0.iter().for_each(|i| println!("{:?}", i));
     if game_board.1 {
         print!("成功！！！");

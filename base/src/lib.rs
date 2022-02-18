@@ -30,7 +30,7 @@
 mod utils;
 pub use utils::{
     cal3BV, cal_op, cal_table_minenum_recursion, combine, laymine, laymine_op, refresh_board,
-    refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure,
+    refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure, enuOneStep
 };
 
 mod algorithms;

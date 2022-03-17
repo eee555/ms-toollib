@@ -21,6 +21,14 @@ impl PyMinesweeperBoard {
     pub fn step_flow(&mut self, operation: Vec<(&str, (usize, usize))>) {
         self.core.step_flow(operation).unwrap();
     }
+    #[setter]
+    fn set_board(&mut self, board: Vec<Vec<i32>>) {
+        self.core.board = board;
+    }
+    #[getter]
+    fn get_board(&self) -> PyResult<Vec<Vec<i32>>> {
+        Ok(self.core.board.clone())
+    }
     #[getter]
     fn get_game_board(&self) -> PyResult<Vec<Vec<i32>>> {
         Ok(self.core.game_board.clone())
@@ -48,6 +56,23 @@ impl PyMinesweeperBoard {
     #[getter]
     fn get_solved3BV(&self) -> PyResult<usize> {
         Ok(self.core.solved3BV)
+    }
+    #[getter]
+    fn get_row(&self) -> PyResult<usize> {
+        Ok(self.core.row)
+    }
+    #[getter]
+    fn get_column(&self) -> PyResult<usize> {
+        Ok(self.core.column)
+    }
+    #[getter]
+    fn get_game_board_state(&self) -> PyResult<usize> {
+        match self.core.game_board_state {
+            GameBoardState::Ready => Ok(1),
+            GameBoardState::Playing => Ok(2),
+            GameBoardState::Win => Ok(3),
+            GameBoardState::Loss => Ok(4),
+        }
     }
 }
 

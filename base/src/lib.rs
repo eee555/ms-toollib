@@ -1,7 +1,7 @@
 //! # 扫雷算法工具箱
 //! 基于Rust语言，提供扫雷相关算法的高效、内存安全的实现，并发布到各个平台。目前包括[crates.io](https://crates.io/crates/ms_toollib)、[pypi.org](https://pypi.org/project/ms-toollib/)、[npmjs.com](https://www.npmjs.com/package/ms-toollib)这三个平台。安装、使用这些工具箱需要有对应语言的基本的知识。以下是快速入门。
 //! ## 局面格式说明
-//! - 游戏局面的变量名为game_board: Vec<Vec<i32>>；在Python中为List[List[int]]；在Javascript中对应Array(Array())之类的格式。其中0代表空；1到8代表数字1到8；10代表未打开；11代表算法确定是雷，12代表算法确定不是雷。第一个索引是行，第二个索引是列，例如：高级中，game_board[0][0]代表最左上角位置、game_board[15][29]代表最右下角位置  
+//! - 游戏局面的变量名为game_board: Vec<Vec<i32>>；在Python中为List[List[int]]；在Javascript中对应Array(Array())之类的格式。其中0代表空；1到8代表数字1到8；10代表未打开；11代表算法确定是雷，12代表算法确定不是雷，14表示踩到了雷游戏失败以后显示的标错的雷对应叉雷，15表示踩到了雷游戏失败了对应红雷。第一个索引是行，第二个索引是列，例如：高级中，game_board[0][0]代表最左上角位置、game_board[15][29]代表最右下角位置  
 //! - 真实局面的变量名为board: Vec<Vec<i32>>。其中0代表空；1到8代表数字1到8；-1代表是雷。  
 //! - 解释：游戏局面和局面的区别在于，游戏局面是游戏时玩家看见的局面，随鼠标的点击操作而变化；而真实局面是可以看见雷的实际局面，不会随操作而变化。  
 //! - 注意：游戏局面中11的作用类似于游戏时的标雷，但是区别在于，玩家标出的雷可能是错误的，而算法的判断一定是正确的。
@@ -47,7 +47,7 @@ pub use algorithms::{
 // pub use algorithms::{mark_board, solve_direct, solve_enumerate, solve_minus};
 
 mod board;
-pub use board::{AvfVideo, GameBoard, MinesweeperBoard};
+pub use board::{AvfVideo, GameBoard, MinesweeperBoard, GameBoardState};
 
 #[cfg(any(feature = "py", feature = "rs"))]
 mod OBR;

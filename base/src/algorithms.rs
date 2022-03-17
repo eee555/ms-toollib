@@ -20,6 +20,7 @@ use rand::thread_rng;
 
 use rand::prelude::*;
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use std::time;
 
 use std::cmp::{max, min};
 use std::sync::mpsc;
@@ -723,6 +724,7 @@ pub fn laymine_solvable(
 
 /// 调整法无猜埋雷。可以生成任意雷密度的无猜局面。但雷不满足均匀分布。  
 /// - 返回局面、是否成功  
+// 局面中的-10代表还没埋雷。
 pub fn laymine_solvable_adjust(
     row: usize,
     column: usize,
@@ -750,7 +752,7 @@ pub fn laymine_solvable_adjust(
         return (t, false);
     }
 
-    board = vec![vec![0; column]; row];
+    board = vec![vec![-10; column]; row];
     let mut board_of_game = vec![vec![10; column]; row];
     board_of_game[x0][y0] = 0;
     // if time == 2 {
@@ -761,6 +763,7 @@ pub fn laymine_solvable_adjust(
     let mut cells_plan_to_click = vec![];
     for j in max(1, x0) - 1..min(row, x0 + 2) {
         for k in max(1, y0) - 1..min(column, y0 + 2) {
+            board[j][k] = 0;
             if j != x0 || k != y0 {
                 cells_plan_to_click.push((j, k));
             }
@@ -774,11 +777,11 @@ pub fn laymine_solvable_adjust(
         remain_not_mine_num,
     );
     if !flag {
-        return (b, false)
+        return (b, false);
     }
     for i in 0..row {
         for j in 0..column {
-            if board_of_game[i][j] == 10 {
+            if board[i][j] == -10 {
                 board[i][j] = -1;
             }
         }
@@ -801,6 +804,7 @@ pub fn laymine_solvable_adjust(
 }
 
 // 调整法的递归部分。注意空间复杂度为局面面积乘求解步数。
+// 返回没有计算数字的局面和是否成功。
 fn adjust_step(
     board: &Vec<Vec<i32>>,
     board_of_game: &Vec<Vec<i32>>,
@@ -815,104 +819,147 @@ fn adjust_step(
     for (x, y) in plan_click {
         bg[*x][*y] = 1;
     }
+    println!(">>>>>>");
+    bg.iter().for_each(|i| {
+        i.iter()
+            .for_each(|j| print!("{number:>width$}", number = j, width = 4));
+        println!("")
+    });
+    println!("\\");
+    b.iter().for_each(|i| {
+        i.iter()
+            .for_each(|j| print!("{number:>width$}", number = j, width = 4));
+        println!("")
+    });
+
+    // thread::sleep(time::Duration::from_millis(2000));
     let mut plan_click = vec![];
     let (Ases, xses, mut bses) = refresh_matrixses(&bg);
-    if xses.is_empty() && remain_not_mine_num > 0 {
-        return (vec![], false);
+    // 所有分支的前沿都已遍历完成。
+
+    // println!("Ases: {:?}", Ases);
+    // println!("xses: {:?}", xses);
+    // println!("bses: {:?}", bses);
+    // println!("rn: {:?}", rn);
+    if xses.is_empty() {
+        if rn > 0 {
+            return (vec![], false);
+        } else {
+            return (b, true);
+        }
     }
-    for id in 0..xses.len() {
-        let xs_cell_num = xses[id].iter().fold(0, |acc, x| acc + x.len());
-        let mine_num_except = (xs_cell_num as f64 * remain_mine_num as f64
-            / (remain_not_mine_num + remain_mine_num) as f64)
-            as usize;
-        let mut success_flag = false;
-        // 对不同雷数循环
-        'inner: for i in 0..xs_cell_num + 1 {
-            let mine_num;
-            if mine_num_except == 0 || xs_cell_num == 0 {
-                mine_num = 0;
-            } else if mine_num_except == xs_cell_num {
-                mine_num = mine_num_except;
-            } else if i == xs_cell_num - 1 {
-                mine_num = 0;
-            } else if i == xs_cell_num {
-                mine_num = xs_cell_num;
-            } else if xs_cell_num > mine_num_except * 2 {
-                let z = mine_num_except * 2 - 1;
-                if i < z {
-                    if i % 2 == 1 {
-                        mine_num = mine_num_except + (i + 1) / 2;
-                    } else {
-                        mine_num = mine_num_except - i / 2;
-                    }
+    let As_0 = Ases.get(0).unwrap();
+    let xs_0 = xses.get(0).unwrap();
+    let bs_0 = bses.get_mut(0).unwrap();
+
+    let xs_cell_num = xs_0.iter().fold(0, |acc, x| acc + x.len());
+    let mine_num_except = (xs_cell_num as f64 * r as f64 / (rn + r) as f64) as usize;
+    let mut success_flag = false;
+    // 对不同雷数循环
+    'inner: for i in 0..xs_cell_num + 1 {
+        // 根据算法的映射，计算出mine_num。
+        let mine_num;
+        if mine_num_except == 0 || xs_cell_num == 0 {
+            mine_num = 0;
+        } else if mine_num_except == xs_cell_num {
+            mine_num = mine_num_except;
+        } else if i == xs_cell_num - 1 {
+            mine_num = 0;
+        } else if i == xs_cell_num {
+            mine_num = xs_cell_num;
+        } else if xs_cell_num > mine_num_except * 2 {
+            let z = mine_num_except * 2 - 1;
+            if i < z {
+                if i % 2 == 1 {
+                    mine_num = mine_num_except + (i + 1) / 2;
                 } else {
-                    mine_num = i + 1;
+                    mine_num = mine_num_except - i / 2;
                 }
             } else {
-                let z = (xs_cell_num - mine_num_except) * 2 - 1;
-                if i < z {
-                    if i % 2 == 1 {
-                        mine_num = mine_num_except + (i + 1) / 2;
-                    } else {
-                        mine_num = mine_num_except - i / 2;
-                    }
+                mine_num = i + 1;
+            }
+        } else {
+            let z = (xs_cell_num - mine_num_except) * 2 - 1;
+            if i < z {
+                if i % 2 == 1 {
+                    mine_num = mine_num_except + (i + 1) / 2;
                 } else {
-                    mine_num = xs_cell_num - i - 1;
+                    mine_num = mine_num_except - i / 2;
                 }
-            }
-            // let mine_num = (i + mine_num_except + 1) % (xs_cell_num + 1);
-            if mine_num > remain_mine_num || xs_cell_num - mine_num > remain_not_mine_num {
-                continue;
-            }
-            for _ in 0..3 {
-                adjust_the_area_on_board(&mut b, &xses[id], mine_num);
-                // 以下的循环用来修正b向量
-                for bb in 0..bses[id].len() {
-                    for ss in 0..bses[id][bb].len() {
-                        bses[id][bb][ss] = 0;
-                        for aa in 0..Ases[id][bb][0].len() {
-                            if Ases[id][bb][ss][aa] == 1 {
-                                if b[xses[id][bb][aa].0][xses[id][bb][aa].1] == -1
-                                    && bg[xses[id][bb][aa].0][xses[id][bb][aa].1] != 11
-                                {
-                                    bses[id][bb][ss] += 1;
-                                }
-                            }
-                        }
-                    }
-                }
-                let (mut n, i) = get_all_not_and_is_mine_on_board(
-                    &mut Ases[id].clone(),
-                    &mut xses[id].clone(),
-                    &mut bses[id].clone(),
-                    &mut bg,
-                );
-                if n.len() > 0 || i.len() == xs_cell_num {
-                    success_flag = true;
-                    plan_click.append(&mut n);
-                    r -= mine_num;
-                    rn -= xs_cell_num - mine_num;
-                    for segment in &xses[id] {
-                        // xxx
-                        for &(xx, yy) in segment {
-                            if board[xx][yy] == -1 {
-                                bg[xx][yy] = 21;
-                            } else {
-                                bg[xx][yy] = 22;
-                            }
-                        }
-                    }
-                    break 'inner;
-                }
+            } else {
+                mine_num = xs_cell_num - i - 1;
             }
         }
-        if !success_flag {
-            // 如果失败，代表没有合适的雷数，使得局面接下来无猜。
-            return (vec![], false);
+        // let mine_num = (i + mine_num_except + 1) % (xs_cell_num + 1);
+        // 排除显而易见不可能的情况。
+        if mine_num > r || xs_cell_num - mine_num > rn {
+            continue;
+        }
+        // 对每种雷数，重复尝试3次。
+        for _ in 0..3 {
+            adjust_the_area_on_board(&mut b, &xs_0, mine_num);
+            // 以下的循环用来修正b向量
+            for bb in 0..bs_0.len() {
+                for ss in 0..bs_0[bb].len() {
+                    bs_0[bb][ss] = 0;
+                    for aa in 0..As_0[bb][0].len() {
+                        if As_0[bb][ss][aa] == 1 {
+                            if b[xs_0[bb][aa].0][xs_0[bb][aa].1] == -1
+                                && bg[xs_0[bb][aa].0][xs_0[bb][aa].1] != 11
+                            {
+                                bs_0[bb][ss] += 1;
+                            }
+                        }
+                    }
+                }
+            }
+            let (mut n, i) = get_all_not_and_is_mine_on_board(
+                &mut As_0.clone(),
+                &mut xs_0.clone(),
+                &mut bs_0.clone(),
+                &mut bg,
+            );
+            n.iter().for_each(|x| bg[x.0][x.1] = 10);
+            i.iter().for_each(|x| bg[x.0][x.1] = 10);
+            if n.len() > 0 || i.len() == xs_cell_num {
+                // n.iter().for_each(|x| bg[x.0][x.1] = 12);
+                i.iter().for_each(|x| bg[x.0][x.1] = 11);
+                success_flag = true;
+                plan_click.append(&mut n);
+                // println!("xs_cell_num: {:?}", xs_cell_num);
+                // println!("mine_num: {:?}", mine_num);
+                // println!("rn: {:?}", rn);
+                // println!("r: {:?}", r);
+                r -= mine_num;
+                rn -= xs_cell_num - mine_num;
+                // for segment in xs_0 {
+                //     // xxx
+                //     for &(xx, yy) in segment {
+                //         if b[xx][yy] == -1 {
+                //             bg[xx][yy] = 11;
+                //         } else {
+                //             bg[xx][yy] = 12;
+                //         }
+                //     }
+                // }
+                let a = adjust_step(&b, &bg, &plan_click, r, rn);
+                if a.1 {
+                    b = a.0;
+                    break 'inner;
+                } else {
+                    b = board.clone();
+                    bg = board_of_game.clone();
+                    continue 'inner;
+                }
+            }
         }
     }
+    if !success_flag {
+        // 如果失败，代表没有合适的雷数，使得局面接下来无猜。
+        return (vec![], false);
+    }
     if rn <= 0 {
-        return (b, true)
+        return (b, true);
     } else {
         return (vec![], false);
         // return adjust_step(

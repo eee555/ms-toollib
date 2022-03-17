@@ -12,6 +12,7 @@ use std::fs;
 /// 局面状态机，分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。
 /// - 局限：目前不能计算path。  
 /// - 注意：ce的计算与扫雷网是不同的，本工具箱中，重复标同一个雷只算一个ce，即反复标雷、取消标雷不算作ce。
+/// 应用场景：强化学习训练AI、游戏复盘计算指标。
 /// - 用python调用时的示例：
 /// ```python
 /// import ms_toollib as ms
@@ -36,7 +37,7 @@ use std::fs;
 /// print('局面: ', v.game_board)
 /// ```
 pub struct MinesweeperBoard {
-    board: Vec<Vec<i32>>,
+    pub board: Vec<Vec<i32>>,
     /// 局面
     pub game_board: Vec<Vec<i32>>,
     flagedList: Vec<(usize, usize)>, // 记录哪些雷曾经被标过，则再标这些雷不记为ce
@@ -52,9 +53,13 @@ pub struct MinesweeperBoard {
     pub flag: usize,
     /// 已解决的3BV数
     pub solved3BV: usize,
-    row: usize,
-    column: usize,
+    pub row: usize,
+    pub column: usize,
     mouse_state: MouseState,
+    pub game_board_state: GameBoardState,
+    // 指针，用于判断局面是否全部扫开
+    pointer_x: usize,
+    pointer_y: usize,
 }
 
 impl MinesweeperBoard {
@@ -74,6 +79,9 @@ impl MinesweeperBoard {
             solved3BV: 0,
             flagedList: vec![],
             mouse_state: MouseState::UpUp,
+            game_board_state: GameBoardState::Ready,
+            pointer_x: 0,
+            pointer_y: 0,
         }
     }
     fn left_click(&mut self, x: usize, y: usize) -> Result<u8, ()> {
@@ -86,15 +94,24 @@ impl MinesweeperBoard {
                 self.solved3BV += 1;
                 self.ces += 1;
                 refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
+                if self.is_win() {
+                    self.game_board_state = GameBoardState::Win;
+                }
                 Ok(2)
             }
-            -1 => Err(()),
+            -1 => {
+                self.game_board_state = GameBoardState::Loss;
+                Ok(0)
+            },
             _ => {
                 refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
                 if self.num_is_3BV(x, y) {
                     self.solved3BV += 1;
                 }
                 self.ces += 1;
+                if self.is_win() {
+                    self.game_board_state = GameBoardState::Win;
+                }
                 Ok(2)
             }
         }
@@ -171,15 +188,24 @@ impl MinesweeperBoard {
             if flag_ch_op {
                 self.solved3BV += 1;
             }
+            for ch in &chordingCells {
+                if self.board[ch.0][ch.1] == -1 {
+                    self.game_board_state = GameBoardState::Loss;
+                }
+            }
             refresh_board(&self.board, &mut self.game_board, chordingCells);
+            if self.is_win() {
+                self.game_board_state = GameBoardState::Win;
+            }
             Ok(2)
         } else {
             Ok(0)
         }
     }
     fn num_is_3BV(&self, x: usize, y: usize) -> bool {
-        // 判断该数字是不是3BV，0也可以
-        if self.board[x][y] == -1 {
+        // 判断该大于0的数字是不是3BV
+        // 如果是0，即使是3bv，依然返回false
+        if self.board[x][y] <= 0 {
             return false;
         }
         for i in max(1, x) - 1..min(self.row, x + 2) {
@@ -191,10 +217,32 @@ impl MinesweeperBoard {
         }
         true
     }
+    /// 返回的值的含义是：0：没有任何作用的操作，例如左键数字、踩雷。
+    /// 1：推进了局面，但没有改变ai对局面的判断，特指标雷。
+    /// 2：改变局面的操作，左键、双击。
+    /// e的类型有6种，lc, lr, rc, rr, cc, cr；这和arbiter等软件是不同的，本工具箱兼容了他们
+    /// cc对应的是，按下第二个键，至于按的哪个不知道
+    /// crl对应的是，两个键都按下时，抬起左键(chording_release_left)，和lr等价，可用可不用
+    /// crr对应的是，两个键都按下时，抬起右键(chording_release_right)，和rr等价，可用可不用
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
+        match self.game_board_state {
+            GameBoardState::Ready => {
+                match e {
+                    "lr" => self.game_board_state = GameBoardState::Playing,
+                    _ => {},
+                }
+            },
+            GameBoardState::Playing => {},
+            _ => return Ok(0),
+        }
         if pos.0 == self.row && pos.1 == self.column {
+            // 发生这种事情，是由于阿比特会把点到局面外，改成点到最右下角
             self.mouse_state = MouseState::UpUp;
-            return Ok(0u8)
+            return Ok(0)
+        }
+        if pos.0 >= self.row || pos.1 >= self.column {
+            // 越界错误，未定义的行为，不可恢复的错误
+            return Err(())
         }
         match e {
             "lc" => match self.mouse_state {
@@ -247,16 +295,60 @@ impl MinesweeperBoard {
                 }
                 _ => return Err(()),
             },
+            "cc" => match self.mouse_state {
+                MouseState::DownUp => self.mouse_state = MouseState::Chording,
+                MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,
+                MouseState::UpDown => self.mouse_state = MouseState::Chording,
+                MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
+                _ => return Err(()),
+            },
+            "crl" => match self.mouse_state {
+                MouseState::Chording => {
+                    self.mouse_state = MouseState::UpDown;
+                    return self.chording_click(pos.0, pos.1);
+                }
+                MouseState::ChordingNotFlag => {
+                    self.mouse_state = MouseState::UpDown;
+                    self.right -= 1;
+                    return self.chording_click(pos.0, pos.1);
+                }
+                _ => return Err(()),
+            },
+            "crr" => match self.mouse_state {
+                MouseState::Chording => {
+                    self.mouse_state = MouseState::DownUpAfterChording;
+                    return self.chording_click(pos.0, pos.1);
+                }
+                MouseState::ChordingNotFlag => {
+                    self.mouse_state = MouseState::DownUpAfterChording;
+                    self.right -= 1;
+                    return self.chording_click(pos.0, pos.1);
+                }
+                _ => return Err(()),
+            },
             _ => return Err(()),
         }
         Ok(0)
     }
+    /// 直接分析整局的操作流，中间也可以停顿
+    /// 开始游戏前的任何操作也都记录次数
     pub fn step_flow(&mut self, operation: Vec<(&str, (usize, usize))>) -> Result<(), ()> {
-        // 直接分析整局的操作流，中间也可以停顿
         for op in operation {
             self.step(op.0, op.1)?;
         }
         Ok(())
+    }
+    fn is_win(&mut self) -> bool {
+        for i in self.pointer_x..self.row {
+            for j in self.pointer_y..self.column {
+                if self.game_board[i][j] >= 10 && self.board[i][j] == -1 {
+                    self.pointer_x = i;
+                    self.pointer_y = j;
+                    return false
+                }
+            }
+        }
+        true
     }
     // pub fn reset(&self) {
     //     // 重载，暂时没用不写
@@ -276,6 +368,15 @@ enum MouseState {
     Chording,            // 双键都按下，的其他状态
     ChordingNotFlag,     // 双键都按下，且是在不可以右击的格子上、先按下右键
     DownUpAfterChording, //双击后先弹起右键，左键还没弹起的状态
+}
+
+#[derive(Debug, PartialEq)]
+pub enum GameBoardState {
+    // 游戏局面状态机
+    Ready,
+    Playing,
+    Loss,
+    Win,
 }
 
 #[derive(Debug)]

@@ -393,13 +393,7 @@ impl js_shuffle for Vec<i32> {
 /// 通用标准埋雷引擎。
 /// - 标准埋雷规则：起手位置非雷，其余位置的雷服从均匀分布。
 /// - 输出：二维的局面，其中0代表空，1~8代表1~8，-1代表雷。
-pub fn laymine(
-    row: usize,
-    column: usize,
-    MineNum: usize,
-    X0: usize,
-    Y0: usize,
-) -> Vec<Vec<i32>> {
+pub fn laymine(row: usize, column: usize, MineNum: usize, X0: usize, Y0: usize) -> Vec<Vec<i32>> {
     let area: usize = row * column - 1;
     let mut Board1Dim: Vec<i32> = vec![];
     Board1Dim.reserve(area);
@@ -539,8 +533,7 @@ pub fn refresh_board(
 ) {
     let row = Board.len();
     let column = Board[0].len();
-    // let mut i: usize = 0;
-    // let mut j: usize = 0;
+    let mut loss_flag = false;
     while let Some(top) = ClickedPoses.pop() {
         let (i, j) = top;
         if Board[i][j] > 0 {
@@ -552,6 +545,19 @@ pub fn refresh_board(
                     if (i != m || j != n) && BoardofGame[m][n] == 10 {
                         ClickedPoses.push((m, n));
                     }
+                }
+            }
+        } else {
+            BoardofGame[i][j] = 15; //标红雷
+            loss_flag = true;
+        }
+    }
+    // 标叉雷
+    if loss_flag {
+        for i in 0..row {
+            for j in 0..column {
+                if BoardofGame[i][j] == 11 && Board[i][j] != -1 {
+                    BoardofGame[i][j] = 14;
                 }
             }
         }

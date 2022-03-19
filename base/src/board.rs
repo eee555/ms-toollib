@@ -55,7 +55,7 @@ pub struct MinesweeperBoard {
     pub solved3BV: usize,
     pub row: usize,
     pub column: usize,
-    mouse_state: MouseState,
+    pub mouse_state: MouseState,
     pub game_board_state: GameBoardState,
     // 指针，用于判断局面是否全部扫开
     pointer_x: usize,
@@ -89,22 +89,24 @@ impl MinesweeperBoard {
         if self.game_board[x][y] != 10 {
             return Ok(0);
         }
+        refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
         match self.board[x][y] {
             0 => {
                 self.solved3BV += 1;
                 self.ces += 1;
-                refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
+                // refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
                 if self.is_win() {
                     self.game_board_state = GameBoardState::Win;
                 }
                 Ok(2)
             }
             -1 => {
+                // refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
                 self.game_board_state = GameBoardState::Loss;
                 Ok(0)
             },
             _ => {
-                refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
+                // refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
                 if self.num_is_3BV(x, y) {
                     self.solved3BV += 1;
                 }
@@ -355,11 +357,8 @@ impl MinesweeperBoard {
     // }
 }
 
-// #[derive(Debug, PartialEq)]
-// pub struct UpUp;
-
 #[derive(Debug, PartialEq)]
-enum MouseState {
+pub enum MouseState {
     // 鼠标状态机
     UpUp,
     UpDown,

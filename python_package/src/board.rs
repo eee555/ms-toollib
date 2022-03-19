@@ -74,6 +74,18 @@ impl PyMinesweeperBoard {
             GameBoardState::Loss => Ok(4),
         }
     }
+    #[getter]
+    fn get_mouse_state(&self) -> PyResult<usize> {
+        match self.core.mouse_state {
+            MouseState::UpUp => Ok(1),
+            MouseState::UpDown => Ok(2),
+            MouseState::UpDownNotFlag => Ok(3),
+            MouseState::DownUp => Ok(4),
+            MouseState::Chording => Ok(5),
+            MouseState::ChordingNotFlag => Ok(6),
+            MouseState::DownUpAfterChording => Ok(7),
+        }
+    }
 }
 
 #[pyclass(name = "AvfVideo")]

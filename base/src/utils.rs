@@ -526,6 +526,7 @@ pub fn cal3BV(Board: &Vec<Vec<i32>>) -> usize {
 }
 
 /// 依据左击位置刷新局面
+/// - 注意：兼容18标记符和12标记符
 pub fn refresh_board(
     Board: &Vec<Vec<i32>>,
     BoardofGame: &mut Vec<Vec<i32>>,
@@ -542,13 +543,13 @@ pub fn refresh_board(
             BoardofGame[i][j] = 0;
             for m in max(1, i) - 1..min(row, i + 2) {
                 for n in max(1, j) - 1..min(column, j + 2) {
-                    if (i != m || j != n) && BoardofGame[m][n] == 10 {
+                    if (i != m || j != n) && (BoardofGame[m][n] == 10 || BoardofGame[m][n] == 12) {
                         ClickedPoses.push((m, n));
                     }
                 }
             }
         } else {
-            BoardofGame[i][j] = 15; //标红雷
+            BoardofGame[i][j] = 15; // 标红雷，此处是雷，且踩到了
             loss_flag = true;
         }
     }
@@ -557,7 +558,7 @@ pub fn refresh_board(
         for i in 0..row {
             for j in 0..column {
                 if BoardofGame[i][j] == 11 && Board[i][j] != -1 {
-                    BoardofGame[i][j] = 14;
+                    BoardofGame[i][j] = 14; // 叉雷，即标错的雷
                 }
             }
         }

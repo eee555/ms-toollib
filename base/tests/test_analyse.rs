@@ -15,6 +15,7 @@ fn minesweeper_board_works() {
         vec![-1, 3, -1, 2, 1, 0, 1, -1],
     ];
     let mut my_board = MinesweeperBoard::new(board);
-    my_board.step_flow(vec![("lc", (0, 0)), ("lr", (0, 0)), ("lc", (0, 3)), ("lr", (0, 3))]).unwrap();
-}
+    my_board.step_flow(vec![("lc", (0, 0)), ("lr", (0, 0)), ("lc", (1, 3)), ("lr", (1, 3))]).unwrap();
+    my_board.board.iter().for_each(|x| println!("{:?}", x));
+    my_board.game_board.iter().for_each(|x| println!("{:?}", x));}
 

@@ -532,6 +532,7 @@ pub fn refresh_board(
     BoardofGame: &mut Vec<Vec<i32>>,
     mut ClickedPoses: Vec<(usize, usize)>,
 ) {
+    // println!("{:?}", ClickedPoses);
     let row = Board.len();
     let column = Board[0].len();
     let mut loss_flag = false;

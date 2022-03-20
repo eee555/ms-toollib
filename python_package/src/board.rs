@@ -21,9 +21,15 @@ impl PyMinesweeperBoard {
     pub fn step_flow(&mut self, operation: Vec<(&str, (usize, usize))>) {
         self.core.step_flow(operation).unwrap();
     }
+    // 这个方法与强可猜、弱可猜有关
     #[setter]
     fn set_board(&mut self, board: Vec<Vec<i32>>) {
         self.core.board = board;
+    }
+    // 直接设置游戏局面是不安全的！但在一些游戏中，结束时需要修改再展示
+    #[setter]
+    fn set_game_board(&mut self, game_board: Vec<Vec<i32>>) {
+        self.core.game_board = game_board;
     }
     #[getter]
     fn get_board(&self) -> PyResult<Vec<Vec<i32>>> {

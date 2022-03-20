@@ -3,16 +3,16 @@
 };
 use crate::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
-    analyse_vision_transfer, analyse_survive_poss
+    analyse_survive_poss, analyse_vision_transfer,
 };
 use crate::utils::{refresh_board, refresh_matrixs};
 use std::cmp::{max, min};
 use std::fs;
 
-/// 局面状态机，分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。
+/// 局面状态机，分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。  
 /// - 局限：目前不能计算path。  
 /// - 注意：ce的计算与扫雷网是不同的，本工具箱中，重复标同一个雷只算一个ce，即反复标雷、取消标雷不算作ce。
-/// 应用场景：强化学习训练AI、游戏复盘计算指标。
+/// 应用场景：强化学习训练AI、游戏复盘计算指标。不能处理高亮（18）、算法确定是雷（12）等标记。  
 /// - 用python调用时的示例：
 /// ```python
 /// import ms_toollib as ms
@@ -104,7 +104,7 @@ impl MinesweeperBoard {
                 // refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
                 self.game_board_state = GameBoardState::Loss;
                 Ok(0)
-            },
+            }
             _ => {
                 // refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
                 if self.num_is_3BV(x, y) {
@@ -171,14 +171,15 @@ impl MinesweeperBoard {
                     if self.game_board[i][j] == 11 {
                         flagedNum += 1
                     }
-                    if self.game_board[i][j] == 10 && self.board[i][j] != -1 {
-                        if self.board[i][j] == 0 {
-                            flag_ch_op = true;
-                        }
-                        flagChordingUseful = true;
+                    if self.game_board[i][j] == 10 {
                         chordingCells.push((i, j));
-                        if self.num_is_3BV(i, j) {
-                            surround3BV += 1;
+                        flagChordingUseful = true;
+                        if self.board[i][j] > 0 {
+                            if self.num_is_3BV(i, j) {
+                                surround3BV += 1;
+                            }
+                        } else if self.board[i][j] == 0 {
+                            flag_ch_op = true;
                         }
                     }
                 }
@@ -228,23 +229,21 @@ impl MinesweeperBoard {
     /// crr对应的是，两个键都按下时，抬起右键(chording_release_right)，和rr等价，可用可不用
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
         match self.game_board_state {
-            GameBoardState::Ready => {
-                match e {
-                    "lr" => self.game_board_state = GameBoardState::Playing,
-                    _ => {},
-                }
+            GameBoardState::Ready => match e {
+                "lr" => self.game_board_state = GameBoardState::Playing,
+                _ => {}
             },
-            GameBoardState::Playing => {},
+            GameBoardState::Playing => {}
             _ => return Ok(0),
         }
         if pos.0 == self.row && pos.1 == self.column {
             // 发生这种事情，是由于阿比特会把点到局面外，改成点到最右下角
             self.mouse_state = MouseState::UpUp;
-            return Ok(0)
+            return Ok(0);
         }
         if pos.0 >= self.row || pos.1 >= self.column {
             // 越界错误，未定义的行为，不可恢复的错误
-            return Err(())
+            return Err(());
         }
         match e {
             "lc" => match self.mouse_state {
@@ -341,12 +340,18 @@ impl MinesweeperBoard {
         Ok(())
     }
     fn is_win(&mut self) -> bool {
-        for i in self.pointer_x..self.row {
-            for j in self.pointer_y..self.column {
-                if self.game_board[i][j] >= 10 && self.board[i][j] == -1 {
+        for j in self.pointer_y..self.column {
+            if self.game_board[self.pointer_x][j] >= 10 && self.board[self.pointer_x][j] != -1 {
+                self.pointer_y = j;
+                return false;
+            }
+        }
+        for i in self.pointer_x + 1..self.row {
+            for j in 0..self.column {
+                if self.game_board[i][j] >= 10 && self.board[i][j] != -1 {
                     self.pointer_x = i;
                     self.pointer_y = j;
-                    return false
+                    return false;
                 }
             }
         }
@@ -758,7 +763,10 @@ impl AvfVideo {
     pub fn print_event(&self) {
         for e in &self.events {
             if e.mouse != "mv" {
-                println!("time = {:?}, mouse = {:?}, x = {:?}, y = {:?}", e.time, e.mouse, e.x, e.y);
+                println!(
+                    "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
+                    e.time, e.mouse, e.x, e.y
+                );
                 e.posteriori_game_board
                     .game_board
                     .iter()

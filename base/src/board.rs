@@ -236,15 +236,15 @@ impl MinesweeperBoard {
             GameBoardState::Playing => {}
             _ => return Ok(0),
         }
-        if pos.0 == self.row && pos.1 == self.column {
-            // 发生这种事情，是由于阿比特会把点到局面外，改成点到最右下角
-            self.mouse_state = MouseState::UpUp;
-            return Ok(0);
-        }
-        if pos.0 >= self.row || pos.1 >= self.column {
-            // 越界错误，未定义的行为，不可恢复的错误
-            return Err(());
-        }
+        // if pos.0 == self.row && pos.1 == self.column {
+        //     // 发生这种事情，是由于阿比特会把点到局面外，改成点到最右下角
+        //     self.mouse_state = MouseState::UpUp;
+        //     return Ok(0);
+        // }
+        // if pos.0 >= self.row || pos.1 >= self.column {
+        //     // 越界错误，未定义的行为，不可恢复的错误
+        //     return Err(());
+        // }
         match e {
             "lc" => match self.mouse_state {
                 MouseState::UpUp => self.mouse_state = MouseState::DownUp,
@@ -255,22 +255,35 @@ impl MinesweeperBoard {
             "lr" => match self.mouse_state {
                 MouseState::DownUp => {
                     self.mouse_state = MouseState::UpUp;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
                     return self.left_click(pos.0, pos.1);
                 }
                 MouseState::Chording => {
                     self.mouse_state = MouseState::UpDown;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
                     return self.chording_click(pos.0, pos.1);
                 }
                 MouseState::DownUpAfterChording => self.mouse_state = MouseState::UpUp,
                 MouseState::ChordingNotFlag => {
                     self.mouse_state = MouseState::UpDown;
                     self.right -= 1;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
                     return self.chording_click(pos.0, pos.1);
                 }
                 _ => return Err(()),
             },
             "rc" => match self.mouse_state {
                 MouseState::UpUp => {
+                    if pos.0 == self.row && pos.1 == self.column {
+                        self.mouse_state = MouseState::UpDownNotFlag;
+                        return Ok(0);
+                    }
                     if self.game_board[pos.0][pos.1] < 10 {
                         self.mouse_state = MouseState::UpDownNotFlag;
                     } else {
@@ -287,11 +300,17 @@ impl MinesweeperBoard {
                 MouseState::UpDownNotFlag => self.mouse_state = MouseState::UpUp,
                 MouseState::Chording => {
                     self.mouse_state = MouseState::DownUpAfterChording;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
                     return self.chording_click(pos.0, pos.1);
                 }
                 MouseState::ChordingNotFlag => {
                     self.mouse_state = MouseState::DownUpAfterChording;
                     self.right -= 1;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
                     return self.chording_click(pos.0, pos.1);
                 }
                 _ => return Err(()),
@@ -306,11 +325,17 @@ impl MinesweeperBoard {
             "crl" => match self.mouse_state {
                 MouseState::Chording => {
                     self.mouse_state = MouseState::UpDown;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
                     return self.chording_click(pos.0, pos.1);
                 }
                 MouseState::ChordingNotFlag => {
                     self.mouse_state = MouseState::UpDown;
                     self.right -= 1;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
                     return self.chording_click(pos.0, pos.1);
                 }
                 _ => return Err(()),
@@ -318,11 +343,17 @@ impl MinesweeperBoard {
             "crr" => match self.mouse_state {
                 MouseState::Chording => {
                     self.mouse_state = MouseState::DownUpAfterChording;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
                     return self.chording_click(pos.0, pos.1);
                 }
                 MouseState::ChordingNotFlag => {
                     self.mouse_state = MouseState::DownUpAfterChording;
                     self.right -= 1;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
                     return self.chording_click(pos.0, pos.1);
                 }
                 _ => return Err(()),

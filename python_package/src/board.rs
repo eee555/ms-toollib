@@ -11,9 +11,7 @@ impl PyMinesweeperBoard {
     #[new]
     pub fn new(board: Vec<Vec<i32>>) -> PyMinesweeperBoard {
         let c = MinesweeperBoard::new(board.clone());
-        PyMinesweeperBoard {
-            core: c,
-        }
+        PyMinesweeperBoard { core: c }
     }
     pub fn step(&mut self, e: &str, pos: (usize, usize)) {
         self.core.step(e, pos).unwrap();
@@ -104,9 +102,7 @@ impl PyAvfVideo {
     #[new]
     pub fn new(file_name: &str) -> PyAvfVideo {
         let c = AvfVideo::new(file_name);
-        PyAvfVideo {
-            core: c,
-        }
+        PyAvfVideo { core: c }
     }
     pub fn parse_video(&mut self) {
         self.core.parse_video().unwrap();
@@ -274,9 +270,7 @@ impl PyGameBoard {
     #[new]
     pub fn new(mine_num: usize) -> PyGameBoard {
         let c = GameBoard::new(mine_num);
-        PyGameBoard {
-            core: c,
-        }
+        PyGameBoard { core: c }
     }
     #[setter]
     fn set_game_board(&mut self, board: Vec<Vec<i32>>) {
@@ -303,10 +297,3 @@ impl PyGameBoard {
         Ok(self.core.get_enum_is_mine().to_vec())
     }
 }
-
-
-
-
-
-
-

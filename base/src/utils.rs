@@ -363,7 +363,7 @@ fn get_random_int(limit: usize) -> usize {
     let mut t;
     loop {
         getrandom(&mut a).unwrap();
-        println!("{:?}", a);
+        // println!("{:?}", a);
         t = (a[0] as usize) << 24 ^ (a[1] as usize) << 16 ^ (a[2] as usize) << 8 ^ (a[3] as usize);
         if t < (0b11111111_11111111_11111111_11111111 / limit * limit) {
             break;
@@ -1599,4 +1599,45 @@ fn chunk_matrix_works() {
     let mut b = vec![1, 2, 3, 4];
     let (aa, xx, bb) = chunk_matrix(a, x, b);
     println!("{:?}", xx);
+}
+
+// 找局面中间的格子的所在块的任意一个边界的格子。(可能不严格)
+// 与弱无猜、准无猜有关。涉及判断是否为“必要的猜雷”。
+// 点中间时，需要判断整块无猜以后，才能判定是合理的猜雷。
+// xy处必须是10。第二个返回值true代表xy在边界，false代表在内部。
+pub fn find_a_border_cell(
+    board_of_game: &Vec<Vec<i32>>,
+    xy: &(usize, usize),
+) -> (Option<(usize, usize)>, bool) {
+    let row = board_of_game.len();
+    let column = board_of_game[0].len();
+    for m in max(1, xy.0) - 1..min(row, xy.0 + 2) {
+        for n in max(1, xy.1) - 1..min(column, xy.1 + 2) {
+            if board_of_game[m][n] < 10 {
+                return (Some(*xy), true);
+            }
+        }
+    }
+    let mut board_of_game_clone = board_of_game.clone();
+    board_of_game_clone[xy.0][xy.1] = 100;
+    let mut buffer = vec![(xy.0, xy.1)];
+    while let Some(top) = buffer.pop() {
+        let (i, j) = top;
+        for m in max(1, i) - 1..min(row, i + 2) {
+            for n in max(1, j) - 1..min(column, j + 2) {
+                if (i != m || j != n) && board_of_game_clone[m][n] == 10 {
+                    for mm in max(1, m) - 1..min(row, m + 2) {
+                        for nn in max(1, n) - 1..min(column, n + 2) {
+                            if board_of_game_clone[mm][nn] < 10 {
+                                return (Some((m, n)), false);
+                            }
+                        }
+                    }
+                    buffer.push((m, n));
+                    board_of_game_clone[m][n] = 100;
+                }
+            }
+        }
+    }
+    (None, false)
 }

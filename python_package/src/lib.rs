@@ -274,7 +274,11 @@ fn py_is_able_to_solve(mut board_of_game: Vec<Vec<i32>>, xy: (usize, usize)) -> 
 
 #[pyfunction]
 #[pyo3(name = "enuOneStep")]
-fn py_enuOneStep(AllTable: Vec<Vec<usize>>, TableId: Vec<usize>, b: i32) -> PyResult<Vec<Vec<usize>>> {
+fn py_enuOneStep(
+    AllTable: Vec<Vec<usize>>,
+    TableId: Vec<usize>,
+    b: i32,
+) -> PyResult<Vec<Vec<usize>>> {
     Ok(enuOneStep(AllTable, TableId, b))
 }
 

@@ -1,8 +1,8 @@
 use crate::utils::{
     cal3BV, cal3BV_exp, cal_table_minenum_enum, cal_table_minenum_recursion, chunk_matrixes,
-    combine, enuOneStep, enum_comb, laymine, laymine_op, legalize_board, refresh_board,
-    refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure, BigNumber, C_query,
-    C,
+    combine, enuOneStep, enum_comb, find_a_border_cell, laymine, laymine_op, legalize_board,
+    refresh_board, refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure,
+    BigNumber, C_query, C,
 };
 
 #[cfg(feature = "js")]
@@ -1200,48 +1200,68 @@ pub fn get_all_not_and_is_mine_on_board(
     (not_mine, is_mine)
 }
 
-/// 判断是否为可能可以（区别于必然可以）判雷时的猜雷；对应弱无猜规则。  
+/// 判断是否为可能可以（区别于必然可以）判雷时的猜雷；对应弱无猜、准无猜规则。  
 /// - 前提：点在未知格上，即10。  
-/// 情况表：1 -> 正确的判雷。  
-/// 2 -> 必要的猜雷。  
+/// - 约定：1 -> 正确的判雷。  
+/// 2 -> 必要的猜雷。（由于全局或局部不可判而猜雷）  
 /// 3 -> 不必要的猜雷。  
-/// 4 -> 踩到必然的雷。
+/// 4 -> 踩到必然的雷。  
+/// 5 -> 没有结果。因为此处不是10、11或12。
 pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> i32 {
+    match board_of_game[xy.0][xy.1] {
+        10 => {}
+        11 => return 4,
+        12 => return 1,
+        _ => return 5,
+    }
     let mut flag_need = true;
     let (mut Ases, mut xses, mut bses) = refresh_matrixses(&board_of_game);
-    let t = xses
-        .iter()
-        .position(|r| r.iter().any(|x| x.contains(&xy)))
-        .unwrap();
-    let mut As = &mut Ases[t];
-    let mut xs = &mut xses[t];
-    let mut bs = &mut bses[t];
-    let (n, _) = solve_direct(As, xs, bs, board_of_game);
-    flag_need = n.is_empty();
-    match board_of_game[xy.0][xy.1] {
-        12 => return 1,
-        11 => return 4,
-        _ => {
-            let (n, _) = solve_minus(As, xs, bs, board_of_game);
-            flag_need = flag_need || n.is_empty();
-            match board_of_game[xy.0][xy.1] {
-                12 => return 1,
-                11 => return 4,
-                _ => {
-                    let (n, i) = solve_enumerate(As, xs, bs);
-                    flag_need = flag_need || n.is_empty();
-                    if n.contains(xy) {
-                        return 1;
-                    } else if i.contains(xy) {
-                        return 4;
-                    } else if flag_need {
-                        return 2;
-                    } else {
-                        return 3;
+    if let (Some(xy), flag_border) = find_a_border_cell(board_of_game, xy) {
+        let t = xses
+            .iter()
+            .position(|r| r.iter().any(|x| x.contains(&xy)))
+            .unwrap();
+        let mut As = &mut Ases[t];
+        let mut xs = &mut xses[t];
+        let mut bs = &mut bses[t];
+        let (n, _) = solve_direct(As, xs, bs, board_of_game);
+        if !flag_border && !n.is_empty() {
+            return 3;
+        }
+        flag_need = n.is_empty();
+        match board_of_game[xy.0][xy.1] {
+            12 => return 1,
+            11 => return 4,
+            _ => {
+                let (n, _) = solve_minus(As, xs, bs, board_of_game);
+                if !flag_border && !n.is_empty() {
+                    return 3;
+                }
+                flag_need = flag_need && n.is_empty();
+                match board_of_game[xy.0][xy.1] {
+                    12 => return 1,
+                    11 => return 4,
+                    _ => {
+                        let (n, i) = solve_enumerate(As, xs, bs);
+                        if !flag_border && !n.is_empty() {
+                            return 3;
+                        }
+                        flag_need = flag_need && n.is_empty();
+                        if n.contains(&xy) {
+                            return 1;
+                        } else if i.contains(&xy) {
+                            return 4;
+                        } else if flag_need {
+                            return 2;
+                        } else {
+                            return 3;
+                        }
                     }
                 }
             }
         }
+    } else {
+        return 2; // 无论何时，包心雷，是合理的猜雷。
     }
 }
 

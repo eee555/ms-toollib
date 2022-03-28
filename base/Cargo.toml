@@ -6,7 +6,7 @@ documentation = "https://docs.rs/ms_toollib"
 license = "MIT"
 readme = "README.md"
 keywords = ["minesweeper", "game", "rust", "solver", "algorithm"]
-edition = "2018"
+edition = "2021"
 authors = ["Wang Jianing <wangjianing@88.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

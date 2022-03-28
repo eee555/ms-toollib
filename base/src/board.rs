@@ -230,7 +230,13 @@ impl MinesweeperBoard {
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
         match self.game_board_state {
             GameBoardState::Ready => match e {
-                "lr" => self.game_board_state = GameBoardState::Playing,
+                "lr" => match self.mouse_state {
+                    MouseState::Chording => {}
+                    MouseState::DownUp => self.game_board_state = GameBoardState::Playing,
+                    MouseState::DownUpAfterChording => {},
+                    MouseState::ChordingNotFlag => {},
+                    _ => return Err(()),
+                },
                 _ => {}
             },
             GameBoardState::Playing => {}
@@ -393,7 +399,7 @@ impl MinesweeperBoard {
     // }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum MouseState {
     // 鼠标状态机
     UpUp,
@@ -402,7 +408,8 @@ pub enum MouseState {
     DownUp,
     Chording,            // 双键都按下，的其他状态
     ChordingNotFlag,     // 双键都按下，且是在不可以右击的格子上、先按下右键
-    DownUpAfterChording, //双击后先弹起右键，左键还没弹起的状态
+    DownUpAfterChording, // 双击后先弹起右键，左键还没弹起的状态
+    Undefined,           // 未初始化的状态
 }
 
 #[derive(Debug, PartialEq)]
@@ -429,16 +436,21 @@ pub enum ErrReadVideoReason {
 pub struct VideoEvent {
     pub time: f64,
     pub mouse: String,
-    pub x: u16, // 单位是像素不是格
+    /// 单位是像素不是格
+    pub x: u16,
     pub y: u16,
-    pub useful_level: u8, // 0代表完全没用，
-    // 1代表能仅推进局面但不改变对局面的后验判断，例如标雷和取消标雷
-    // 2代表改变对局面的后验判断的操作
-    // 和ce没有关系，仅用于控制计算
+    /// 0代表完全没用，
+    /// 1代表能仅推进局面但不改变对局面的后验判断，例如标雷和取消标雷
+    /// 2代表改变对局面的后验判断的操作
+    /// 和ce没有关系，仅用于控制计算
+    pub useful_level: u8,
+    /// 当前局面。鼠标move是不会存的。
     pub posteriori_game_board: GameBoard,
     // pub posteriori_game_board: Vec<Vec<i32>>,
     // pub posteriori_board_poss: Vec<Vec<f64>>,
     pub comments: String,
+    /// 该操作完成以后的鼠标状态。和录像高亮有关。即使是鼠标move也会记录。
+    pub mouse_state: MouseState,
 }
 
 pub struct StaticParams {
@@ -508,6 +520,8 @@ pub struct AvfVideo {
     pub level: usize,
     pub board: Vec<Vec<i32>>,
     pub events: Vec<VideoEvent>,
+    /// 录像播放时的指针，播放哪一帧
+    pub current_event_id: usize,
     pub player: String,
     video_data: Vec<u8>,
     offset: usize,
@@ -556,6 +570,7 @@ impl AvfVideo {
             level: 0,
             board: vec![],
             events: vec![],
+            current_event_id: 0,
             player: "".to_string(),
             video_data: video_data,
             offset: 0,
@@ -724,6 +739,7 @@ impl AvfVideo {
                 useful_level: 0,
                 posteriori_game_board: GameBoard::new(self.mine_num),
                 comments: "".to_string(),
+                mouse_state: MouseState::Undefined,
             });
             for i in 0..8 {
                 buffer[i] = self.get_unsized_int()?;
@@ -759,6 +775,7 @@ impl AvfVideo {
                     .posteriori_game_board
                     .set_game_board(&b.game_board);
             }
+            self.events[ide].mouse_state = b.mouse_state.clone();
         }
         self.dynamic_params.lefts = b.left;
         self.dynamic_params.rights = b.right;
@@ -769,10 +786,10 @@ impl AvfVideo {
     pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
         // 事件分析，返回一个向量，格式是event索引、字符串event的类型
         // error: 高风险的猜雷（猜对概率0.05）
-        // good: 跳判
+        // feature: 跳判
         // error: 判雷失败
-        // good: 双线操作
-        // good: 破空（成功率0.98）
+        // feature: 双线操作
+        // feature: 破空（成功率0.98）
         // error: 鼠标大幅绕路(500%)
         // warning：鼠标绕路(200%)
         // warning: 可以判雷时选择猜雷
@@ -792,21 +809,29 @@ impl AvfVideo {
         }
     }
     pub fn print_event(&self) {
+        let mut num = 0;
         for e in &self.events {
-            if e.mouse != "mv" {
+            if num < 200 {
                 println!(
-                    "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
-                    e.time, e.mouse, e.x, e.y
+                    "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+                    e.time, e.mouse, e.x, e.y, e.useful_level
                 );
-                e.posteriori_game_board
-                    .game_board
-                    .iter()
-                    .for_each(|v| println!("{:?}", v));
-                e.posteriori_game_board
-                    .poss
-                    .iter()
-                    .for_each(|v| println!("{:?}", v));
             }
+            num += 1;
+            // if e.mouse != "mv" {
+            //     println!(
+            //         "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
+            //         e.time, e.mouse, e.x, e.y
+            //     );
+            //     e.posteriori_game_board
+            //         .game_board
+            //         .iter()
+            //         .for_each(|v| println!("{:?}", v));
+            //     e.posteriori_game_board
+            //         .poss
+            //         .iter()
+            //         .for_each(|v| println!("{:?}", v));
+            // }
         }
     }
     pub fn print_comments(&self) {
@@ -818,11 +843,84 @@ impl AvfVideo {
     }
 }
 
+// 再实现一些get、set方法
+impl AvfVideo {
+    /// 获取当前录像时刻的游戏局面
+    pub fn get_game_board(&self) -> Vec<Vec<i32>> {
+        let mut id = self.current_event_id;
+        loop {
+            if self.events[id].posteriori_game_board.game_board.is_empty() {
+                id -= 1;
+            } else {
+                return self.events[id].posteriori_game_board.game_board.clone();
+            }
+        }
+    }
+    /// 获取当前录像时刻的局面概率
+    pub fn get_game_board_poss(&mut self) -> Vec<Vec<f64>> {
+        let mut id = self.current_event_id;
+        loop {
+            if self.events[id].useful_level < 2 {
+                id -= 1;
+                if id <= 0 {
+                    let p = self.mine_num as f64 / (self.height * self.width) as f64;
+                    return vec![vec![p; self.height]; self.width];
+                }
+            } else {
+                return self.events[id].posteriori_game_board.get_poss().clone();
+            }
+        }
+    }
+    /// 按时间设置current_event_id；超出两端范围取两端。
+    pub fn set_current_event_time(&mut self, time: f64) {
+        if time > self.events[self.current_event_id].time {
+            loop {
+                self.current_event_id += 1;
+                if self.current_event_id >= self.events.len() {
+                    self.current_event_id -= 1;
+                    return;
+                }
+                if self.events[self.current_event_id].time < time {
+                    continue;
+                } else {
+                    if self.events[self.current_event_id].time - time
+                        >= time - self.events[self.current_event_id - 1].time
+                    {
+                        self.current_event_id -= 1;
+                        return;
+                    } else {
+                        return;
+                    }
+                }
+            }
+        } else {
+            loop {
+                if self.current_event_id == 0 {
+                    return;
+                }
+                self.current_event_id -= 1;
+                if self.events[self.current_event_id].time > time {
+                    continue;
+                } else {
+                    if time - self.events[self.current_event_id].time
+                        >= self.events[self.current_event_id + 1].time - time
+                    {
+                        self.current_event_id += 1;
+                        return;
+                    } else {
+                        return;
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// 静态游戏局面的包装类。  
 /// 所有计算过的属性都会保存在这里。  
 #[derive(Clone)]
 pub struct GameBoard {
-    game_board: Vec<Vec<i32>>,
+    pub game_board: Vec<Vec<i32>>,
     game_board_marked: Vec<Vec<i32>>,
     mine_num: usize,
     poss: Vec<Vec<f64>>,

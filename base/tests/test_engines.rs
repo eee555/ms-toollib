@@ -1,6 +1,6 @@
 use ms_toollib::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, is_guess_while_needless,
-    is_solvable, mark_board, solve_direct, solve_enumerate,
+    is_solvable, mark_board, solve_direct, solve_enumerate, is_able_to_solve,
 };
 use ms_toollib::{cal_table_minenum_recursion, combine, refresh_matrix, refresh_matrixs};
 
@@ -276,3 +276,29 @@ fn is_guess_while_needless_works() {
     // let code = is_guess_while_needless(&mut game_board, &(0, 3));
     // println!("{:?}", code);
 }
+
+#[test]
+fn is_able_to_solve_works() {
+let mut game_board = vec![
+        vec![11, 10, 10, 10, 1, 0, 1, 10], 
+        vec![11, 10, 2, 2, 1, 0, 2, 10], 
+        vec![11, 10, 1, 0, 0, 0, 2, 10], 
+        vec![11, 11, 1, 0, 0, 0, 1, 10], 
+        vec![1, 1, 1, 1, 2, 2, 1, 10], 
+        vec![0, 0, 0, 10, 10, 10, 10, 10], 
+        vec![0, 0, 0, 1, 2, 2, 2, 10], 
+        vec![0, 0, 0, 0, 0, 0, 1, 10]
+    ];
+    let code = is_able_to_solve(&mut game_board, &(4, 3));
+    println!("{:?}", code);
+}
+
+
+
+
+
+
+
+
+
+

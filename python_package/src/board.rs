@@ -88,6 +88,7 @@ impl PyMinesweeperBoard {
             MouseState::Chording => Ok(5),
             MouseState::ChordingNotFlag => Ok(6),
             MouseState::DownUpAfterChording => Ok(7),
+            MouseState::Undefined => Ok(8),
         }
     }
 }
@@ -112,6 +113,18 @@ impl PyAvfVideo {
     }
     pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
         self.core.analyse_for_features(controller);
+    }
+    #[getter]
+    fn get_row(&self) -> PyResult<usize> {
+        Ok(self.core.height)
+    }
+    #[getter]
+    fn get_column(&self) -> PyResult<usize> {
+        Ok(self.core.width)
+    }
+    #[getter]
+    fn get_mine_num(&self) -> PyResult<usize> {
+        Ok(self.core.mine_num)
     }
     #[getter]
     fn get_bbbv(&self) -> PyResult<usize> {
@@ -251,6 +264,61 @@ impl PyAvfVideo {
     }
     pub fn events_comments(&self, index: usize) -> PyResult<String> {
         Ok(self.core.events[index].comments.clone())
+    }
+    pub fn events_mouse_state(&self, index: usize) -> PyResult<usize> {
+        match self.core.events[index].mouse_state {
+            MouseState::UpUp => Ok(1),
+            MouseState::UpDown => Ok(2),
+            MouseState::UpDownNotFlag => Ok(3),
+            MouseState::DownUp => Ok(4),
+            MouseState::Chording => Ok(5),
+            MouseState::ChordingNotFlag => Ok(6),
+            MouseState::DownUpAfterChording => Ok(7),
+            MouseState::Undefined => Ok(8),
+        }
+    }
+    #[getter]
+    pub fn get_current_event_id(&self) -> PyResult<usize> {
+        Ok(self.core.current_event_id)
+    }
+    #[setter]
+    pub fn set_current_event_id(&mut self, id: usize) {
+        self.core.current_event_id = id
+    }
+    #[getter]
+    pub fn get_game_board(&self) -> PyResult<Vec<Vec<i32>>> {
+        Ok(self.core.get_game_board())
+    }
+    #[getter]
+    pub fn get_game_board_poss(&mut self) -> PyResult<Vec<Vec<f64>>> {
+        Ok(self.core.get_game_board_poss())
+    }
+    #[getter]
+    pub fn get_mouse_state(&self) -> PyResult<usize> {
+        match self.core.events[self.core.current_event_id].mouse_state {
+            MouseState::UpUp => Ok(1),
+            MouseState::UpDown => Ok(2),
+            MouseState::UpDownNotFlag => Ok(3),
+            MouseState::DownUp => Ok(4),
+            MouseState::Chording => Ok(5),
+            MouseState::ChordingNotFlag => Ok(6),
+            MouseState::DownUpAfterChording => Ok(7),
+            MouseState::Undefined => Ok(8),
+        }
+    }
+    /// 局面状态（录像播放器的局面状态始终等于1，没有ready、win、fail的概念）
+    #[getter]
+    pub fn get_game_board_state(&self) -> PyResult<usize> {
+        Ok(1)
+    }
+    /// 返回当前光标的位置，播放录像用
+    #[getter]
+    pub fn get_x_y(&self) -> PyResult<(u16, u16)> {
+        Ok((self.core.events[self.core.current_event_id].x, self.core.events[self.core.current_event_id].y))
+    }
+    #[setter]
+    pub fn set_time(&mut self, time: f64) {
+        self.core.set_current_event_time(time);
     }
 }
 

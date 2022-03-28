@@ -1203,16 +1203,15 @@ pub fn get_all_not_and_is_mine_on_board(
 /// 判断是否为可能可以（区别于必然可以）判雷时的猜雷；对应弱无猜、准无猜规则。  
 /// - 前提：点在未知格上，即10。  
 /// - 约定：1 -> 正确的判雷。  
+///  - 注意：不可以处理14、15等标记（全当成10）。输入为玩家维护的游戏局面，因此会首先清干净玩家标的雷。  
 /// 2 -> 必要的猜雷。（由于全局或局部不可判而猜雷）  
 /// 3 -> 不必要的猜雷。  
 /// 4 -> 踩到必然的雷。  
-/// 5 -> 没有结果。因为此处不是10、11或12。
+/// 5 -> 没有结果。因为此处已经被点开了。
 pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> i32 {
-    match board_of_game[xy.0][xy.1] {
-        10 => {}
-        11 => return 4,
-        12 => return 1,
-        _ => return 5,
+    board_of_game.iter_mut().for_each(|x| x.iter_mut().for_each(|xx| if *xx > 10 { *xx = 10 }));
+    if board_of_game[xy.0][xy.1] < 10 {
+        return 5;
     }
     let mut flag_need = true;
     let (mut Ases, mut xses, mut bses) = refresh_matrixses(&board_of_game);
@@ -1267,8 +1266,10 @@ pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, u
 
 /// 判断是否为判雷；对应强无猜规则。
 /// - 前提：对打开非雷或标记是雷的行为判断。   
-/// - 不仅可以判断是雷，也可以判断非雷。
+/// - 不仅可以判断是雷，也可以判断非雷。  
+/// - 注意：不可以处理14、15等标记（当成10处理）。输入为玩家维护的游戏局面，因此会首先清干净玩家标的雷。  
 pub fn is_able_to_solve(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> bool {
+    board_of_game.iter_mut().for_each(|x| x.iter_mut().for_each(|xx| if *xx > 10 { *xx = 10 }));
     let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
     solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
     if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {

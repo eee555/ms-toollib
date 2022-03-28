@@ -808,6 +808,7 @@ impl AvfVideo {
             };
         }
     }
+    #[cfg(test)]
     pub fn print_event(&self) {
         let mut num = 0;
         for e in &self.events {
@@ -834,6 +835,7 @@ impl AvfVideo {
             // }
         }
     }
+    #[cfg(test)]
     pub fn print_comments(&self) {
         for i in &self.events {
             if !i.comments.is_empty() {

@@ -1,20 +1,20 @@
 [package]
 name = "ms_toollib"
-version = "1.2.12"
+version = "1.3.0"
 description = "Algorithms  for Minesweeper"
 documentation = "https://docs.rs/ms_toollib/"
 license = "MIT"
 readme = "README.md"
-keywords = ["minesweeper", "possibility", "mine", "laymine"]
-edition = "2018"
+keywords = ["minesweeper", "possibility", "solver", "laymine", "3BV"]
+edition = "2021"
 authors = ["Wang Jianing <wangjianing@88.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 pyo3 = { version ="0.15.1", features = ["extension-module"] }
-ms_toollib = { path = "../base", features = ["py"] }
-
+# ms_toollib = { path = "../base", features = ["py"] }
+ms_toollib = { version ="1.3.0", features = ["py"] }
 
 [lib]
 name = "ms_toollib"

@@ -44,10 +44,11 @@ fn minesweeper_board_works() {
 #[test]
 fn AvfVideo_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("jze.avf");
+    let mut video = AvfVideo::new("gjy.avf");
     video.parse_video();
     video.analyse();
-    video.print_event();
+    // video.print_event();
+    println!("{:?}", video.player);
 }
 
 #[test]

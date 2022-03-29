@@ -748,7 +748,20 @@ impl AvfVideo {
                 break;
             }
         }
-        // 后面还有皮肤和标识符，暂时就不解析了
+        // 标识符
+        while self.get_char()? != 'S' {}
+        while self.get_char()? != 'k' {}
+        while self.get_char()? != 'i' {}
+        while self.get_char()? != 'n' {}
+        while self.get_char()? != ':' {}
+        while self.get_char()? != '\r' {}
+        loop {
+            let v = self.get_char()?;
+            match v {
+                '\r' => break,
+                _ => self.player.push(v),
+            }
+        }
         // for i in 0..1000 {
         //     for j in 0..8 {
         //         print!("{:?},", self.get_char().unwrap() as u8);

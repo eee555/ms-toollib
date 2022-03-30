@@ -556,6 +556,7 @@ impl BaseParser for AvfVideo {
     }
 }
 impl AvfVideo {
+    #[cfg(any(feature = "py", feature = "rs"))]
     pub fn new(file_name: &str) -> AvfVideo {
         let video_data: Vec<u8> = fs::read(file_name).unwrap();
         // for i in 42642 - 500..42641 {
@@ -563,6 +564,59 @@ impl AvfVideo {
         // }
         AvfVideo {
             file_name: file_name.to_string(),
+            width: 0,
+            height: 0,
+            mine_num: 0,
+            marks: false,
+            level: 0,
+            board: vec![],
+            events: vec![],
+            current_event_id: 0,
+            player: "".to_string(),
+            video_data: video_data,
+            offset: 0,
+            static_params: StaticParams {
+                bbbv: 0,
+                openings: 0,
+                islands: 0,
+                hizi: 0,
+                cell0: 0,
+                cell1: 0,
+                cell2: 0,
+                cell3: 0,
+                cell4: 0,
+                cell5: 0,
+                cell6: 0,
+                cell7: 0,
+                cell8: 0,
+            },
+            dynamic_params: DynamicParams {
+                r_time: 0.0,
+                bbbv_s: 0.0,
+                stnb: 0.0,
+                rqp: 0.0,
+                lefts: 0,
+                rights: 0,
+                chordings: 0,
+                flags: 0,
+                clicks: 0,
+                ces: 0,
+                lefts_s: 0.0,
+                rights_s: 0.0,
+                chordings_s: 0.0,
+                clicks_s: 0.0,
+                ces_s: 0.0,
+            },
+        }
+    }
+    #[cfg(feature = "js")]
+    pub fn new(video_data: Vec<u8>) -> AvfVideo {
+        // let video_data: Vec<u8> = fs::read(file_name).unwrap();
+        // for i in 42642 - 500..42641 {
+        //     print!("{:?}", video_data[i] as char);
+        // }
+        AvfVideo {
+            file_name: "".to_string(),
             width: 0,
             height: 0,
             mine_num: 0,

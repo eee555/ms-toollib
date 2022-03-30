@@ -18,8 +18,11 @@ use rand::seq::SliceRandom;
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::thread_rng;
 
+#[cfg(any(feature = "py", feature = "rs"))]
 use rand::prelude::*;
+#[cfg(any(feature = "py", feature = "rs"))]
 use rand::{rngs::StdRng, Rng, SeedableRng};
+
 use std::time;
 
 use std::cmp::{max, min};

@@ -29,30 +29,26 @@ console.log(m.get_game_board);
 m.step_flow(JSON.stringify([["lc", 0, 0], ["lr", 0, 0]]))
 console.log(m.get_game_board);
 
-// let video = wasm.AvfVideo.new("jze.avf")
-// video.parse_video()
-// console.log(video.get_bbbv)
-
-
 
 const request = new XMLHttpRequest()
 request.onload = () => {
     let r = new Uint8Array(request.response);
-    console.log(JSON.stringify(r));
+    let video = wasm.AvfVideo.new(r)
+    video.parse_video()
+    console.log(video.get_bbbv);
+    console.log(video.get_player);
+    video.analyse()
+    for (var i = 0; i < 100; i++) {
+        console.log(video.events_x(i), video.events_y(i), video.events_mouse(i));
+    }
 }
 request.onerror = (e) => {
-    console.log(888);
+    console.log(555);
 }
 request.open('GET', "jze.avf")
 request.responseType = 'arraybuffer'
 request.send()
 
-// const reader = new FileReader()
-// reader.onload = function () {
-//     console.log(666);
-// }
-// reader.onerror = function (e) {
-//     console.log(888);
-// }
-// reader.readAsArrayBuffer("jze.avf")
+
+
 

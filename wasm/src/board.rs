@@ -110,9 +110,10 @@ pub struct AvfVideo {
 }
 #[wasm_bindgen]
 impl AvfVideo {
-    pub fn new(file_name: &str) -> AvfVideo {
+    pub fn new(data: Box<[u8]>) -> AvfVideo {
+        let data = data.into_vec();
         AvfVideo {
-            core: ms::AvfVideo::new("C://Users//p//Documents//GitHub//ms_toollib//wasm//www//jze.avf"),
+            core: ms::AvfVideo::new(data),
         }
     }
     pub fn parse_video(&mut self) {
@@ -140,6 +141,10 @@ impl AvfVideo {
     #[wasm_bindgen(getter)]
     pub fn get_bbbv(&self) -> u32 {
         self.core.static_params.bbbv as u32
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_player(&self) -> String {
+        self.core.player.clone()
     }
     #[wasm_bindgen(getter)]
     pub fn get_openings(&self) -> u32 {

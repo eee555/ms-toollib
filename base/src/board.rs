@@ -611,10 +611,7 @@ impl AvfVideo {
     }
     #[cfg(feature = "js")]
     pub fn new(video_data: Vec<u8>) -> AvfVideo {
-        // let video_data: Vec<u8> = fs::read(file_name).unwrap();
-        // for i in 42642 - 500..42641 {
-        //     print!("{:?}", video_data[i] as char);
-        // }
+        // video_data = video_data.into_vec();
         AvfVideo {
             file_name: "".to_string(),
             width: 0,

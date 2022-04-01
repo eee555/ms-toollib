@@ -127,6 +127,10 @@ impl PyAvfVideo {
         Ok(self.core.mine_num)
     }
     #[getter]
+    fn get_player(&self) -> PyResult<String> {
+        Ok(self.core.player.clone())
+    }
+    #[getter]
     fn get_bbbv(&self) -> PyResult<usize> {
         Ok(self.core.static_params.bbbv)
     }

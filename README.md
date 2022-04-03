@@ -11,3 +11,14 @@
 Algorithms for minesweeper, published on various platforms.
 
 - 目前主要文档见[https://docs.rs/ms_toollib](https://docs.rs/ms_toollib)。
+最新版本号统计：  
+
+python(windows): 1.3.2
+
+python(linux): 1.3.4
+
+javascript/typescript: 1.2.10
+
+nodejs: 1.2.7
+
+crate: 1.3.2

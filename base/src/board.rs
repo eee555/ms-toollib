@@ -9,8 +9,8 @@ use crate::utils::{refresh_board, refresh_matrixs};
 use std::cmp::{max, min};
 use std::fs;
 
-/// 局面状态机，分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。  
-/// - 局限：目前不能计算path。  
+/// 局面状态机，侧重分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。  
+/// - 局限：不关注具体的线路，因此不能计算path等。  
 /// - 注意：ce的计算与扫雷网是不同的，本工具箱中，重复标同一个雷只算一个ce，即反复标雷、取消标雷不算作ce。
 /// 应用场景：强化学习训练AI、游戏复盘计算指标。不能处理高亮（18）、算法确定是雷（12）等标记。  
 /// - 用python调用时的示例：
@@ -233,8 +233,8 @@ impl MinesweeperBoard {
                 "lr" => match self.mouse_state {
                     MouseState::Chording => {}
                     MouseState::DownUp => self.game_board_state = GameBoardState::Playing,
-                    MouseState::DownUpAfterChording => {},
-                    MouseState::ChordingNotFlag => {},
+                    MouseState::DownUpAfterChording => {}
+                    MouseState::ChordingNotFlag => {}
                     _ => return Err(()),
                 },
                 _ => {}
@@ -399,22 +399,27 @@ impl MinesweeperBoard {
     // }
 }
 
+/// 鼠标状态机
 #[derive(Debug, PartialEq, Clone)]
 pub enum MouseState {
-    // 鼠标状态机
     UpUp,
     UpDown,
-    UpDownNotFlag, // 右键按下，且没有标雷的状态
+    /// 右键按下，且既没有标雷，也没有取消标雷的状态
+    UpDownNotFlag, 
     DownUp,
-    Chording,            // 双键都按下，的其他状态
-    ChordingNotFlag,     // 双键都按下，且是在不可以右击的格子上、先按下右键
-    DownUpAfterChording, // 双击后先弹起右键，左键还没弹起的状态
-    Undefined,           // 未初始化的状态
+    /// 双键都按下的其他状态
+    Chording,
+    /// 双键都按下，且是在不可以右击的格子上、先按下右键
+    ChordingNotFlag,
+    /// 双击后先弹起右键，左键还没弹起的状态
+    DownUpAfterChording,
+    /// 未初始化的状态
+    Undefined,
 }
 
+/// 游戏局面状态机
 #[derive(Debug, PartialEq)]
 pub enum GameBoardState {
-    // 游戏局面状态机
     Ready,
     Playing,
     Loss,
@@ -485,6 +490,9 @@ pub struct DynamicParams {
     pub chordings_s: f64,
     pub clicks_s: f64,
     pub ces_s: f64,
+    pub ioe: f64,
+    pub corr: f64,
+    pub thrp: f64,
 }
 
 trait BaseParser {
@@ -842,10 +850,34 @@ impl AvfVideo {
             self.events[ide].mouse_state = b.mouse_state.clone();
         }
         self.dynamic_params.lefts = b.left;
+        self.dynamic_params.lefts_s = b.left as f64 / self.dynamic_params.r_time;
         self.dynamic_params.rights = b.right;
+        self.dynamic_params.rights_s = b.right as f64 / self.dynamic_params.r_time;
         self.dynamic_params.ces = b.ces;
+        self.dynamic_params.ces_s = b.ces as f64 / self.dynamic_params.r_time;
         self.dynamic_params.chordings = b.chording;
+        self.dynamic_params.clicks = b.left + b.right + b.chording;
+        self.dynamic_params.clicks_s = self.dynamic_params.clicks as f64 / self.dynamic_params.r_time;
         self.dynamic_params.flags = b.flag;
+        self.dynamic_params.bbbv_s = self.static_params.bbbv as f64 / self.dynamic_params.r_time;
+        self.dynamic_params.rqp = self.dynamic_params.r_time * self.dynamic_params.r_time
+            / self.static_params.bbbv as f64;
+        if self.height == 8 && self.width == 8 && self.mine_num == 10 {
+            self.dynamic_params.stnb = 47.22
+                / (self.dynamic_params.r_time.powf(1.7) / self.static_params.bbbv as f64)
+                * (b.solved3BV as f64 / self.static_params.bbbv as f64);
+        } else if self.height == 16 && self.width == 16 && self.mine_num == 40 {
+            self.dynamic_params.stnb = 153.73
+                / (self.dynamic_params.r_time.powf(1.7) / self.static_params.bbbv as f64)
+                * (b.solved3BV as f64 / self.static_params.bbbv as f64);
+        } else if self.height == 16 && self.width == 30 && self.mine_num == 99 {
+            self.dynamic_params.stnb = 435.001
+                / (self.dynamic_params.r_time.powf(1.7) / self.static_params.bbbv as f64)
+                * (b.solved3BV as f64 / self.static_params.bbbv as f64);
+        } // 凡自定义的stnb都等于0
+        self.dynamic_params.ioe = b.solved3BV as f64 / self.dynamic_params.clicks as f64;
+        self.dynamic_params.corr = b.ces as f64 / self.dynamic_params.clicks as f64;
+        self.dynamic_params.thrp = b.solved3BV as f64 / b.ces as f64;
     }
     pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
         // 事件分析，返回一个向量，格式是event索引、字符串event的类型

@@ -243,6 +243,18 @@ impl PyAvfVideo {
         Ok(self.core.dynamic_params.ces_s)
     }
     #[getter]
+    fn get_ioe(&self) -> PyResult<f64> {
+        Ok(self.core.dynamic_params.ioe)
+    }
+    #[getter]
+    fn get_thrp(&self) -> PyResult<f64> {
+        Ok(self.core.dynamic_params.thrp)
+    }
+    #[getter]
+    fn get_corr(&self) -> PyResult<f64> {
+        Ok(self.core.dynamic_params.corr)
+    }
+    #[getter]
     fn get_events_len(&self) -> PyResult<usize> {
         Ok(self.core.events.len())
     }

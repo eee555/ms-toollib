@@ -614,6 +614,9 @@ impl AvfVideo {
                 chordings_s: 0.0,
                 clicks_s: 0.0,
                 ces_s: 0.0,
+                ioe: 0.0,
+                thrp: 0.0,
+                corr: 0.0,
             },
         }
     }

@@ -405,7 +405,7 @@ pub enum MouseState {
     UpUp,
     UpDown,
     /// 右键按下，且既没有标雷，也没有取消标雷的状态
-    UpDownNotFlag, 
+    UpDownNotFlag,
     DownUp,
     /// 双键都按下的其他状态
     Chording,
@@ -531,6 +531,10 @@ pub struct AvfVideo {
     /// 录像播放时的指针，播放哪一帧
     pub current_event_id: usize,
     pub player: String,
+    /// 游戏起始时间和中止时间。不整理格式，读成字符串。
+    /// 举例：在阿比特中，‘16.10.2021.22.24.23.9906’，意味2021年10月16日，下午10点24分23秒9906。
+    pub start_time: String,
+    pub end_time: String,
     video_data: Vec<u8>,
     offset: usize,
     pub static_params: StaticParams,
@@ -567,7 +571,7 @@ impl AvfVideo {
     #[cfg(any(feature = "py", feature = "rs"))]
     pub fn new(file_name: &str) -> AvfVideo {
         let video_data: Vec<u8> = fs::read(file_name).unwrap();
-        // for i in 42642 - 500..42641 {
+        // for i in 0..500 {
         //     print!("{:?}", video_data[i] as char);
         // }
         AvfVideo {
@@ -581,6 +585,8 @@ impl AvfVideo {
             events: vec![],
             current_event_id: 0,
             player: "".to_string(),
+            start_time: "".to_string(),
+            end_time: "".to_string(),
             video_data: video_data,
             offset: 0,
             static_params: StaticParams {
@@ -735,6 +741,20 @@ impl AvfVideo {
                 break;
             }
         }
+        loop {
+            let v = self.get_char()?;
+            match v {
+                '|' => break,
+                _ => self.start_time.push(v),
+            }
+        }
+        loop {
+            let v = self.get_char()?;
+            match v {
+                '|' => break,
+                _ => self.end_time.push(v),
+            }
+        }
         let mut buffer: [char; 2] = ['\0', '\0'];
         loop {
             buffer[0] = buffer[1];
@@ -860,7 +880,8 @@ impl AvfVideo {
         self.dynamic_params.ces_s = b.ces as f64 / self.dynamic_params.r_time;
         self.dynamic_params.chordings = b.chording;
         self.dynamic_params.clicks = b.left + b.right + b.chording;
-        self.dynamic_params.clicks_s = self.dynamic_params.clicks as f64 / self.dynamic_params.r_time;
+        self.dynamic_params.clicks_s =
+            self.dynamic_params.clicks as f64 / self.dynamic_params.r_time;
         self.dynamic_params.flags = b.flag;
         self.dynamic_params.bbbv_s = self.static_params.bbbv as f64 / self.dynamic_params.r_time;
         self.dynamic_params.rqp = self.dynamic_params.r_time * self.dynamic_params.r_time

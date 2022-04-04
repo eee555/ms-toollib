@@ -42,9 +42,10 @@ fn minesweeper_board_works() {
 }
 
 #[test]
+// cargo test --features rs -- --nocapture AvfVideo_works
 fn AvfVideo_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("gjy.avf");
+    let mut video = AvfVideo::new("jze.avf");
     video.parse_video();
     video.analyse();
     // video.print_event();

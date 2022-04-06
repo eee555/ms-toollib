@@ -46,10 +46,12 @@ fn minesweeper_board_works() {
 fn AvfVideo_works() {
     // 录像解析工具测试
     let mut video = AvfVideo::new("jze.avf");
-    video.parse_video();
-    video.analyse();
+    let r = video.parse_video();
+    println!("结果：{:?}", r);
+    println!("标识：{:?}", video.player);
+    println!("3BV：{:?}", video.static_params.bbbv);
     // video.print_event();
-    println!("{:?}", video.player);
+    video.analyse();
 }
 
 #[test]

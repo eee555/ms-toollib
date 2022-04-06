@@ -748,6 +748,11 @@ impl AvfVideo {
                 _ => self.start_time.push(v),
             }
         }
+        // println!("666");
+        // loop {
+        //     let v = self.get_char()?;
+        //     print!("{:?}", v as char);
+        // }
         loop {
             let v = self.get_char()?;
             match v {
@@ -755,13 +760,19 @@ impl AvfVideo {
                 _ => self.end_time.push(v),
             }
         }
-        let mut buffer: [char; 2] = ['\0', '\0'];
+        let v = self.get_char()?;
+        let mut buffer: [char; 2];
+        match v {
+            '|' => buffer = ['\0', '|'],
+            'B' => buffer = ['|', 'B'],
+            _ => buffer = ['\0', '\0'],
+        }
         loop {
-            buffer[0] = buffer[1];
-            buffer[1] = self.get_char()?;
             if buffer[0] == '|' && buffer[1] == 'B' {
                 break;
             }
+            buffer[0] = buffer[1];
+            buffer[1] = self.get_char()?;
         }
         let mut s: String = "".to_string();
         loop {
@@ -787,6 +798,7 @@ impl AvfVideo {
             Ok(v) => v - 1.0,
             Err(_) => return Err(ErrReadVideoReason::InvalidParams),
         };
+        // println!("777");
         let mut buffer = [0u8; 8];
         while buffer[2] != 1 || buffer[1] > 1 {
             buffer[0] = buffer[1];
@@ -808,7 +820,7 @@ impl AvfVideo {
                     17 => "rr".to_string(),
                     33 => "mc".to_string(),
                     65 => "mr".to_string(),
-                    145 => "rc".to_string(),
+                    145 => "rr".to_string(),
                     193 => "mr".to_string(),
                     11 => "sc".to_string(),
                     21 => "lr".to_string(),

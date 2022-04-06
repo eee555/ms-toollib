@@ -14,9 +14,9 @@ Algorithms for minesweeper, published on various platforms.
 最新版本号统计：  
 版本号越大，代表越新（可以催）。
 
-python(windows): 1.3.2
+python(windows): 1.3.6
 
-python(linux): 1.3.6
+python(linux): 1.3.7
 
 javascript/typescript: 1.2.10
 

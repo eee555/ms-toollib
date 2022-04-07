@@ -220,22 +220,22 @@ impl MinesweeperBoard {
         }
         true
     }
-    /// 返回的值的含义是：0：没有任何作用的操作，例如左键数字、踩雷。
-    /// 1：推进了局面，但没有改变ai对局面的判断，特指标雷。
-    /// 2：改变局面的操作，左键、双击。
-    /// e的类型有6种，lc, lr, rc, rr, cc, cr；这和arbiter等软件是不同的，本工具箱兼容了他们
-    /// cc对应的是，按下第二个键，至于按的哪个不知道
-    /// crl对应的是，两个键都按下时，抬起左键(chording_release_left)，和lr等价，可用可不用
-    /// crr对应的是，两个键都按下时，抬起右键(chording_release_right)，和rr等价，可用可不用
+    /// 返回的值的含义是：0：没有任何作用的操作，例如左键数字、踩雷。  
+    /// 1：推进了局面，但没有改变ai对局面的判断，特指标雷。  
+    /// 2：改变局面的操作，左键、双击。  
+    /// e的类型有6种，lc, lr, rc, rr, cc, cr；这和arbiter等软件是不同的，本工具箱兼容了他们  
+    /// cc对应的是，按下第二个键，至于按的哪个不知道  
+    /// crl对应的是，两个键都按下时，抬起左键(chording_release_left)，和lr等价，可用可不用  
+    /// crr对应的是，两个键都按下时，抬起右键(chording_release_right)，和rr等价，可用可不用  
+    /// 在严格的鼠标状态机中，有些情况是不可能的，例如右键没有抬起就按下两次，但在阿比特中就观察到这种事情。
+    /// 因此此类情况不再简单地报出不可恢复地错误，而是若无其事地继续解析。  
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
         match self.game_board_state {
             GameBoardState::Ready => match e {
                 "lr" => match self.mouse_state {
-                    MouseState::Chording => {}
+                    // 鼠标状态与局面状态的耦合
                     MouseState::DownUp => self.game_board_state = GameBoardState::Playing,
-                    MouseState::DownUpAfterChording => {}
-                    MouseState::ChordingNotFlag => {}
-                    _ => return Err(()),
+                    _ => {}
                 },
                 _ => {}
             },
@@ -256,7 +256,12 @@ impl MinesweeperBoard {
                 MouseState::UpUp => self.mouse_state = MouseState::DownUp,
                 MouseState::UpDown => self.mouse_state = MouseState::Chording,
                 MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
-                _ => return Err(()),
+                // 以下情况其实是不可能的
+                MouseState::DownUp => {}
+                MouseState::DownUpAfterChording => {}
+                MouseState::Chording => {}
+                MouseState::ChordingNotFlag => {}
+                MouseState::Undefined => self.mouse_state = MouseState::DownUp,
             },
             "lr" => match self.mouse_state {
                 MouseState::DownUp => {
@@ -282,7 +287,11 @@ impl MinesweeperBoard {
                     }
                     return self.chording_click(pos.0, pos.1);
                 }
-                _ => return Err(()),
+                // 以下情况其实是不可能的
+                MouseState::UpDown => {}
+                MouseState::UpDownNotFlag => {}
+                MouseState::UpUp => self.mouse_state = MouseState::UpUp,
+                MouseState::Undefined => self.mouse_state = MouseState::UpUp,
             },
             "rc" => match self.mouse_state {
                 MouseState::UpUp => {
@@ -299,7 +308,12 @@ impl MinesweeperBoard {
                 }
                 MouseState::DownUp => self.mouse_state = MouseState::Chording,
                 MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,
-                _ => return Err(()),
+                // 以下情况其实是不可能的
+                MouseState::UpDown => {}
+                MouseState::UpDownNotFlag => {}
+                MouseState::Chording => {}
+                MouseState::ChordingNotFlag => {}
+                MouseState::Undefined => self.mouse_state = MouseState::UpDown,
             },
             "rr" => match self.mouse_state {
                 MouseState::UpDown => self.mouse_state = MouseState::UpUp,
@@ -319,7 +333,11 @@ impl MinesweeperBoard {
                     }
                     return self.chording_click(pos.0, pos.1);
                 }
-                _ => return Err(()),
+                // 以下情况其实是不可能的
+                MouseState::DownUp => {}
+                MouseState::DownUpAfterChording => {}
+                MouseState::UpUp => self.mouse_state = MouseState::UpUp,
+                MouseState::Undefined => self.mouse_state = MouseState::UpUp,
             },
             "cc" => match self.mouse_state {
                 MouseState::DownUp => self.mouse_state = MouseState::Chording,
@@ -809,6 +827,9 @@ impl AvfVideo {
             buffer[i] = self.get_unsized_int()?;
         }
         loop {
+            if buffer[0] != 1 {
+            println!("{:?}, {:?}", ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
+            + (buffer[4] as f64) / 100.0, buffer[0]);}
             self.events.push(VideoEvent {
                 time: ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
                     + (buffer[4] as f64) / 100.0,
@@ -869,6 +890,7 @@ impl AvfVideo {
         let mut b = MinesweeperBoard::new(self.board.clone());
         for ide in 0..self.events.len() {
             if self.events[ide].mouse != "mv" {
+                println!("{:?}, {:?}", self.events[ide].time, self.events[ide].mouse);
                 self.events[ide].useful_level = b
                     .step(
                         &self.events[ide].mouse,

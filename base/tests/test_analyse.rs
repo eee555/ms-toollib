@@ -45,7 +45,7 @@ fn minesweeper_board_works() {
 // cargo test --features rs -- --nocapture AvfVideo_works
 fn AvfVideo_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("jze.avf");
+    let mut video = AvfVideo::new("i.avf");
     let r = video.parse_video();
     println!("结果：{:?}", r);
     println!("标识：{:?}", video.player);

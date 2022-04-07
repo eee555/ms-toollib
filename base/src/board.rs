@@ -827,9 +827,9 @@ impl AvfVideo {
             buffer[i] = self.get_unsized_int()?;
         }
         loop {
-            if buffer[0] != 1 {
-            println!("{:?}, {:?}", ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
-            + (buffer[4] as f64) / 100.0, buffer[0]);}
+            // if buffer[0] != 1 {
+            // println!("{:?}, {:?}", ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
+            // + (buffer[4] as f64) / 100.0, buffer[0]);}
             self.events.push(VideoEvent {
                 time: ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
                     + (buffer[4] as f64) / 100.0,
@@ -890,7 +890,7 @@ impl AvfVideo {
         let mut b = MinesweeperBoard::new(self.board.clone());
         for ide in 0..self.events.len() {
             if self.events[ide].mouse != "mv" {
-                println!("{:?}, {:?}", self.events[ide].time, self.events[ide].mouse);
+                // println!("{:?}, {:?}", self.events[ide].time, self.events[ide].mouse);
                 self.events[ide].useful_level = b
                     .step(
                         &self.events[ide].mouse,

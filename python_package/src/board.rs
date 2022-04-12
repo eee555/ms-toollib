@@ -135,6 +135,10 @@ impl PyAvfVideo {
         Ok(self.core.static_params.bbbv)
     }
     #[getter]
+    fn get_start_time(&self) -> PyResult<String> {
+        Ok(self.core.start_time.clone())
+    }
+    #[getter]
     fn get_openings(&self) -> PyResult<usize> {
         Ok(self.core.static_params.openings)
     }

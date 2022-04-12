@@ -16,7 +16,7 @@ Algorithms for minesweeper, published on various platforms.
 
 python(windows): 1.3.6
 
-python(linux): 1.3.9
+python(linux): 1.3.10
 
 javascript/typescript: 1.2.10
 

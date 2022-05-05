@@ -412,9 +412,23 @@ impl MinesweeperBoard {
         }
         true
     }
-    // pub fn reset(&self) {
-    //     // 重载，暂时没用不写
-    // }
+    /// 初始化。对应强化学习领域gym的api中的reset。
+    pub fn reset(&mut self) {
+        self.game_board = vec![vec![10; self.column]; self.row];
+        self.board = vec![vec![0; self.column]; self.row];
+        self.left = 0;
+        self.right = 0;
+        self.chording = 0;
+        self.ces = 0;
+        self.flag = 0;
+        self.left = 0;
+        self.solved3BV = 0;
+        self.flagedList = vec![];
+        self.mouse_state = MouseState::UpUp;
+        self.game_board_state = GameBoardState::Ready;
+        self.pointer_x = 0;
+        self.pointer_y = 0;
+    }
 }
 
 /// 鼠标状态机
@@ -522,7 +536,7 @@ trait BaseParser {
 
 /// avf录像解析器。  
 /// - 功能：解析avf格式的录像，有详细分析录像的方法。  
-/// - 以下是在python中调用的示例。
+/// - 以下是在python中调用的示例。  
 /// ```python
 /// v = ms.AvfVideo("arbiter_beg.avf");
 /// v.parse_video()
@@ -530,7 +544,7 @@ trait BaseParser {
 /// print(v.bbbv)
 /// print(v.clicks)
 /// print(v.clicks_s)
-/// v.analyse_for_features(["high_risk_guess"])
+/// v.analyse_for_features(["high_risk_guess"]) # 用哪些分析方法。分析结果会记录到events.comments里
 /// for i in range(v.events_len):
 ///     print(v.events_time(i), v.events_x(i), v.events_y(i), v.events_mouse(i))
 /// for i in range(v.events_len):
@@ -538,6 +552,7 @@ trait BaseParser {
 ///         print(v.events_posteriori_game_board(i).poss)
 /// ```
 pub struct AvfVideo {
+    /// 文件名
     pub file_name: String,
     pub width: usize,
     pub height: usize,
@@ -548,6 +563,7 @@ pub struct AvfVideo {
     pub events: Vec<VideoEvent>,
     /// 录像播放时的指针，播放哪一帧
     pub current_event_id: usize,
+    /// 录像标识
     pub player: String,
     /// 游戏起始时间和中止时间。不整理格式，读成字符串。
     /// 举例：在阿比特中，‘16.10.2021.22.24.23.9906’，意味2021年10月16日，下午10点24分23秒9906。
@@ -555,7 +571,9 @@ pub struct AvfVideo {
     pub end_time: String,
     video_data: Vec<u8>,
     offset: usize,
+    /// 可以计算静态指标（有些没写完）
     pub static_params: StaticParams,
+    /// 可以动态静态指标（有些没写完）
     pub dynamic_params: DynamicParams,
 }
 

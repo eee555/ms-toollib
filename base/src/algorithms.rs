@@ -634,10 +634,16 @@ pub fn is_solvable(Board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
     }
 }
 
-/// 删选法多（8）线程无猜埋雷。  
-/// - 输入：3BV下限、上限，最大尝试次数。  
+/// 删选法多（8）线程无猜埋雷。对于雷密度很高的局面，多线程比单线程更快。  
+/// - 输入：高、宽、雷数、第几行、第几列、最大尝试次数。  
 /// - 返回: (是否成功、3BV、该线程的尝试次数)。  
 /// - 注意：若不成功返回最后生成的局面，此时则不一定无猜。
+/// - 局限：雷的密度无法设得很大。以高级的局面为例，雷数最多设到大约130左右。
+/// - 用python调用时的示例：
+/// ```python
+/// import ms_toollib as ms
+/// board = laymine_solvable_thread(16, 30, 99, 3, 20, 100000) # 在第3行、第20列开局
+/// ```
 #[cfg(any(feature = "py", feature = "rs"))]
 pub fn laymine_solvable_thread(
     row: usize,
@@ -701,9 +707,14 @@ pub fn laymine_solvable_thread(
 }
 
 /// 删选法单线程无猜埋雷。不可以生成任意雷密度的无猜局面。但雷满足均匀分布。  
-/// - 输入：高、宽、雷数、起手行数、起手列数、3BV下限、上限、最大尝试次数、最大枚举长度。  
+/// - 输入：高、宽、雷数、起手行数、起手列数、最大尝试次数。  
 /// - 返回：是否成功。  
 /// - 注意：若不成功返回最后生成的局面，此时则不一定无猜。
+/// - 用python调用时的示例：
+/// ```python
+/// import ms_toollib as ms
+/// board = laymine_solvable(16, 30, 99, 3, 20, 100000) # 在第3行、第20列开局
+/// ```
 pub fn laymine_solvable(
     row: usize,
     column: usize,
@@ -725,7 +736,7 @@ pub fn laymine_solvable(
     (Board, false)
 }
 
-/// 调整法无猜埋雷。可以生成任意雷密度的无猜局面。但雷不满足均匀分布。  
+/// 调整法无猜埋雷。可以生成任意雷密度的无猜局面。但雷不满足均匀分布。（还没写好）  
 /// - 返回局面、是否成功  
 // 局面中的-10代表还没埋雷。
 pub fn laymine_solvable_adjust(
@@ -758,12 +769,10 @@ pub fn laymine_solvable_adjust(
     board = vec![vec![-10; column]; row];
     let mut board_of_game = vec![vec![10; column]; row];
     board_of_game[x0][y0] = 0;
-    // if time == 2 {
-    //     return (laymine_op(row, column, mine_num, x0, y0), false);
-    // }
     let remain_mine_num = mine_num;
     let remain_not_mine_num = row * column - area_op - mine_num;
     let mut cells_plan_to_click = vec![];
+    // 初始化第一步计划点开的格子
     for j in max(1, x0) - 1..min(row, x0 + 2) {
         for k in max(1, y0) - 1..min(column, y0 + 2) {
             board[j][k] = 0;
@@ -772,6 +781,7 @@ pub fn laymine_solvable_adjust(
             }
         }
     }
+    // 开始递归求解
     let (mut b, flag) = adjust_step(
         &board,
         &board_of_game,
@@ -809,19 +819,19 @@ pub fn laymine_solvable_adjust(
 // 调整法的递归部分。注意空间复杂度为局面面积乘求解步数。
 // 返回没有计算数字的局面和是否成功。
 fn adjust_step(
-    board: &Vec<Vec<i32>>,
-    board_of_game: &Vec<Vec<i32>>,
-    plan_click: &Vec<(usize, usize)>,
-    remain_mine_num: usize,
-    remain_not_mine_num: usize,
+    board: &Vec<Vec<i32>>,            // 当前的board，数字没有计算，只有0，-1，-10
+    board_of_game: &Vec<Vec<i32>>,    // 当前的board_of_game，数字没有计算，只有10，1
+    plan_click: &Vec<(usize, usize)>, // 当前计划点开的格子，递归部分要保证点开后，局面是有解开的可能的
+    remain_mine_num: usize,           // 当前还要埋的雷数
+    remain_not_mine_num: usize,       // 当前还要埋的非雷数
 ) -> (Vec<Vec<i32>>, bool) {
-    let mut b = board.clone();
-    let mut bg = board_of_game.clone();
-    let mut r = remain_mine_num;
-    let mut rn = remain_not_mine_num;
+    let mut b = board.clone(); // 克隆一个board的备份
+    let mut bg = board_of_game.clone(); // 克隆一个board_of_game的备份
+    let mut r = remain_mine_num; // 克隆一个当前还要埋的雷数的备份
+    let mut rn = remain_not_mine_num; // 克隆一个当前还要埋的非雷数的备份
     for (x, y) in plan_click {
         bg[*x][*y] = 1;
-    }
+    } // 点开当前的board_of_game的备份上的计划点开的格子，用1临时表示
     println!(">>>>>>");
     bg.iter().for_each(|i| {
         i.iter()
@@ -834,7 +844,7 @@ fn adjust_step(
             .for_each(|j| print!("{number:>width$}", number = j, width = 4));
         println!("")
     });
-
+    std::io::stdin().read_line(&mut "".to_string());
     // thread::sleep(time::Duration::from_millis(2000));
     let mut plan_click = vec![];
     let (Ases, xses, mut bses) = refresh_matrixses(&bg);
@@ -844,6 +854,7 @@ fn adjust_step(
     // println!("xses: {:?}", xses);
     // println!("bses: {:?}", bses);
     // println!("rn: {:?}", rn);
+    // 前沿全部被雷堵塞，无法继续
     if xses.is_empty() {
         if rn > 0 {
             return (vec![], false);
@@ -851,16 +862,23 @@ fn adjust_step(
             return (b, true);
         }
     }
+    // 只对第一块处理。缺点是内存复杂度上升
     let As_0 = Ases.get(0).unwrap();
     let xs_0 = xses.get(0).unwrap();
     let bs_0 = bses.get_mut(0).unwrap();
 
-    let xs_cell_num = xs_0.iter().fold(0, |acc, x| acc + x.len());
+    // let mut front_xs_0 = xs_0.clone();
+    let mut front_xs_0 = xs_0.clone();
+    front_xs_0
+        .iter_mut()
+        .for_each(|p| p.retain(|x| b[x.0][x.1] == -10));
+    // 前沿格子————此格子在边缘，且是没有埋过雷的
+    let xs_cell_num = front_xs_0.iter().fold(0, |acc, x| acc + x.len());
     let mine_num_except = (xs_cell_num as f64 * r as f64 / (rn + r) as f64) as usize;
     let mut success_flag = false;
     // 对不同雷数循环
     'inner: for i in 0..xs_cell_num + 1 {
-        // 根据算法的映射，计算出mine_num。
+        // 根据算法的映射，计算出mine_num，计划的埋雷量
         let mine_num;
         if mine_num_except == 0 || xs_cell_num == 0 {
             mine_num = 0;
@@ -900,12 +918,14 @@ fn adjust_step(
         }
         // 对每种雷数，重复尝试3次。
         for _ in 0..3 {
-            adjust_the_area_on_board(&mut b, &xs_0, mine_num);
+            adjust_the_area_on_board(&mut b, &front_xs_0, mine_num);
             // 以下的循环用来修正b向量
             for bb in 0..bs_0.len() {
                 for ss in 0..bs_0[bb].len() {
+                    // ss是第几个方程
                     bs_0[bb][ss] = 0;
                     for aa in 0..As_0[bb][0].len() {
+                        // aa是第几个格子
                         if As_0[bb][ss][aa] == 1 {
                             if b[xs_0[bb][aa].0][xs_0[bb][aa].1] == -1
                                 && bg[xs_0[bb][aa].0][xs_0[bb][aa].1] != 11
@@ -922,12 +942,16 @@ fn adjust_step(
                 &mut bs_0.clone(),
                 &mut bg,
             );
-            n.iter().for_each(|x| bg[x.0][x.1] = 10);
-            i.iter().for_each(|x| bg[x.0][x.1] = 10);
+            n.iter().for_each(|x| bg[x.0][x.1] = 1);
+            // i.iter().for_each(|x| bg[x.0][x.1] = 10);
+            println!("非雷: {:?}", n);
+            println!("A矩阵: {:?}", As_0);
+            println!("x矩阵: {:?}", xs_0);
+            println!("b矩阵: {:?}", bs_0);
             if n.len() > 0 || i.len() == xs_cell_num {
                 // n.iter().for_each(|x| bg[x.0][x.1] = 12);
                 i.iter().for_each(|x| bg[x.0][x.1] = 11);
-                success_flag = true;
+                success_flag = true; // 当前步骤成功
                 plan_click.append(&mut n);
                 // println!("xs_cell_num: {:?}", xs_cell_num);
                 // println!("mine_num: {:?}", mine_num);
@@ -945,11 +969,15 @@ fn adjust_step(
                 //         }
                 //     }
                 // }
+                println!("555");
                 let a = adjust_step(&b, &bg, &plan_click, r, rn);
+                println!("666");
                 if a.1 {
+                    println!("777");
                     b = a.0;
                     break 'inner;
                 } else {
+                    println!("888");
                     b = board.clone();
                     bg = board_of_game.clone();
                     continue 'inner;
@@ -1005,7 +1033,7 @@ fn adjust_the_area_on_board(
     }
 }
 
-// 对高级3BV做采样。16线程。
+/// 埋雷并计算高级局面3BV的引擎，用于研究高级3BV的分布。16线程。传入局数，例如1000 000。试一下你的电脑算的有多块吧。  
 #[cfg(any(feature = "py", feature = "rs"))]
 pub fn sample_3BVs_exp(x0: usize, y0: usize, n: usize) -> [usize; 382] {
     // 从标准高级中采样计算3BV
@@ -1027,7 +1055,6 @@ pub fn sample_3BVs_exp(x0: usize, y0: usize, n: usize) -> [usize; 382] {
 
 #[cfg(any(feature = "py", feature = "rs"))]
 fn laymine_study_exp(x0: usize, y0: usize, n: usize) -> [usize; 382] {
-    // 专用埋雷并计算3BV引擎，用于研究
     let mut rng = thread_rng();
     // let area: usize = 16 * 30 - 1;
     let pointer = x0 + y0 * 16;
@@ -1111,9 +1138,10 @@ fn OBR_cell(
 
 /// <span id="OBR_board">光学局面识别引擎。  
 /// - 输入：依次为列向量形式的三通道的像素数据、图像的高度、宽度。  
+/// - 性能：识别的成功率不是百分之百。识别失败时，甚至可能出现不可恢复的错误。想提高成功率，需要满足：图片清晰、格子的宽度在8到300像素之间、图片中没有鼠标遮挡。  
 /// - 以下提供一段用python调用时的示例：  
 /// ```python
-/// # pip install ms_toollib --upgrade
+/// # pip install ms_toollib==1.3.6（windows和linux不一样，请查看[主页](https://github.com/eee555/ms_toollib)）
 /// import ms_toollib
 /// import matplotlib.image as mpimg
 /// import numpy as np
@@ -1212,7 +1240,13 @@ pub fn get_all_not_and_is_mine_on_board(
 /// 4 -> 踩到必然的雷。  
 /// 5 -> 没有结果。因为此处已经被点开了。
 pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> i32 {
-    board_of_game.iter_mut().for_each(|x| x.iter_mut().for_each(|xx| if *xx > 10 { *xx = 10 }));
+    board_of_game.iter_mut().for_each(|x| {
+        x.iter_mut().for_each(|xx| {
+            if *xx > 10 {
+                *xx = 10
+            }
+        })
+    });
     if board_of_game[xy.0][xy.1] < 10 {
         return 5;
     }
@@ -1272,7 +1306,13 @@ pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, u
 /// - 不仅可以判断是雷，也可以判断非雷。  
 /// - 注意：不可以处理14、15等标记（当成10处理）。输入为玩家维护的游戏局面，因此会首先清干净玩家标的雷。  
 pub fn is_able_to_solve(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) -> bool {
-    board_of_game.iter_mut().for_each(|x| x.iter_mut().for_each(|xx| if *xx > 10 { *xx = 10 }));
+    board_of_game.iter_mut().for_each(|x| {
+        x.iter_mut().for_each(|xx| {
+            if *xx > 10 {
+                *xx = 10
+            }
+        })
+    });
     let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
     solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
     if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {

@@ -265,8 +265,13 @@ pub fn analyse_survive_poss(video: &mut AvfVideo) {
     let mut s_poss = 1.0;
     let mut message = "luck: ".to_string();
     let mut click_last_id = 0;
-    for ide in 2..video.events.len() {
+    let mut has_begin = false;
+    for ide in 0..video.events.len() {
         if video.events[ide].mouse == "lr" && video.events[ide].useful_level > 0 {
+            if !has_begin {
+                has_begin = true;
+                continue
+            }
             let l_x = (video.events[ide].y / 16) as usize;
             let l_y = (video.events[ide].x / 16) as usize;
             let p = video.events[click_last_id].posteriori_game_board.get_poss()[l_x][l_y];
@@ -278,9 +283,13 @@ pub fn analyse_survive_poss(video: &mut AvfVideo) {
             click_last_id = ide;
         }
     }
-    message.pop();
-    message.pop();
-    message.push_str("= ");
-    message.push_str(&format!("{:.6};", s_poss));
+    if message.len() > 7 {
+        message.pop();
+        message.pop();
+        message.push_str("= ");
+        message.push_str(&format!("{:.6};", s_poss));
+    } else {
+        message.push_str("1;");
+    }
     video.events.last_mut().unwrap().comments = message;
 }

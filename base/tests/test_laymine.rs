@@ -19,6 +19,8 @@ fn laymine_solvable_works() {
     print!("{:?}", game_board.1);
 }
 
+// cargo test -- --nocapture laymine_solvable_adjust_works
+// cargo run | head -100
 #[test]
 fn laymine_solvable_adjust_works() {
     // 测试调整法无猜埋雷

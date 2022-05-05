@@ -676,6 +676,8 @@ impl AvfVideo {
             events: vec![],
             current_event_id: 0,
             player: "".to_string(),
+            start_time: "".to_string(),
+            end_time: "".to_string(),
             video_data: video_data,
             offset: 0,
             static_params: StaticParams {
@@ -709,6 +711,9 @@ impl AvfVideo {
                 chordings_s: 0.0,
                 clicks_s: 0.0,
                 ces_s: 0.0,
+                ioe: 0.0,
+                thrp: 0.0,
+                corr: 0.0,
             },
         }
     }

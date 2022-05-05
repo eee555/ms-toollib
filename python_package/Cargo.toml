@@ -13,8 +13,8 @@ authors = ["Wang Jianing <wangjianing@88.com>"]
 
 [dependencies]
 pyo3 = { version ="0.15.1", features = ["extension-module"] }
-ms_toollib = { path = "../base", features = ["py"] }
-# ms_toollib = { version ="1.3.0", features = ["py"] }
+# ms_toollib = { path = "../base", features = ["py"] }
+ms_toollib = { version ="1.3.11", features = ["py"] }
 
 [lib]
 name = "ms_toollib"

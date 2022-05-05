@@ -22,7 +22,7 @@ export default defineComponent({
       const ms = await import("ms-toollib");
       const rows = 16;
       const columns = 30;
-      let b = JSON.parse(ms.laymine_solvable(rows, columns, 99, 0, 0, 100, 381, 10000, 40))[0];
+      let b = JSON.parse(ms.laymine_solvable(rows, columns, 99, 0, 0, 10000))[0];
       for(let i = 0; i < rows; i++) {
         board.push([])
         for(let j = 0; j < columns; j++) {

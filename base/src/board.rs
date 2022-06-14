@@ -3,7 +3,7 @@
 };
 use crate::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
-    analyse_survive_poss, analyse_vision_transfer,
+    analyse_survive_poss, analyse_vision_transfer, analyse_super_fl_local
 };
 use crate::utils::{refresh_board, refresh_matrixs};
 use std::cmp::{max, min};
@@ -26,9 +26,9 @@ use std::fs;
 ///     [-1, 5, 4, -1, 1, 1, 2, 2],
 ///     [-1, 3, -1, 2, 1, 0, 1, -1],
 ///     ];
-/// v = ms.MinesweeperBoard(board)
-/// v.step('lc', (0, 0))
-/// v.step('lr', (0, 0))
+/// v = ms.MinesweeperBoard(board) # 实例化后再用
+/// v.step('lc', (0, 0)) # 左键按下
+/// v.step('lr', (0, 0)) # 左键弹起
 /// print('左键次数: ', v.left)
 /// print('右键次数: ', v.right)
 /// print('ce数: ', v.ces)
@@ -67,9 +67,9 @@ impl MinesweeperBoard {
         let row = board.len();
         let column = board[0].len();
         MinesweeperBoard {
-            board: board,
-            row: row,
-            column: column,
+            board,
+            row,
+            column,
             game_board: vec![vec![10; column]; row],
             left: 0,
             right: 0,
@@ -200,7 +200,7 @@ impl MinesweeperBoard {
             if self.is_win() {
                 self.game_board_state = GameBoardState::Win;
             }
-            Ok(2)
+            Ok(3)
         } else {
             Ok(0)
         }
@@ -228,13 +228,17 @@ impl MinesweeperBoard {
     /// crl对应的是，两个键都按下时，抬起左键(chording_release_left)，和lr等价，可用可不用  
     /// crr对应的是，两个键都按下时，抬起右键(chording_release_right)，和rr等价，可用可不用  
     /// 在严格的鼠标状态机中，有些情况是不可能的，例如右键没有抬起就按下两次，但在阿比特中就观察到这种事情。
-    /// 因此此类情况不再简单地报出不可恢复地错误，而是若无其事地继续解析。  
+    /// 因此此类情况不再报成不可恢复的错误，而是若无其事地继续解析。  
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
         match self.game_board_state {
             GameBoardState::Ready => match e {
                 "lr" => match self.mouse_state {
                     // 鼠标状态与局面状态的耦合
-                    MouseState::DownUp => self.game_board_state = GameBoardState::Playing,
+                    MouseState::DownUp => {
+                        if self.game_board[pos.0][pos.1] == 10 {
+                            self.game_board_state = GameBoardState::Playing;
+                        }
+                    }
                     _ => {}
                 },
                 _ => {}
@@ -295,7 +299,7 @@ impl MinesweeperBoard {
             },
             "rc" => match self.mouse_state {
                 MouseState::UpUp => {
-                    if pos.0 == self.row && pos.1 == self.column {
+                    if pos.0 == self.row && pos.1 == self.column { // 点在界面外
                         self.mouse_state = MouseState::UpDownNotFlag;
                         return Ok(0);
                     }
@@ -470,6 +474,7 @@ pub enum ErrReadVideoReason {
     InvalidVideoEvent,
 }
 
+// 局面活动（点击或移动）的结构体
 pub struct VideoEvent {
     pub time: f64,
     pub mouse: String,
@@ -478,16 +483,19 @@ pub struct VideoEvent {
     pub y: u16,
     /// 0代表完全没用，
     /// 1代表能仅推进局面但不改变对局面的后验判断，例如标雷和取消标雷
-    /// 2代表改变对局面的后验判断的操作
+    /// 2代表改变对局面的后验判断的操作，例如左键点开一个或一片格子，不包括双击
+    /// 3代表有效、至少打开了一个格子的双击
     /// 和ce没有关系，仅用于控制计算
     pub useful_level: u8,
-    /// 当前局面。鼠标move是不会存的。
-    pub posteriori_game_board: GameBoard,
-    // pub posteriori_game_board: Vec<Vec<i32>>,
-    // pub posteriori_board_poss: Vec<Vec<f64>>,
+    /// 操作前的局面（先验局面）。鼠标move是不会存的。
+    pub prior_game_board: GameBoard,
+    /// 操作后的局面（后验的局面）。鼠标move是不会存的。（拟删除）
+    // pub posteriori_game_board: GameBoard,
     pub comments: String,
     /// 该操作完成以后的鼠标状态。和录像高亮有关。即使是鼠标move也会记录。
     pub mouse_state: MouseState,
+    /// 该操作完成以后，已解决的3BV。
+    pub solved3BV: usize,
 }
 
 pub struct StaticParams {
@@ -875,9 +883,11 @@ impl AvfVideo {
                 x: (buffer[1] as u16) << 8 | buffer[3] as u16,
                 y: (buffer[5] as u16) << 8 | buffer[7] as u16,
                 useful_level: 0,
-                posteriori_game_board: GameBoard::new(self.mine_num),
+                prior_game_board: GameBoard::new(self.mine_num),
+                // posteriori_game_board: GameBoard::new(self.mine_num),
                 comments: "".to_string(),
                 mouse_state: MouseState::Undefined,
+                solved3BV: 0,
             });
             for i in 0..8 {
                 buffer[i] = self.get_unsized_int()?;
@@ -913,6 +923,9 @@ impl AvfVideo {
         let mut b = MinesweeperBoard::new(self.board.clone());
         for ide in 0..self.events.len() {
             if self.events[ide].mouse != "mv" {
+                self.events[ide]
+                    .prior_game_board
+                    .set_game_board(&b.game_board);
                 // println!("{:?}, {:?}", self.events[ide].time, self.events[ide].mouse);
                 self.events[ide].useful_level = b
                     .step(
@@ -923,9 +936,7 @@ impl AvfVideo {
                         ),
                     )
                     .unwrap();
-                self.events[ide]
-                    .posteriori_game_board
-                    .set_game_board(&b.game_board);
+                self.events[ide].solved3BV = b.solved3BV;
             }
             self.events[ide].mouse_state = b.mouse_state.clone();
         }
@@ -960,6 +971,32 @@ impl AvfVideo {
         self.dynamic_params.corr = b.ces as f64 / self.dynamic_params.clicks as f64;
         self.dynamic_params.thrp = b.solved3BV as f64 / b.ces as f64;
     }
+    /// 传入要检查的事件，会把结果记在comments字段里。
+    /// 可以传入high_risk_guess、jump_judge、needless_guess、mouse_trace、vision_transfer、survive_poss等。顺序不讲究。
+    /// #### 检查录像中所有的教科书式的fl局部（python）
+    /// ```python
+    /// import ms_toollib as ms
+    /// import re
+    /// v = ms.AvfVideo("z.avf"); # 用文件名实例化
+    /// v.parse_video()
+    /// v.analyse()
+    /// v.analyse_for_features(["super_fl_local"]) # 用哪些分析方法。分析结果会记录到events_comments字段里
+    /// for i in range(v.events_len): # 鼠标事件包括鼠标移动、按下、抬起
+    ///     c = v.events_comments(i) # 每一个鼠标事件，都有events_comments字段，记录了分析算法的结果
+    ///     if c != '':
+    ///         print('时间：', v.events_time(i), '事件：', c)
+    ///         step_num = int(re.findall(r"(?<=步数).*?(?=\))", c)[0]) # 正则提取要打印几步
+    ///         p = i
+    ///         for j in range(step_num):
+    ///             while v.events_useful_level(p) <= 0:
+    ///                 # 用events_useful_level字段辅助过滤不要看的事件
+    ///                 # 也可以用events_mouse_state字段来过滤
+    ///                 p += 1
+    ///             print('鼠标事件类型：', v.events_mouse(p),
+    ///                 '第几行：', v.events_y(p)//16, 
+    ///                 '第几列：', v.events_x(p)//16)
+    ///             p += 1
+    /// ```
     pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
         // 事件分析，返回一个向量，格式是event索引、字符串event的类型
         // error: 高风险的猜雷（猜对概率0.05）
@@ -981,6 +1018,7 @@ impl AvfVideo {
                 "mouse_trace" => analyse_mouse_trace(self),
                 "vision_transfer" => analyse_vision_transfer(self),
                 "survive_poss" => analyse_survive_poss(self),
+                "super_fl_local" => analyse_super_fl_local(self),
                 _ => continue,
             };
         }
@@ -1000,11 +1038,11 @@ impl AvfVideo {
             //         "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
             //         e.time, e.mouse, e.x, e.y
             //     );
-            //     e.posteriori_game_board
+            //     e.prior_game_board
             //         .game_board
             //         .iter()
             //         .for_each(|v| println!("{:?}", v));
-            //     e.posteriori_game_board
+            //     e.prior_game_board
             //         .poss
             //         .iter()
             //         .for_each(|v| println!("{:?}", v));
@@ -1026,10 +1064,10 @@ impl AvfVideo {
     pub fn get_game_board(&self) -> Vec<Vec<i32>> {
         let mut id = self.current_event_id;
         loop {
-            if self.events[id].posteriori_game_board.game_board.is_empty() {
+            if self.events[id].prior_game_board.game_board.is_empty() {
                 id -= 1;
             } else {
-                return self.events[id].posteriori_game_board.game_board.clone();
+                return self.events[id].prior_game_board.game_board.clone();
             }
         }
     }
@@ -1044,7 +1082,7 @@ impl AvfVideo {
                     return vec![vec![p; self.height]; self.width];
                 }
             } else {
-                return self.events[id].posteriori_game_board.get_poss().clone();
+                return self.events[id].prior_game_board.get_poss().clone();
             }
         }
     }
@@ -1094,7 +1132,7 @@ impl AvfVideo {
 }
 
 /// 静态游戏局面的包装类。  
-/// 所有计算过的属性都会保存在这里。  
+/// 所有计算过的属性都会保存在这里。缓存计算结果的局面。  
 #[derive(Clone)]
 pub struct GameBoard {
     pub game_board: Vec<Vec<i32>>,

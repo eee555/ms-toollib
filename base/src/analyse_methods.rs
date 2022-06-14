@@ -1,13 +1,15 @@
 use crate::algorithms::{solve_direct, solve_enumerate, solve_minus};
 use crate::board;
-use crate::utils::{refresh_matrix, refresh_matrixs};
-use board::{AvfVideo, VideoEvent};
+use crate::utils::{is_good_chording, refresh_matrix, refresh_matrixs};
+use board::{AvfVideo, MouseState, VideoEvent};
+
 // 录像的事件分析。参与分析的录像必须已经计算出对应的数据。
 // error: 高风险的猜雷（猜对概率0.05）√
 // feature: 高难度的判雷√
 // warning: 可以判雷时视野的转移
 // feature: 双线操作
 // feature: 破空（成功率0.98）
+// feature: 教科书式的FL局部(步数4)
 // error: 过于弯曲的鼠标轨迹(500%)√
 // warning：弯曲的鼠标轨迹(200%)√
 // warning: 可以判雷时选择猜雷√
@@ -21,7 +23,7 @@ pub fn analyse_high_risk_guess(video: &mut AvfVideo) {
     let mut id = video.events.len() - 1;
     for ide in (0..video.events.len() - 1).rev() {
         if video.events[ide].useful_level >= 2 {
-            let p = video.events[ide].posteriori_game_board.get_poss()[x][y];
+            let p = video.events[ide].prior_game_board.get_poss()[x][y];
             if p >= 0.51 {
                 video.events[id].comments = format!(
                     "{}{}",
@@ -58,11 +60,11 @@ pub fn analyse_jump_judge(video: &mut AvfVideo) {
         y = (video.events[ide].x / 16) as usize;
         if video.events[ide].useful_level >= 2 && video.events[ide].mouse == "lr" {
             if !video.events[id_last]
-                .posteriori_game_board
+                .prior_game_board
                 .get_basic_not_mine()
                 .contains(&(x, y))
                 && video.events[id_last]
-                    .posteriori_game_board
+                    .prior_game_board
                     .get_enum_not_mine()
                     .contains(&(x, y))
             {
@@ -78,11 +80,11 @@ pub fn analyse_jump_judge(video: &mut AvfVideo) {
             }
         } else if video.events[ide].useful_level == 1 && video.events[ide].mouse == "rc" {
             if !video.events[id_last]
-                .posteriori_game_board
+                .prior_game_board
                 .get_basic_is_mine()
                 .contains(&(x, y))
                 && video.events[id_last]
-                    .posteriori_game_board
+                    .prior_game_board
                     .get_enum_is_mine()
                     .contains(&(x, y))
             {
@@ -122,13 +124,13 @@ pub fn analyse_needless_guess(video: &mut AvfVideo) {
             x = (video.events[ide].y / 16) as usize;
             y = (video.events[ide].x / 16) as usize;
 
-            if video.events[id_last].posteriori_game_board.get_poss()[x][y] > 0.0
+            if video.events[id_last].prior_game_board.get_poss()[x][y] > 0.0
                 && !video.events[id_last]
-                    .posteriori_game_board
+                    .prior_game_board
                     .get_basic_not_mine()
                     .contains(&(x, y))
                 && !video.events[id_last]
-                    .posteriori_game_board
+                    .prior_game_board
                     .get_enum_not_mine()
                     .contains(&(x, y))
             {
@@ -225,7 +227,7 @@ pub fn analyse_vision_transfer(video: &mut AvfVideo) {
             {
                 let mut flag = false;
                 for &(xxx, yyy) in video.events[click_last_id]
-                    .posteriori_game_board
+                    .prior_game_board
                     .get_basic_not_mine()
                 {
                     if xxx <= l_x + 3 && xxx + 3 >= l_x && yyy <= l_y + 3 && yyy + 3 >= l_y {
@@ -233,7 +235,7 @@ pub fn analyse_vision_transfer(video: &mut AvfVideo) {
                     }
                 }
                 for &(xxx, yyy) in video.events[click_last_id]
-                    .posteriori_game_board
+                    .prior_game_board
                     .get_enum_not_mine()
                 {
                     if xxx <= l_x + 3 && xxx + 3 >= l_x && yyy <= l_y + 3 && yyy + 3 >= l_y {
@@ -270,11 +272,11 @@ pub fn analyse_survive_poss(video: &mut AvfVideo) {
         if video.events[ide].mouse == "lr" && video.events[ide].useful_level > 0 {
             if !has_begin {
                 has_begin = true;
-                continue
+                continue;
             }
             let l_x = (video.events[ide].y / 16) as usize;
             let l_y = (video.events[ide].x / 16) as usize;
-            let p = video.events[click_last_id].posteriori_game_board.get_poss()[l_x][l_y];
+            let p = video.events[click_last_id].prior_game_board.get_poss()[l_x][l_y];
             if p > 0.0 && p < 1.0 {
                 s_poss *= 1.0 - p;
                 message.push_str(&format!("{:.3} * ", 1.0 - p));
@@ -292,4 +294,145 @@ pub fn analyse_survive_poss(video: &mut AvfVideo) {
         message.push_str("1;");
     }
     video.events.last_mut().unwrap().comments = message;
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SuperFLState {
+    NotStart,   // 还没开始
+    StartNow,   // 此处开始
+    StartNotOk, // 开始了，但还没满足数量
+    IsOk,       // 满足数量了，延续
+    Finish,     // 检测到，结束
+}
+pub fn analyse_super_fl_local(video: &mut AvfVideo) {
+    let event_min_num = 5;
+    let euclidean_distance = 16;
+    let mut anchor = 0;
+    let mut counter = 0; //正在标雷、双击超过event_min_num总次数
+    let mut state = SuperFLState::NotStart;
+    let mut last_rc_num = 0; // 最后有几个右键
+    let mut last_ide = 0;
+    for ide in 1..video.events.len() {
+        if video.events[ide].mouse == "mv" {
+            continue;
+        }
+        let x = video.events[ide].y as usize / 16;
+        let y = video.events[ide].x as usize / 16;
+        let x_1 = video.events[last_ide].y as usize / 16;
+        let y_1 = video.events[last_ide].x as usize / 16;
+        // if video.events[ide].mouse == "lr" || video.events[ide].mouse == "rr"{
+        //     println!("{:?}+++{:?}", video.events[last_ide].time, video.events[last_ide].mouse_state);
+        //     // println!("---{:?}", video.events[ide].useful_level);
+        // }
+
+        if video.events[ide].mouse == "rc"
+            && video.events[ide].prior_game_board.game_board[x][y] == 10
+            && video.events[ide].useful_level == 1
+        {
+            // 正确的标雷
+            match state {
+                SuperFLState::NotStart => {
+                    state = SuperFLState::StartNow;
+                    counter = 1;
+                    last_rc_num = 1;
+                    anchor = ide;
+                    // println!("666");
+                }
+                SuperFLState::StartNow => {
+                    state = SuperFLState::StartNotOk;
+                    counter += 1;
+                    last_rc_num += 1;
+                }
+                SuperFLState::StartNotOk | SuperFLState::IsOk => {
+                    counter += 1;
+                    last_rc_num += 1;
+                }
+                _ => {}
+            }
+        } else if video.events[ide].useful_level == 3 {
+            // 正确的双击
+            if !is_good_chording(&video.events[ide].prior_game_board.game_board, (x, y)) {
+                match state {
+                    SuperFLState::IsOk => {
+                        counter -= last_rc_num;
+                        state = SuperFLState::Finish;
+                    }
+                    _ => {
+                        state = SuperFLState::NotStart;
+                        counter = 0;
+                        last_rc_num = 0;
+                    }
+                }
+            } else {
+                match state {
+                    SuperFLState::StartNow => {
+                        state = SuperFLState::StartNotOk;
+                        counter += 1;
+                        last_rc_num = 0;
+                    }
+                    SuperFLState::StartNotOk | SuperFLState::IsOk => {
+                        counter += 1;
+                        last_rc_num = 0;
+                    }
+                    _ => {}
+                }
+            }
+        } else if video.events[ide].mouse == "lr"
+            && (video.events[last_ide].mouse_state == MouseState::DownUp
+                || video.events[last_ide].mouse_state == MouseState::Chording)
+            || video.events[ide].mouse == "rr"
+                && video.events[last_ide].mouse_state == MouseState::Chording
+        {
+            // 左键或错误的右键或错误的双键
+            match state {
+                SuperFLState::IsOk => {
+                    counter -= last_rc_num;
+                    state = SuperFLState::Finish;
+                }
+                _ => {
+                    state = SuperFLState::NotStart;
+                    counter = 0;
+                    last_rc_num = 0;
+                }
+            }
+        }
+        if (x as i32 - x_1 as i32) * (x as i32 - x_1 as i32)
+            + (y as i32 - y_1 as i32) * (y as i32 - y_1 as i32)
+            > euclidean_distance
+        {
+            match state {
+                SuperFLState::StartNotOk => {
+                    state = SuperFLState::NotStart;
+                    counter = 0;
+                    last_rc_num = 0;
+                }
+                SuperFLState::IsOk => {
+                    counter -= last_rc_num;
+                    state = SuperFLState::Finish;
+                }
+                _ => {}
+            }
+        }
+        if counter - last_rc_num >= event_min_num {
+            match state {
+                SuperFLState::StartNow | SuperFLState::StartNotOk => {
+                    state = SuperFLState::IsOk;
+                }
+                _ => {}
+            }
+        }
+        match state {
+            SuperFLState::Finish => {
+                video.events[anchor].comments = format!(
+                    "{}{}",
+                    video.events[anchor].comments,
+                    format!("feature: 教科书式的FL局部(步数{});", counter)
+                );
+                state = SuperFLState::NotStart;
+            }
+            _ => {}
+        }
+        last_ide = ide;
+        // println!("{:?}", video.events[last_ide].mouse_state);
+    }
 }

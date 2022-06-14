@@ -12,14 +12,38 @@ Algorithms for minesweeper, published on various platforms.
 
 - 目前主要文档见[https://docs.rs/ms_toollib](https://docs.rs/ms_toollib)。
 最新版本号统计：  
-版本号越大，代表越新（可以催）。
+版本号越大，代表越新、功能越完善、bug越少（可以催）。
 
-python(windows): 1.3.11
+python>=3.7,<=3.8(windows): 1.3.11
 
-python(linux): 1.3.10
+python>=3.7,<=3.8(linux): 1.3.10
 
 javascript/typescript: 1.2.10
 
 nodejs: 1.2.7
 
 crate: 1.3.11
+
+* 下一版开始将提供python3.10及以上支持。
+
+### 如何调试源码
+
+在编译之前，请确保自己拥有：
+
+*   c++开发工具(msvc甚至Visual Studio，依据操作系统、博客教程或安装rust环境过程中的提示)
+*   Rust工具链(rustup -V能够打印版本号、cargo -V能够打印版本号)
+*   Visual Studio Code及对应插件(例如rust-analyzer)
+*   会用Powershell或者其它命令行工具的能力
+
+以下为调试步骤：
+
+*   克隆这个仓库到本地
+```sh
+    git clone https://github.com/eee555/ms_toollib.git
+```
+
+*   用Visual Studio Code打开base文件夹
+
+*   编辑器打开需要执行的测试程序文件，例如tests/test_analyse.rs
+
+*   找到您想要执行的测试程序，例如minesweeper_board_works这个函数，用鼠标点击#[test]下方的灰色的Run Test按钮，即可打印执行结果！

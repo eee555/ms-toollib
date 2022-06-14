@@ -10,6 +10,8 @@ use getrandom::getrandom;
 
 use crate::board;
 
+use crate::ENUM_LIMIT;
+
 // 整个模块是最底层的一些小工具，如埋雷、局面分块、计算3BV等
 
 /// 输入局面，计算空，即0的8连通域数
@@ -976,9 +978,9 @@ pub fn cal_table_minenum_recursion(
     // 输入矩阵必须是非空的，且行列数必须匹配
     // 行数和列数至少为1
     let cells_num = matrixx_squeeze.len();
-    if cells_num > 60 {
+    if cells_num > ENUM_LIMIT {
         // 超出枚举极限长度异常
-        return Err(0);
+        return Err(cells_num);
     }
     let cells_num_total = combination_relationship
         .iter()
@@ -1640,4 +1642,60 @@ pub fn find_a_border_cell(
         }
     }
     (None, false)
+}
+
+/// 是局部最好的双击返回真，否则为假。方法是向四周试探一个位置，好的双击应该不能打开更多的格子。
+/// - 不检查，但要保证pos位置处一定是合法、有效的双击，否则没意义。
+/// - board_of_game必须是没有标错的雷的，如果分析录像，必须不是尸体。
+pub fn is_good_chording(board_of_game: &Vec<Vec<i32>>, pos: (usize, usize)) -> bool {
+    let row = board_of_game.len();
+    let column = board_of_game[0].len();
+    let mid_num = surround_cell_num(board_of_game, pos);
+    if pos.0 > 0 {
+        if mid_num < surround_cell_num(board_of_game, (pos.0 - 1, pos.1)) {
+            return false;
+        }
+    }
+    if pos.1 > 0 {
+        if mid_num < surround_cell_num(board_of_game, (pos.0, pos.1 - 1)) {
+            return false;
+        }
+    }
+    if pos.0 + 1 < row {
+        if mid_num < surround_cell_num(board_of_game, (pos.0 + 1, pos.1)) {
+            return false;
+        }
+    }
+    if pos.1 < column + 1 {
+        if mid_num < surround_cell_num(board_of_game, (pos.0, pos.1 + 1)) {
+            return false;
+        }
+    }
+    return mid_num > 0;
+}
+
+// （双击位置）周围的格子（10）数，不合法则返回-1。
+// - board_of_game必须是没有标错的雷的，如果分析录像，必须不是尸体。
+fn surround_cell_num(board_of_game: &Vec<Vec<i32>>, pos: (usize, usize)) -> i8 {
+    let row = board_of_game.len();
+    let column = board_of_game[0].len();
+    if board_of_game[pos.0][pos.1] > 8 || board_of_game[pos.0][pos.1] < 1 {
+        return -1;
+    }
+    let mut flag_num = 0;
+    let mut num = 0;
+    for m in max(1, pos.0) - 1..min(row, pos.0 + 2) {
+        for n in max(1, pos.1) - 1..min(column, pos.1 + 2) {
+            if board_of_game[m][n] == 10 {
+                num += 1;
+            } else if board_of_game[m][n] == 11 {
+                flag_num += 1;
+            }
+        }
+    }
+    if board_of_game[pos.0][pos.1] as i8 == flag_num {
+        return num;
+    } else {
+        return -1;
+    }
 }

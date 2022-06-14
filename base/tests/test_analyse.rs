@@ -30,13 +30,15 @@ fn minesweeper_board_works() {
 // cargo test --features rs -- --nocapture AvfVideo_works
 fn AvfVideo_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("i.avf");
+    let mut video = AvfVideo::new("jze.avf");
     let r = video.parse_video();
     println!("结果：{:?}", r);
     println!("标识：{:?}", video.player);
     println!("3BV：{:?}", video.static_params.bbbv);
     // video.print_event();
     video.analyse();
+    video.analyse_for_features(vec!["super_fl_local"]);
+    video.print_comments();
 }
 
 #[test]

@@ -1,4 +1,5 @@
 use pyo3::prelude::*;
+use pyo3::exceptions::PyTypeError;
 use pyo3::wrap_pyfunction;
 // use pyo3::PyTraverseError;
 // use pyo3::class::basic::PyObjectProtocol;
@@ -209,13 +210,14 @@ pub fn py_laymine_solvable_adjust(
 fn py_cal_possibility(
     mut board_of_game: Vec<Vec<i32>>,
     mine_num: f64,
-) -> PyResult<(Vec<((usize, usize), f64)>, f64, [usize; 3])> {
+) -> PyResult<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize)> {
     // mine_num为局面中雷的总数，不管有没有标
     // 还返回局面中雷数的范围
     mark_board(&mut board_of_game);
     match cal_possibility(&board_of_game, mine_num) {
         Ok(t) => return Ok(t),
-        Err(e) => return Ok((vec![], f64::NAN, [0, 0, 0])),
+        Err(1) => return Err(PyErr::new::<PyTypeError, _>("无解的局面")),
+        _  => return Err(PyErr::new::<PyTypeError, _>("未知的错误")),
     };
 }
 

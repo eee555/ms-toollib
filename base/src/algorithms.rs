@@ -200,13 +200,15 @@ pub fn solve_direct(
 /// 游戏局面概率计算引擎。  
 /// - 输入：局面、未被标出的雷数。未被标出的雷数大于等于1时，理解成实际数量；小于1时理解为比例。  
 /// - 注意：局面中可以标雷（11）和非类（12），但必须全部标对。  
-/// - 注意：若超出枚举长度，返回空向量。  
+/// - 注意：若超出枚举长度（45），则该区块的部分返回平均概率，且返回所需的枚举长度。  
 /// - 返回：所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数（未知雷数 = 总雷数 - 已经标出的雷）的范围。  
 /// - 注意：若没有内部未知区域，返回NaN。
 pub fn cal_possibility(
     board_of_game: &Vec<Vec<i32>>,
     mut mine_num: f64,
-) -> Result<(Vec<((usize, usize), f64)>, f64, [usize; 3]), usize> {
+) -> Result<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize), usize> {
+    // 如果超出枚举长度限制，记录并返回这个长度，以此体现局面的求解难度。
+    let mut exceed_len = 0;
     let mut p = vec![];
     let mut table_cell_mine_num_s: Vec<Vec<Vec<usize>>> = vec![];
     // 每段每格雷数表：记录了每段每格（或者地位等同的复合格）、每种总雷数下的是雷情况数
@@ -215,9 +217,23 @@ pub fn cal_possibility(
     let mut table_mine_num_s: Vec<[Vec<usize>; 2]> = vec![];
     // 每段雷数分布表：记录了每段（不包括内部段）每种总雷数下的是雷总情况数
     // 例如：[[[17, 18, 19, 20, 21, 22, 23, 24], [48, 2144, 16872, 49568, 68975, 48960, 16608, 2046]]]
-    let (matrix_a_s, matrix_x_s, matrix_b_s, unknow_block, is_mine_num) =
+    let (mut matrix_a_s, mut matrix_x_s, mut matrix_b_s, mut unknow_block, is_mine_num) =
         refresh_matrixs(&board_of_game);
+    for i in (0..matrix_a_s.len()).rev() {
+        let matrix_x_s_len = matrix_x_s[i].len();
+        if matrix_x_s_len > exceed_len {
+            exceed_len = matrix_x_s_len;
+        }
+        if matrix_x_s_len > ENUM_LIMIT {
+            matrix_a_s.remove(i);
+            matrix_x_s.remove(i);
+            matrix_b_s.remove(i);
+            unknow_block += matrix_x_s_len;
+        }
+    }
+
     let block_num = matrix_a_s.len(); // 整个局面被分成的段数
+    // let mut block_num_calable = 0;
 
     let mut matrixA_squeeze_s: Vec<Vec<Vec<i32>>> = vec![];
     let mut matrixx_squeeze_s: Vec<Vec<(usize, usize)>> = vec![];
@@ -242,8 +258,17 @@ pub fn cal_possibility(
             Ok((table_mine_num_i_, table_cell_mine_num_i_)) => {
                 table_mine_num_i = table_mine_num_i_;
                 table_cell_mine_num_i = table_cell_mine_num_i_;
+                // block_num_calable += 1;
             }
-            Err(e) => return Err(e),
+            Err(e) => {
+                if e == 1 {
+                    // table_mine_num_i=[vec![0],vec![0]];
+                    // table_cell_mine_num_i=[vec![0],vec![0]].to_vec();
+                    return Err(1) // 这是不合法、矛盾的的局面
+                } else {
+                    return Err(2) // 这是不可能的，枚举器不可能返回2这种错误，但是需要这样写通过rust的编译
+                }
+            }
         };
         // min_max_mine_num[0] += table_mine_num_i[0][0];
         // min_max_mine_num[1] += table_mine_num_i[0][table_mine_num_i[0].len() - 1];
@@ -253,6 +278,9 @@ pub fn cal_possibility(
     } // 第一步，整理出每段每格雷数情况表、每段雷数分布表、每段雷分布情况总数表
     let mut min_mine_num = 0;
     let mut max_mine_num = 0;
+
+    // let block_num = block_num_calable;
+
     for i in 0..block_num {
         min_mine_num += table_mine_num_s[i][0].iter().min().unwrap();
         max_mine_num += table_mine_num_s[i][0].iter().max().unwrap();
@@ -368,6 +396,7 @@ pub fn cal_possibility(
             mine_num + is_mine_num,
             max_mine_num + is_mine_num + unknow_block,
         ],
+        exceed_len,
     ))
 }
 
@@ -1198,6 +1227,42 @@ pub fn OBR_board(
     }
     legalize_board(&mut board);
     Ok(board)
+}
+
+// 扫雷AI
+#[cfg(any(feature = "py", feature = "rs"))]
+pub fn agent_step(board_of_game: Vec<Vec<i32>>, pos: (usize, usize)) -> Result<usize, String> {
+    let board_of_game_input: Vec<Vec<f32>> = board_of_game
+        .into_iter()
+        .map(|x| x.into_iter().map(|y| y as f32).collect::<Vec<f32>>())
+        .collect_vec();
+    let model = (tract_onnx::onnx()
+        .model_for_path("ppo_agent.onnx")
+        .unwrap()
+        .with_input_fact(
+            0,
+            InferenceFact::dt_shape(f32::datum_type(), tvec!(1i32, 16, 30)),
+        )
+        .unwrap()
+        .with_input_fact(
+            1,
+            InferenceFact::dt_shape(f32::datum_type(), tvec!(1i32, 2)),
+        )
+        .unwrap()
+        .into_optimized()
+        .unwrap()
+        .into_runnable())
+    .unwrap();
+
+    let cell_image = vec![10f32; 480];
+    let image: Tensor = Array::from_shape_vec((1, 16, 30), cell_image.clone())
+        .unwrap()
+        .into();
+    let image_2: Tensor = Array::from_shape_vec((1, 2), vec![0f32; 2]).unwrap().into();
+    let ans = model.run(tvec!(image, image_2)).unwrap();
+    let aaa = ans[0].to_array_view::<i32>().unwrap();
+    println!("{:?}", aaa);
+    Ok(30)
 }
 
 /// 对局面用单集合、双集合判雷引擎，快速标雷、标非雷，以供概率计算引擎处理。  

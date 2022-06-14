@@ -1,5 +1,6 @@
 ﻿use ms_toollib::*;
 use pyo3::prelude::*;
+use itertools::Itertools;
 
 #[pyclass(name = "MinesweeperBoard")]
 pub struct PyMinesweeperBoard {
@@ -15,6 +16,9 @@ impl PyMinesweeperBoard {
     }
     pub fn step(&mut self, e: &str, pos: (usize, usize)) {
         self.core.step(e, pos).unwrap();
+    }
+    pub fn reset(&mut self) {
+        self.core.reset();
     }
     pub fn step_flow(&mut self, operation: Vec<(&str, (usize, usize))>) {
         self.core.step_flow(operation).unwrap();
@@ -36,6 +40,34 @@ impl PyMinesweeperBoard {
     #[getter]
     fn get_game_board(&self) -> PyResult<Vec<Vec<i32>>> {
         Ok(self.core.game_board.clone())
+    }
+    fn get_game_board_2(&self, mine_num: f64) -> PyResult<Vec<Vec<Vec<f64>>>> {
+        // 返回用于强化学习的局面，即状态
+        let mut game_board_clone = self.core.game_board.clone();
+        let t_1: Vec<Vec<f64>> = game_board_clone
+            .iter()
+            .map(|x| x.iter().map(|x| {
+                        if *x == 10 {
+                            return -1;
+                        } else if *x == 11 {
+                            return -2;
+                        } else {
+                            return *x
+                        }
+                    }).map(|y| y as f64).collect::<Vec<f64>>())
+            .collect_vec();
+        // 把玩家或ai标的错的雷都删了
+        game_board_clone.iter_mut().for_each(|x| {
+            x.iter_mut().for_each(|x| {
+                if *x > 10 {
+                    *x = 10
+                }
+            })
+        });
+        mark_board(&mut game_board_clone);
+        let (t_2, _) = cal_possibility_onboard(&game_board_clone, mine_num).unwrap();
+        let t = vec![t_1, t_2];
+        Ok(t)
     }
     #[getter]
     fn get_left(&self) -> PyResult<usize> {
@@ -277,9 +309,9 @@ impl PyAvfVideo {
     pub fn events_useful_level(&self, index: usize) -> PyResult<u8> {
         Ok(self.core.events[index].useful_level)
     }
-    pub fn events_posteriori_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
+    pub fn events_prior_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
         let mut t = PyGameBoard::new(self.core.mine_num);
-        t.set_core(self.core.events[index].posteriori_game_board.clone());
+        t.set_core(self.core.events[index].prior_game_board.clone());
         Ok(t)
     }
     pub fn events_comments(&self, index: usize) -> PyResult<String> {
@@ -334,7 +366,10 @@ impl PyAvfVideo {
     /// 返回当前光标的位置，播放录像用
     #[getter]
     pub fn get_x_y(&self) -> PyResult<(u16, u16)> {
-        Ok((self.core.events[self.core.current_event_id].x, self.core.events[self.core.current_event_id].y))
+        Ok((
+            self.core.events[self.core.current_event_id].x,
+            self.core.events[self.core.current_event_id].y,
+        ))
     }
     #[setter]
     pub fn set_time(&mut self, time: f64) {

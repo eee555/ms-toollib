@@ -30,10 +30,11 @@ crate: 1.3.11
 
 在编译之前，请确保自己拥有：
 
-*   c++开发工具(msvc甚至Visual Studio，依据操作系统、博客教程或安装rust环境过程中的提示)
+*   c++开发工具(windows下尽量Visual Studio，依据操作系统、博客教程或安装rust环境过程中的提示)
 *   Rust工具链(rustup -V能够打印版本号、cargo -V能够打印版本号)
 *   Visual Studio Code及对应插件(例如rust-analyzer)
 *   会用Powershell或者其它命令行工具的能力
+*   安装完全部环境以后，还剩余至少6G的硬盘容量
 
 以下为调试步骤：
 

@@ -1,0 +1,17 @@
+[package]
+name = "ms_toollib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+libc = "0.2.0"
+ms_toollib = { path = "../base", features = ["rs"] }
+
+[lib]
+crate-type = ["staticlib"] #静态库
+
+[profile.release]
+panic="abort"
+
+[profile.dev]
+panic="abort"

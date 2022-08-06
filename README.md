@@ -14,15 +14,17 @@ Algorithms for minesweeper, published on various platforms.
 最新版本号统计：  
 版本号越大，代表越新、功能越完善、bug越少（可以催）。
 
-python>=3.7,<=3.8(windows): 1.3.11
+python>=3.7, <=3.8(windows): 1.3.11
 
-python>=3.7,<=3.8(linux): 1.3.10
+python>=3.7, <=3.8(linux): 1.3.10
 
 javascript/typescript: 1.2.10
 
 nodejs: 1.2.7
 
 crate: 1.3.11
+
+c/c++(windows、linux): 1.0.0 （没有包管理平台，需要用户用源码自行编译，需要安装rust工具链，编译得到.lib文件）
 
 * 下一版开始将提供python3.10及以上支持。
 

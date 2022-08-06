@@ -6,7 +6,7 @@
 - pypi.org
 - npmjs.com
 
-可在Rust、Python(Windows、Linux)、Nodejs、VUE3/Typescript等平台使用，并提供案例，可快速上手。
+可在Rust、Python(Windows、Linux)、Nodejs、VUE3/Typescript、C/C++等平台使用，并提供案例，可快速上手。
 
 Algorithms for minesweeper, published on various platforms.
 

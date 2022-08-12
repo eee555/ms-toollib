@@ -1,10 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 # include "ms_toollib.h"
-#include <iostream>
 #include<malloc.h>
-
-using namespace std;
 
 #pragma comment(lib,"ws2_32.lib")
 #pragma comment (lib,"Advapi32.lib")
@@ -43,7 +40,7 @@ int main(void) {
         };
     };
     size_t bbbv = cal3BV(a_test_beg_board);
-    cout << "3BV of the beg board is: "<< bbbv;
+    printf("3BV of the beg board is: %zu", bbbv);
     for(int i = 0; i < 8; i++) {
         free((int32_t *)a_test_beg_board.rows[i].cells);
     };
@@ -53,7 +50,7 @@ int main(void) {
 
 
     struct Board board_exp = laymine(16, 30, 99, 0, 0);
-    cout << "\n\nPrint the exp board:\n";
+    printf("\n\nPrint the exp board:\n");
     for(int i = 0; i < board_exp.n_row; i++) {
         for(int j = 0; j < board_exp.rows->n_column; j++) {
             printf("%d, ", board_exp.rows[i].cells[j]);
@@ -85,7 +82,7 @@ int main(void) {
         };
     };
     struct BoardPossReturn board_poss_return = cal_possibility_onboard(a_test_beg_game_board, 10.0);
-    cout << "\nPrint the beg game board possibility(is mine):\n";
+    printf("\nPrint the beg game board possibility(is mine):\n");
     for(int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {
             printf("%f, ", board_poss_return.board_poss.rows_poss[i].cells_poss[j]);
@@ -95,6 +92,7 @@ int main(void) {
     free_board_poss(board_poss_return); // must dealloc
 
 
+    MouseState s;
 
 
 }

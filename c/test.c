@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 # include "ms_toollib.h"
-#include<malloc.h>
+#include <malloc.h>
 
 #pragma comment(lib,"ws2_32.lib")
 #pragma comment (lib,"Advapi32.lib")
@@ -34,7 +34,8 @@ int main(void) {
     struct Board a_test_beg_board = {rows_, 8};
     for(int i = 0; i < 8; i++) {
         cells_ = (int32_t *)malloc(8 * sizeof(int32_t));
-        a_test_beg_board.rows[i] = {cells_, 8};
+        struct Row row_ = {cells_, 8};
+        a_test_beg_board.rows[i] = row_;
         for(int j = 0; j < 8; j++) {
             a_test_beg_board.rows[i].cells[j] = test_beg_board[i][j];
         };
@@ -76,7 +77,8 @@ int main(void) {
     struct Board a_test_beg_game_board = {rows__, 8};
     for(int i = 0; i < 8; i++) {
         cells__ = (int32_t *)malloc(8 * sizeof(int32_t));
-        a_test_beg_game_board.rows[i] = {cells__, 8};
+        struct Row row__ = {cells__, 8};
+        a_test_beg_game_board.rows[i] = row__;
         for(int j = 0; j < 8; j++) {
             a_test_beg_game_board.rows[i].cells[j] = test_beg_game_board[i][j];
         };
@@ -92,7 +94,6 @@ int main(void) {
     free_board_poss(board_poss_return); // must dealloc
 
 
-    MouseState s;
 
 
 }

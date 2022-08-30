@@ -3,7 +3,7 @@
 };
 use crate::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
-    analyse_survive_poss, analyse_vision_transfer, analyse_super_fl_local
+    analyse_super_fl_local, analyse_survive_poss, analyse_vision_transfer,
 };
 use crate::utils::{refresh_board, refresh_matrixs};
 use std::cmp::{max, min};
@@ -231,18 +231,17 @@ impl MinesweeperBoard {
     /// 因此此类情况不再报成不可恢复的错误，而是若无其事地继续解析。  
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
         match self.game_board_state {
-            GameBoardState::Ready => match e {
-                "lr" => match self.mouse_state {
-                    // 鼠标状态与局面状态的耦合
-                    MouseState::DownUp => {
-                        if self.game_board[pos.0][pos.1] == 10 {
-                            self.game_board_state = GameBoardState::Playing;
-                        }
+            GameBoardState::Ready => {
+                if e == "lr" && self.mouse_state == MouseState::DownUp {
+                    if pos.0 == self.row && pos.1 == self.column {
+                        self.mouse_state = MouseState::UpUp;
+                        return Ok(0);
                     }
-                    _ => {}
-                },
-                _ => {}
-            },
+                    if self.game_board[pos.0][pos.1] == 10 {
+                        self.game_board_state = GameBoardState::Playing;
+                    }
+                }
+            }
             GameBoardState::Playing => {}
             _ => return Ok(0),
         }
@@ -299,7 +298,8 @@ impl MinesweeperBoard {
             },
             "rc" => match self.mouse_state {
                 MouseState::UpUp => {
-                    if pos.0 == self.row && pos.1 == self.column { // 点在界面外
+                    if pos.0 == self.row && pos.1 == self.column {
+                        // 点在界面外
                         self.mouse_state = MouseState::UpDownNotFlag;
                         return Ok(0);
                     }
@@ -546,12 +546,13 @@ trait BaseParser {
 /// - 功能：解析avf格式的录像，有详细分析录像的方法。  
 /// - 以下是在python中调用的示例。  
 /// ```python
-/// v = ms.AvfVideo("arbiter_beg.avf");
-/// v.parse_video()
-/// v.analyse()
+/// v = ms.AvfVideo("arbiter_beg.avf") # 第一步，读取文件的二进制内容
+/// v.parse_video() # 第二步，解析文件的二进制内容
+/// v.analyse() # 第三步，根据解析到的内容，推衍整个局面
 /// print(v.bbbv)
 /// print(v.clicks)
 /// print(v.clicks_s)
+/// print("对象上的所有属性和方法：" + dir(v))
 /// v.analyse_for_features(["high_risk_guess"]) # 用哪些分析方法。分析结果会记录到events.comments里
 /// for i in range(v.events_len):
 ///     print(v.events_time(i), v.events_x(i), v.events_y(i), v.events_mouse(i))
@@ -565,7 +566,8 @@ pub struct AvfVideo {
     pub width: usize,
     pub height: usize,
     pub mine_num: usize,
-    pub marks: bool,
+    /// 最后是否扫完，初始是false，踩雷的话，分析完还是false
+    pub win: bool,
     pub level: usize,
     pub board: Vec<Vec<i32>>,
     pub events: Vec<VideoEvent>,
@@ -623,7 +625,7 @@ impl AvfVideo {
             width: 0,
             height: 0,
             mine_num: 0,
-            marks: false,
+            win: false,
             level: 0,
             board: vec![],
             events: vec![],
@@ -678,7 +680,7 @@ impl AvfVideo {
             width: 0,
             height: 0,
             mine_num: 0,
-            marks: false,
+            win: false,
             level: 0,
             board: vec![],
             events: vec![],
@@ -843,11 +845,12 @@ impl AvfVideo {
                 _ => s.push(v),
             }
         }
+        s = str::replace(&s, ",", "."); // 有些录像小数点是逗号
+                                        // println!("{:?}", s);
         self.dynamic_params.r_time = match s.parse::<f64>() {
             Ok(v) => v - 1.0,
             Err(_) => return Err(ErrReadVideoReason::InvalidParams),
         };
-        // println!("777");
         let mut buffer = [0u8; 8];
         while buffer[2] != 1 || buffer[1] > 1 {
             buffer[0] = buffer[1];
@@ -937,9 +940,13 @@ impl AvfVideo {
                     )
                     .unwrap();
                 self.events[ide].solved3BV = b.solved3BV;
+                // println!("{:?}", b.solved3BV);
             }
             self.events[ide].mouse_state = b.mouse_state.clone();
         }
+        // println!("888");
+        // println!("{:?}", b.solved3BV);
+        self.win = b.game_board_state == GameBoardState::Win;
         self.dynamic_params.lefts = b.left;
         self.dynamic_params.lefts_s = b.left as f64 / self.dynamic_params.r_time;
         self.dynamic_params.rights = b.right;
@@ -967,6 +974,7 @@ impl AvfVideo {
                 / (self.dynamic_params.r_time.powf(1.7) / self.static_params.bbbv as f64)
                 * (b.solved3BV as f64 / self.static_params.bbbv as f64);
         } // 凡自定义的stnb都等于0
+        // println!("{:?}", self.dynamic_params.stnb);
         self.dynamic_params.ioe = b.solved3BV as f64 / self.dynamic_params.clicks as f64;
         self.dynamic_params.corr = b.ces as f64 / self.dynamic_params.clicks as f64;
         self.dynamic_params.thrp = b.solved3BV as f64 / b.ces as f64;
@@ -993,7 +1001,7 @@ impl AvfVideo {
     ///                 # 也可以用events_mouse_state字段来过滤
     ///                 p += 1
     ///             print('鼠标事件类型：', v.events_mouse(p),
-    ///                 '第几行：', v.events_y(p)//16, 
+    ///                 '第几行：', v.events_y(p)//16,
     ///                 '第几列：', v.events_x(p)//16)
     ///             p += 1
     /// ```
@@ -1026,7 +1034,7 @@ impl AvfVideo {
     pub fn print_event(&self) {
         let mut num = 0;
         for e in &self.events {
-            if num < 200 {
+            if num < 20 {
                 println!(
                     "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
                     e.time, e.mouse, e.x, e.y, e.useful_level

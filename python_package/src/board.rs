@@ -155,6 +155,14 @@ impl PyAvfVideo {
         Ok(self.core.width)
     }
     #[getter]
+    fn get_level(&self) -> PyResult<usize> {
+        Ok(self.core.level)
+    }
+    #[getter]
+    fn get_win(&self) -> PyResult<bool> {
+        Ok(self.core.win)
+    }
+    #[getter]
     fn get_mine_num(&self) -> PyResult<usize> {
         Ok(self.core.mine_num)
     }

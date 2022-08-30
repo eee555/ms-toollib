@@ -233,7 +233,7 @@ pub fn cal_possibility(
     }
 
     let block_num = matrix_a_s.len(); // 整个局面被分成的段数
-    // let mut block_num_calable = 0;
+                                      // let mut block_num_calable = 0;
 
     let mut matrixA_squeeze_s: Vec<Vec<Vec<i32>>> = vec![];
     let mut matrixx_squeeze_s: Vec<Vec<(usize, usize)>> = vec![];
@@ -264,9 +264,9 @@ pub fn cal_possibility(
                 if e == 1 {
                     // table_mine_num_i=[vec![0],vec![0]];
                     // table_cell_mine_num_i=[vec![0],vec![0]].to_vec();
-                    return Err(1) // 这是不合法、矛盾的的局面
+                    return Err(1); // 这是不合法、矛盾的的局面
                 } else {
-                    return Err(2) // 这是不可能的，枚举器不可能返回2这种错误，但是需要这样写通过rust的编译
+                    return Err(2); // 这是不可能的，枚举器不可能返回2这种错误，但是需要这样写通过rust的编译
                 }
             }
         };
@@ -695,7 +695,7 @@ pub fn laymine_solvable_thread(
             let mut Num3BV;
             let mut counter = 0;
             let mut Board = vec![vec![0; column]; row];
-            let mut para = [0, 0, 0];
+            // let mut para = [0, 0, 0];
             while counter < max_time {
                 {
                     let f = flag_exit.lock().unwrap();
@@ -765,8 +765,15 @@ pub fn laymine_solvable(
     (Board, false)
 }
 
-/// 调整法无猜埋雷。可以生成任意雷密度的无猜局面。但雷不满足均匀分布。（还没写好）  
+/// 调整法无猜埋雷。可以生成任意雷密度的无猜局面。但雷不满足均匀分布。  
+/// - 输入：高、宽、雷数、起手行数、起手列数  
 /// - 返回局面、是否成功  
+/// - 性能还有优化的空间。高级局面上埋200雷时，用时大约5秒。  
+/// - 用python调用时的示例：  
+/// ```python
+/// import ms_toollib as ms
+/// (board, flag) = laymine_solvable_adjust(16, 30, 200, 3, 20) # flag指示是否成功，极大概率是成功的
+/// ```
 // 局面中的-10代表还没埋雷。
 pub fn laymine_solvable_adjust(
     row: usize,
@@ -776,7 +783,7 @@ pub fn laymine_solvable_adjust(
     y0: usize,
 ) -> (Vec<Vec<i32>>, bool) {
     // 利用局面调整算法，无猜埋雷
-    let mut board = vec![];
+    let mut board;
     let mut area_op = 9;
     if x0 == 0 || y0 == 0 || x0 == row - 1 || y0 == column - 1 {
         if x0 == 0 && y0 == 0
@@ -792,7 +799,14 @@ pub fn laymine_solvable_adjust(
     if row * column - area_op < mine_num {
         // 雷数太多以致起手无法开空，此时放弃无猜，返回任意一种局面
         let t = laymine(row, column, mine_num, x0, y0);
-        return (t, false);
+        if row * column - mine_num == 1 {
+            return (t, true);
+        } else {
+            return (t, false);
+        }
+    }
+    if row * column == area_op + mine_num {
+        return (laymine_op(row, column, mine_num, x0, y0), true);
     }
 
     board = vec![vec![-10; column]; row];
@@ -818,13 +832,19 @@ pub fn laymine_solvable_adjust(
         remain_mine_num,
         remain_not_mine_num,
     );
-    if !flag {
-        return (b, false);
+    // println!("+++++");
+    // b.iter().for_each(|i| {
+    //     i.iter()
+    //         .for_each(|j| print!("{number:>width$}", number = j, width = 4));
+    //     println!("")
+    // });
+    if !flag || b.is_empty() {
+        return (laymine_op(row, column, mine_num, x0, y0), false);
     }
     for i in 0..row {
         for j in 0..column {
-            if board[i][j] == -10 {
-                board[i][j] = -1;
+            if b[i][j] == -10 {
+                b[i][j] = -1;
             }
         }
     }
@@ -847,6 +867,12 @@ pub fn laymine_solvable_adjust(
 
 // 调整法的递归部分。注意空间复杂度为局面面积乘求解步数。
 // 返回没有计算数字的局面和是否成功。
+// println!("rn: {:?}", rn);
+// b.iter().for_each(|i| {
+//     i.iter()
+//         .for_each(|j| print!("{number:>width$}", number = j, width = 4));
+//     println!("")
+// });
 fn adjust_step(
     board: &Vec<Vec<i32>>,            // 当前的board，数字没有计算，只有0，-1，-10
     board_of_game: &Vec<Vec<i32>>,    // 当前的board_of_game，数字没有计算，只有10，1
@@ -856,55 +882,44 @@ fn adjust_step(
 ) -> (Vec<Vec<i32>>, bool) {
     let mut b = board.clone(); // 克隆一个board的备份
     let mut bg = board_of_game.clone(); // 克隆一个board_of_game的备份
+    // let mut pc = plan_click.clone();
     let mut r = remain_mine_num; // 克隆一个当前还要埋的雷数的备份
     let mut rn = remain_not_mine_num; // 克隆一个当前还要埋的非雷数的备份
-    for (x, y) in plan_click {
+    for (x, y) in plan_click.into_iter() {
         bg[*x][*y] = 1;
     } // 点开当前的board_of_game的备份上的计划点开的格子，用1临时表示
-    println!(">>>>>>");
-    bg.iter().for_each(|i| {
-        i.iter()
-            .for_each(|j| print!("{number:>width$}", number = j, width = 4));
-        println!("")
-    });
-    println!("\\");
-    b.iter().for_each(|i| {
-        i.iter()
-            .for_each(|j| print!("{number:>width$}", number = j, width = 4));
-        println!("")
-    });
-    std::io::stdin().read_line(&mut "".to_string());
-    // thread::sleep(time::Duration::from_millis(2000));
-    let mut plan_click = vec![];
+    // let b_backup = b.clone(); // 克隆一个board的备份
+    // let bg_backup = bg.clone(); // 克隆一个board_of_game的备份
+    
     let (Ases, xses, mut bses) = refresh_matrixses(&bg);
     // 所有分支的前沿都已遍历完成。
 
-    // println!("Ases: {:?}", Ases);
-    // println!("xses: {:?}", xses);
-    // println!("bses: {:?}", bses);
-    // println!("rn: {:?}", rn);
     // 前沿全部被雷堵塞，无法继续
-    if xses.is_empty() {
+    // 只对第一块处理。缺点是内存复杂度上升
+    let temp = Ases.get(0);
+    let As_0;
+    match temp {
+        Some(val) => As_0 = val,
+        None => return (vec![], false),
+    };
+    let xs_0 = xses.get(0).unwrap();
+    let bs_0 = bses.get_mut(0).unwrap(); // 此时这个b向量是完全错误的
+
+    let mut front_xs_0 = xs_0.clone();
+    front_xs_0
+        .iter_mut()
+        .for_each(|p| p.retain(|x| b[x.0][x.1] == -10));
+    if front_xs_0[0].is_empty() {
         if rn > 0 {
             return (vec![], false);
         } else {
             return (b, true);
         }
     }
-    // 只对第一块处理。缺点是内存复杂度上升
-    let As_0 = Ases.get(0).unwrap();
-    let xs_0 = xses.get(0).unwrap();
-    let bs_0 = bses.get_mut(0).unwrap();
-
-    // let mut front_xs_0 = xs_0.clone();
-    let mut front_xs_0 = xs_0.clone();
-    front_xs_0
-        .iter_mut()
-        .for_each(|p| p.retain(|x| b[x.0][x.1] == -10));
     // 前沿格子————此格子在边缘，且是没有埋过雷的
     let xs_cell_num = front_xs_0.iter().fold(0, |acc, x| acc + x.len());
     let mine_num_except = (xs_cell_num as f64 * r as f64 / (rn + r) as f64) as usize;
-    let mut success_flag = false;
+    // let mut success_flag = false;
     // 对不同雷数循环
     'inner: for i in 0..xs_cell_num + 1 {
         // 根据算法的映射，计算出mine_num，计划的埋雷量
@@ -940,13 +955,12 @@ fn adjust_step(
                 mine_num = xs_cell_num - i - 1;
             }
         }
-        // let mine_num = (i + mine_num_except + 1) % (xs_cell_num + 1);
         // 排除显而易见不可能的情况。
         if mine_num > r || xs_cell_num - mine_num > rn {
             continue;
         }
-        // 对每种雷数，重复尝试3次。
-        for _ in 0..3 {
+        // 对每种雷数，重复尝试5次。
+        for u in 0..3 {
             adjust_the_area_on_board(&mut b, &front_xs_0, mine_num);
             // 以下的循环用来修正b向量
             for bb in 0..bs_0.len() {
@@ -965,71 +979,42 @@ fn adjust_step(
                     }
                 }
             }
-            let (mut n, i) = get_all_not_and_is_mine_on_board(
+            let (n, i) = get_all_not_and_is_mine_on_board(
                 &mut As_0.clone(),
                 &mut xs_0.clone(),
                 &mut bs_0.clone(),
                 &mut bg,
             );
-            n.iter().for_each(|x| bg[x.0][x.1] = 1);
-            // i.iter().for_each(|x| bg[x.0][x.1] = 10);
-            println!("非雷: {:?}", n);
-            println!("A矩阵: {:?}", As_0);
-            println!("x矩阵: {:?}", xs_0);
-            println!("b矩阵: {:?}", bs_0);
-            if n.len() > 0 || i.len() == xs_cell_num {
-                // n.iter().for_each(|x| bg[x.0][x.1] = 12);
+            i.iter().for_each(|x| bg[x.0][x.1] = 10); // get_all_not_and_is_mine_on_board是修改局面的，修回来
+
+            if n.len() > 0 {
+                n.iter().for_each(|x| bg[x.0][x.1] = 1);
                 i.iter().for_each(|x| bg[x.0][x.1] = 11);
-                success_flag = true; // 当前步骤成功
-                plan_click.append(&mut n);
-                // println!("xs_cell_num: {:?}", xs_cell_num);
-                // println!("mine_num: {:?}", mine_num);
-                // println!("rn: {:?}", rn);
-                // println!("r: {:?}", r);
+                // println!("当前步骤成功！");
+                // success_flag = true; // 当前步骤成功
+                if rn <= n.len() {
+                    return (b.clone(), true);
+                }
+                // pc.append(&mut n);
                 r -= mine_num;
                 rn -= xs_cell_num - mine_num;
-                // for segment in xs_0 {
-                //     // xxx
-                //     for &(xx, yy) in segment {
-                //         if b[xx][yy] == -1 {
-                //             bg[xx][yy] = 11;
-                //         } else {
-                //             bg[xx][yy] = 12;
-                //         }
-                //     }
-                // }
-                println!("555");
-                let a = adjust_step(&b, &bg, &plan_click, r, rn);
-                println!("666");
+                let a = adjust_step(&b, &bg, &n, r, rn);
                 if a.1 {
-                    println!("777");
-                    b = a.0;
-                    break 'inner;
+                    if !a.0.is_empty() {
+                        return (a.0, true);
+                    }
                 } else {
-                    println!("888");
                     b = board.clone();
                     bg = board_of_game.clone();
-                    continue 'inner;
+                    r = remain_mine_num;
+                    rn = remain_not_mine_num;
+                    // continue 'inner;
+                    continue;
                 }
             }
         }
     }
-    if !success_flag {
-        // 如果失败，代表没有合适的雷数，使得局面接下来无猜。
-        return (vec![], false);
-    }
-    if rn <= 0 {
-        return (b, true);
-    } else {
-        return (vec![], false);
-        // return adjust_step(
-        //     &b,
-        //     &bg,
-        //     &plan_click,
-        //     r,
-        //     rn,
-        // );
-    }
+    return (vec![], false);
 }
 
 // 在指定的局部（area_current_adjust）埋雷，不刷新board上的数字
@@ -1045,8 +1030,8 @@ fn adjust_the_area_on_board(
     b.append(&mut vec![-1; mine_num]);
 
     #[cfg(any(feature = "py", feature = "rs"))]
-    // let mut rng = thread_rng();
-    let mut rng = StdRng::seed_from_u64(2);
+    let mut rng = thread_rng();
+    // let mut rng = StdRng::seed_from_u64(532);
     #[cfg(any(feature = "py", feature = "rs"))]
     b.shuffle(&mut rng);
 

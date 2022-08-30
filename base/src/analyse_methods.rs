@@ -6,10 +6,10 @@ use board::{AvfVideo, MouseState, VideoEvent};
 // 录像的事件分析。参与分析的录像必须已经计算出对应的数据。
 // error: 高风险的猜雷（猜对概率0.05）√
 // feature: 高难度的判雷√
-// warning: 可以判雷时视野的转移
+// warning: 可以判雷时视野的转移√
 // feature: 双线操作
 // feature: 破空（成功率0.98）
-// feature: 教科书式的FL局部(步数4)
+// feature: 教科书式的FL局部(步数4)√
 // error: 过于弯曲的鼠标轨迹(500%)√
 // warning：弯曲的鼠标轨迹(200%)√
 // warning: 可以判雷时选择猜雷√
@@ -18,52 +18,37 @@ use board::{AvfVideo, MouseState, VideoEvent};
 // suspect: 鼠标移动过快(2)
 // suspect: 笔直的鼠标轨迹(101%)√
 pub fn analyse_high_risk_guess(video: &mut AvfVideo) {
-    let mut x = (video.events[video.events.len() - 1].y / 16) as usize;
-    let mut y = (video.events[video.events.len() - 1].x / 16) as usize;
-    let mut id = video.events.len() - 1;
-    for ide in (0..video.events.len() - 1).rev() {
+    let mut x;
+    let mut y;
+    for ide in 2..video.events.len() {
+        x = (video.events[ide].y / 16) as usize;
+        y = (video.events[ide].x / 16) as usize;
         if video.events[ide].useful_level >= 2 {
             let p = video.events[ide].prior_game_board.get_poss()[x][y];
             if p >= 0.51 {
-                video.events[id].comments = format!(
+                video.events[ide].comments = format!(
                     "{}{}",
-                    video.events[id].comments,
+                    video.events[ide].comments,
                     format!("error: 危险的猜雷(猜对概率{:.3});", 1.0 - p)
                 );
-                // println!(
-                //     "{:?} => {:?}",
-                //     video.events[id].time, video.events[id].comments
-                // );
             }
-            x = (video.events[ide].y / 16) as usize;
-            y = (video.events[ide].x / 16) as usize;
-            id = ide;
         }
     }
 }
 
 pub fn analyse_jump_judge(video: &mut AvfVideo) {
-    // 功能：检测左键的跳判
-    let mut id_last = 0;
-    loop {
-        if video.events[id_last].mouse != "lr" {
-            id_last += 1;
-        } else {
-            break;
-        }
-    }
-    // let mut tb = video.events[id_last].posteriori_game_board.game_board_marked.clone();
+    // 功能：检测左键或右键的跳判
     let mut x;
     let mut y;
-    for ide in 0..video.events.len() {
+    for ide in 2..video.events.len() {
         x = (video.events[ide].y / 16) as usize;
         y = (video.events[ide].x / 16) as usize;
         if video.events[ide].useful_level >= 2 && video.events[ide].mouse == "lr" {
-            if !video.events[id_last]
+            if !video.events[ide]
                 .prior_game_board
                 .get_basic_not_mine()
                 .contains(&(x, y))
-                && video.events[id_last]
+                && video.events[ide]
                     .prior_game_board
                     .get_enum_not_mine()
                     .contains(&(x, y))
@@ -73,17 +58,13 @@ pub fn analyse_jump_judge(video: &mut AvfVideo) {
                     video.events[ide].comments,
                     format!("feature: 高难度的判雷(左键);")
                 );
-                // println!(
-                //     "{:?} => {:?}",
-                //     video.events[ide].time, video.events[ide].comments
-                // );
             }
         } else if video.events[ide].useful_level == 1 && video.events[ide].mouse == "rc" {
-            if !video.events[id_last]
+            if !video.events[ide]
                 .prior_game_board
                 .get_basic_is_mine()
                 .contains(&(x, y))
-                && video.events[id_last]
+                && video.events[ide]
                     .prior_game_board
                     .get_enum_is_mine()
                     .contains(&(x, y))
@@ -93,43 +74,25 @@ pub fn analyse_jump_judge(video: &mut AvfVideo) {
                     video.events[ide].comments,
                     format!("feature: 高难度的判雷(标雷);")
                 );
-                // println!(
-                //     "{:?} => {:?}",
-                //     video.events[ide].time, video.events[ide].comments
-                // );
             }
-        }
-
-        if video.events[ide].useful_level >= 2 {
-            id_last = ide;
-            // tb = video.events[id_last].posteriori_game_board.clone();
         }
     }
 }
 
 pub fn analyse_needless_guess(video: &mut AvfVideo) {
-    let mut id_last = 0;
-    loop {
-        if video.events[id_last].mouse != "lr" {
-            id_last += 1;
-        } else {
-            break;
-        }
-    }
-    // let mut tb = video.events[id_last].posteriori_game_board.clone();
     let mut x;
     let mut y;
-    for ide in 0..video.events.len() {
+    for ide in 2..video.events.len() {
         if video.events[ide].useful_level >= 2 && video.events[ide].mouse == "lr" {
             x = (video.events[ide].y / 16) as usize;
             y = (video.events[ide].x / 16) as usize;
 
-            if video.events[id_last].prior_game_board.get_poss()[x][y] > 0.0
-                && !video.events[id_last]
+            if video.events[ide].prior_game_board.get_poss()[x][y] > 0.0
+                && !video.events[ide]
                     .prior_game_board
                     .get_basic_not_mine()
                     .contains(&(x, y))
-                && !video.events[id_last]
+                && !video.events[ide]
                     .prior_game_board
                     .get_enum_not_mine()
                     .contains(&(x, y))
@@ -139,15 +102,7 @@ pub fn analyse_needless_guess(video: &mut AvfVideo) {
                     video.events[ide].comments,
                     format!("warning: 可以判雷时选择猜雷;")
                 );
-                // println!(
-                //     "{:?} => {:?}",
-                //     video.events[ide].time, video.events[ide].comments
-                // );
             }
-        }
-        if video.events[ide].useful_level >= 2 {
-            id_last = ide;
-            // tb = video.events[id_last].posteriori_game_board.clone();
         }
     }
 }
@@ -210,6 +165,7 @@ pub fn analyse_mouse_trace(video: &mut AvfVideo) {
     }
 }
 
+// bug
 pub fn analyse_vision_transfer(video: &mut AvfVideo) {
     let mut click_last = (video.events[0].y as f64, video.events[0].x as f64);
     let mut l_x = (video.events[0].y / 16) as usize;
@@ -266,7 +222,6 @@ pub fn analyse_survive_poss(video: &mut AvfVideo) {
     // 计算扫开这局的后验开率
     let mut s_poss = 1.0;
     let mut message = "luck: ".to_string();
-    let mut click_last_id = 0;
     let mut has_begin = false;
     for ide in 0..video.events.len() {
         if video.events[ide].mouse == "lr" && video.events[ide].useful_level > 0 {
@@ -276,13 +231,12 @@ pub fn analyse_survive_poss(video: &mut AvfVideo) {
             }
             let l_x = (video.events[ide].y / 16) as usize;
             let l_y = (video.events[ide].x / 16) as usize;
-            let p = video.events[click_last_id].prior_game_board.get_poss()[l_x][l_y];
+            let p = video.events[ide].prior_game_board.get_poss()[l_x][l_y];
             if p > 0.0 && p < 1.0 {
                 s_poss *= 1.0 - p;
                 message.push_str(&format!("{:.3} * ", 1.0 - p));
                 // println!("{:?} ==> {:?}", video.events[ide].time, 1.0 - p);
             }
-            click_last_id = ide;
         }
     }
     if message.len() > 7 {

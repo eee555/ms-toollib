@@ -30,14 +30,19 @@ fn minesweeper_board_works() {
 // cargo test --features rs -- --nocapture AvfVideo_works
 fn AvfVideo_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("jze.avf");
+    let mut video = AvfVideo::new("Zeng Zi Xing_Beg_20.69(3bv9).avf");
     let r = video.parse_video();
+    // video.print_event();
+    video.analyse();
     println!("结果：{:?}", r);
     println!("标识：{:?}", video.player);
     println!("3BV：{:?}", video.static_params.bbbv);
-    // video.print_event();
-    video.analyse();
-    video.analyse_for_features(vec!["super_fl_local"]);
+    // println!("3BV：{:?}", video.s.s);
+    println!("time：{:?}", video.dynamic_params.r_time);
+    println!("is win: {:?}", video.win);
+    println!("STNB: {:?}", video.dynamic_params.stnb);
+    // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
+    video.analyse_for_features(vec!["jump_judge", "survive_poss"]);
     video.print_comments();
 }
 

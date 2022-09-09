@@ -6,7 +6,7 @@
 - pypi.org
 - npmjs.com
 
-可在Rust、Python(Windows、Linux)、Nodejs、VUE3/Typescript、C/C++等平台使用，并提供案例，可快速上手。
+可在Rust、Python(Windows、Linux)、Nodejs、VUE3/Typescript、C、C++等平台使用，并提供案例，可快速上手。项目呈起步阶段，相关技术问题可以提供一对一交流解决。
 
 Algorithms for minesweeper, published on various platforms.
 
@@ -24,14 +24,17 @@ nodejs: 1.2.7
 
 crate: 1.4.0
 
-c(windows、linux): 1.0.0 （没有类。没有包管理平台，需要用户用源码自行编译，需要安装rust工具链，编译得到.lib文件）
+C(仅windows): 1.0.0 （没有类，即没有录像解析工具、局面状态机等。调试环境为MSVC。Linux未经测试，但估计可用。没有包管理平台，需要用户用源码自行编译，目前需要安装rust工具链，自行编译得到.lib文件）
+
+C++(仅Linux): 1.0.0
+（采用Cmake构建、没有包管理平台，需要用户用源码自行编译，需要安装rust工具链。）
 
 
 ### 如何调试源码
 
 在编译之前，请确保自己拥有：
 
-*   c++开发工具(windows下尽量Visual Studio，依据操作系统、博客教程或安装rust环境过程中的提示)
+*   c++开发工具(windows下尽量Visual Studio，即MSVC，依据操作系统、博客教程或安装rust环境过程中的提示)
 *   Rust工具链(rustup -V能够打印版本号、cargo -V能够打印版本号)
 *   Visual Studio Code及对应插件(例如rust-analyzer)
 *   会用Powershell或者其它命令行工具的能力

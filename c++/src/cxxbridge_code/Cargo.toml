@@ -1,0 +1,25 @@
+[package]
+name = "cxxbridge_code"
+version = "0.1.0"
+authors = ["Trond H Emaus <trondhe@gmail.com>", "Max Kalashnikoff <geekmaks@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+cxx = "1.0"
+anyhow = "1.0"
+libc = { version = "0.2.0" }
+ms_toollib = { version = "1.4.0" }
+thiserror = "1.0.34"
+
+[build-dependencies]
+cxx-build = "1.0"
+
+[lib]
+crate-type = ["staticlib"]
+
+[profile.release]
+debug = true
+panic = "abort"
+
+[profile.dev]
+panic = "abort"

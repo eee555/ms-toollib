@@ -963,7 +963,7 @@ impl BaseVideo {
 /// - 功能：解析avf格式的录像，有详细分析录像的方法。  
 /// - 以下是在python中调用的示例。  
 /// ```python
-/// v = ms.AvfVideo("arbiter_beg.avf") # 第一步，读取文件的二进制内容
+/// v = ms.AvfVideo("video_name.avf") # 第一步，读取文件的二进制内容
 /// v.parse_video() # 第二步，解析文件的二进制内容
 /// v.analyse() # 第三步，根据解析到的内容，推衍整个局面
 /// print(v.bbbv)
@@ -1196,7 +1196,19 @@ impl AvfVideo {
 /// - 功能：解析rmv格式的录像，有详细分析录像的方法。  
 /// - 以下是在python中调用的示例。  
 /// ```python
-///
+/// v = ms.RmvVideo("video_name.rmv") # 第一步，读取文件的二进制内容
+/// v.parse_video() # 第二步，解析文件的二进制内容
+/// v.analyse() # 第三步，根据解析到的内容，推衍整个局面
+/// print(v.bbbv)
+/// print(v.clicks)
+/// print(v.clicks_s)
+/// print("对象上的所有属性和方法：" + dir(v))
+/// v.analyse_for_features(["high_risk_guess"]) # 用哪些分析方法。分析结果会记录到events.comments里
+/// for i in range(v.events_len):
+///     print(v.events_time(i), v.events_x(i), v.events_y(i), v.events_mouse(i))
+/// for i in range(v.events_len):
+///     if v.events_useful_level(i) >= 2:
+///         print(v.events_posteriori_game_board(i).poss)
 /// ```
 pub struct RmvVideo {
     pub file_name: String,

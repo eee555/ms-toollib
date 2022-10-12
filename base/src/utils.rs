@@ -1699,3 +1699,22 @@ fn surround_cell_num(board_of_game: &Vec<Vec<i32>>, pos: (usize, usize)) -> i8 {
         return -1;
     }
 }
+
+/// 算数字。局面上只有0和-1时，计算其他的数字。不具备幂等性！！！
+pub fn cal_all_numbers(board: &mut Vec<Vec<i32>>) {
+    let height = board.len();
+    let width = board[0].len();
+    for x in 0..height {
+        for y in 0..width {
+            if board[x][y] == -1 {
+                for j in max(1, x) - 1..min(height, x + 2) {
+                    for k in max(1, y) - 1..min(width, y + 2) {
+                        if board[j][k] >= 0 {
+                            board[j][k] += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

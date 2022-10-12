@@ -1,7 +1,7 @@
 use crate::algorithms::{solve_direct, solve_enumerate, solve_minus};
 use crate::board;
 use crate::utils::{is_good_chording, refresh_matrix, refresh_matrixs};
-use board::{AvfVideo, MouseState, VideoEvent};
+use board::{AvfVideo, MouseState, VideoEvent, BaseVideo};
 
 // 录像的事件分析。参与分析的录像必须已经计算出对应的数据。
 // error: 高风险的猜雷（猜对概率0.05）√
@@ -17,7 +17,7 @@ use board::{AvfVideo, MouseState, VideoEvent};
 // suspect: 点击速度过快(0.01)
 // suspect: 鼠标移动过快(2)
 // suspect: 笔直的鼠标轨迹(101%)√
-pub fn analyse_high_risk_guess(video: &mut AvfVideo) {
+pub fn analyse_high_risk_guess(video: &mut BaseVideo) {
     let mut x;
     let mut y;
     for ide in 2..video.events.len() {
@@ -36,7 +36,7 @@ pub fn analyse_high_risk_guess(video: &mut AvfVideo) {
     }
 }
 
-pub fn analyse_jump_judge(video: &mut AvfVideo) {
+pub fn analyse_jump_judge(video: &mut BaseVideo) {
     // 功能：检测左键或右键的跳判
     let mut x;
     let mut y;
@@ -79,7 +79,7 @@ pub fn analyse_jump_judge(video: &mut AvfVideo) {
     }
 }
 
-pub fn analyse_needless_guess(video: &mut AvfVideo) {
+pub fn analyse_needless_guess(video: &mut BaseVideo) {
     let mut x;
     let mut y;
     for ide in 2..video.events.len() {
@@ -107,7 +107,7 @@ pub fn analyse_needless_guess(video: &mut AvfVideo) {
     }
 }
 
-pub fn analyse_mouse_trace(video: &mut AvfVideo) {
+pub fn analyse_mouse_trace(video: &mut BaseVideo) {
     let mut click_last = (video.events[0].x as f64, video.events[0].y as f64);
     let mut click_last_id = 0;
     let mut move_last = (video.events[0].x as f64, video.events[0].y as f64);
@@ -166,7 +166,7 @@ pub fn analyse_mouse_trace(video: &mut AvfVideo) {
 }
 
 // bug
-pub fn analyse_vision_transfer(video: &mut AvfVideo) {
+pub fn analyse_vision_transfer(video: &mut BaseVideo) {
     let mut click_last = (video.events[0].y as f64, video.events[0].x as f64);
     let mut l_x = (video.events[0].y / 16) as usize;
     let mut l_y = (video.events[0].x / 16) as usize;
@@ -218,7 +218,7 @@ pub fn analyse_vision_transfer(video: &mut AvfVideo) {
     }
 }
 
-pub fn analyse_survive_poss(video: &mut AvfVideo) {
+pub fn analyse_survive_poss(video: &mut BaseVideo) {
     // 计算扫开这局的后验开率
     let mut s_poss = 1.0;
     let mut message = "luck: ".to_string();
@@ -258,7 +258,7 @@ pub enum SuperFLState {
     IsOk,       // 满足数量了，延续
     Finish,     // 检测到，结束
 }
-pub fn analyse_super_fl_local(video: &mut AvfVideo) {
+pub fn analyse_super_fl_local(video: &mut BaseVideo) {
     let event_min_num = 5;
     let euclidean_distance = 16;
     let mut anchor = 0;

@@ -1,5 +1,5 @@
 // 测试录像分析模块
-use ms_toollib::{AvfVideo, MinesweeperBoard};
+use ms_toollib::{AvfVideo, MinesweeperBoard, RmvVideo};
 
 #[test]
 fn minesweeper_board_works() {
@@ -30,20 +30,45 @@ fn minesweeper_board_works() {
 // cargo test --features rs -- --nocapture AvfVideo_works
 fn AvfVideo_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("Zeng Zi Xing_Beg_20.69(3bv9).avf");
+    let mut video = AvfVideo::new("eee.avf");
+    
     let r = video.parse_video();
-    // video.print_event();
-    video.analyse();
     println!("结果：{:?}", r);
-    println!("标识：{:?}", video.player);
-    println!("3BV：{:?}", video.static_params.bbbv);
+    video.data.print_event();
+    video.data.analyse();
+    println!("标识：{:?}", video.data.player);
+    println!("3BV：{:?}", video.data.static_params.bbbv);
     // println!("3BV：{:?}", video.s.s);
-    println!("time：{:?}", video.dynamic_params.r_time);
-    println!("is win: {:?}", video.win);
-    println!("STNB: {:?}", video.dynamic_params.stnb);
+    println!("time：{:?}", video.data.dynamic_params.r_time);
+    println!("is win: {:?}", video.data.win);
+    println!("STNB: {:?}", video.data.dynamic_params.stnb);
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
-    video.analyse_for_features(vec!["jump_judge", "survive_poss"]);
-    video.print_comments();
+    video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
+    video.data.print_comments();
+}
+
+#[test]
+// cargo test --features rs -- --nocapture RmvVideo_works
+fn RmvVideo_works() {
+    // 录像解析工具测试
+    let mut video = RmvVideo::new("exp.rmv");
+    
+    let r = video.parse_video();
+    video.data.print_event();
+    video.data.analyse();
+    println!("结果：{:?}", r);
+    println!("标识：{:?}", video.data.player);
+    println!("3BV：{:?}", video.data.static_params.bbbv);
+    println!("宽度：{:?}", video.data.width);
+    println!("高度：{:?}", video.data.height);
+    println!("雷数：{:?}", video.data.mine_num);
+    // println!("3BV：{:?}", video.s.s);
+    println!("time：{:?}", video.data.dynamic_params.r_time);
+    println!("is win: {:?}", video.data.win);
+    println!("STNB: {:?}", video.data.dynamic_params.stnb);
+    // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
+    // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
+    // video.data.print_comments();
 }
 
 #[test]

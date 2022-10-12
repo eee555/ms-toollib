@@ -47,7 +47,7 @@ pub use algorithms::{
 // pub use algorithms::{mark_board, solve_direct, solve_enumerate, solve_minus};
 
 mod board;
-pub use board::{AvfVideo, GameBoard, MinesweeperBoard, GameBoardState, MouseState};
+pub use board::{AvfVideo, RmvVideo, GameBoard, MinesweeperBoard, GameBoardState, MouseState};
 
 #[cfg(any(feature = "py", feature = "rs"))]
 mod OBR;

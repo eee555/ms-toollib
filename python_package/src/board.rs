@@ -141,192 +141,192 @@ impl PyAvfVideo {
         self.core.parse_video().unwrap();
     }
     pub fn analyse(&mut self) {
-        self.core.analyse();
+        self.core.data.analyse();
     }
     pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
-        self.core.analyse_for_features(controller);
+        self.core.data.analyse_for_features(controller);
     }
     #[getter]
     fn get_row(&self) -> PyResult<usize> {
-        Ok(self.core.height)
+        Ok(self.core.data.height)
     }
     #[getter]
     fn get_column(&self) -> PyResult<usize> {
-        Ok(self.core.width)
+        Ok(self.core.data.width)
     }
     #[getter]
-    fn get_level(&self) -> PyResult<usize> {
-        Ok(self.core.level)
+    fn get_level(&self) -> PyResult<u8> {
+        Ok(self.core.data.level)
     }
     #[getter]
     fn get_win(&self) -> PyResult<bool> {
-        Ok(self.core.win)
+        Ok(self.core.data.win)
     }
     #[getter]
     fn get_mine_num(&self) -> PyResult<usize> {
-        Ok(self.core.mine_num)
+        Ok(self.core.data.mine_num)
     }
     #[getter]
     fn get_player(&self) -> PyResult<String> {
-        Ok(self.core.player.clone())
+        Ok(self.core.data.player.clone())
     }
     #[getter]
     fn get_bbbv(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.bbbv)
+        Ok(self.core.data.static_params.bbbv)
     }
     #[getter]
     fn get_start_time(&self) -> PyResult<String> {
-        Ok(self.core.start_time.clone())
+        Ok(self.core.data.start_time.clone())
     }
     #[getter]
     fn get_openings(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.openings)
+        Ok(self.core.data.static_params.openings)
     }
     #[getter]
     fn get_islands(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.islands)
+        Ok(self.core.data.static_params.islands)
     }
     #[getter]
     fn get_hizi(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.hizi)
+        Ok(self.core.data.static_params.hizi)
     }
     #[getter]
     fn get_cell0(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell0)
+        Ok(self.core.data.static_params.cell0)
     }
     #[getter]
     fn get_cell1(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell1)
+        Ok(self.core.data.static_params.cell1)
     }
     #[getter]
     fn get_cell2(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell2)
+        Ok(self.core.data.static_params.cell2)
     }
     #[getter]
     fn get_cell3(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell3)
+        Ok(self.core.data.static_params.cell3)
     }
     #[getter]
     fn get_cell4(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell4)
+        Ok(self.core.data.static_params.cell4)
     }
     #[getter]
     fn get_cell5(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell5)
+        Ok(self.core.data.static_params.cell5)
     }
     #[getter]
     fn get_cell6(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell6)
+        Ok(self.core.data.static_params.cell6)
     }
     #[getter]
     fn get_cell7(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell7)
+        Ok(self.core.data.static_params.cell7)
     }
     #[getter]
     fn get_cell8(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.cell8)
+        Ok(self.core.data.static_params.cell8)
     }
     #[getter]
     fn get_r_time(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.r_time)
+        Ok(self.core.data.dynamic_params.r_time)
     }
     #[getter]
     fn get_bbbv_s(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.bbbv_s)
+        Ok(self.core.data.dynamic_params.bbbv_s)
     }
     #[getter]
     fn get_stnb(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.stnb)
+        Ok(self.core.data.dynamic_params.stnb)
     }
     #[getter]
     fn get_rqp(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.rqp)
+        Ok(self.core.data.dynamic_params.rqp)
     }
     #[getter]
     fn get_lefts(&self) -> PyResult<usize> {
-        Ok(self.core.dynamic_params.lefts)
+        Ok(self.core.data.dynamic_params.lefts)
     }
     #[getter]
     fn get_rights(&self) -> PyResult<usize> {
-        Ok(self.core.dynamic_params.rights)
+        Ok(self.core.data.dynamic_params.rights)
     }
     #[getter]
     fn get_chordings(&self) -> PyResult<usize> {
-        Ok(self.core.dynamic_params.chordings)
+        Ok(self.core.data.dynamic_params.chordings)
     }
     #[getter]
     fn get_clicks(&self) -> PyResult<usize> {
-        Ok(self.core.dynamic_params.clicks)
+        Ok(self.core.data.dynamic_params.clicks)
     }
     #[getter]
     fn get_flags(&self) -> PyResult<usize> {
-        Ok(self.core.dynamic_params.flags)
+        Ok(self.core.data.dynamic_params.flags)
     }
     #[getter]
     fn get_ces(&self) -> PyResult<usize> {
-        Ok(self.core.dynamic_params.ces)
+        Ok(self.core.data.dynamic_params.ces)
     }
     #[getter]
     fn get_lefts_s(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.lefts_s)
+        Ok(self.core.data.dynamic_params.lefts_s)
     }
     #[getter]
     fn get_rights_s(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.rights_s)
+        Ok(self.core.data.dynamic_params.rights_s)
     }
     #[getter]
     fn get_chordings_s(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.chordings_s)
+        Ok(self.core.data.dynamic_params.chordings_s)
     }
     #[getter]
     fn get_clicks_s(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.clicks_s)
+        Ok(self.core.data.dynamic_params.clicks_s)
     }
     #[getter]
     fn get_ces_s(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.ces_s)
+        Ok(self.core.data.dynamic_params.ces_s)
     }
     #[getter]
     fn get_ioe(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.ioe)
+        Ok(self.core.data.dynamic_params.ioe)
     }
     #[getter]
     fn get_thrp(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.thrp)
+        Ok(self.core.data.dynamic_params.thrp)
     }
     #[getter]
     fn get_corr(&self) -> PyResult<f64> {
-        Ok(self.core.dynamic_params.corr)
+        Ok(self.core.data.dynamic_params.corr)
     }
     #[getter]
     fn get_events_len(&self) -> PyResult<usize> {
-        Ok(self.core.events.len())
+        Ok(self.core.data.events.len())
     }
     pub fn events_time(&self, index: usize) -> PyResult<f64> {
-        Ok(self.core.events[index].time)
+        Ok(self.core.data.events[index].time)
     }
     pub fn events_mouse(&self, index: usize) -> PyResult<String> {
-        Ok(self.core.events[index].mouse.clone())
+        Ok(self.core.data.events[index].mouse.clone())
     }
     pub fn events_x(&self, index: usize) -> PyResult<u16> {
-        Ok(self.core.events[index].x)
+        Ok(self.core.data.events[index].x)
     }
     pub fn events_y(&self, index: usize) -> PyResult<u16> {
-        Ok(self.core.events[index].y)
+        Ok(self.core.data.events[index].y)
     }
     pub fn events_useful_level(&self, index: usize) -> PyResult<u8> {
-        Ok(self.core.events[index].useful_level)
+        Ok(self.core.data.events[index].useful_level)
     }
     pub fn events_prior_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
-        let mut t = PyGameBoard::new(self.core.mine_num);
-        t.set_core(self.core.events[index].prior_game_board.clone());
+        let mut t = PyGameBoard::new(self.core.data.mine_num);
+        t.set_core(self.core.data.events[index].prior_game_board.clone());
         Ok(t)
     }
     pub fn events_comments(&self, index: usize) -> PyResult<String> {
-        Ok(self.core.events[index].comments.clone())
+        Ok(self.core.data.events[index].comments.clone())
     }
     pub fn events_mouse_state(&self, index: usize) -> PyResult<usize> {
-        match self.core.events[index].mouse_state {
+        match self.core.data.events[index].mouse_state {
             MouseState::UpUp => Ok(1),
             MouseState::UpDown => Ok(2),
             MouseState::UpDownNotFlag => Ok(3),
@@ -339,23 +339,23 @@ impl PyAvfVideo {
     }
     #[getter]
     pub fn get_current_event_id(&self) -> PyResult<usize> {
-        Ok(self.core.current_event_id)
+        Ok(self.core.data.current_event_id)
     }
     #[setter]
     pub fn set_current_event_id(&mut self, id: usize) {
-        self.core.current_event_id = id
+        self.core.data.current_event_id = id
     }
     #[getter]
     pub fn get_game_board(&self) -> PyResult<Vec<Vec<i32>>> {
-        Ok(self.core.get_game_board())
+        Ok(self.core.data.get_game_board())
     }
     #[getter]
     pub fn get_game_board_poss(&mut self) -> PyResult<Vec<Vec<f64>>> {
-        Ok(self.core.get_game_board_poss())
+        Ok(self.core.data.get_game_board_poss())
     }
     #[getter]
     pub fn get_mouse_state(&self) -> PyResult<usize> {
-        match self.core.events[self.core.current_event_id].mouse_state {
+        match self.core.data.events[self.core.data.current_event_id].mouse_state {
             MouseState::UpUp => Ok(1),
             MouseState::UpDown => Ok(2),
             MouseState::UpDownNotFlag => Ok(3),
@@ -375,13 +375,277 @@ impl PyAvfVideo {
     #[getter]
     pub fn get_x_y(&self) -> PyResult<(u16, u16)> {
         Ok((
-            self.core.events[self.core.current_event_id].x,
-            self.core.events[self.core.current_event_id].y,
+            self.core.data.events[self.core.data.current_event_id].x,
+            self.core.data.events[self.core.data.current_event_id].y,
         ))
     }
     #[setter]
     pub fn set_time(&mut self, time: f64) {
-        self.core.set_current_event_time(time);
+        self.core.data.set_current_event_time(time);
+    }
+}
+
+
+
+
+
+#[pyclass(name = "RmvVideo")]
+pub struct PyRmvVideo {
+    pub core: RmvVideo,
+}
+
+#[pymethods]
+impl PyRmvVideo {
+    #[new]
+    pub fn new(file_name: &str) -> PyRmvVideo {
+        let c = RmvVideo::new(file_name);
+        PyRmvVideo { core: c }
+    }
+    pub fn parse_video(&mut self) {
+        self.core.parse_video().unwrap();
+    }
+    pub fn analyse(&mut self) {
+        self.core.data.analyse();
+    }
+    pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
+        self.core.data.analyse_for_features(controller);
+    }
+    #[getter]
+    fn get_row(&self) -> PyResult<usize> {
+        Ok(self.core.data.height)
+    }
+    #[getter]
+    fn get_column(&self) -> PyResult<usize> {
+        Ok(self.core.data.width)
+    }
+    #[getter]
+    fn get_level(&self) -> PyResult<u8> {
+        Ok(self.core.data.level)
+    }
+    #[getter]
+    fn get_win(&self) -> PyResult<bool> {
+        Ok(self.core.data.win)
+    }
+    #[getter]
+    fn get_mine_num(&self) -> PyResult<usize> {
+        Ok(self.core.data.mine_num)
+    }
+    #[getter]
+    fn get_player(&self) -> PyResult<String> {
+        Ok(self.core.data.player.clone())
+    }
+    #[getter]
+    fn get_bbbv(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.bbbv)
+    }
+    #[getter]
+    fn get_start_time(&self) -> PyResult<String> {
+        Ok(self.core.data.start_time.clone())
+    }
+    #[getter]
+    fn get_openings(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.openings)
+    }
+    #[getter]
+    fn get_islands(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.islands)
+    }
+    #[getter]
+    fn get_hizi(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.hizi)
+    }
+    #[getter]
+    fn get_cell0(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.cell0)
+    }
+    #[getter]
+    fn get_cell1(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.cell1)
+    }
+    #[getter]
+    fn get_cell2(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.cell2)
+    }
+    #[getter]
+    fn get_cell3(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.cell3)
+    }
+    #[getter]
+    fn get_cell4(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.cell4)
+    }
+    #[getter]
+    fn get_cell5(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.cell5)
+    }
+    #[getter]
+    fn get_cell6(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.cell6)
+    }
+    #[getter]
+    fn get_cell7(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.cell7)
+    }
+    #[getter]
+    fn get_cell8(&self) -> PyResult<usize> {
+        Ok(self.core.data.static_params.cell8)
+    }
+    #[getter]
+    fn get_r_time(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.r_time)
+    }
+    #[getter]
+    fn get_bbbv_s(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.bbbv_s)
+    }
+    #[getter]
+    fn get_stnb(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.stnb)
+    }
+    #[getter]
+    fn get_rqp(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.rqp)
+    }
+    #[getter]
+    fn get_lefts(&self) -> PyResult<usize> {
+        Ok(self.core.data.dynamic_params.lefts)
+    }
+    #[getter]
+    fn get_rights(&self) -> PyResult<usize> {
+        Ok(self.core.data.dynamic_params.rights)
+    }
+    #[getter]
+    fn get_chordings(&self) -> PyResult<usize> {
+        Ok(self.core.data.dynamic_params.chordings)
+    }
+    #[getter]
+    fn get_clicks(&self) -> PyResult<usize> {
+        Ok(self.core.data.dynamic_params.clicks)
+    }
+    #[getter]
+    fn get_flags(&self) -> PyResult<usize> {
+        Ok(self.core.data.dynamic_params.flags)
+    }
+    #[getter]
+    fn get_ces(&self) -> PyResult<usize> {
+        Ok(self.core.data.dynamic_params.ces)
+    }
+    #[getter]
+    fn get_lefts_s(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.lefts_s)
+    }
+    #[getter]
+    fn get_rights_s(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.rights_s)
+    }
+    #[getter]
+    fn get_chordings_s(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.chordings_s)
+    }
+    #[getter]
+    fn get_clicks_s(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.clicks_s)
+    }
+    #[getter]
+    fn get_ces_s(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.ces_s)
+    }
+    #[getter]
+    fn get_ioe(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.ioe)
+    }
+    #[getter]
+    fn get_thrp(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.thrp)
+    }
+    #[getter]
+    fn get_corr(&self) -> PyResult<f64> {
+        Ok(self.core.data.dynamic_params.corr)
+    }
+    #[getter]
+    fn get_events_len(&self) -> PyResult<usize> {
+        Ok(self.core.data.events.len())
+    }
+    pub fn events_time(&self, index: usize) -> PyResult<f64> {
+        Ok(self.core.data.events[index].time)
+    }
+    pub fn events_mouse(&self, index: usize) -> PyResult<String> {
+        Ok(self.core.data.events[index].mouse.clone())
+    }
+    pub fn events_x(&self, index: usize) -> PyResult<u16> {
+        Ok(self.core.data.events[index].x)
+    }
+    pub fn events_y(&self, index: usize) -> PyResult<u16> {
+        Ok(self.core.data.events[index].y)
+    }
+    pub fn events_useful_level(&self, index: usize) -> PyResult<u8> {
+        Ok(self.core.data.events[index].useful_level)
+    }
+    pub fn events_prior_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
+        let mut t = PyGameBoard::new(self.core.data.mine_num);
+        t.set_core(self.core.data.events[index].prior_game_board.clone());
+        Ok(t)
+    }
+    pub fn events_comments(&self, index: usize) -> PyResult<String> {
+        Ok(self.core.data.events[index].comments.clone())
+    }
+    pub fn events_mouse_state(&self, index: usize) -> PyResult<usize> {
+        match self.core.data.events[index].mouse_state {
+            MouseState::UpUp => Ok(1),
+            MouseState::UpDown => Ok(2),
+            MouseState::UpDownNotFlag => Ok(3),
+            MouseState::DownUp => Ok(4),
+            MouseState::Chording => Ok(5),
+            MouseState::ChordingNotFlag => Ok(6),
+            MouseState::DownUpAfterChording => Ok(7),
+            MouseState::Undefined => Ok(8),
+        }
+    }
+    #[getter]
+    pub fn get_current_event_id(&self) -> PyResult<usize> {
+        Ok(self.core.data.current_event_id)
+    }
+    #[setter]
+    pub fn set_current_event_id(&mut self, id: usize) {
+        self.core.data.current_event_id = id
+    }
+    #[getter]
+    pub fn get_game_board(&self) -> PyResult<Vec<Vec<i32>>> {
+        Ok(self.core.data.get_game_board())
+    }
+    #[getter]
+    pub fn get_game_board_poss(&mut self) -> PyResult<Vec<Vec<f64>>> {
+        Ok(self.core.data.get_game_board_poss())
+    }
+    #[getter]
+    pub fn get_mouse_state(&self) -> PyResult<usize> {
+        match self.core.data.events[self.core.data.current_event_id].mouse_state {
+            MouseState::UpUp => Ok(1),
+            MouseState::UpDown => Ok(2),
+            MouseState::UpDownNotFlag => Ok(3),
+            MouseState::DownUp => Ok(4),
+            MouseState::Chording => Ok(5),
+            MouseState::ChordingNotFlag => Ok(6),
+            MouseState::DownUpAfterChording => Ok(7),
+            MouseState::Undefined => Ok(8),
+        }
+    }
+    /// 局面状态（录像播放器的局面状态始终等于1，没有ready、win、fail的概念）
+    #[getter]
+    pub fn get_game_board_state(&self) -> PyResult<usize> {
+        Ok(1)
+    }
+    /// 返回当前光标的位置，播放录像用
+    #[getter]
+    pub fn get_x_y(&self) -> PyResult<(u16, u16)> {
+        Ok((
+            self.core.data.events[self.core.data.current_event_id].x,
+            self.core.data.events[self.core.data.current_event_id].y,
+        ))
+    }
+    #[setter]
+    pub fn set_time(&mut self, time: f64) {
+        self.core.data.set_current_event_time(time);
     }
 }
 

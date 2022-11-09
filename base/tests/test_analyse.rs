@@ -30,7 +30,7 @@ fn minesweeper_board_works() {
 // cargo test --features rs -- --nocapture AvfVideo_works
 fn AvfVideo_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("eee.avf");
+    let mut video = AvfVideo::new("jze.avf");
     
     let r = video.parse_video();
     println!("结果：{:?}", r);
@@ -40,10 +40,11 @@ fn AvfVideo_works() {
     println!("3BV：{:?}", video.data.static_params.bbbv);
     // println!("3BV：{:?}", video.s.s);
     println!("time：{:?}", video.data.dynamic_params.r_time);
+    println!("time_ms：{:?}", video.data.dynamic_params.r_time_ms);
     println!("is win: {:?}", video.data.win);
     println!("STNB: {:?}", video.data.dynamic_params.stnb);
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
-    video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
+    video.data.analyse_for_features(vec!["needless_guess", "high_risk_guess", "jump_judge", "survive_poss"]);
     video.data.print_comments();
 }
 
@@ -51,10 +52,10 @@ fn AvfVideo_works() {
 // cargo test --features rs -- --nocapture RmvVideo_works
 fn RmvVideo_works() {
     // 录像解析工具测试
-    let mut video = RmvVideo::new("exp.rmv");
+    let mut video = RmvVideo::new("18175.rmv");
     
     let r = video.parse_video();
-    video.data.print_event();
+    // video.data.print_event();
     video.data.analyse();
     println!("结果：{:?}", r);
     println!("标识：{:?}", video.data.player);

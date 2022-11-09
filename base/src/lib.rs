@@ -33,6 +33,8 @@ pub use utils::{
     refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure, enuOneStep, is_good_chording
 };
 
+mod miscellaneous;
+
 mod algorithms;
 mod analyse_methods;
 #[cfg(any(feature = "py", feature = "rs"))]

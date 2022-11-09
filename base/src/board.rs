@@ -5,7 +5,10 @@ use crate::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
     analyse_super_fl_local, analyse_survive_poss, analyse_vision_transfer,
 };
-use crate::utils::{refresh_board, refresh_matrixs, cal_all_numbers};
+use crate::miscellaneous::{
+    s_to_ms
+};
+use crate::utils::{cal_all_numbers, refresh_board, refresh_matrixs};
 use std::cmp::{max, min};
 use std::fs;
 
@@ -269,6 +272,7 @@ impl MinesweeperBoard {
                     if pos.0 == self.row && pos.1 == self.column {
                         return Ok(0);
                     }
+                    // println!("x={:?}, y={:?}", pos.0, pos.1);
                     return self.left_click(pos.0, pos.1);
                 }
                 MouseState::Chording => {
@@ -493,10 +497,10 @@ pub struct VideoEvent {
     /// 3代表有效、至少打开了一个格子的双击
     /// 和ce没有关系，仅用于控制计算
     pub useful_level: u8,
-    /// 操作前的局面（先验局面）。鼠标move是不会存的。
-    pub prior_game_board: GameBoard,
-    /// 操作后的局面（后验的局面）。鼠标move是不会存的。（拟删除）
-    // pub posteriori_game_board: GameBoard,
+    /// 操作前的局面（先验局面）的索引。
+    pub prior_game_board_id: usize,
+    /// 操作后的局面（后验的局面）的索引。
+    pub next_game_board_id: usize,
     pub comments: String,
     /// 该操作完成以后的鼠标状态。和录像高亮有关。即使是鼠标move也会记录。
     pub mouse_state: MouseState,
@@ -522,6 +526,8 @@ pub struct StaticParams {
 
 pub struct DynamicParams {
     pub r_time: f64,
+    /// 以毫秒为单位的精确时间
+    pub r_time_ms: u32,
     pub bbbv_s: f64,
     pub stnb: f64,
     pub rqp: f64,
@@ -564,6 +570,8 @@ pub struct BaseVideo {
     pub level: u8,
     pub board: Vec<Vec<i32>>,
     pub events: Vec<VideoEvent>,
+    /// 游戏局面流，从一开始没有打开任何格子（包含玩家游戏前的标雷过程），到最后打开了所有
+    pub game_board_stream: Vec<GameBoard>,
     /// 录像播放时的指针，播放哪一帧
     pub current_event_id: usize,
     /// 录像标识
@@ -576,7 +584,8 @@ pub struct BaseVideo {
     pub end_time: String,
     /// 国家。预留字段，暂时不能解析。
     pub country: String,
-    video_data: Vec<u8>,
+    /// 原始二进制数据
+    raw_data: Vec<u8>,
     offset: usize,
     /// 可以计算静态指标（有些没写完）
     pub static_params: StaticParams,
@@ -588,7 +597,7 @@ pub struct BaseVideo {
 
 impl BaseParser for BaseVideo {
     fn get_u8(&mut self) -> Result<u8, ErrReadVideoReason> {
-        let t = self.video_data.get(self.offset);
+        let t = self.raw_data.get(self.offset);
         self.offset += 1;
         match t {
             Some(x) => Ok(*x),
@@ -616,12 +625,11 @@ impl BaseParser for BaseVideo {
 impl BaseVideo {
     #[cfg(any(feature = "py", feature = "rs"))]
     pub fn new(file_name: &str) -> BaseVideo {
-        let video_data: Vec<u8> = fs::read(file_name).unwrap();
+        let raw_data: Vec<u8> = fs::read(file_name).unwrap();
         // for i in 0..500 {
-        //     print!("{:?}", video_data[i] as char);
+        //     print!("{:?}", raw_data[i] as char);
         // }
         BaseVideo {
-            // file_name: file_name.to_string(),
             width: 0,
             height: 0,
             mine_num: 0,
@@ -631,12 +639,13 @@ impl BaseVideo {
             level: 0,
             board: vec![],
             events: vec![],
+            game_board_stream: vec![],
             current_event_id: 0,
             player: "".to_string(),
             start_time: "".to_string(),
             end_time: "".to_string(),
             country: "".to_string(),
-            video_data: video_data,
+            raw_data: raw_data,
             offset: 0,
             static_params: StaticParams {
                 bbbv: 0,
@@ -655,6 +664,7 @@ impl BaseVideo {
             },
             dynamic_params: DynamicParams {
                 r_time: 0.0,
+                r_time_ms: 0,
                 bbbv_s: 0.0,
                 stnb: 0.0,
                 rqp: 0.0,
@@ -690,6 +700,7 @@ impl BaseVideo {
             level: 0,
             board: vec![],
             events: vec![],
+            game_board_stream: vec![],
             current_event_id: 0,
             player: "".to_string(),
             start_time: "".to_string(),
@@ -714,6 +725,7 @@ impl BaseVideo {
             },
             dynamic_params: DynamicParams {
                 r_time: 0.0,
+                r_time_ms: 0,
                 bbbv_s: 0.0,
                 stnb: 0.0,
                 rqp: 0.0,
@@ -739,13 +751,12 @@ impl BaseVideo {
     pub fn analyse(&mut self) {
         // println!("{:?}, ", self.board);
         let mut b = MinesweeperBoard::new(self.board.clone());
+        self.game_board_stream.push(GameBoard::new(self.mine_num));
         for ide in 0..self.events.len() {
+            self.events[ide].prior_game_board_id = self.game_board_stream.len() - 1;
             if self.events[ide].mouse != "mv" {
-                self.events[ide]
-                    .prior_game_board
-                    .set_game_board(&b.game_board);
                 // println!("{:?}, {:?}", self.events[ide].time, self.events[ide].mouse);
-                self.events[ide].useful_level = b
+                let u_level = b
                     .step(
                         &self.events[ide].mouse,
                         (
@@ -754,11 +765,18 @@ impl BaseVideo {
                         ),
                     )
                     .unwrap();
-                self.events[ide].solved3BV = b.solved3BV;
+                self.events[ide].useful_level = u_level;
+                if u_level >= 2 {
+                    let mut g_b = GameBoard::new(self.mine_num);
+                    g_b.set_game_board(&b.game_board);
+                    self.game_board_stream.push(g_b);
+                }
                 // println!("{:?}", b.game_board_state);
                 // println!("{:?}", b.solved3BV);
             }
+            self.events[ide].next_game_board_id = self.game_board_stream.len() - 1;
             self.events[ide].mouse_state = b.mouse_state.clone();
+            self.events[ide].solved3BV = b.solved3BV;
         }
         // println!("888");
         // println!("{:?}", b.solved3BV);
@@ -888,16 +906,11 @@ impl BaseVideo {
         }
     }
     // 再实现一些get、set方法
-    /// 获取当前录像时刻的游戏局面
+    /// 获取当前录像时刻的后验的游戏局面（就是说录像里看不到没打开之前的样子）
     pub fn get_game_board(&self) -> Vec<Vec<i32>> {
-        let mut id = self.current_event_id;
-        loop {
-            if self.events[id].prior_game_board.game_board.is_empty() {
-                id -= 1;
-            } else {
-                return self.events[id].prior_game_board.game_board.clone();
-            }
-        }
+        self.game_board_stream[self.events[self.current_event_id].next_game_board_id as usize]
+            .game_board
+            .clone()
     }
     /// 获取当前录像时刻的局面概率
     pub fn get_game_board_poss(&mut self) -> Vec<Vec<f64>> {
@@ -910,7 +923,11 @@ impl BaseVideo {
                     return vec![vec![p; self.height]; self.width];
                 }
             } else {
-                return self.events[id].prior_game_board.get_poss().clone();
+                return self.game_board_stream
+                    [self.events[self.current_event_id].next_game_board_id as usize]
+                    .poss
+                    .clone();
+                // return self.events[id].prior_game_board.get_poss().clone();
             }
         }
     }
@@ -1120,6 +1137,7 @@ impl AvfVideo {
             Ok(v) => v - 1.0,
             Err(_) => return Err(ErrReadVideoReason::InvalidParams),
         };
+        self.data.dynamic_params.r_time_ms = s_to_ms(self.data.dynamic_params.r_time);
         let mut buffer = [0u8; 8];
         while buffer[2] != 1 || buffer[1] > 1 {
             buffer[0] = buffer[1];
@@ -1155,8 +1173,8 @@ impl AvfVideo {
                 x: (buffer[1] as u16) << 8 | buffer[3] as u16,
                 y: (buffer[5] as u16) << 8 | buffer[7] as u16,
                 useful_level: 0,
-                prior_game_board: GameBoard::new(self.data.mine_num),
-                // posteriori_game_board: GameBoard::new(self.mine_num),
+                prior_game_board_id: 0,
+                next_game_board_id: 0,
                 comments: "".to_string(),
                 mouse_state: MouseState::Undefined,
                 solved3BV: 0,
@@ -1294,7 +1312,7 @@ impl RmvVideo {
             }
         }
         self.data.offset += version_info_size as usize + 2;
-        
+
         // 这里是uint16，不合理
         let num_player_info = self.data.get_u16()?;
 
@@ -1381,9 +1399,9 @@ impl RmvVideo {
                 let mut x = (self.data.get_u16()?).wrapping_sub(12);
                 let mut y = (self.data.get_u16()?).wrapping_sub(56);
                 if c >= 1 {
-                    if x >= 480 || y >= 256 {
-                        x = 480;
-                        y = 256;
+                    if x >= self.data.width as u16 * 16 || y >= self.data.height as u16 * 16 {
+                        x = self.data.width as u16 * 16;
+                        y = self.data.height as u16 * 16;
                     }
                     if first_op_flag {
                         first_op_flag = false;
@@ -1393,7 +1411,8 @@ impl RmvVideo {
                             x: x,
                             y: y,
                             useful_level: 0,
-                            prior_game_board: GameBoard::new(self.data.mine_num),
+                            prior_game_board_id: 0,
+                            next_game_board_id: 0,
                             comments: "".to_string(),
                             mouse_state: MouseState::Undefined,
                             solved3BV: 0,
@@ -1414,7 +1433,8 @@ impl RmvVideo {
                         x: x,
                         y: y,
                         useful_level: 0,
-                        prior_game_board: GameBoard::new(self.data.mine_num),
+                        prior_game_board_id: 0,
+                        next_game_board_id: 0,
                         comments: "".to_string(),
                         mouse_state: MouseState::Undefined,
                         solved3BV: 0,
@@ -1430,8 +1450,8 @@ impl RmvVideo {
                 return Err(ErrReadVideoReason::InvalidParams);
             }
         }
-
         self.data.dynamic_params.r_time = self.data.events.last().unwrap().time;
+        self.data.dynamic_params.r_time_ms = s_to_ms(self.data.dynamic_params.r_time);
         return Ok(());
     }
 }
@@ -1440,10 +1460,11 @@ impl RmvVideo {
 /// 所有计算过的属性都会保存在这里。缓存计算结果的局面。  
 #[derive(Clone)]
 pub struct GameBoard {
+    /// 游戏局面，来自玩家，上面标的雷可能是错的。
     pub game_board: Vec<Vec<i32>>,
     game_board_marked: Vec<Vec<i32>>,
-    mine_num: usize,
     poss: Vec<Vec<f64>>,
+    mine_num: usize,
     is_marked: bool, // game_board_marked是否被完全标记过
     has_poss: bool,  // 是否已经计算过概率
     basic_not_mine: Vec<(usize, usize)>,
@@ -1452,13 +1473,30 @@ pub struct GameBoard {
     enum_is_mine: Vec<(usize, usize)>,
 }
 
+// impl Default for GameBoard {
+//     fn default() -> Self {
+//         GameBoard {
+//             game_board: vec![],
+//             game_board_marked: vec![],
+//             poss: vec![],
+//             mine_num: 0,
+//             is_marked: false,
+//             has_poss: false,
+//             basic_not_mine: vec![],
+//             basic_is_mine: vec![],
+//             enum_not_mine: vec![],
+//             enum_is_mine: vec![],
+//         }
+//     }
+// }
+
 impl GameBoard {
     pub fn new(mine_num: usize) -> GameBoard {
         GameBoard {
             game_board: vec![],
             game_board_marked: vec![],
-            mine_num: mine_num,
             poss: vec![],
+            mine_num: mine_num,
             is_marked: false,
             has_poss: false,
             basic_is_mine: vec![],
@@ -1482,6 +1520,9 @@ impl GameBoard {
     fn mark(&mut self) {
         // 一旦被标记，那么就会用3大判雷引擎都分析一遍
         // 相关参数都会计算并记录下来，is_marked也会改成true
+        if self.is_marked {
+            return
+        }
         let (mut a_s, mut x_s, mut b_s, _, _) = refresh_matrixs(&self.game_board_marked);
         let mut ans = solve_direct(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked).0;
         self.basic_not_mine.append(&mut ans);
@@ -1511,10 +1552,7 @@ impl GameBoard {
     }
     pub fn get_poss(&mut self) -> &Vec<Vec<f64>> {
         if !self.has_poss {
-            if !self.is_marked {
-                self.mark();
-                self.is_marked = true;
-            }
+            self.mark();
             self.poss = cal_possibility_onboard(&self.game_board_marked, self.mine_num as f64)
                 .unwrap()
                 .0;

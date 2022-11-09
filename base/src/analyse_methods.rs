@@ -1,7 +1,7 @@
 use crate::algorithms::{solve_direct, solve_enumerate, solve_minus};
 use crate::board;
 use crate::utils::{is_good_chording, refresh_matrix, refresh_matrixs};
-use board::{AvfVideo, MouseState, VideoEvent, BaseVideo};
+use board::{AvfVideo, BaseVideo, MouseState, VideoEvent};
 
 // 录像的事件分析。参与分析的录像必须已经计算出对应的数据。
 // error: 高风险的猜雷（猜对概率0.05）√
@@ -24,7 +24,7 @@ pub fn analyse_high_risk_guess(video: &mut BaseVideo) {
         x = (video.events[ide].y / 16) as usize;
         y = (video.events[ide].x / 16) as usize;
         if video.events[ide].useful_level >= 2 {
-            let p = video.events[ide].prior_game_board.get_poss()[x][y];
+            let p = video.game_board_stream[video.events[ide].prior_game_board_id].get_poss()[x][y];
             if p >= 0.51 {
                 video.events[ide].comments = format!(
                     "{}{}",
@@ -44,12 +44,10 @@ pub fn analyse_jump_judge(video: &mut BaseVideo) {
         x = (video.events[ide].y / 16) as usize;
         y = (video.events[ide].x / 16) as usize;
         if video.events[ide].useful_level >= 2 && video.events[ide].mouse == "lr" {
-            if !video.events[ide]
-                .prior_game_board
+            if !video.game_board_stream[video.events[ide].prior_game_board_id]
                 .get_basic_not_mine()
                 .contains(&(x, y))
-                && video.events[ide]
-                    .prior_game_board
+                && video.game_board_stream[video.events[ide].prior_game_board_id]
                     .get_enum_not_mine()
                     .contains(&(x, y))
             {
@@ -60,12 +58,10 @@ pub fn analyse_jump_judge(video: &mut BaseVideo) {
                 );
             }
         } else if video.events[ide].useful_level == 1 && video.events[ide].mouse == "rc" {
-            if !video.events[ide]
-                .prior_game_board
+            if !video.game_board_stream[video.events[ide].prior_game_board_id]
                 .get_basic_is_mine()
                 .contains(&(x, y))
-                && video.events[ide]
-                    .prior_game_board
+                && video.game_board_stream[video.events[ide].prior_game_board_id]
                     .get_enum_is_mine()
                     .contains(&(x, y))
             {
@@ -87,13 +83,11 @@ pub fn analyse_needless_guess(video: &mut BaseVideo) {
             x = (video.events[ide].y / 16) as usize;
             y = (video.events[ide].x / 16) as usize;
 
-            if video.events[ide].prior_game_board.get_poss()[x][y] > 0.0
-                && !video.events[ide]
-                    .prior_game_board
+            if video.game_board_stream[video.events[ide].prior_game_board_id].get_poss()[x][y] > 0.0
+                && !video.game_board_stream[video.events[ide].prior_game_board_id]
                     .get_basic_not_mine()
                     .contains(&(x, y))
-                && !video.events[ide]
-                    .prior_game_board
+                && !video.game_board_stream[video.events[ide].prior_game_board_id]
                     .get_enum_not_mine()
                     .contains(&(x, y))
             {
@@ -182,16 +176,14 @@ pub fn analyse_vision_transfer(video: &mut BaseVideo) {
                 >= 112.0
             {
                 let mut flag = false;
-                for &(xxx, yyy) in video.events[click_last_id]
-                    .prior_game_board
+                for &(xxx, yyy) in video.game_board_stream[video.events[ide].prior_game_board_id]
                     .get_basic_not_mine()
                 {
                     if xxx <= l_x + 3 && xxx + 3 >= l_x && yyy <= l_y + 3 && yyy + 3 >= l_y {
                         flag = true;
                     }
                 }
-                for &(xxx, yyy) in video.events[click_last_id]
-                    .prior_game_board
+                for &(xxx, yyy) in video.game_board_stream[video.events[ide].prior_game_board_id]
                     .get_enum_not_mine()
                 {
                     if xxx <= l_x + 3 && xxx + 3 >= l_x && yyy <= l_y + 3 && yyy + 3 >= l_y {
@@ -231,7 +223,8 @@ pub fn analyse_survive_poss(video: &mut BaseVideo) {
             }
             let l_x = (video.events[ide].y / 16) as usize;
             let l_y = (video.events[ide].x / 16) as usize;
-            let p = video.events[ide].prior_game_board.get_poss()[l_x][l_y];
+            let p =
+                video.game_board_stream[video.events[ide].prior_game_board_id].get_poss()[l_x][l_y];
             if p > 0.0 && p < 1.0 {
                 s_poss *= 1.0 - p;
                 message.push_str(&format!("{:.3} * ", 1.0 - p));
@@ -280,7 +273,7 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo) {
         // }
 
         if video.events[ide].mouse == "rc"
-            && video.events[ide].prior_game_board.game_board[x][y] == 10
+            && video.game_board_stream[video.events[ide].prior_game_board_id].game_board[x][y] == 10
             && video.events[ide].useful_level == 1
         {
             // 正确的标雷
@@ -305,7 +298,10 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo) {
             }
         } else if video.events[ide].useful_level == 3 {
             // 正确的双击
-            if !is_good_chording(&video.events[ide].prior_game_board.game_board, (x, y)) {
+            if !is_good_chording(
+                &video.game_board_stream[video.events[ide].prior_game_board_id].game_board,
+                (x, y),
+            ) {
                 match state {
                     SuperFLState::IsOk => {
                         counter -= last_rc_num;

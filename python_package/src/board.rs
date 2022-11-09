@@ -231,6 +231,10 @@ impl PyAvfVideo {
         Ok(self.core.data.dynamic_params.r_time)
     }
     #[getter]
+    fn get_r_time_ms(&self) -> PyResult<u32> {
+        Ok(self.core.data.dynamic_params.r_time_ms)
+    }
+    #[getter]
     fn get_bbbv_s(&self) -> PyResult<f64> {
         Ok(self.core.data.dynamic_params.bbbv_s)
     }
@@ -319,7 +323,8 @@ impl PyAvfVideo {
     }
     pub fn events_prior_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
         let mut t = PyGameBoard::new(self.core.data.mine_num);
-        t.set_core(self.core.data.events[index].prior_game_board.clone());
+        // t.set_core(self.core.data.events[index].prior_game_board.clone());
+        t.set_core(self.core.data.game_board_stream[self.core.data.events[index].prior_game_board_id].clone());
         Ok(t)
     }
     pub fn events_comments(&self, index: usize) -> PyResult<String> {
@@ -495,6 +500,10 @@ impl PyRmvVideo {
         Ok(self.core.data.dynamic_params.r_time)
     }
     #[getter]
+    fn get_r_time_ms(&self) -> PyResult<u32> {
+        Ok(self.core.data.dynamic_params.r_time_ms)
+    }
+    #[getter]
     fn get_bbbv_s(&self) -> PyResult<f64> {
         Ok(self.core.data.dynamic_params.bbbv_s)
     }
@@ -583,7 +592,7 @@ impl PyRmvVideo {
     }
     pub fn events_prior_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
         let mut t = PyGameBoard::new(self.core.data.mine_num);
-        t.set_core(self.core.data.events[index].prior_game_board.clone());
+        t.set_core(self.core.data.game_board_stream[self.core.data.events[index].prior_game_board_id].clone());
         Ok(t)
     }
     pub fn events_comments(&self, index: usize) -> PyResult<String> {

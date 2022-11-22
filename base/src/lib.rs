@@ -29,14 +29,14 @@
 // cargo yank --vers 0.0.1
 mod utils;
 pub use utils::{
-    cal3BV, cal_op, cal_table_minenum_recursion, combine, laymine, laymine_op, refresh_board,
-    refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure, enuOneStep, is_good_chording
+    cal3BV, cal_op, cal_isl, cal_table_minenum_recursion, combine, laymine, laymine_op, refresh_board,
+    refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure, enuOneStep, is_good_chording,
+    cal_cell_nums
 };
 
 mod miscellaneous;
 
 mod algorithms;
-mod analyse_methods;
 #[cfg(any(feature = "py", feature = "rs"))]
 pub use algorithms::{laymine_solvable_thread, sample_3BVs_exp, OBR_board, agent_step};
 // #[cfg(feature = "js")]
@@ -49,7 +49,12 @@ pub use algorithms::{
 // pub use algorithms::{mark_board, solve_direct, solve_enumerate, solve_minus};
 
 mod board;
-pub use board::{AvfVideo, RmvVideo, GameBoard, MinesweeperBoard, GameBoardState, MouseState};
+pub use board::{GameBoard, Board};
+
+mod videos;
+pub use videos::{
+    AvfVideo, RmvVideo, EvfVideo, BaseVideo, MinesweeperBoard, GameBoardState, MouseState
+};
 
 #[cfg(any(feature = "py", feature = "rs"))]
 mod OBR;

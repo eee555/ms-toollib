@@ -1,7 +1,7 @@
 use crate::algorithms::{solve_direct, solve_enumerate, solve_minus};
-use crate::board;
 use crate::utils::{is_good_chording, refresh_matrix, refresh_matrixs};
-use board::{AvfVideo, BaseVideo, MouseState, VideoEvent};
+use crate::MouseState;
+use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoEvent};
 
 // 录像的事件分析。参与分析的录像必须已经计算出对应的数据。
 // error: 高风险的猜雷（猜对概率0.05）√

@@ -46,6 +46,46 @@ fn infectBoard(mut Board: Vec<Vec<i32>>, x: usize, y: usize) -> Vec<Vec<i32>> {
     Board
 }
 
+/// 输入局面，计算岛  
+pub fn cal_isl(raw_board: &Vec<Vec<i32>>) -> usize {
+    let row = raw_board.len();
+    let column = raw_board[0].len();
+    let mut board = vec![vec![1; column]; row];
+    for i in 0..row {
+        for j in 0..column {
+            if raw_board[i][j] <= 0 {
+                continue;
+            }
+            let mut flag = true;
+            'outer: for m in max(1, i) - 1..min(row, i + 2) {
+                for n in max(1, j) - 1..min(column, j + 2) {
+                    if raw_board[m][n] == 0 {
+                        flag = false;
+                        break 'outer;
+                    }
+                }
+            }
+            if flag {
+                board[i][j] = 0;
+            }
+        }
+    }
+    cal_op(board)
+}
+
+/// 计算每个数字出现的次数  
+pub fn cal_cell_nums(raw_board: &Vec<Vec<i32>>) -> [usize; 9] {
+    let row = raw_board.len();
+    let column = raw_board[0].len();
+    let mut ans = [0; 9];
+    for i in 0..row {
+        for j in 0..column {
+            ans[raw_board[i][j] as usize] += 1;
+        }
+    }
+    ans
+}
+
 /// 根据游戏局面生成矩阵，不分块。输入必须保证是合法的游戏局面。  
 /// - 注意：优点是含义明确，便于理解。但由于不分块，拟弃用
 pub fn refresh_matrix(
@@ -497,7 +537,7 @@ pub fn laymine_op(
     Board
 }
 
-fn cal3BVonIsland(Board: &Vec<Vec<i32>>) -> usize {
+pub fn cal3BVonIsland(Board: &Vec<Vec<i32>>) -> usize {
     // 计算除空以外的3BV
     let row = Board.len();
     let column = Board[0].len();
@@ -1701,7 +1741,7 @@ fn surround_cell_num(board_of_game: &Vec<Vec<i32>>, pos: (usize, usize)) -> i8 {
 }
 
 /// 算数字。局面上只有0和-1时，计算其他的数字。不具备幂等性！！！
-pub fn cal_all_numbers(board: &mut Vec<Vec<i32>>) {
+pub fn cal_board_numbers(board: &mut Vec<Vec<i32>>) {
     let height = board.len();
     let width = board[0].len();
     for x in 0..height {

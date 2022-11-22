@@ -12,5 +12,6 @@ Cargo.lock
 node_modules
 *.avf
 *.rmv
+*.evf
 *.onnx
 *.ini

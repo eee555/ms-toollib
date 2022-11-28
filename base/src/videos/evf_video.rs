@@ -1,6 +1,6 @@
 use crate::miscellaneous::s_to_ms;
 use crate::utils::cal_board_numbers;
-use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoEvent};
+use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
 use crate::MouseState;
 
 /// evf录像解析器。  
@@ -53,8 +53,8 @@ impl EvfVideo {
         self.data.cell_pixel_size = self.data.get_u8()?;
         self.data.mode = self.data.get_u16()?;
         self.data.static_params.bbbv = self.data.get_u16()? as usize;
-        self.data.dynamic_params.r_time = self.data.get_u24()? as f64 / 1000.0;
-        self.data.dynamic_params.r_time_ms = s_to_ms(self.data.dynamic_params.r_time);
+        self.data.game_dynamic_params.rtime = self.data.get_u24()? as f64 / 1000.0;
+        self.data.game_dynamic_params.rtime_ms = s_to_ms(self.data.game_dynamic_params.rtime);
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
@@ -121,6 +121,7 @@ impl EvfVideo {
                 }
             }
         }
+        cal_board_numbers(&mut self.data.board);
         let have_checksum;
         loop {
             let byte = self.data.get_u8()?;
@@ -147,17 +148,12 @@ impl EvfVideo {
             let time = self.data.get_u24()? as f64 / 1000.0;
             let x = self.data.get_u16()?;
             let y = self.data.get_u16()?;
-            self.data.events.push(VideoEvent {
+            self.data.video_action_state_recorder.push(VideoActionStateRecorder {
                 time,
                 mouse: mouse.to_string(),
                 x,
                 y,
-                useful_level: 0,
-                prior_game_board_id: 0,
-                next_game_board_id: 0,
-                comments: "".to_string(),
-                mouse_state: MouseState::Undefined,
-                solved3BV: 0,
+                ..VideoActionStateRecorder::default()
             });
         }
         let mut csum = "".to_string();

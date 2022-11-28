@@ -2,7 +2,7 @@ use crate::MouseState;
 use crate::miscellaneous::s_to_ms;
 use crate::utils::{cal_board_numbers};
 use std::cmp::{max, min};
-use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoEvent};
+use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
 
 
 /// avf录像解析器。  
@@ -162,11 +162,11 @@ impl AvfVideo {
         }
         s = str::replace(&s, ",", "."); // 有些录像小数点是逗号
                                         // println!("{:?}", s);
-        self.data.dynamic_params.r_time = match s.parse::<f64>() {
+        self.data.game_dynamic_params.rtime = match s.parse::<f64>() {
             Ok(v) => v - 1.0,
             Err(_) => return Err(ErrReadVideoReason::InvalidParams),
         };
-        self.data.dynamic_params.r_time_ms = s_to_ms(self.data.dynamic_params.r_time);
+        self.data.game_dynamic_params.rtime_ms = s_to_ms(self.data.game_dynamic_params.rtime);
         let mut buffer = [0u8; 8];
         while buffer[2] != 1 || buffer[1] > 1 {
             buffer[0] = buffer[1];
@@ -180,7 +180,7 @@ impl AvfVideo {
             // if buffer[0] != 1 {
             // println!("{:?}, {:?}", ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
             // + (buffer[4] as f64) / 100.0, buffer[0]);}
-            self.data.events.push(VideoEvent {
+            self.data.video_action_state_recorder.push(VideoActionStateRecorder {
                 time: ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
                     + (buffer[4] as f64) / 100.0,
                 mouse: match buffer[0] {
@@ -201,12 +201,7 @@ impl AvfVideo {
                 // row: 0,
                 x: (buffer[1] as u16) << 8 | buffer[3] as u16,
                 y: (buffer[5] as u16) << 8 | buffer[7] as u16,
-                useful_level: 0,
-                prior_game_board_id: 0,
-                next_game_board_id: 0,
-                comments: "".to_string(),
-                mouse_state: MouseState::Undefined,
-                solved3BV: 0,
+                ..VideoActionStateRecorder::default()
             });
             for i in 0..8 {
                 // ???????
@@ -405,17 +400,11 @@ impl RmvVideo {
                 let c = self.data.get_u8()? as u16;
                 let d = self.data.get_u8()? as u16;
                 // self.data.pre_flags.push((d, c));
-                self.data.events.push(VideoEvent {
-                    time: 0.0,
+                self.data.video_action_state_recorder.push(VideoActionStateRecorder {
                     mouse: "pf".to_string(),
                     x: d * 16,
                     y: c * 16,
-                    useful_level: 0,
-                    prior_game_board_id: 0,
-                    next_game_board_id: 0,
-                    comments: "".to_string(),
-                    mouse_state: MouseState::Undefined,
-                    solved3BV: 0,
+                    ..VideoActionStateRecorder::default()
                 });
             }
         }
@@ -447,20 +436,15 @@ impl RmvVideo {
                     }
                     if first_op_flag {
                         first_op_flag = false;
-                        self.data.events.push(VideoEvent {
+                        self.data.video_action_state_recorder.push(VideoActionStateRecorder {
                             time: time as f64 / 1000.0,
                             mouse: "lc".to_string(),
                             x,
                             y,
-                            useful_level: 0,
-                            prior_game_board_id: 0,
-                            next_game_board_id: 0,
-                            comments: "".to_string(),
-                            mouse_state: MouseState::Undefined,
-                            solved3BV: 0,
+                            ..VideoActionStateRecorder::default()
                         });
                     }
-                    self.data.events.push(VideoEvent {
+                    self.data.video_action_state_recorder.push(VideoActionStateRecorder {
                         time: time as f64 / 1000.0,
                         mouse: match c {
                             1 => "mv".to_string(),
@@ -474,12 +458,7 @@ impl RmvVideo {
                         },
                         x: x,
                         y: y,
-                        useful_level: 0,
-                        prior_game_board_id: 0,
-                        next_game_board_id: 0,
-                        comments: "".to_string(),
-                        mouse_state: MouseState::Undefined,
-                        solved3BV: 0,
+                        ..VideoActionStateRecorder::default()
                     });
                 }
             } else if c == 8 {
@@ -492,8 +471,8 @@ impl RmvVideo {
                 return Err(ErrReadVideoReason::InvalidParams);
             }
         }
-        self.data.dynamic_params.r_time = self.data.events.last().unwrap().time;
-        self.data.dynamic_params.r_time_ms = s_to_ms(self.data.dynamic_params.r_time);
+        self.data.game_dynamic_params.rtime = self.data.video_action_state_recorder.last().unwrap().time;
+        self.data.game_dynamic_params.rtime_ms = s_to_ms(self.data.game_dynamic_params.rtime);
         self.data.can_analyse = true;
         return Ok(());
     }

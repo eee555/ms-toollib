@@ -1,5 +1,5 @@
-use pyo3::prelude::*;
 use pyo3::exceptions::PyTypeError;
+use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 // use pyo3::PyTraverseError;
 // use pyo3::class::basic::PyObjectProtocol;
@@ -7,7 +7,7 @@ use pyo3::wrap_pyfunction;
 
 use ms_toollib::*;
 mod board;
-pub use board::{PyAvfVideo, PyGameBoard, PyMinesweeperBoard, PyRmvVideo};
+pub use board::{PyAvfVideo, PyBaseVideo, PyEvfVideo, PyGameBoard, PyMinesweeperBoard, PyRmvVideo, PyBoard};
 
 // pip install maturin
 // maturin publish --manylinux 2014
@@ -217,7 +217,7 @@ fn py_cal_possibility(
     match cal_possibility(&board_of_game, mine_num) {
         Ok(t) => return Ok(t),
         Err(1) => return Err(PyErr::new::<PyTypeError, _>("无解的局面")),
-        _  => return Err(PyErr::new::<PyTypeError, _>("未知的错误")),
+        _ => return Err(PyErr::new::<PyTypeError, _>("未知的错误")),
     };
 }
 
@@ -328,6 +328,9 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyMinesweeperBoard>()?;
     m.add_class::<PyAvfVideo>()?;
     m.add_class::<PyRmvVideo>()?;
+    m.add_class::<PyEvfVideo>()?;
+    m.add_class::<PyBaseVideo>()?;
     m.add_class::<PyGameBoard>()?;
+    m.add_class::<PyBoard>()?;
     Ok(())
 }

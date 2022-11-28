@@ -1,7 +1,7 @@
 use crate::algorithms::{solve_direct, solve_enumerate, solve_minus};
 use crate::utils::{is_good_chording, refresh_matrix, refresh_matrixs};
 use crate::MouseState;
-use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoEvent};
+use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
 
 // 录像的事件分析。参与分析的录像必须已经计算出对应的数据。
 // error: 高风险的猜雷（猜对概率0.05）√
@@ -20,15 +20,15 @@ use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoEvent};
 pub fn analyse_high_risk_guess(video: &mut BaseVideo) {
     let mut x;
     let mut y;
-    for ide in 2..video.events.len() {
-        x = (video.events[ide].y / 16) as usize;
-        y = (video.events[ide].x / 16) as usize;
-        if video.events[ide].useful_level >= 2 {
-            let p = video.game_board_stream[video.events[ide].prior_game_board_id].get_poss()[x][y];
+    for ide in 2..video.video_action_state_recorder.len() {
+        x = (video.video_action_state_recorder[ide].y / 16) as usize;
+        y = (video.video_action_state_recorder[ide].x / 16) as usize;
+        if video.video_action_state_recorder[ide].useful_level >= 2 {
+            let p = video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id].get_poss()[x][y];
             if p >= 0.51 {
-                video.events[ide].comments = format!(
+                video.video_action_state_recorder[ide].comments = format!(
                     "{}{}",
-                    video.events[ide].comments,
+                    video.video_action_state_recorder[ide].comments,
                     format!("error: 危险的猜雷(猜对概率{:.3});", 1.0 - p)
                 );
             }
@@ -40,34 +40,34 @@ pub fn analyse_jump_judge(video: &mut BaseVideo) {
     // 功能：检测左键或右键的跳判
     let mut x;
     let mut y;
-    for ide in 2..video.events.len() {
-        x = (video.events[ide].y / 16) as usize;
-        y = (video.events[ide].x / 16) as usize;
-        if video.events[ide].useful_level >= 2 && video.events[ide].mouse == "lr" {
-            if !video.game_board_stream[video.events[ide].prior_game_board_id]
+    for ide in 2..video.video_action_state_recorder.len() {
+        x = (video.video_action_state_recorder[ide].y / 16) as usize;
+        y = (video.video_action_state_recorder[ide].x / 16) as usize;
+        if video.video_action_state_recorder[ide].useful_level >= 2 && video.video_action_state_recorder[ide].mouse == "lr" {
+            if !video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
                 .get_basic_not_mine()
                 .contains(&(x, y))
-                && video.game_board_stream[video.events[ide].prior_game_board_id]
+                && video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
                     .get_enum_not_mine()
                     .contains(&(x, y))
             {
-                video.events[ide].comments = format!(
+                video.video_action_state_recorder[ide].comments = format!(
                     "{}{}",
-                    video.events[ide].comments,
+                    video.video_action_state_recorder[ide].comments,
                     format!("feature: 高难度的判雷(左键);")
                 );
             }
-        } else if video.events[ide].useful_level == 1 && video.events[ide].mouse == "rc" {
-            if !video.game_board_stream[video.events[ide].prior_game_board_id]
+        } else if video.video_action_state_recorder[ide].useful_level == 1 && video.video_action_state_recorder[ide].mouse == "rc" {
+            if !video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
                 .get_basic_is_mine()
                 .contains(&(x, y))
-                && video.game_board_stream[video.events[ide].prior_game_board_id]
+                && video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
                     .get_enum_is_mine()
                     .contains(&(x, y))
             {
-                video.events[ide].comments = format!(
+                video.video_action_state_recorder[ide].comments = format!(
                     "{}{}",
-                    video.events[ide].comments,
+                    video.video_action_state_recorder[ide].comments,
                     format!("feature: 高难度的判雷(标雷);")
                 );
             }
@@ -78,22 +78,22 @@ pub fn analyse_jump_judge(video: &mut BaseVideo) {
 pub fn analyse_needless_guess(video: &mut BaseVideo) {
     let mut x;
     let mut y;
-    for ide in 2..video.events.len() {
-        if video.events[ide].useful_level >= 2 && video.events[ide].mouse == "lr" {
-            x = (video.events[ide].y / 16) as usize;
-            y = (video.events[ide].x / 16) as usize;
+    for ide in 2..video.video_action_state_recorder.len() {
+        if video.video_action_state_recorder[ide].useful_level >= 2 && video.video_action_state_recorder[ide].mouse == "lr" {
+            x = (video.video_action_state_recorder[ide].y / 16) as usize;
+            y = (video.video_action_state_recorder[ide].x / 16) as usize;
 
-            if video.game_board_stream[video.events[ide].prior_game_board_id].get_poss()[x][y] > 0.0
-                && !video.game_board_stream[video.events[ide].prior_game_board_id]
+            if video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id].get_poss()[x][y] > 0.0
+                && !video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
                     .get_basic_not_mine()
                     .contains(&(x, y))
-                && !video.game_board_stream[video.events[ide].prior_game_board_id]
+                && !video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
                     .get_enum_not_mine()
                     .contains(&(x, y))
             {
-                video.events[ide].comments = format!(
+                video.video_action_state_recorder[ide].comments = format!(
                     "{}{}",
-                    video.events[ide].comments,
+                    video.video_action_state_recorder[ide].comments,
                     format!("warning: 可以判雷时选择猜雷;")
                 );
             }
@@ -102,57 +102,57 @@ pub fn analyse_needless_guess(video: &mut BaseVideo) {
 }
 
 pub fn analyse_mouse_trace(video: &mut BaseVideo) {
-    let mut click_last = (video.events[0].x as f64, video.events[0].y as f64);
+    let mut click_last = (video.video_action_state_recorder[0].x as f64, video.video_action_state_recorder[0].y as f64);
     let mut click_last_id = 0;
-    let mut move_last = (video.events[0].x as f64, video.events[0].y as f64);
+    let mut move_last = (video.video_action_state_recorder[0].x as f64, video.video_action_state_recorder[0].y as f64);
     let mut path = 0.0;
-    for ide in 0..video.events.len() {
-        let current_x = video.events[ide].x as f64;
-        let current_y = video.events[ide].y as f64;
+    for ide in 0..video.video_action_state_recorder.len() {
+        let current_x = video.video_action_state_recorder[ide].x as f64;
+        let current_y = video.video_action_state_recorder[ide].y as f64;
         path += ((move_last.0 - current_x).powf(2.0) + (move_last.1 - current_y).powf(2.0)).sqrt();
         move_last = (current_x, current_y);
-        if video.events[ide].mouse == "lr"
-            || video.events[ide].mouse == "rc"
-            || video.events[ide].mouse == "rr"
+        if video.video_action_state_recorder[ide].mouse == "lr"
+            || video.video_action_state_recorder[ide].mouse == "rc"
+            || video.video_action_state_recorder[ide].mouse == "rr"
         {
             let path_straight = ((click_last.0 - current_x).powf(2.0)
                 + (click_last.1 - current_y).powf(2.0))
             .sqrt();
             let k = path / path_straight;
             if k > 7.0 {
-                video.events[click_last_id].comments = format!(
+                video.video_action_state_recorder[click_last_id].comments = format!(
                     "{}{}",
-                    video.events[click_last_id].comments,
+                    video.video_action_state_recorder[click_last_id].comments,
                     format!("error: 过于弯曲的鼠标轨迹({:.0}%);", k * 100.0)
                 );
                 // println!(
                 //     "{:?} => {:?}",
-                //     video.events[click_last_id].time, video.events[click_last_id].comments
+                //     video.video_action_state_recorder[click_last_id].time, video.video_action_state_recorder[click_last_id].comments
                 // );
             } else if k > 3.5 {
-                video.events[click_last_id].comments = format!(
+                video.video_action_state_recorder[click_last_id].comments = format!(
                     "{}{}",
-                    video.events[click_last_id].comments,
+                    video.video_action_state_recorder[click_last_id].comments,
                     format!("warning: 弯曲的鼠标轨迹({:.0}%);", k * 100.0)
                 );
                 // println!(
                 //     "{:?} => {:?}",
-                //     video.events[click_last_id].time, video.events[click_last_id].comments
+                //     video.video_action_state_recorder[click_last_id].time, video.video_action_state_recorder[click_last_id].comments
                 // );
             } else if k < 1.01 {
                 if k > 5.0 {
-                    video.events[click_last_id].comments = format!(
+                    video.video_action_state_recorder[click_last_id].comments = format!(
                         "{}{}",
-                        video.events[click_last_id].comments,
+                        video.video_action_state_recorder[click_last_id].comments,
                         format!("suspect: 笔直的鼠标轨迹;")
                     );
                     // println!(
                     //     "{:?} => {:?}",
-                    //     video.events[click_last_id].time, video.events[click_last_id].comments
+                    //     video.video_action_state_recorder[click_last_id].time, video.video_action_state_recorder[click_last_id].comments
                     // );
                 }
             }
-            click_last = (video.events[ide].x as f64, video.events[ide].y as f64);
+            click_last = (video.video_action_state_recorder[ide].x as f64, video.video_action_state_recorder[ide].y as f64);
             click_last_id = ide;
             path = 0.0;
         }
@@ -161,29 +161,29 @@ pub fn analyse_mouse_trace(video: &mut BaseVideo) {
 
 // bug
 pub fn analyse_vision_transfer(video: &mut BaseVideo) {
-    let mut click_last = (video.events[0].y as f64, video.events[0].x as f64);
-    let mut l_x = (video.events[0].y / 16) as usize;
-    let mut l_y = (video.events[0].x / 16) as usize;
+    let mut click_last = (video.video_action_state_recorder[0].y as f64, video.video_action_state_recorder[0].x as f64);
+    let mut l_x = (video.video_action_state_recorder[0].y / 16) as usize;
+    let mut l_y = (video.video_action_state_recorder[0].x / 16) as usize;
     let mut click_last_id = 0;
-    for ide in 0..video.events.len() {
-        if video.events[ide].useful_level >= 2 {
-            // let xx = (video.events[ide].y / 16) as usize;
-            // let yy = (video.events[ide].x / 16) as usize;
-            let click_current = (video.events[ide].y as f64, video.events[ide].x as f64);
+    for ide in 0..video.video_action_state_recorder.len() {
+        if video.video_action_state_recorder[ide].useful_level >= 2 {
+            // let xx = (video.video_action_state_recorder[ide].y / 16) as usize;
+            // let yy = (video.video_action_state_recorder[ide].x / 16) as usize;
+            let click_current = (video.video_action_state_recorder[ide].y as f64, video.video_action_state_recorder[ide].x as f64);
             if ((click_last.0 - click_current.0).powf(2.0)
                 + (click_last.1 - click_current.1).powf(2.0))
             .sqrt()
                 >= 112.0
             {
                 let mut flag = false;
-                for &(xxx, yyy) in video.game_board_stream[video.events[ide].prior_game_board_id]
+                for &(xxx, yyy) in video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
                     .get_basic_not_mine()
                 {
                     if xxx <= l_x + 3 && xxx + 3 >= l_x && yyy <= l_y + 3 && yyy + 3 >= l_y {
                         flag = true;
                     }
                 }
-                for &(xxx, yyy) in video.game_board_stream[video.events[ide].prior_game_board_id]
+                for &(xxx, yyy) in video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
                     .get_enum_not_mine()
                 {
                     if xxx <= l_x + 3 && xxx + 3 >= l_x && yyy <= l_y + 3 && yyy + 3 >= l_y {
@@ -191,20 +191,20 @@ pub fn analyse_vision_transfer(video: &mut BaseVideo) {
                     }
                 }
                 if flag {
-                    video.events[click_last_id].comments = format!(
+                    video.video_action_state_recorder[click_last_id].comments = format!(
                         "{}{}",
-                        video.events[click_last_id].comments,
+                        video.video_action_state_recorder[click_last_id].comments,
                         format!("warning: 可以判雷时视野的转移;")
                     );
                     // println!(
                     //     "{:?} => {:?}",
-                    //     video.events[click_last_id].time, video.events[click_last_id].comments
+                    //     video.video_action_state_recorder[click_last_id].time, video.video_action_state_recorder[click_last_id].comments
                     // );
                 }
             }
             click_last = click_current;
-            l_x = (video.events[ide].y / 16) as usize;
-            l_y = (video.events[ide].x / 16) as usize;
+            l_x = (video.video_action_state_recorder[ide].y / 16) as usize;
+            l_y = (video.video_action_state_recorder[ide].x / 16) as usize;
             click_last_id = ide;
         }
     }
@@ -215,20 +215,20 @@ pub fn analyse_survive_poss(video: &mut BaseVideo) {
     let mut s_poss = 1.0;
     let mut message = "luck: ".to_string();
     let mut has_begin = false;
-    for ide in 0..video.events.len() {
-        if video.events[ide].mouse == "lr" && video.events[ide].useful_level > 0 {
+    for ide in 0..video.video_action_state_recorder.len() {
+        if video.video_action_state_recorder[ide].mouse == "lr" && video.video_action_state_recorder[ide].useful_level > 0 {
             if !has_begin {
                 has_begin = true;
                 continue;
             }
-            let l_x = (video.events[ide].y / 16) as usize;
-            let l_y = (video.events[ide].x / 16) as usize;
+            let l_x = (video.video_action_state_recorder[ide].y / 16) as usize;
+            let l_y = (video.video_action_state_recorder[ide].x / 16) as usize;
             let p =
-                video.game_board_stream[video.events[ide].prior_game_board_id].get_poss()[l_x][l_y];
+                video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id].get_poss()[l_x][l_y];
             if p > 0.0 && p < 1.0 {
                 s_poss *= 1.0 - p;
                 message.push_str(&format!("{:.3} * ", 1.0 - p));
-                // println!("{:?} ==> {:?}", video.events[ide].time, 1.0 - p);
+                // println!("{:?} ==> {:?}", video.video_action_state_recorder[ide].time, 1.0 - p);
             }
         }
     }
@@ -240,7 +240,7 @@ pub fn analyse_survive_poss(video: &mut BaseVideo) {
     } else {
         message.push_str("1;");
     }
-    video.events.last_mut().unwrap().comments = message;
+    video.video_action_state_recorder.last_mut().unwrap().comments = message;
 }
 
 #[derive(Debug, PartialEq)]
@@ -259,22 +259,22 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo) {
     let mut state = SuperFLState::NotStart;
     let mut last_rc_num = 0; // 最后有几个右键
     let mut last_ide = 0;
-    for ide in 1..video.events.len() {
-        if video.events[ide].mouse == "mv" {
+    for ide in 1..video.video_action_state_recorder.len() {
+        if video.video_action_state_recorder[ide].mouse == "mv" {
             continue;
         }
-        let x = video.events[ide].y as usize / 16;
-        let y = video.events[ide].x as usize / 16;
-        let x_1 = video.events[last_ide].y as usize / 16;
-        let y_1 = video.events[last_ide].x as usize / 16;
-        // if video.events[ide].mouse == "lr" || video.events[ide].mouse == "rr"{
-        //     println!("{:?}+++{:?}", video.events[last_ide].time, video.events[last_ide].mouse_state);
-        //     // println!("---{:?}", video.events[ide].useful_level);
+        let x = video.video_action_state_recorder[ide].y as usize / 16;
+        let y = video.video_action_state_recorder[ide].x as usize / 16;
+        let x_1 = video.video_action_state_recorder[last_ide].y as usize / 16;
+        let y_1 = video.video_action_state_recorder[last_ide].x as usize / 16;
+        // if video.video_action_state_recorder[ide].mouse == "lr" || video.video_action_state_recorder[ide].mouse == "rr"{
+        //     println!("{:?}+++{:?}", video.video_action_state_recorder[last_ide].time, video.video_action_state_recorder[last_ide].mouse_state);
+        //     // println!("---{:?}", video.video_action_state_recorder[ide].useful_level);
         // }
 
-        if video.events[ide].mouse == "rc"
-            && video.game_board_stream[video.events[ide].prior_game_board_id].game_board[x][y] == 10
-            && video.events[ide].useful_level == 1
+        if video.video_action_state_recorder[ide].mouse == "rc"
+            && video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id].game_board[x][y] == 10
+            && video.video_action_state_recorder[ide].useful_level == 1
         {
             // 正确的标雷
             match state {
@@ -296,10 +296,10 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo) {
                 }
                 _ => {}
             }
-        } else if video.events[ide].useful_level == 3 {
+        } else if video.video_action_state_recorder[ide].useful_level == 3 {
             // 正确的双击
             if !is_good_chording(
-                &video.game_board_stream[video.events[ide].prior_game_board_id].game_board,
+                &video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id].game_board,
                 (x, y),
             ) {
                 match state {
@@ -327,11 +327,11 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo) {
                     _ => {}
                 }
             }
-        } else if video.events[ide].mouse == "lr"
-            && (video.events[last_ide].mouse_state == MouseState::DownUp
-                || video.events[last_ide].mouse_state == MouseState::Chording)
-            || video.events[ide].mouse == "rr"
-                && video.events[last_ide].mouse_state == MouseState::Chording
+        } else if video.video_action_state_recorder[ide].mouse == "lr"
+            && (video.video_action_state_recorder[last_ide].mouse_state == MouseState::DownUp
+                || video.video_action_state_recorder[last_ide].mouse_state == MouseState::Chording)
+            || video.video_action_state_recorder[ide].mouse == "rr"
+                && video.video_action_state_recorder[last_ide].mouse_state == MouseState::Chording
         {
             // 左键或错误的右键或错误的双键
             match state {
@@ -373,9 +373,9 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo) {
         }
         match state {
             SuperFLState::Finish => {
-                video.events[anchor].comments = format!(
+                video.video_action_state_recorder[anchor].comments = format!(
                     "{}{}",
-                    video.events[anchor].comments,
+                    video.video_action_state_recorder[anchor].comments,
                     format!("feature: 教科书式的FL局部(步数{});", counter)
                 );
                 state = SuperFLState::NotStart;
@@ -383,6 +383,6 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo) {
             _ => {}
         }
         last_ide = ide;
-        // println!("{:?}", video.events[last_ide].mouse_state);
+        // println!("{:?}", video.video_action_state_recorder[last_ide].mouse_state);
     }
 }

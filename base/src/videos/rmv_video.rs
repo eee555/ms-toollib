@@ -1,7 +1,7 @@
 use crate::MouseState;
 use crate::miscellaneous::s_to_ms;
 use crate::utils::{cal_board_numbers};
-use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoEvent};
+use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
 
 /// rmv录像解析器。  
 /// - 功能：解析rmv格式的录像(Vienna MineSweeper产生的)，有详细分析录像的方法。  
@@ -164,17 +164,11 @@ impl RmvVideo {
             for _ in 0..num_pre_flags {
                 let c = self.data.get_u8()? as u16;
                 let d = self.data.get_u8()? as u16;
-                self.data.events.push(VideoEvent {
-                    time: 0.0,
+                self.data.video_action_state_recorder.push(VideoActionStateRecorder {
                     mouse: "pf".to_string(),
                     x: d * 16,
                     y: c * 16,
-                    useful_level: 0,
-                    prior_game_board_id: 0,
-                    next_game_board_id: 0,
-                    comments: "".to_string(),
-                    mouse_state: MouseState::Undefined,
-                    solved3BV: 0,
+                    ..VideoActionStateRecorder::default()
                 });
             }
         }
@@ -206,20 +200,15 @@ impl RmvVideo {
                     }
                     if first_op_flag {
                         first_op_flag = false;
-                        self.data.events.push(VideoEvent {
+                        self.data.video_action_state_recorder.push(VideoActionStateRecorder {
                             time: time as f64 / 1000.0,
                             mouse: "lc".to_string(),
                             x,
                             y,
-                            useful_level: 0,
-                            prior_game_board_id: 0,
-                            next_game_board_id: 0,
-                            comments: "".to_string(),
-                            mouse_state: MouseState::Undefined,
-                            solved3BV: 0,
+                            ..VideoActionStateRecorder::default()
                         });
                     }
-                    self.data.events.push(VideoEvent {
+                    self.data.video_action_state_recorder.push(VideoActionStateRecorder {
                         time: time as f64 / 1000.0,
                         mouse: match c {
                             1 => "mv".to_string(),
@@ -233,12 +222,7 @@ impl RmvVideo {
                         },
                         x: x,
                         y: y,
-                        useful_level: 0,
-                        prior_game_board_id: 0,
-                        next_game_board_id: 0,
-                        comments: "".to_string(),
-                        mouse_state: MouseState::Undefined,
-                        solved3BV: 0,
+                        ..VideoActionStateRecorder::default()
                     });
                 }
             } else if c == 8 {
@@ -251,8 +235,8 @@ impl RmvVideo {
                 return Err(ErrReadVideoReason::InvalidParams);
             }
         }
-        self.data.dynamic_params.r_time = self.data.events.last().unwrap().time;
-        self.data.dynamic_params.r_time_ms = s_to_ms(self.data.dynamic_params.r_time);
+        self.data.game_dynamic_params.rtime = self.data.video_action_state_recorder.last().unwrap().time;
+        self.data.game_dynamic_params.rtime_ms = s_to_ms(self.data.game_dynamic_params.rtime);
         self.data.can_analyse = true;
         return Ok(());
     }

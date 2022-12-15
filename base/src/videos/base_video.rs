@@ -933,9 +933,9 @@ pub struct BaseVideo {
     /// 静态指标
     pub static_params: StaticParams,
     /// 最终的游戏动态指标
-    pub game_dynamic_params: GameDynamicParams,
+    game_dynamic_params: GameDynamicParams,
     /// 最终的录像动态指标
-    pub video_dynamic_params: VideoDynamicParams,
+    video_dynamic_params: VideoDynamicParams,
     // /// 最终的路径长度
     // pub path: usize,
     // /// 开始扫前，已经标上的雷。如果操作流中包含标这些雷的过程，
@@ -946,6 +946,8 @@ pub struct BaseVideo {
     // 游戏前标的雷数
     // new_before_game方法里用到，真正开始的时间
     net_start_time: f64,
+    // 允许设置最终成绩
+    allow_set_rtime: bool,
 }
 
 impl Default for BaseVideo {
@@ -983,6 +985,7 @@ impl Default for BaseVideo {
             checksum: "".to_string(),
             can_analyse: false,
             net_start_time: 0.0,
+            allow_set_rtime: false,
         }
     }
 }
@@ -1031,6 +1034,7 @@ impl BaseVideo {
         // }
         BaseVideo {
             raw_data,
+            allow_set_rtime: true,
             ..BaseVideo::default()
         }
     }
@@ -1147,14 +1151,17 @@ impl BaseVideo {
     /// 步进
     /// - pos的单位是像素，(距离上方，距离左侧)
     pub fn step(&mut self, time: f64, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
+        let old_state = self.minesweeper_board.game_board_state;
+        if old_state == GameBoardState::Loss
+            || old_state == GameBoardState::Win
+            || old_state == GameBoardState::Display
+        {
+            return Ok(0);
+        }
         // self.minesweeper_board.step(e, (pos.0 / self.cell_pixel_size as usize, pos.1 / self.cell_pixel_size as usize));
         let x = pos.0 / self.cell_pixel_size as usize;
         let y = pos.1 / self.cell_pixel_size as usize;
 
-        let old_state = self.minesweeper_board.game_board_state;
-        if old_state == GameBoardState::Loss || old_state == GameBoardState::Win {
-            return Err(());
-        }
         let a = self.minesweeper_board.step(e, (x, y))?;
         match self.minesweeper_board.game_board_state {
             GameBoardState::Ready => {
@@ -1168,10 +1175,8 @@ impl BaseVideo {
                     self.net_start_time = time;
                 }
             }
-            GameBoardState::Display => {
-                // 不可修改录像
-                return Err(());
-            }
+            // 不可能
+            GameBoardState::Display => {}
             GameBoardState::Loss => {
                 self.is_completed = false;
                 self.is_fair = false;
@@ -1429,12 +1434,22 @@ impl BaseVideo {
 }
 impl BaseVideo {
     // 再实现一些get、set方法
+    // pub fn set_board(&self, _board: Vec<Vec<i32>>) -> Result<u8, ()> {
+    //     if self.game_board_state != GameBoardState::Ready && self.game_board_state != GameBoardState::PreFlaging {
+    //         return Err(())
+    //     }
+    //     return self.minesweeper_board.board = _board;
+    // }
     /// 获取当前录像时刻的后验的游戏局面
     pub fn get_game_board(&self) -> Vec<Vec<i32>> {
-        self.game_board_stream
-            [self.video_action_state_recorder[self.current_event_id].next_game_board_id as usize]
-            .game_board
-            .clone()
+        if self.game_board_state == GameBoardState::Display {
+            return self.game_board_stream[self.video_action_state_recorder[self.current_event_id]
+                .next_game_board_id as usize]
+                .game_board
+                .clone();
+        } else {
+            return self.minesweeper_board.game_board.clone();
+        }
     }
     /// 获取当前录像时刻的局面概率
     pub fn get_game_board_poss(&mut self) -> Vec<Vec<f64>> {
@@ -1455,6 +1470,27 @@ impl BaseVideo {
                 // return self.events[id].prior_game_board.get_poss().clone();
             }
         }
+    }
+    pub fn set_rtime(&mut self, time: f64) -> Result<u8, ()> {
+        if !self.allow_set_rtime {
+            return Err(());
+        }
+        self.game_dynamic_params.rtime = time;
+        self.game_dynamic_params.rtime_ms = s_to_ms(time);
+        self.allow_set_rtime = false;
+        Ok(0)
+    }
+    pub fn get_rtime(&self) -> Result<f64, ()> {
+        if self.allow_set_rtime {
+            return Err(());
+        }
+        Ok(self.game_dynamic_params.rtime)
+    }
+    pub fn get_rtime_ms(&self) -> Result<u32, ()> {
+        if self.allow_set_rtime {
+            return Err(());
+        }
+        Ok(self.game_dynamic_params.rtime_ms)
     }
     /// 按时间设置current_time；超出两端范围取两端。
     pub fn set_current_time(&mut self, time: f64) -> Result<u8, ()> {
@@ -1525,20 +1561,26 @@ impl BaseVideo {
         self.mode = mode;
         Ok(0)
     }
+    /// 两种情况调用：游戏开始前、可猜模式（要求尺寸、雷数相等）
     pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()> {
-        if self.game_board_state != GameBoardState::Playing
-            || self.width != board[0].len()
-            || self.height != board.len()
-        {
-            return Err(());
-        };
+        match self.game_board_state {
+            GameBoardState::Playing => {
+                if self.width != board[0].len() || self.height != board.len() {
+                    return Err(());
+                }
+            }
+            GameBoardState::Display | GameBoardState::Win | GameBoardState::Loss => return Err(()),
+            GameBoardState::Ready | GameBoardState::PreFlaging => {}
+        }
         let mine_num = board.iter().fold(0, |y, row| {
             y + row
                 .iter()
                 .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
         });
-        if self.mine_num != mine_num {
+        if self.mine_num != mine_num && self.game_board_state == GameBoardState::Playing {
             return Err(());
+        } else {
+            self.mine_num = mine_num;
         };
         self.static_params.bbbv = cal3BV(&board);
         self.minesweeper_board.board = board;
@@ -1681,6 +1723,9 @@ impl BaseVideo {
         self.get_flag() as f64 / self.current_time
     }
     pub fn get_path(&self) -> f64 {
+        if self.video_action_state_recorder.is_empty() {
+            return 0.0;
+        }
         self.video_action_state_recorder[self.current_event_id].path
     }
     pub fn get_etime(&self) -> Result<f64, ()> {
@@ -1708,7 +1753,7 @@ impl BaseVideo {
             .key_dynamic_params
             .bbbv_solved)
     }
-    pub fn get_bbbv_stnb(&self) -> Result<f64, ()> {
+    pub fn get_stnb(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
         if self.current_time < 0.00099 {
             return Ok(0.0);
@@ -1727,14 +1772,14 @@ impl BaseVideo {
     }
     pub fn get_rqp(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
-        if bbbv_solved == 0{
+        if bbbv_solved == 0 {
             return Ok(0.0);
         }
         Ok(self.current_time.powf(2.0) / bbbv_solved as f64)
     }
     pub fn get_qg(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
-        if bbbv_solved == 0{
+        if bbbv_solved == 0 {
             return Ok(0.0);
         }
         Ok(self.current_time.powf(1.7) / bbbv_solved as f64)
@@ -1802,6 +1847,25 @@ impl BaseVideo {
         Ok(self.video_action_state_recorder[self.current_event_id]
             .key_dynamic_params
             .isl_solved)
+    }
+    /// 跨语言调用时，如果不能传递枚举器用这个
+    pub fn get_mouse_state(&self) -> usize {
+        let m_s;
+        if self.game_board_state == GameBoardState::Display {
+            m_s = self.video_action_state_recorder[self.current_event_id].mouse_state;
+        } else {
+            m_s = self.minesweeper_board.mouse_state;
+        }
+        match m_s {
+            MouseState::UpUp => 1,
+            MouseState::UpDown => 2,
+            MouseState::UpDownNotFlag => 3,
+            MouseState::DownUp => 4,
+            MouseState::Chording => 5,
+            MouseState::ChordingNotFlag => 6,
+            MouseState::DownUpAfterChording => 7,
+            MouseState::Undefined => 8,
+        }
     }
 }
 

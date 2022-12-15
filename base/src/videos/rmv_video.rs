@@ -235,8 +235,7 @@ impl RmvVideo {
                 return Err(ErrReadVideoReason::InvalidParams);
             }
         }
-        self.data.game_dynamic_params.rtime = self.data.video_action_state_recorder.last().unwrap().time;
-        self.data.game_dynamic_params.rtime_ms = s_to_ms(self.data.game_dynamic_params.rtime);
+        self.data.set_rtime(self.data.video_action_state_recorder.last().unwrap().time).unwrap();
         self.data.can_analyse = true;
         return Ok(());
     }

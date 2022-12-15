@@ -53,8 +53,8 @@ impl EvfVideo {
         self.data.cell_pixel_size = self.data.get_u8()?;
         self.data.mode = self.data.get_u16()?;
         self.data.static_params.bbbv = self.data.get_u16()? as usize;
-        self.data.game_dynamic_params.rtime = self.data.get_u24()? as f64 / 1000.0;
-        self.data.game_dynamic_params.rtime_ms = s_to_ms(self.data.game_dynamic_params.rtime);
+        let t = self.data.get_u24()?;
+        self.data.set_rtime(t as f64 / 1000.0).unwrap();
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {

@@ -1095,8 +1095,12 @@ impl PyBaseVideo {
     pub fn save_to_evf_file(&self, file_name: &str) {
         self.core.save_to_evf_file(file_name);
     }
-    pub fn step(&mut self, time: f64, e: &str, pos: (usize, usize)) {
-        self.core.step(time, e, pos).unwrap();
+    pub fn step(&mut self, e: &str, pos: (usize, usize)) {
+        self.core.step(e, pos).unwrap();
+    }
+    #[getter]
+    fn get_time(&self) -> PyResult<f64> {
+        Ok(self.core.get_time())
     }
     #[getter]
     fn get_software(&self) -> PyResult<String> {
@@ -1376,6 +1380,38 @@ impl PyBaseVideo {
     #[setter]
     pub fn set_current_time(&mut self, time: f64) {
         self.core.set_current_time(time);
+    }
+    #[setter]
+    pub fn set_is_offical(&mut self, is_offical: bool) {
+        self.core.set_is_offical(is_offical).unwrap();
+    }
+    #[setter]
+    pub fn set_is_fair(&mut self, is_offical: bool) {
+        self.core.set_is_offical(is_offical).unwrap();
+    }
+    #[setter]
+    pub fn set_mode(&mut self, is_offical: bool) {
+        self.core.set_is_offical(is_offical).unwrap();
+    }
+    #[setter]
+    pub fn set_player_designator(&mut self, player_designator: String) {
+        self.core.set_player_designator(player_designator).unwrap();
+    }
+    #[setter]
+    pub fn set_race_designator(&mut self, race_designator: String) {
+        self.core.set_race_designator(race_designator).unwrap();
+    }
+    #[setter]
+    pub fn set_uniqueness_designator(&mut self, uniqueness_designator: String) {
+        self.core.set_uniqueness_designator(uniqueness_designator).unwrap();
+    }
+    #[setter]
+    pub fn set_country(&mut self, country: String) {
+        self.core.set_country(country).unwrap();
+    }
+    #[setter]
+    pub fn set_checksum(&mut self, checksum: String) {
+        self.core.set_checksum(checksum).unwrap();
     }
 }
 

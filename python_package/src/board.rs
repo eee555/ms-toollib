@@ -1098,6 +1098,12 @@ impl PyBaseVideo {
     pub fn step(&mut self, e: &str, pos: (usize, usize)) {
         self.core.step(e, pos).unwrap();
     }
+    pub fn win_then_flag_all_mine(&mut self) {
+        self.core.win_then_flag_all_mine();
+    }
+    pub fn loss_then_open_all_mine(&mut self) {
+        self.core.loss_then_open_all_mine();
+    }
     #[getter]
     fn get_time(&self) -> PyResult<f64> {
         Ok(self.core.get_time())
@@ -1223,6 +1229,10 @@ impl PyBaseVideo {
         Ok(self.core.get_rtime_ms().unwrap())
     }
     #[getter]
+    fn get_etime(&self) -> PyResult<f64> {
+        Ok(self.core.get_etime().unwrap())
+    }
+    #[getter]
     fn get_bbbv_s(&self) -> PyResult<f64> {
         Ok(self.core.get_bbbv_s().unwrap())
     }
@@ -1253,6 +1263,10 @@ impl PyBaseVideo {
     #[getter]
     fn get_flag(&self) -> PyResult<usize> {
         Ok(self.core.get_flag())
+    }
+    #[getter]
+    fn get_bbbv_solved(&self) -> PyResult<usize> {
+        Ok(self.core.get_bbbv_solved().unwrap())
     }
     #[getter]
     fn get_ce(&self) -> PyResult<usize> {
@@ -1364,10 +1378,17 @@ impl PyBaseVideo {
     pub fn get_mouse_state(&self) -> PyResult<usize> {
         Ok(self.core.get_mouse_state())
     }
-    /// 局面状态（录像播放器的局面状态始终等于1，没有ready、win、fail的概念）
+    /// 局面状态
     #[getter]
     pub fn get_game_board_state(&self) -> PyResult<usize> {
-        Ok(1)
+        match self.core.game_board_state {
+            GameBoardState::Ready => Ok(1),
+            GameBoardState::Playing => Ok(2),
+            GameBoardState::Win => Ok(3),
+            GameBoardState::Loss => Ok(4),
+            GameBoardState::PreFlaging => Ok(5),
+            GameBoardState::Display => Ok(6),
+        }
     }
     /// 返回当前光标的位置，播放录像用
     #[getter]

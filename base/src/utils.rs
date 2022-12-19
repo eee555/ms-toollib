@@ -80,6 +80,9 @@ pub fn cal_cell_nums(raw_board: &Vec<Vec<i32>>) -> [usize; 9] {
     let mut ans = [0; 9];
     for i in 0..row {
         for j in 0..column {
+            if raw_board[i][j] < 0 {
+                continue;
+            }
             ans[raw_board[i][j] as usize] += 1;
         }
     }

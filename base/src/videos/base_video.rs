@@ -1,8 +1,9 @@
 // 录像相关的类，局面在board
 
 use crate::board::GameBoard;
+use crate::cal_cell_nums;
 use crate::miscellaneous::s_to_ms;
-use crate::utils::{cal3BV, refresh_board};
+use crate::utils::{cal3BV, cal_isl, cal_op, refresh_board};
 use crate::videos::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
     analyse_super_fl_local, analyse_survive_poss, analyse_vision_transfer,
@@ -254,7 +255,7 @@ impl MinesweeperBoard {
         // println!("e: {:?}", e);
         match self.game_board_state {
             GameBoardState::Ready => match e {
-                "lc" | "rr" => {}
+                "lc" | "rr" | "mv" => {}
                 "lr" => match self.mouse_state {
                     MouseState::DownUp => {
                         if pos.0 == self.row && pos.1 == self.column {
@@ -296,7 +297,7 @@ impl MinesweeperBoard {
                 _ => return Err(()),
             },
             GameBoardState::PreFlaging => match e {
-                "lc" | "rr" => {}
+                "lc" | "rr" | "mv" => {}
                 "lr" => match self.mouse_state {
                     MouseState::DownUp => {
                         if pos.0 == self.row && pos.1 == self.column {
@@ -454,7 +455,7 @@ impl MinesweeperBoard {
                 MouseState::UpUp => self.mouse_state = MouseState::UpUp,
                 MouseState::Undefined => self.mouse_state = MouseState::UpUp,
             },
-            "mc" => {}
+            "mc" | "mv" => {}
             "mr" => {
                 return self.chording_click(pos.0, pos.1);
             }
@@ -1038,10 +1039,12 @@ impl BaseVideo {
             GameBoardState::Playing => {
                 if old_state != GameBoardState::Playing {
                     self.game_start_instant = step_instant;
+                    // 高精度的时间戳，单位为微秒
+                    // https://doc.rust-lang.org/std/time/struct.Instant.html
                     self.start_time = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .unwrap()
-                        .as_millis()
+                        .as_micros()
                         .to_string();
                 }
             }
@@ -1054,7 +1057,7 @@ impl BaseVideo {
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
-                    .as_millis()
+                    .as_micros()
                     .to_string();
                 self.is_completed = false;
                 // 这是和录像时间成绩有关
@@ -1063,6 +1066,8 @@ impl BaseVideo {
                 self.game_dynamic_params.rtime_ms = t_ms;
                 self.video_dynamic_params.etime =
                     t / self.minesweeper_board.bbbv_solved as f64 * self.static_params.bbbv as f64;
+
+                self.gather_params_after_game(t);
             }
             GameBoardState::Win => {
                 let t_ms = step_instant
@@ -1071,44 +1076,65 @@ impl BaseVideo {
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
-                    .as_millis()
+                    .as_micros()
                     .to_string();
                 self.is_completed = true;
                 let t = t_ms as f64 / 1000.0;
                 self.game_dynamic_params.rtime = t;
                 self.game_dynamic_params.rtime_ms = t_ms;
                 self.video_dynamic_params.etime = t;
+
+                self.gather_params_after_game(t);
             }
         }
-        let mut path;
-        if old_state != GameBoardState::Ready {
-            path = self.video_action_state_recorder[self.current_event_id].path;
-            path += ((pos.0 as f64
-                - self.video_action_state_recorder[self.current_event_id].y as f64)
-                .powf(2.0)
-                + (pos.1 as f64
-                    - self.video_action_state_recorder[self.current_event_id].x as f64)
-                    .powf(2.0))
-            .powf(0.5)
-                * 16.0
-                / (self.cell_pixel_size as f64);
-            self.current_event_id += 1;
-        } else {
+        // 维护path，挺复杂的
+        let mut path = 0.0;
+        if old_state == GameBoardState::Playing {
+            let mut outside_skip = self.video_action_state_recorder.len() - 1;
+            loop {
+                let p = &self.video_action_state_recorder[outside_skip];
+                if !(p.y as usize == self.height * self.cell_pixel_size as usize
+                    && p.x as usize == self.width * self.cell_pixel_size as usize)
+                {
+                    // println!("666");
+                    path = p.path;
+                    path += ((pos.0 as f64 - p.y as f64).powf(2.0)
+                        + (pos.1 as f64 - p.x as f64).powf(2.0))
+                    .powf(0.5)
+                        * 16.0
+                        / (self.cell_pixel_size as f64);
+                    // println!("path, {:?}", path);
+                    // self.current_event_id += 1;
+                    // println!("pos.0:{:?}; p.y:{:?}; {:?}; {:?}", pos.0,p.y,pos.1,p.x);
+                    break;
+                } else {
+                    outside_skip -= 1;
+                }
+            }
+            // 开始维护第一个先验局面
+        } else if self.game_board_stream.is_empty()
+            && (self.minesweeper_board.game_board_state == GameBoardState::PreFlaging
+                || self.minesweeper_board.game_board_state == GameBoardState::Playing
+                || self.minesweeper_board.game_board_state == GameBoardState::Win
+                || self.minesweeper_board.game_board_state == GameBoardState::Loss)
+        {
             let mut g_b = GameBoard::new(self.mine_num);
             g_b.set_game_board(&vec![vec![10; self.width]; self.height]);
             self.game_board_stream.push(g_b);
             path = 0.0;
         }
         // self.current_time = time;
-        let prior_game_board_id = self.game_board_stream.len() - 1;
+        let prior_game_board_id;
         let next_game_board_id;
         if a >= 1 {
             let mut g_b = GameBoard::new(self.mine_num);
             g_b.set_game_board(&self.minesweeper_board.game_board);
             self.game_board_stream.push(g_b);
-            next_game_board_id = prior_game_board_id + 1;
+            next_game_board_id = self.game_board_stream.len() - 1;
+            prior_game_board_id = self.game_board_stream.len() - 2;
         } else {
-            next_game_board_id = prior_game_board_id;
+            next_game_board_id = self.game_board_stream.len() - 1;
+            prior_game_board_id = self.game_board_stream.len() - 1;
         }
         self.video_action_state_recorder
             .push(VideoActionStateRecorder {
@@ -1134,6 +1160,62 @@ impl BaseVideo {
                 path,
             });
         Ok(0)
+    }
+    /// 获胜后标上所有的雷，没获胜则返回
+    pub fn win_then_flag_all_mine(&mut self) {
+        if self.minesweeper_board.game_board_state != GameBoardState::Win {
+            return;
+        }
+        self.minesweeper_board.game_board.iter_mut().for_each(|x| {
+            x.iter_mut().for_each(|xx| {
+                if *xx == 10 {
+                    *xx = 11
+                }
+            })
+        });
+    }
+    /// 失败后展示所有的雷，没失败则返回
+    /// 这件事状态机不会自动做，因为有些模式失败后不标出所有的雷，如强无猜
+    pub fn loss_then_open_all_mine(&mut self) {
+        if self.minesweeper_board.game_board_state != GameBoardState::Loss {
+            return;
+        }
+        for i in 0..self.height {
+            for j in 0..self.width {
+                if self.minesweeper_board.board[i][j] == -1
+                    && self.minesweeper_board.game_board[i][j] == 10
+                {
+                    self.minesweeper_board.game_board[i][j] = 16;
+                }
+            }
+        }
+    }
+    /// 游戏结束后，计算一批指标
+    fn gather_params_after_game(&mut self, t: f64) {
+        self.game_dynamic_params.left = self.minesweeper_board.left;
+        self.game_dynamic_params.right = self.minesweeper_board.right;
+        self.game_dynamic_params.double = self.minesweeper_board.double;
+        self.game_dynamic_params.flag = self.minesweeper_board.flag;
+        self.game_dynamic_params.cl = self.minesweeper_board.left
+            + self.game_dynamic_params.right
+            + self.game_dynamic_params.double;
+        self.game_dynamic_params.left_s = self.minesweeper_board.left as f64 / t;
+        self.game_dynamic_params.right_s = self.minesweeper_board.right as f64 / t;
+        self.game_dynamic_params.double_s = self.minesweeper_board.double as f64 / t;
+        self.game_dynamic_params.flag_s = self.minesweeper_board.flag as f64 / t;
+        self.game_dynamic_params.cl_s = self.game_dynamic_params.cl as f64 / t;
+        let cell_nums = cal_cell_nums(&self.board);
+        self.static_params.cell0 = cell_nums[0];
+        self.static_params.cell1 = cell_nums[1];
+        self.static_params.cell2 = cell_nums[2];
+        self.static_params.cell3 = cell_nums[3];
+        self.static_params.cell4 = cell_nums[4];
+        self.static_params.cell5 = cell_nums[5];
+        self.static_params.cell6 = cell_nums[6];
+        self.static_params.cell7 = cell_nums[7];
+        self.static_params.cell8 = cell_nums[8];
+        self.static_params.op = cal_op(self.board.clone());
+        self.static_params.isl = cal_isl(&self.board);
     }
     /// 进行局面的推衍，计算基本的局面参数，记录所有中间过程。不包含概率计算。
     /// - 对于avf录像，必须analyse以后才能正确获取是否扫完。
@@ -1371,11 +1453,11 @@ impl BaseVideo {
         match self.game_board_state {
             GameBoardState::Playing => {
                 let now = Instant::now();
-                return now.duration_since(self.game_start_instant).as_millis() as f64;
+                return now.duration_since(self.game_start_instant).as_millis() as f64 / 1000.0;
             }
             GameBoardState::PreFlaging => {
                 let now = Instant::now();
-                return now.duration_since(self.video_start_instant).as_millis() as f64;
+                return now.duration_since(self.video_start_instant).as_millis() as f64 / 1000.0;
             }
             GameBoardState::Loss | GameBoardState::Win => self.game_dynamic_params.rtime,
             GameBoardState::Ready => 0.0,
@@ -1690,7 +1772,11 @@ impl BaseVideo {
         if self.video_action_state_recorder.is_empty() {
             return 0.0;
         }
-        self.video_action_state_recorder[self.current_event_id].path
+        if self.game_board_state == GameBoardState::Display {
+            self.video_action_state_recorder[self.current_event_id].path
+        } else {
+            self.video_action_state_recorder.last().unwrap().path
+        }
     }
     pub fn get_etime(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;

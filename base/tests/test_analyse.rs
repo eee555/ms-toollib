@@ -76,7 +76,7 @@ fn RmvVideo_works() {
 }
 
 #[test]
-fn EvfVideo_works() {
+fn BaseVideo_works() {
     let board = vec![
         vec![1, 1, 2, 1, 1, 0, 0, 0],
         vec![1, -1, 2, -1, 1, 0, 0, 0],
@@ -86,17 +86,19 @@ fn EvfVideo_works() {
         vec![0, 0, 0, 0, 0, 1, -1, 1],
     ];
     let mut video = BaseVideo::new_before_game(board, 16);
-    video.step("pf", (16, 16)).unwrap();
-    video.step("rc", (16, 48)).unwrap();
+    video.step("pf", (17, 16)).unwrap();
+    video.step("rc", (16, 49)).unwrap();
     thread::sleep_ms(200);
-    video.step("rr", (16, 48)).unwrap();
+    video.step("rr", (16, 50)).unwrap();
+    video.step("mv", (48, 51)).unwrap();
+    video.step("mv", (42, 48)).unwrap();
     thread::sleep_ms(200);
     video.step("lc", (16, 32)).unwrap();
     thread::sleep_ms(200);
     video.step("lr", (16, 32)).unwrap();
     thread::sleep_ms(888);
-    video.step("lc", (48, 0)).unwrap();
-    video.step("lr", (48, 0)).unwrap();
+    video.step("lc", (52, 0)).unwrap();
+    video.step("lr", (53, 0)).unwrap();
     video.step("lc", (16, 32)).unwrap();
     video.step("rc", (16, 32)).unwrap();
     thread::sleep_ms(50);
@@ -127,6 +129,12 @@ fn EvfVideo_works() {
     println!("time_ms：{:?}", video.get_rtime_ms());
     println!("is win: {:?}", video.is_completed);
     println!("STNB: {:?}", video.get_stnb());
+    println!("start_time: {:?}", video.start_time);
+    println!("end_time: {:?}", video.end_time);
+    println!("path: {:?}", video.get_path());
+    println!("etime: {:?}", video.get_etime());
+    println!("op: {:?}", video.static_params.op);
+    println!("cell0: {:?}", video.static_params.cell0);
     
 
 

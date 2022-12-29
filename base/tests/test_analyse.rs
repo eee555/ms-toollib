@@ -114,8 +114,9 @@ fn EvfVideo_works() {
     // println!("3BV：{:?}", video.s.s);
     println!("time：{:?}", video.data.get_rtime().unwrap());
     println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
+    println!("video_time: {:?}", video.data.get_video_time().unwrap());
     println!("is win: {:?}", video.data.is_completed);
-    video.data.set_current_time(40.0);
+    video.data.set_current_time(7.711);
     println!("STNB: {:?}", video.data.get_stnb().unwrap());
     println!("game_board: {:?}", video.data.get_game_board());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
@@ -226,22 +227,7 @@ fn BaseVideo_works() {
 
 #[test]
 fn temp() {
-    let mut board = vec![
-        vec![-1, 8, 2, 1, 0, 0, 1, -1],
-        vec![-1, 5, -8, 1, 0, 0, 2, 2],
-        vec![-1, 3, 1, 1, 888, 1, 3, -1],
-        vec![1, 1, 0, 0, 0, 1, -1, -1],
-        vec![0, 777, 0, 0, 0, -1, 2, 2],
-        vec![0, 0, 0, 0, 1, 1, 1, 0],
-        vec![0, 0, 0, 0, 999, -1, 1, 0],
-        vec![0, 0, 0, 0, 1, 1, 1, 0],
-    ];
-    board.iter_mut().for_each(|x| {
-        x.iter_mut().for_each(|xx| {
-            if *xx > 10 {
-                *xx = 10
-            }
-        })
-    });
+    let mut board=522u16.to_le_bytes();
+    
     println!("{:?}", board);
 }

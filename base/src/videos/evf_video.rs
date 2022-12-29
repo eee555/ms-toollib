@@ -61,49 +61,49 @@ impl EvfVideo {
             if the_byte == '\0' {
                 break;
             }
-            self.data.software.push(the_byte);
+            self.data.software.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.player_designator.push(the_byte);
+            self.data.player_designator.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.race_designator.push(the_byte);
+            self.data.race_designator.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.uniqueness_designator.push(the_byte);
+            self.data.uniqueness_designator.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.start_time.push(the_byte);
+            self.data.start_time.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.end_time.push(the_byte);
+            self.data.end_time.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.country.push(the_byte);
+            self.data.country.push(the_byte as u8);
         }
 
         self.data.board = vec![vec![0; self.data.width]; self.data.height];
@@ -171,10 +171,11 @@ impl EvfVideo {
                 ..VideoActionStateRecorder::default()
             });
         }
-        let mut csum = "".to_string();
+        let mut csum = [0; 32];
         if have_checksum {
-            for _ in 0..32 {
-                csum.push(self.data.get_char()?)
+            for i in 0..32 {
+                csum[i] = self.data.get_u8()?;
+                // csum.push(self.data.get_char()?)
             }
         }
         self.data.checksum = csum;

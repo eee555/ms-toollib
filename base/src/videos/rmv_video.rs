@@ -91,9 +91,9 @@ impl RmvVideo {
             self.data.offset += 16;
 
             // 2286-11-21以后，会遇到时间戳溢出
-            let mut timestamp: String = "".to_string();
+            let mut timestamp = vec![];
             for _ in 0..10 {
-                timestamp.push(self.data.get_char()?);
+                timestamp.push(self.data.get_u8()?);
             }
             self.data.start_time = timestamp;
 
@@ -109,12 +109,12 @@ impl RmvVideo {
         // 这里是uint16，不合理
         let num_player_info = self.data.get_u16()?;
 
-        let mut player: String = "".to_string();
-        let mut country: String = "".to_string();
+        let mut player = vec![];
+        let mut country = vec![];
         if num_player_info > 0 {
             let name_length = self.data.get_u8()?;
             for _ in 0..name_length {
-                player.push(self.data.get_char()?);
+                player.push(self.data.get_u8()?);
             }
         }
         // 昵称不解析
@@ -127,7 +127,7 @@ impl RmvVideo {
         if num_player_info > 2 {
             let country_length = self.data.get_u8()?;
             for _ in 0..country_length {
-                country.push(self.data.get_char()?);
+                country.push(self.data.get_u8()?);
             }
         }
         // 令牌不解析

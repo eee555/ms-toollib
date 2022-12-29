@@ -110,7 +110,7 @@ impl AvfVideo {
             let v = self.data.get_char()?;
             match v {
                 '|' => break,
-                _ => self.data.start_time.push(v),
+                _ => self.data.start_time.push(v as u8),
             }
         }
         // println!("666");
@@ -122,7 +122,7 @@ impl AvfVideo {
             let v = self.data.get_char()?;
             match v {
                 '|' => break,
-                _ => self.data.end_time.push(v),
+                _ => self.data.end_time.push(v as u8),
             }
         }
         let v = self.data.get_char()?;
@@ -220,7 +220,7 @@ impl AvfVideo {
             let v = self.data.get_char()?;
             match v {
                 '\r' => break,
-                _ => self.data.player_designator.push(v),
+                _ => self.data.player_designator.push(v as u8),
             }
         }
         // for i in 0..1000 {

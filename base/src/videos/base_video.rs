@@ -807,7 +807,7 @@ impl Default for VideoDynamicParams {
 
 pub struct BaseVideo {
     /// 软件名
-    pub software: String,
+    pub software: Vec<u8>,
     /// 宽度，等同于column
     pub width: usize,
     /// 高度，等同于row
@@ -853,19 +853,19 @@ pub struct BaseVideo {
     /// 当前指针指向
     pub current_event_id: usize,
     /// 录像用户标识
-    pub player_designator: String,
+    pub player_designator: Vec<u8>,
     /// 比赛标识
-    pub race_designator: String,
+    pub race_designator: Vec<u8>,
     /// 唯一性标识
-    pub uniqueness_designator: String,
+    pub uniqueness_designator: Vec<u8>,
     /// 游戏起始时间和终止时间。不整理格式，读成字符串。
     /// 举例：在阿比特中，‘16.10.2021.22.24.23.9906’，意味2021年10月16日，下午10点24分23秒9906。
     /// 维也纳扫雷中，‘1382834716’，代表以秒为单位的时间戳
-    pub start_time: String,
+    pub start_time: Vec<u8>,
     /// 维也纳扫雷中没有
-    pub end_time: String,
+    pub end_time: Vec<u8>,
     /// 国家。预留字段，暂时不能解析。
-    pub country: String,
+    pub country: Vec<u8>,
     /// 原始二进制数据
     raw_data: Vec<u8>,
     /// 解析二进制文件数据时的指针
@@ -881,7 +881,7 @@ pub struct BaseVideo {
     // /// 开始扫前，已经标上的雷。如果操作流中包含标这些雷的过程，
     // pub pre_flags: Vec<(usize, usize)>,
     ///校验码
-    pub checksum: String,
+    pub checksum: [u8; 32],
     pub can_analyse: bool,
     // 游戏前标的雷数
     // new_before_game方法里用到，真正开始的时间
@@ -895,7 +895,7 @@ pub struct BaseVideo {
 impl Default for BaseVideo {
     fn default() -> Self {
         BaseVideo {
-            software: "".to_string(),
+            software: vec![0],
             width: 0,
             height: 0,
             mine_num: 0,
@@ -916,18 +916,18 @@ impl Default for BaseVideo {
             delta_time: 0.0,
             current_time: 0.0,
             current_event_id: 0,
-            player_designator: "".to_string(),
-            race_designator: "".to_string(),
-            uniqueness_designator: "".to_string(),
-            start_time: "".to_string(),
-            end_time: "".to_string(),
-            country: "".to_string(),
+            player_designator: vec![0],
+            race_designator: vec![0],
+            uniqueness_designator: vec![0],
+            start_time: vec![0],
+            end_time: vec![0],
+            country: vec![0],
             raw_data: vec![],
             offset: 0,
             static_params: StaticParams::default(),
             game_dynamic_params: GameDynamicParams::default(),
             video_dynamic_params: VideoDynamicParams::default(),
-            checksum: "".to_string(),
+            checksum: [0; 32],
             can_analyse: false,
             // net_start_time: 0.0,
             allow_set_rtime: false,
@@ -1071,7 +1071,8 @@ impl BaseVideo {
                         .duration_since(UNIX_EPOCH)
                         .unwrap()
                         .as_micros()
-                        .to_string();
+                        .to_string()
+                        .into_bytes();
                 }
             }
             // 不可能
@@ -1082,7 +1083,8 @@ impl BaseVideo {
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_micros()
-                    .to_string();
+                    .to_string()
+                    .into_bytes();
                 self.is_completed = false;
                 // 这是和录像时间成绩有关
                 let t = t_ms as f64 / 1000.0;
@@ -1099,7 +1101,8 @@ impl BaseVideo {
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_micros()
-                    .to_string();
+                    .to_string()
+                    .into_bytes();
                 self.is_completed = true;
                 let t = t_ms as f64 / 1000.0;
                 self.game_dynamic_params.rtime = t;
@@ -1499,7 +1502,7 @@ impl BaseVideo {
         self.allow_set_rtime = false;
         Ok(0)
     }
-    /// 用于计数器上显示的时间
+    /// 用于计数器上显示的时间,和arbiter一致
     pub fn get_time(&self) -> f64 {
         match self.game_board_state {
             GameBoardState::Playing => {
@@ -1532,6 +1535,14 @@ impl BaseVideo {
             return Err(());
         }
         Ok(self.game_dynamic_params.rtime_ms)
+    }
+    /// video_time是录像的总时长。录像市场比时间成绩多一部分。
+    pub fn get_video_time(&self) -> Result<f64, ()> {
+        if self.game_board_state != GameBoardState::Display {
+            return Err(());
+        }
+        Ok(self.video_action_state_recorder.last().unwrap().time)
+        // Ok(self.game_dynamic_params.rtime + self.delta_time)
     }
     /// 录像播放时，按时间设置current_time；超出两端范围取两端。
     /// 游戏时不要调用。
@@ -1601,7 +1612,7 @@ impl BaseVideo {
         self.mode = mode;
         Ok(0)
     }
-    pub fn set_software(&mut self, software: String) -> Result<u8, ()> {
+    pub fn set_software(&mut self, software: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
             && self.game_board_state != GameBoardState::Ready
@@ -1631,7 +1642,7 @@ impl BaseVideo {
         self.minesweeper_board.board = board;
         Ok(0)
     }
-    pub fn set_player_designator(&mut self, player_designator: String) -> Result<u8, ()> {
+    pub fn set_player_designator(&mut self, player_designator: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -1640,7 +1651,7 @@ impl BaseVideo {
         self.player_designator = player_designator;
         Ok(0)
     }
-    pub fn set_race_designator(&mut self, race_designator: String) -> Result<u8, ()> {
+    pub fn set_race_designator(&mut self, race_designator: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -1649,7 +1660,7 @@ impl BaseVideo {
         self.race_designator = race_designator;
         Ok(0)
     }
-    pub fn set_uniqueness_designator(&mut self, uniqueness_designator: String) -> Result<u8, ()> {
+    pub fn set_uniqueness_designator(&mut self, uniqueness_designator: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -1659,7 +1670,7 @@ impl BaseVideo {
         Ok(0)
     }
     /// 拟弃用，会自动记录
-    pub fn set_start_time(&mut self, start_time: String) -> Result<u8, ()> {
+    pub fn set_start_time(&mut self, start_time: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -1669,7 +1680,7 @@ impl BaseVideo {
         Ok(0)
     }
     /// 拟弃用，会自动记录
-    pub fn set_end_time(&mut self, end_time: String) -> Result<u8, ()> {
+    pub fn set_end_time(&mut self, end_time: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -1678,7 +1689,7 @@ impl BaseVideo {
         self.end_time = end_time;
         Ok(0)
     }
-    pub fn set_country(&mut self, country: String) -> Result<u8, ()> {
+    pub fn set_country(&mut self, country: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -1687,7 +1698,7 @@ impl BaseVideo {
         self.country = country;
         Ok(0)
     }
-    pub fn set_checksum(&mut self, checksum: String) -> Result<u8, ()> {
+    pub fn set_checksum(&mut self, checksum: [u8; 32]) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -1884,13 +1895,6 @@ impl BaseVideo {
 
         if self.game_board_state == GameBoardState::Display {
             let t = self.video_action_state_recorder[self.current_event_id].time - self.delta_time;
-            // println!(
-            //     "self.video_action_state_recorder[self.current_event_id].time:{:?}",
-            //     self.video_action_state_recorder[self.current_event_id].time
-            // );
-            // println!("delta_time:{:?}", delta_time);
-            // println!("t:{:?}", t);
-
             Ok(c * self.static_params.bbbv as f64 / t.powf(1.7)
                 * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5))
         } else {
@@ -2059,25 +2063,25 @@ impl BaseVideo {
                 .unwrap(),
         );
         self.raw_data
-            .append(&mut self.software.clone().as_bytes().to_owned());
+            .append(&mut self.software.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.player_designator.clone().as_bytes().to_owned());
+            .append(&mut self.player_designator.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.race_designator.clone().as_bytes().to_owned());
+            .append(&mut self.race_designator.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.uniqueness_designator.clone().as_bytes().to_owned());
+            .append(&mut self.uniqueness_designator.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.start_time.clone().as_bytes().to_owned());
+            .append(&mut self.start_time.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.end_time.clone().as_bytes().to_owned());
+            .append(&mut self.end_time.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.country.clone().as_bytes().to_owned());
+            .append(&mut self.country.clone().to_owned());
         self.raw_data.push(0);
 
         let mut byte = 0;
@@ -2128,7 +2132,7 @@ impl BaseVideo {
         if !self.checksum.is_empty() {
             self.raw_data.push(0);
             self.raw_data
-                .append(&mut self.checksum.clone().as_bytes().to_owned());
+                .append(&mut self.checksum.clone().to_vec().to_owned());
         } else {
             self.raw_data.push(255);
         }

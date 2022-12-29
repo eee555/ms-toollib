@@ -159,7 +159,7 @@ impl PyAvfVideo {
         self.core.data.save_to_evf_file(file_name);
     }
     #[getter]
-    fn get_software(&self) -> PyResult<String> {
+    fn get_software(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.software.clone())
     }
     #[getter]
@@ -195,19 +195,19 @@ impl PyAvfVideo {
         Ok(self.core.data.mine_num)
     }
     #[getter]
-    fn get_player_designator(&self) -> PyResult<String> {
+    fn get_player_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.player_designator.clone())
     }
     #[getter]
-    fn get_race_designator(&self) -> PyResult<String> {
+    fn get_race_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.race_designator.clone())
     }
     #[getter]
-    fn get_uniqueness_designator(&self) -> PyResult<String> {
+    fn get_uniqueness_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.uniqueness_designator.clone())
     }
     #[getter]
-    fn get_country(&self) -> PyResult<String> {
+    fn get_country(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.country.clone())
     }
     #[getter]
@@ -215,11 +215,11 @@ impl PyAvfVideo {
         Ok(self.core.data.static_params.bbbv)
     }
     #[getter]
-    fn get_start_time(&self) -> PyResult<String> {
+    fn get_start_time(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.start_time.clone())
     }
     #[getter]
-    fn get_end_time(&self) -> PyResult<String> {
+    fn get_end_time(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.end_time.clone())
     }
     #[getter]
@@ -277,6 +277,14 @@ impl PyAvfVideo {
     #[getter]
     fn get_rtime_ms(&self) -> PyResult<u32> {
         Ok(self.core.data.get_rtime_ms().unwrap())
+    }
+    #[getter]
+    fn get_etime(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_etime().unwrap())
+    }
+    #[getter]
+    pub fn get_video_time(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_video_time().unwrap())
     }
     #[getter]
     fn get_bbbv_s(&self) -> PyResult<f64> {
@@ -472,7 +480,7 @@ impl PyRmvVideo {
         self.core.data.save_to_evf_file(file_name);
     }
     #[getter]
-    fn get_software(&self) -> PyResult<String> {
+    fn get_software(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.software.clone())
     }
     #[getter]
@@ -508,19 +516,19 @@ impl PyRmvVideo {
         Ok(self.core.data.mine_num)
     }
     #[getter]
-    fn get_player_designator(&self) -> PyResult<String> {
+    fn get_player_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.player_designator.clone())
     }
     #[getter]
-    fn get_race_designator(&self) -> PyResult<String> {
+    fn get_race_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.race_designator.clone())
     }
     #[getter]
-    fn get_uniqueness_designator(&self) -> PyResult<String> {
+    fn get_uniqueness_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.uniqueness_designator.clone())
     }
     #[getter]
-    fn get_country(&self) -> PyResult<String> {
+    fn get_country(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.country.clone())
     }
     #[getter]
@@ -528,11 +536,11 @@ impl PyRmvVideo {
         Ok(self.core.data.static_params.bbbv)
     }
     #[getter]
-    fn get_start_time(&self) -> PyResult<String> {
+    fn get_start_time(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.start_time.clone())
     }
     #[getter]
-    fn get_end_time(&self) -> PyResult<String> {
+    fn get_end_time(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.end_time.clone())
     }
     #[getter]
@@ -590,6 +598,14 @@ impl PyRmvVideo {
     #[getter]
     fn get_rtime_ms(&self) -> PyResult<u32> {
         Ok(self.core.data.get_rtime_ms().unwrap())
+    }
+    #[getter]
+    fn get_etime(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_etime().unwrap())
+    }
+    #[getter]
+    pub fn get_video_time(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_video_time().unwrap())
     }
     #[getter]
     fn get_bbbv_s(&self) -> PyResult<f64> {
@@ -785,7 +801,7 @@ impl PyEvfVideo {
         self.core.data.save_to_evf_file(file_name);
     }
     #[getter]
-    fn get_software(&self) -> PyResult<String> {
+    fn get_software(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.software.clone())
     }
     #[getter]
@@ -821,19 +837,19 @@ impl PyEvfVideo {
         Ok(self.core.data.mine_num)
     }
     #[getter]
-    fn get_player_designator(&self) -> PyResult<String> {
+    fn get_player_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.player_designator.clone())
     }
     #[getter]
-    fn get_race_designator(&self) -> PyResult<String> {
+    fn get_race_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.race_designator.clone())
     }
     #[getter]
-    fn get_uniqueness_designator(&self) -> PyResult<String> {
+    fn get_uniqueness_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.uniqueness_designator.clone())
     }
     #[getter]
-    fn get_country(&self) -> PyResult<String> {
+    fn get_country(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.country.clone())
     }
     #[getter]
@@ -841,11 +857,11 @@ impl PyEvfVideo {
         Ok(self.core.data.static_params.bbbv)
     }
     #[getter]
-    fn get_start_time(&self) -> PyResult<String> {
+    fn get_start_time(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.start_time.clone())
     }
     #[getter]
-    fn get_end_time(&self) -> PyResult<String> {
+    fn get_end_time(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.end_time.clone())
     }
     #[getter]
@@ -903,6 +919,14 @@ impl PyEvfVideo {
     #[getter]
     fn get_rtime_ms(&self) -> PyResult<u32> {
         Ok(self.core.data.get_rtime_ms().unwrap())
+    }
+    #[getter]
+    fn get_etime(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_etime().unwrap())
+    }
+    #[getter]
+    pub fn get_video_time(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_video_time().unwrap())
     }
     #[getter]
     fn get_bbbv_s(&self) -> PyResult<f64> {
@@ -1112,7 +1136,7 @@ impl PyBaseVideo {
         Ok(self.core.get_time())
     }
     #[getter]
-    fn get_software(&self) -> PyResult<String> {
+    fn get_software(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.software.clone())
     }
     #[getter]
@@ -1148,19 +1172,19 @@ impl PyBaseVideo {
         Ok(self.core.mine_num)
     }
     #[getter]
-    fn get_player_designator(&self) -> PyResult<String> {
+    fn get_player_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.player_designator.clone())
     }
     #[getter]
-    fn get_race_designator(&self) -> PyResult<String> {
+    fn get_race_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.race_designator.clone())
     }
     #[getter]
-    fn get_uniqueness_designator(&self) -> PyResult<String> {
+    fn get_uniqueness_designator(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.uniqueness_designator.clone())
     }
     #[getter]
-    fn get_country(&self) -> PyResult<String> {
+    fn get_country(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.country.clone())
     }
     #[getter]
@@ -1168,11 +1192,11 @@ impl PyBaseVideo {
         Ok(self.core.static_params.bbbv)
     }
     #[getter]
-    fn get_start_time(&self) -> PyResult<String> {
+    fn get_start_time(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.start_time.clone())
     }
     #[getter]
-    fn get_end_time(&self) -> PyResult<String> {
+    fn get_end_time(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.end_time.clone())
     }
     #[getter]
@@ -1234,6 +1258,10 @@ impl PyBaseVideo {
     #[getter]
     fn get_etime(&self) -> PyResult<f64> {
         Ok(self.core.get_etime().unwrap())
+    }
+    #[getter]
+    pub fn get_video_time(&self) -> PyResult<f64> {
+        Ok(self.core.get_video_time().unwrap())
     }
     #[getter]
     fn get_bbbv_s(&self) -> PyResult<f64> {
@@ -1422,27 +1450,27 @@ impl PyBaseVideo {
         self.core.set_mode(mode).unwrap();
     }
     #[setter]
-    pub fn set_software(&mut self, software: String) {
+    pub fn set_software(&mut self, software: Vec<u8>) {
         self.core.set_software(software).unwrap();
     }
     #[setter]
-    pub fn set_player_designator(&mut self, player_designator: String) {
+    pub fn set_player_designator(&mut self, player_designator: Vec<u8>) {
         self.core.set_player_designator(player_designator).unwrap();
     }
     #[setter]
-    pub fn set_race_designator(&mut self, race_designator: String) {
+    pub fn set_race_designator(&mut self, race_designator: Vec<u8>) {
         self.core.set_race_designator(race_designator).unwrap();
     }
     #[setter]
-    pub fn set_uniqueness_designator(&mut self, uniqueness_designator: String) {
+    pub fn set_uniqueness_designator(&mut self, uniqueness_designator: Vec<u8>) {
         self.core.set_uniqueness_designator(uniqueness_designator).unwrap();
     }
     #[setter]
-    pub fn set_country(&mut self, country: String) {
+    pub fn set_country(&mut self, country: Vec<u8>) {
         self.core.set_country(country).unwrap();
     }
     #[setter]
-    pub fn set_checksum(&mut self, checksum: String) {
+    pub fn set_checksum(&mut self, checksum: [u8; 32]) {
         self.core.set_checksum(checksum).unwrap();
     }
     #[setter]

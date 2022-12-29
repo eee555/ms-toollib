@@ -2,7 +2,7 @@
 
 use crate::board::GameBoard;
 use crate::cal_cell_nums;
-use crate::miscellaneous::s_to_ms;
+use crate::miscellaneous::{s_to_ms, time_ms_between};
 use crate::utils::{cal3BV, cal_isl, cal_op, refresh_board};
 use crate::videos::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
@@ -255,9 +255,17 @@ impl MinesweeperBoard {
         // println!("e: {:?}", e);
         match self.game_board_state {
             GameBoardState::Ready => match e {
-                "lc" | "rr" | "mv" => {}
+                "rr" | "mv" => {}
+                "lc" => {
+                    self.mouse_state = MouseState::DownUp;
+                    if pos.0 < self.row && pos.1 < self.column {
+                        self.game_board_state = GameBoardState::PreFlaging;
+                    }
+                    return Ok(0);
+                }
                 "lr" => match self.mouse_state {
                     MouseState::DownUp => {
+                        // 这里实际上不可能
                         if pos.0 == self.row && pos.1 == self.column {
                             self.mouse_state = MouseState::UpUp;
                             return Ok(0);
@@ -824,10 +832,11 @@ pub struct BaseVideo {
     pub level: u8,
     /// 逻辑上，方格像素的尺寸。传统扫雷一般是16，只有元扫雷会把逻辑尺寸和实际尺寸统一起来。
     pub cell_pixel_size: u8,
+    /// 仅在存录像时用到。貌似可以不用。
     pub board: Vec<Vec<i32>>,
     /// 局面状态机
     pub minesweeper_board: MinesweeperBoard,
-    /// 录像状态。
+    /// 录像状态。貌似用不到。
     pub game_board_state: GameBoardState,
     /// 动作、状态记录器
     pub video_action_state_recorder: Vec<VideoActionStateRecorder>,
@@ -837,6 +846,8 @@ pub struct BaseVideo {
     pub video_start_instant: Instant,
     /// 第一次有效的左键抬起的时间，由计时器控制，仅游戏时用, new_before_game方法里用到，真正开始的时间
     pub game_start_instant: Instant,
+    /// 第一次有效的左键抬起的时间，格式不同，只在录像播放模式用到
+    delta_time: f64,
     /// 当前时间，仅录像播放时用
     pub current_time: f64,
     /// 当前指针指向
@@ -875,8 +886,10 @@ pub struct BaseVideo {
     // 游戏前标的雷数
     // new_before_game方法里用到，真正开始的时间
     // net_start_time: f64,
-    // 允许设置最终成绩
+    // 允许设置最终成绩，解析录像文件时用
     allow_set_rtime: bool,
+    // 播放录像文件时用，按几倍放大来播放，涉及回报的鼠标位置
+    video_playing_pix_size_k: f64,
 }
 
 impl Default for BaseVideo {
@@ -900,6 +913,7 @@ impl Default for BaseVideo {
             game_board_stream: vec![],
             video_start_instant: Instant::now(),
             game_start_instant: Instant::now(),
+            delta_time: 0.0,
             current_time: 0.0,
             current_event_id: 0,
             player_designator: "".to_string(),
@@ -917,6 +931,7 @@ impl Default for BaseVideo {
             can_analyse: false,
             // net_start_time: 0.0,
             allow_set_rtime: false,
+            video_playing_pix_size_k: 1.0,
         }
     }
 }
@@ -973,6 +988,7 @@ impl BaseVideo {
     #[cfg(any(feature = "py", feature = "rs"))]
     pub fn new_before_game(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> BaseVideo {
         let bbbv = cal3BV(&board);
+        // 这里算出来的雷数不一定准
         let mine_num = board.iter().fold(0, |y, row| {
             y + row
                 .iter()
@@ -1007,11 +1023,10 @@ impl BaseVideo {
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
         let step_instant = Instant::now();
         // 这是和录像时间戳有关
-        let time_ms = step_instant
+        let mut time_ms = step_instant
             .duration_since(self.video_start_instant)
             .as_millis() as u32;
-        let time = time_ms as f64 / 1000.0;
-        // println!("{:?}", time_ms);
+        let mut time = time_ms as f64 / 1000.0;
         let old_state = self.minesweeper_board.game_board_state;
         if old_state == GameBoardState::Loss
             || old_state == GameBoardState::Win
@@ -1025,7 +1040,7 @@ impl BaseVideo {
 
         let a = self.minesweeper_board.step(e, (x, y))?;
         self.game_board_state = self.minesweeper_board.game_board_state;
-        match self.minesweeper_board.game_board_state {
+        match self.game_board_state {
             GameBoardState::Ready => {
                 self.game_board_stream.clear();
                 self.video_action_state_recorder.clear();
@@ -1034,10 +1049,21 @@ impl BaseVideo {
             GameBoardState::PreFlaging => {
                 if old_state != GameBoardState::PreFlaging {
                     self.video_start_instant = step_instant;
+                    time_ms = step_instant
+                        .duration_since(self.video_start_instant)
+                        .as_millis() as u32;
+                    time = time_ms as f64 / 1000.0;
                 }
             }
             GameBoardState::Playing => {
                 if old_state != GameBoardState::Playing {
+                    if old_state == GameBoardState::Ready {
+                        self.video_start_instant = step_instant;
+                        time_ms = step_instant
+                            .duration_since(self.video_start_instant)
+                            .as_millis() as u32;
+                        time = time_ms as f64 / 1000.0;
+                    }
                     self.game_start_instant = step_instant;
                     // 高精度的时间戳，单位为微秒
                     // https://doc.rust-lang.org/std/time/struct.Instant.html
@@ -1051,9 +1077,7 @@ impl BaseVideo {
             // 不可能
             GameBoardState::Display => {}
             GameBoardState::Loss => {
-                let t_ms = step_instant
-                    .duration_since(self.game_start_instant)
-                    .as_millis() as u32;
+                let t_ms = time_ms_between(step_instant, self.game_start_instant);
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
@@ -1070,9 +1094,7 @@ impl BaseVideo {
                 self.gather_params_after_game(t);
             }
             GameBoardState::Win => {
-                let t_ms = step_instant
-                    .duration_since(self.game_start_instant)
-                    .as_millis() as u32;
+                let t_ms = time_ms_between(step_instant, self.game_start_instant);
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
@@ -1093,10 +1115,9 @@ impl BaseVideo {
             let mut outside_skip = self.video_action_state_recorder.len() - 1;
             loop {
                 let p = &self.video_action_state_recorder[outside_skip];
-                if !(p.y as usize == self.height * self.cell_pixel_size as usize
-                    && p.x as usize == self.width * self.cell_pixel_size as usize)
+                if !(p.y as usize >= self.height * self.cell_pixel_size as usize
+                    || p.x as usize >= self.width * self.cell_pixel_size as usize)
                 {
-                    // println!("666");
                     path = p.path;
                     path += ((pos.0 as f64 - p.y as f64).powf(2.0)
                         + (pos.1 as f64 - p.x as f64).powf(2.0))
@@ -1159,7 +1180,22 @@ impl BaseVideo {
                 },
                 path,
             });
+        // println!("push: {:?}, {:?}, ({:?}, {:?})", time, e, pos.0, pos.1);
         Ok(0)
+    }
+    /// 重置游戏状态等，不重置标识等很多局都不会变的数据。点脸等，重开。
+    pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
+        self.game_board_stream.clear();
+        self.minesweeper_board = MinesweeperBoard::new(vec![vec![0; column]; row]);
+        self.width = column;
+        self.height = row;
+        self.cell_pixel_size = pix_size;
+        self.video_action_state_recorder.clear();
+        self.game_board_stream.clear();
+        self.raw_data.clear();
+        self.static_params = StaticParams::default();
+        self.game_dynamic_params = GameDynamicParams::default();
+        self.video_dynamic_params = VideoDynamicParams::default();
     }
     /// 获胜后标上所有的雷，没获胜则返回
     pub fn win_then_flag_all_mine(&mut self) {
@@ -1227,18 +1263,23 @@ impl BaseVideo {
         );
         // self.minesweeper_board
         let mut b = MinesweeperBoard::new(self.board.clone());
-        self.game_board_stream.push(GameBoard::new(self.mine_num));
+        let mut first_game_board = GameBoard::new(self.mine_num);
+        first_game_board.set_game_board(&vec![vec![10; self.width]; self.height]);
+        self.game_board_stream.push(first_game_board);
         for ide in 0..self.video_action_state_recorder.len() {
             self.video_action_state_recorder[ide].prior_game_board_id =
                 self.game_board_stream.len() - 1;
             if self.video_action_state_recorder[ide].mouse != "mv" {
+                let old_state = b.game_board_state;
                 // println!("{:?}, {:?}", self.events[ide].time, self.events[ide].mouse);
                 let u_level = b
                     .step(
                         &self.video_action_state_recorder[ide].mouse,
                         (
-                            (self.video_action_state_recorder[ide].y / 16) as usize,
-                            (self.video_action_state_recorder[ide].x / 16) as usize,
+                            (self.video_action_state_recorder[ide].y / self.cell_pixel_size as u16)
+                                as usize,
+                            (self.video_action_state_recorder[ide].x / self.cell_pixel_size as u16)
+                                as usize,
                         ),
                     )
                     .unwrap();
@@ -1247,9 +1288,12 @@ impl BaseVideo {
                     let mut g_b = GameBoard::new(self.mine_num);
                     g_b.set_game_board(&b.game_board);
                     self.game_board_stream.push(g_b);
+                    if old_state != GameBoardState::Playing {
+                        self.delta_time = self.video_action_state_recorder[ide].time;
+                    }
                 }
                 // println!("{:?}", b.game_board_state);
-                // println!("{:?}", b.solved3BV);
+                // println!("{:?}", b.bbbv_solved);
             }
             self.video_action_state_recorder[ide].next_game_board_id =
                 self.game_board_stream.len() - 1;
@@ -1357,12 +1401,16 @@ impl BaseVideo {
             //         );
             //     }
             // }
-            if e.mouse != "mv" {
-                println!(
-                    "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
-                    e.time, e.mouse, e.x, e.y, e.useful_level
-                );
-            }
+            println!(
+                "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+                e.time, e.mouse, e.x, e.y, e.useful_level
+            );
+            // if e.mouse != "mv" {
+            //     println!(
+            //         "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+            //         e.time, e.mouse, e.x, e.y, e.useful_level
+            //     );
+            // }
             num += 1;
             // if e.mouse != "mv" {
             //     println!(
@@ -1401,12 +1449,15 @@ impl BaseVideo {
 }
 impl BaseVideo {
     // 再实现一些get、set方法
-    // pub fn set_board(&self, _board: Vec<Vec<i32>>) -> Result<u8, ()> {
-    //     if self.game_board_state != GameBoardState::Ready && self.game_board_state != GameBoardState::PreFlaging {
-    //         return Err(())
-    //     }
-    //     return self.minesweeper_board.board = _board;
-    // }
+    pub fn set_pix_size(&mut self, pix_size: u8) {
+        if self.game_board_state != GameBoardState::Ready
+            && self.game_board_state != GameBoardState::Win
+            && self.game_board_state != GameBoardState::Loss
+        {
+            return;
+        }
+        self.cell_pixel_size = pix_size;
+    }
     /// 获取当前录像时刻的后验的游戏局面
     pub fn get_game_board(&self) -> Vec<Vec<i32>> {
         if self.game_board_state == GameBoardState::Display {
@@ -1483,38 +1534,36 @@ impl BaseVideo {
         Ok(self.game_dynamic_params.rtime_ms)
     }
     /// 录像播放时，按时间设置current_time；超出两端范围取两端。
+    /// 游戏时不要调用。
     pub fn set_current_time(&mut self, time: f64) {
-        // if self.game_board_state == GameBoardState::Playing
-        if self.game_board_state == GameBoardState::Display {
-            if time > self.video_action_state_recorder[self.current_event_id].time {
-                loop {
-                    if self.current_event_id >= self.video_action_state_recorder.len() {
-                        // 最后一帧
-                        break;
-                    }
-                    self.current_event_id += 1;
-                    if self.video_action_state_recorder[self.current_event_id].time <= time {
-                        continue;
-                    } else {
-                        self.current_event_id -= 1;
-                        break;
-                    }
+        if time > self.video_action_state_recorder[self.current_event_id].time {
+            loop {
+                if self.current_event_id >= self.video_action_state_recorder.len() - 1 {
+                    // 最后一帧
+                    break;
                 }
-            } else {
-                loop {
-                    if self.current_event_id == 0 {
-                        break;
-                    }
+                self.current_event_id += 1;
+                if self.video_action_state_recorder[self.current_event_id].time <= time {
+                    continue;
+                } else {
                     self.current_event_id -= 1;
-                    if self.video_action_state_recorder[self.current_event_id].time > time {
-                        continue;
-                    } else {
-                        break;
-                    }
+                    break;
                 }
             }
-            self.current_time = self.video_action_state_recorder[self.current_event_id].time;
-        };
+        } else {
+            loop {
+                if self.current_event_id == 0 {
+                    break;
+                }
+                self.current_event_id -= 1;
+                if self.video_action_state_recorder[self.current_event_id].time > time {
+                    continue;
+                } else {
+                    break;
+                }
+            }
+        }
+        self.current_time = self.video_action_state_recorder[self.current_event_id].time;
     }
     /// 设置current_event_id
     pub fn set_current_event_id(&mut self, id: usize) -> Result<u8, ()> {
@@ -1544,34 +1593,41 @@ impl BaseVideo {
         Ok(0)
     }
     pub fn set_mode(&mut self, mode: u16) -> Result<u8, ()> {
-        if self.game_board_state != GameBoardState::Ready {
+        if self.game_board_state != GameBoardState::Loss
+            && self.game_board_state != GameBoardState::Win
+        {
             return Err(());
         };
         self.mode = mode;
         Ok(0)
     }
-    /// 两种情况调用：游戏开始前、可猜模式（要求尺寸、雷数相等）
+    pub fn set_software(&mut self, software: String) -> Result<u8, ()> {
+        if self.game_board_state != GameBoardState::Loss
+            && self.game_board_state != GameBoardState::Win
+            && self.game_board_state != GameBoardState::Ready
+        {
+            return Err(());
+        };
+        self.software = software;
+        Ok(0)
+    }
+    /// 两种情况调用：游戏开始前、可猜模式（尺寸相等，雷数不检查）
     pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()> {
         match self.game_board_state {
-            GameBoardState::Playing => {
+            GameBoardState::Playing | GameBoardState::Ready | GameBoardState::PreFlaging => {
                 if self.width != board[0].len() || self.height != board.len() {
                     return Err(());
                 }
+                self.static_params.bbbv = cal3BV(&board);
             }
             GameBoardState::Display | GameBoardState::Win | GameBoardState::Loss => return Err(()),
-            GameBoardState::Ready | GameBoardState::PreFlaging => {}
         }
-        let mine_num = board.iter().fold(0, |y, row| {
+        self.mine_num = board.iter().fold(0, |y, row| {
             y + row
                 .iter()
                 .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
         });
-        if self.mine_num != mine_num && self.game_board_state == GameBoardState::Playing {
-            return Err(());
-        } else {
-            self.mine_num = mine_num;
-        };
-        self.static_params.bbbv = cal3BV(&board);
+        self.board = board.clone();
         self.minesweeper_board.board = board;
         Ok(0)
     }
@@ -1780,10 +1836,16 @@ impl BaseVideo {
     }
     pub fn get_etime(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
-        Ok(
-            self.video_action_state_recorder[self.current_event_id].time / bbbv_solved as f64
-                * self.static_params.bbbv as f64,
-        )
+        if self.game_board_state == GameBoardState::Display {
+            let t = self.video_action_state_recorder[self.current_event_id].time - self.delta_time;
+            if bbbv_solved == 0 {
+                return Ok(0.0);
+            }
+            Ok(t / bbbv_solved as f64 * self.static_params.bbbv as f64)
+        } else {
+            let t = self.game_dynamic_params.rtime;
+            Ok(t / bbbv_solved as f64 * self.static_params.bbbv as f64)
+        }
     }
     pub fn get_bbbv_s(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
@@ -1793,19 +1855,23 @@ impl BaseVideo {
         Ok(bbbv_solved as f64 / self.current_time)
     }
     pub fn get_bbbv_solved(&self) -> Result<usize, ()> {
-        if self.game_board_state != GameBoardState::Display
-            && self.game_board_state != GameBoardState::Win
-            && self.game_board_state != GameBoardState::Loss
-        {
-            return Err(());
-        };
-        Ok(self.video_action_state_recorder[self.current_event_id]
-            .key_dynamic_params
-            .bbbv_solved)
+        match self.game_board_state {
+            GameBoardState::Display => Ok(self.video_action_state_recorder[self.current_event_id]
+                .key_dynamic_params
+                .bbbv_solved),
+            GameBoardState::Win | GameBoardState::Loss => Ok(self
+                .video_action_state_recorder
+                .last()
+                .unwrap()
+                .key_dynamic_params
+                .bbbv_solved),
+            _ => Err(()),
+        }
     }
     pub fn get_stnb(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
-        if self.current_time < 0.00099 {
+        // println!("self.current_time:{:?}", self.current_time);
+        if self.game_board_state == GameBoardState::Display && self.current_time < 0.00099 {
             return Ok(0.0);
         }
         let c;
@@ -1815,10 +1881,24 @@ impl BaseVideo {
             (16, 30, 99) => c = 435.001,
             _ => return Ok(0.0),
         }
-        Ok(
-            c * self.static_params.bbbv as f64 / self.game_dynamic_params.rtime.powf(1.7)
-                * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5),
-        )
+
+        if self.game_board_state == GameBoardState::Display {
+            let t = self.video_action_state_recorder[self.current_event_id].time - self.delta_time;
+            // println!(
+            //     "self.video_action_state_recorder[self.current_event_id].time:{:?}",
+            //     self.video_action_state_recorder[self.current_event_id].time
+            // );
+            // println!("delta_time:{:?}", delta_time);
+            // println!("t:{:?}", t);
+
+            Ok(c * self.static_params.bbbv as f64 / t.powf(1.7)
+                * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5))
+        } else {
+            Ok(
+                c * self.static_params.bbbv as f64 / self.game_dynamic_params.rtime.powf(1.7)
+                    * ((bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5)),
+            )
+        }
     }
     pub fn get_rqp(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
@@ -1835,15 +1915,18 @@ impl BaseVideo {
         Ok(self.current_time.powf(1.7) / bbbv_solved as f64)
     }
     pub fn get_ce(&self) -> Result<usize, ()> {
-        if self.game_board_state != GameBoardState::Display
-            && self.game_board_state != GameBoardState::Win
-            && self.game_board_state != GameBoardState::Loss
-        {
-            return Err(());
-        };
-        Ok(self.video_action_state_recorder[self.current_event_id]
-            .key_dynamic_params
-            .ce)
+        match self.game_board_state {
+            GameBoardState::Display => Ok(self.video_action_state_recorder[self.current_event_id]
+                .key_dynamic_params
+                .ce),
+            GameBoardState::Win | GameBoardState::Loss => Ok(self
+                .video_action_state_recorder
+                .last()
+                .unwrap()
+                .key_dynamic_params
+                .ce),
+            _ => Err(()),
+        }
     }
     pub fn get_ce_s(&self) -> Result<f64, ()> {
         let ce = self.get_ce()?;
@@ -1898,7 +1981,7 @@ impl BaseVideo {
             .key_dynamic_params
             .isl_solved)
     }
-    /// 跨语言调用时，如果不能传递枚举器用这个
+    /// 跨语言调用时，不能传递枚举体用这个
     pub fn get_mouse_state(&self) -> usize {
         let m_s;
         if self.game_board_state == GameBoardState::Display {
@@ -1916,6 +1999,22 @@ impl BaseVideo {
             MouseState::DownUpAfterChording => 7,
             MouseState::Undefined => 8,
         }
+    }
+    // 录像播放时，返回鼠标的坐标
+    pub fn get_x_y(&self) -> Result<(u16, u16), ()> {
+        if self.game_board_state != GameBoardState::Display {
+            return Err(());
+        };
+        Ok((
+            (self.video_action_state_recorder[self.current_event_id].x as f64
+                * self.video_playing_pix_size_k) as u16,
+            (self.video_action_state_recorder[self.current_event_id].y as f64
+                * self.video_playing_pix_size_k) as u16,
+        ))
+    }
+    // 录像播放时，设置按何种像素播放，涉及鼠标位置回报
+    pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {
+        self.video_playing_pix_size_k = pix_size as f64 / self.cell_pixel_size as f64;
     }
 }
 
@@ -1997,10 +2096,13 @@ impl BaseVideo {
                 }
             }
         }
-        byte <<= 7 - ptr;
-        self.raw_data.push(byte);
+        if ptr > 0 {
+            byte <<= 8 - ptr;
+            self.raw_data.push(byte);
+        }
 
         for event in &self.video_action_state_recorder {
+            // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
             match event.mouse.as_str() {
                 "mv" => self.raw_data.push(1),
                 "lc" => self.raw_data.push(2),
@@ -2010,8 +2112,9 @@ impl BaseVideo {
                 "mc" => self.raw_data.push(6),
                 "mr" => self.raw_data.push(7),
                 "pf" => self.raw_data.push(8),
+                "cc" => self.raw_data.push(9),
                 // 不可能出现，出现再说
-                _ => {}
+                _ => self.raw_data.push(99),
             }
             let t_ms = s_to_ms(event.time);
             self.raw_data.push((t_ms >> 16).try_into().unwrap());

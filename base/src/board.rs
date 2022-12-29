@@ -10,7 +10,7 @@ use crate::utils::{
 
 /// 静态游戏局面的包装类。  
 /// 所有计算过的属性都会保存在这里。缓存计算结果的局面。  
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct GameBoard {
     /// 游戏局面，来自玩家，上面标的雷可能是错的。
     pub game_board: Vec<Vec<i32>>,
@@ -105,6 +105,7 @@ impl GameBoard {
     pub fn get_poss(&mut self) -> &Vec<Vec<f64>> {
         if !self.has_poss {
             self.mark();
+            // println!("{:?}, {:?}", self.game_board_marked, self.mine_num);
             self.poss = cal_possibility_onboard(&self.game_board_marked, self.mine_num as f64)
                 .unwrap()
                 .0;

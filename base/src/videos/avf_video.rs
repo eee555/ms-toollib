@@ -161,12 +161,10 @@ impl AvfVideo {
             }
         }
         s = str::replace(&s, ",", "."); // 有些录像小数点是逗号
-                                        // println!("{:?}", s);
-        // self.data.game_dynamic_params.rtime = match s.parse::<f64>() {
-        //     Ok(v) => v - 1.0,
-        //     Err(_) => return Err(ErrReadVideoReason::InvalidParams),
-        // };
-        // self.data.game_dynamic_params.rtime_ms = s_to_ms(self.data.game_dynamic_params.rtime);
+        match s.parse::<f64>() {
+            Ok(v) => self.data.set_rtime(v).unwrap(),
+            Err(_) => return Err(ErrReadVideoReason::InvalidParams),
+        };
         let mut buffer = [0u8; 8];
         while buffer[2] != 1 || buffer[1] > 1 {
             buffer[0] = buffer[1];
@@ -231,6 +229,7 @@ impl AvfVideo {
         //     }
         //     println!("");
         // }
+        self.data.can_analyse = true;
         Ok(())
     }
 }

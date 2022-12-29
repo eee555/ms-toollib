@@ -28,11 +28,10 @@ impl PyMinesweeperBoard {
     fn set_board(&mut self, board: Vec<Vec<i32>>) {
         self.core.board = board;
     }
-    // 直接设置游戏局面是不安全的！但在一些游戏中，结束时需要修改再展示
-    #[setter]
-    fn set_game_board(&mut self, game_board: Vec<Vec<i32>>) {
-        self.core.game_board = game_board;
-    }
+    // #[setter]
+    // fn set_game_board(&mut self, game_board: Vec<Vec<i32>>) {
+    //     self.core.game_board = game_board;
+    // }
     #[getter]
     fn get_board(&self) -> PyResult<Vec<Vec<i32>>> {
         Ok(self.core.board.clone())
@@ -431,13 +430,13 @@ impl PyAvfVideo {
     pub fn get_game_board_state(&self) -> PyResult<usize> {
         Ok(1)
     }
-    /// 返回当前光标的位置，播放录像用
     #[getter]
     pub fn get_x_y(&self) -> PyResult<(u16, u16)> {
-        Ok((
-            self.core.data.video_action_state_recorder[self.core.data.current_event_id].x,
-            self.core.data.video_action_state_recorder[self.core.data.current_event_id].y,
-        ))
+        Ok(self.core.data.get_x_y().unwrap())
+    }
+    #[setter]
+    pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {
+        self.core.data.set_video_playing_pix_size(pix_size);
     }
     #[setter]
     pub fn set_current_time(&mut self, time: f64) {
@@ -744,13 +743,13 @@ impl PyRmvVideo {
     pub fn get_game_board_state(&self) -> PyResult<usize> {
         Ok(1)
     }
-    /// 返回当前光标的位置，播放录像用
     #[getter]
     pub fn get_x_y(&self) -> PyResult<(u16, u16)> {
-        Ok((
-            self.core.data.video_action_state_recorder[self.core.data.current_event_id].x,
-            self.core.data.video_action_state_recorder[self.core.data.current_event_id].y,
-        ))
+        Ok(self.core.data.get_x_y().unwrap())
+    }
+    #[setter]
+    pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {
+        self.core.data.set_video_playing_pix_size(pix_size);
     }
     #[setter]
     pub fn set_current_time(&mut self, time: f64) {
@@ -1057,13 +1056,13 @@ impl PyEvfVideo {
     pub fn get_game_board_state(&self) -> PyResult<usize> {
         Ok(1)
     }
-    /// 返回当前光标的位置，播放录像用
     #[getter]
     pub fn get_x_y(&self) -> PyResult<(u16, u16)> {
-        Ok((
-            self.core.data.video_action_state_recorder[self.core.data.current_event_id].x,
-            self.core.data.video_action_state_recorder[self.core.data.current_event_id].y,
-        ))
+        Ok(self.core.data.get_x_y().unwrap())
+    }
+    #[setter]
+    pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {
+        self.core.data.set_video_playing_pix_size(pix_size);
     }
     #[setter]
     pub fn set_current_time(&mut self, time: f64) {
@@ -1096,7 +1095,11 @@ impl PyBaseVideo {
         self.core.save_to_evf_file(file_name);
     }
     pub fn step(&mut self, e: &str, pos: (usize, usize)) {
+        // println!("{:?}: '{:?}', ({:?}, {:?})", self.core.get_time(), e, pos.0, pos.1);
         self.core.step(e, pos).unwrap();
+    }
+    pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
+        self.core.reset(row, column, pix_size);
     }
     pub fn win_then_flag_all_mine(&mut self) {
         self.core.win_then_flag_all_mine();
@@ -1367,6 +1370,10 @@ impl PyBaseVideo {
         self.core.set_board(board).unwrap();
     }
     #[getter]
+    fn get_board(&self) -> PyResult<Vec<Vec<i32>>> {
+        Ok(self.core.minesweeper_board.board.clone())
+    }
+    #[getter]
     pub fn get_game_board(&self) -> PyResult<Vec<Vec<i32>>> {
         Ok(self.core.get_game_board())
     }
@@ -1390,13 +1397,13 @@ impl PyBaseVideo {
             GameBoardState::Display => Ok(6),
         }
     }
-    /// 返回当前光标的位置，播放录像用
     #[getter]
     pub fn get_x_y(&self) -> PyResult<(u16, u16)> {
-        Ok((
-            self.core.video_action_state_recorder[self.core.current_event_id].x,
-            self.core.video_action_state_recorder[self.core.current_event_id].y,
-        ))
+        Ok(self.core.get_x_y().unwrap())
+    }
+    #[setter]
+    pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {
+        self.core.set_video_playing_pix_size(pix_size);
     }
     #[setter]
     pub fn set_current_time(&mut self, time: f64) {
@@ -1407,12 +1414,16 @@ impl PyBaseVideo {
         self.core.set_is_offical(is_offical).unwrap();
     }
     #[setter]
-    pub fn set_is_fair(&mut self, is_offical: bool) {
-        self.core.set_is_offical(is_offical).unwrap();
+    pub fn set_is_fair(&mut self, is_fair: bool) {
+        self.core.set_is_fair(is_fair).unwrap();
     }
     #[setter]
-    pub fn set_mode(&mut self, is_offical: bool) {
-        self.core.set_is_offical(is_offical).unwrap();
+    pub fn set_mode(&mut self, mode: u16) {
+        self.core.set_mode(mode).unwrap();
+    }
+    #[setter]
+    pub fn set_software(&mut self, software: String) {
+        self.core.set_software(software).unwrap();
     }
     #[setter]
     pub fn set_player_designator(&mut self, player_designator: String) {
@@ -1433,6 +1444,10 @@ impl PyBaseVideo {
     #[setter]
     pub fn set_checksum(&mut self, checksum: String) {
         self.core.set_checksum(checksum).unwrap();
+    }
+    #[setter]
+    pub fn set_pix_size(&mut self, pix_size: u8) {
+        self.core.set_pix_size(pix_size);
     }
 }
 

@@ -21,8 +21,8 @@ pub fn analyse_high_risk_guess(video: &mut BaseVideo) {
     let mut x;
     let mut y;
     for ide in 2..video.video_action_state_recorder.len() {
-        x = (video.video_action_state_recorder[ide].y / 16) as usize;
-        y = (video.video_action_state_recorder[ide].x / 16) as usize;
+        x = (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16) as usize;
+        y = (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16) as usize;
         if video.video_action_state_recorder[ide].useful_level >= 2 {
             let p = video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id].get_poss()[x][y];
             if p >= 0.51 {
@@ -41,8 +41,8 @@ pub fn analyse_jump_judge(video: &mut BaseVideo) {
     let mut x;
     let mut y;
     for ide in 2..video.video_action_state_recorder.len() {
-        x = (video.video_action_state_recorder[ide].y / 16) as usize;
-        y = (video.video_action_state_recorder[ide].x / 16) as usize;
+        x = (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16) as usize;
+        y = (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16) as usize;
         if video.video_action_state_recorder[ide].useful_level >= 2 && video.video_action_state_recorder[ide].mouse == "lr" {
             if !video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
                 .get_basic_not_mine()
@@ -80,8 +80,8 @@ pub fn analyse_needless_guess(video: &mut BaseVideo) {
     let mut y;
     for ide in 2..video.video_action_state_recorder.len() {
         if video.video_action_state_recorder[ide].useful_level >= 2 && video.video_action_state_recorder[ide].mouse == "lr" {
-            x = (video.video_action_state_recorder[ide].y / 16) as usize;
-            y = (video.video_action_state_recorder[ide].x / 16) as usize;
+            x = (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16) as usize;
+            y = (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16) as usize;
 
             if video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id].get_poss()[x][y] > 0.0
                 && !video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
@@ -162,13 +162,13 @@ pub fn analyse_mouse_trace(video: &mut BaseVideo) {
 // bug
 pub fn analyse_vision_transfer(video: &mut BaseVideo) {
     let mut click_last = (video.video_action_state_recorder[0].y as f64, video.video_action_state_recorder[0].x as f64);
-    let mut l_x = (video.video_action_state_recorder[0].y / 16) as usize;
-    let mut l_y = (video.video_action_state_recorder[0].x / 16) as usize;
+    let mut l_x = (video.video_action_state_recorder[0].y / video.cell_pixel_size as u16) as usize;
+    let mut l_y = (video.video_action_state_recorder[0].x / video.cell_pixel_size as u16) as usize;
     let mut click_last_id = 0;
     for ide in 0..video.video_action_state_recorder.len() {
         if video.video_action_state_recorder[ide].useful_level >= 2 {
-            // let xx = (video.video_action_state_recorder[ide].y / 16) as usize;
-            // let yy = (video.video_action_state_recorder[ide].x / 16) as usize;
+            // let xx = (video.video_action_state_recorder[ide].y / video.cell_pixel_size) as usize;
+            // let yy = (video.video_action_state_recorder[ide].x / video.cell_pixel_size) as usize;
             let click_current = (video.video_action_state_recorder[ide].y as f64, video.video_action_state_recorder[ide].x as f64);
             if ((click_last.0 - click_current.0).powf(2.0)
                 + (click_last.1 - click_current.1).powf(2.0))
@@ -203,8 +203,8 @@ pub fn analyse_vision_transfer(video: &mut BaseVideo) {
                 }
             }
             click_last = click_current;
-            l_x = (video.video_action_state_recorder[ide].y / 16) as usize;
-            l_y = (video.video_action_state_recorder[ide].x / 16) as usize;
+            l_x = (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16) as usize;
+            l_y = (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16) as usize;
             click_last_id = ide;
         }
     }
@@ -221,8 +221,8 @@ pub fn analyse_survive_poss(video: &mut BaseVideo) {
                 has_begin = true;
                 continue;
             }
-            let l_x = (video.video_action_state_recorder[ide].y / 16) as usize;
-            let l_y = (video.video_action_state_recorder[ide].x / 16) as usize;
+            let l_x = (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16) as usize;
+            let l_y = (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16) as usize;
             let p =
                 video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id].get_poss()[l_x][l_y];
             if p > 0.0 && p < 1.0 {
@@ -263,10 +263,10 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo) {
         if video.video_action_state_recorder[ide].mouse == "mv" {
             continue;
         }
-        let x = video.video_action_state_recorder[ide].y as usize / 16;
-        let y = video.video_action_state_recorder[ide].x as usize / 16;
-        let x_1 = video.video_action_state_recorder[last_ide].y as usize / 16;
-        let y_1 = video.video_action_state_recorder[last_ide].x as usize / 16;
+        let x = video.video_action_state_recorder[ide].y as usize / video.cell_pixel_size as usize;
+        let y = video.video_action_state_recorder[ide].x as usize / video.cell_pixel_size as usize;
+        let x_1 = video.video_action_state_recorder[last_ide].y as usize / video.cell_pixel_size as usize;
+        let y_1 = video.video_action_state_recorder[last_ide].x as usize / video.cell_pixel_size as usize;
         // if video.video_action_state_recorder[ide].mouse == "lr" || video.video_action_state_recorder[ide].mouse == "rr"{
         //     println!("{:?}+++{:?}", video.video_action_state_recorder[last_ide].time, video.video_action_state_recorder[last_ide].mouse_state);
         //     // println!("---{:?}", video.video_action_state_recorder[ide].useful_level);

@@ -1303,10 +1303,27 @@ impl BaseVideo {
             self.video_action_state_recorder[ide].mouse_state = b.mouse_state.clone();
             self.video_action_state_recorder[ide]
                 .key_dynamic_params
+                .left = b.left;
+            self.video_action_state_recorder[ide]
+                .key_dynamic_params
+                .right = b.right;
+            self.video_action_state_recorder[ide]
+                .key_dynamic_params
                 .bbbv_solved = b.bbbv_solved;
+            self.video_action_state_recorder[ide]
+                .key_dynamic_params
+                .double = b.double;
+            self.video_action_state_recorder[ide].key_dynamic_params.ce = b.ce;
+            self.video_action_state_recorder[ide]
+                .key_dynamic_params
+                .flag = b.flag;
+            self.video_action_state_recorder[ide]
+                .key_dynamic_params
+                .op_solved = 0;
+            self.video_action_state_recorder[ide]
+                .key_dynamic_params
+                .isl_solved = 0;
         }
-        // println!("888");
-        // println!("{:?}", b.solved3BV);
         self.is_completed = b.game_board_state == GameBoardState::Win;
         self.game_dynamic_params.left = b.left;
         self.game_dynamic_params.left_s = b.left as f64 / self.game_dynamic_params.rtime;
@@ -2062,8 +2079,7 @@ impl BaseVideo {
                 .try_into()
                 .unwrap(),
         );
-        self.raw_data
-            .append(&mut self.software.clone().to_owned());
+        self.raw_data.append(&mut self.software.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
             .append(&mut self.player_designator.clone().to_owned());
@@ -2077,11 +2093,9 @@ impl BaseVideo {
         self.raw_data
             .append(&mut self.start_time.clone().to_owned());
         self.raw_data.push(0);
-        self.raw_data
-            .append(&mut self.end_time.clone().to_owned());
+        self.raw_data.append(&mut self.end_time.clone().to_owned());
         self.raw_data.push(0);
-        self.raw_data
-            .append(&mut self.country.clone().to_owned());
+        self.raw_data.append(&mut self.country.clone().to_owned());
         self.raw_data.push(0);
 
         let mut byte = 0;

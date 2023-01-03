@@ -159,6 +159,10 @@ impl PyAvfVideo {
         self.core.data.save_to_evf_file(file_name);
     }
     #[getter]
+    fn get_time(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_time())
+    }
+    #[getter]
     fn get_software(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.software.clone())
     }
@@ -319,6 +323,10 @@ impl PyAvfVideo {
         Ok(self.core.data.get_flag())
     }
     #[getter]
+    fn get_bbbv_solved(&self) -> PyResult<usize> {
+        Ok(self.core.data.get_bbbv_solved().unwrap())
+    }
+    #[getter]
     fn get_ce(&self) -> PyResult<usize> {
         Ok(self.core.data.get_ce().unwrap())
     }
@@ -337,6 +345,14 @@ impl PyAvfVideo {
     #[getter]
     fn get_cl_s(&self) -> PyResult<f64> {
         Ok(self.core.data.get_cl_s())
+    }
+    #[getter]
+    fn get_flag_s(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_flag_s())
+    }
+    #[getter]
+    fn get_path(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_path())
     }
     #[getter]
     fn get_ce_s(&self) -> PyResult<f64> {
@@ -480,6 +496,10 @@ impl PyRmvVideo {
         self.core.data.save_to_evf_file(file_name);
     }
     #[getter]
+    fn get_time(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_time())
+    }
+    #[getter]
     fn get_software(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.software.clone())
     }
@@ -640,6 +660,10 @@ impl PyRmvVideo {
         Ok(self.core.data.get_flag())
     }
     #[getter]
+    fn get_bbbv_solved(&self) -> PyResult<usize> {
+        Ok(self.core.data.get_bbbv_solved().unwrap())
+    }
+    #[getter]
     fn get_ce(&self) -> PyResult<usize> {
         Ok(self.core.data.get_ce().unwrap())
     }
@@ -658,6 +682,14 @@ impl PyRmvVideo {
     #[getter]
     fn get_cl_s(&self) -> PyResult<f64> {
         Ok(self.core.data.get_cl_s())
+    }
+    #[getter]
+    fn get_flag_s(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_flag_s())
+    }
+    #[getter]
+    fn get_path(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_path())
     }
     #[getter]
     fn get_ce_s(&self) -> PyResult<f64> {
@@ -801,6 +833,10 @@ impl PyEvfVideo {
         self.core.data.save_to_evf_file(file_name);
     }
     #[getter]
+    fn get_time(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_time())
+    }
+    #[getter]
     fn get_software(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.data.software.clone())
     }
@@ -961,6 +997,10 @@ impl PyEvfVideo {
         Ok(self.core.data.get_flag())
     }
     #[getter]
+    fn get_bbbv_solved(&self) -> PyResult<usize> {
+        Ok(self.core.data.get_bbbv_solved().unwrap())
+    }
+    #[getter]
     fn get_ce(&self) -> PyResult<usize> {
         Ok(self.core.data.get_ce().unwrap())
     }
@@ -979,6 +1019,14 @@ impl PyEvfVideo {
     #[getter]
     fn get_cl_s(&self) -> PyResult<f64> {
         Ok(self.core.data.get_cl_s())
+    }
+    #[getter]
+    fn get_flag_s(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_flag_s())
+    }
+    #[getter]
+    fn get_path(&self) -> PyResult<f64> {
+        Ok(self.core.data.get_path())
     }
     #[getter]
     fn get_ce_s(&self) -> PyResult<f64> {

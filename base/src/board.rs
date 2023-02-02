@@ -15,7 +15,7 @@ pub struct GameBoard {
     /// 游戏局面，来自玩家，上面标的雷可能是错的。
     pub game_board: Vec<Vec<i32>>,
     game_board_marked: Vec<Vec<i32>>,
-    pub poss: Vec<Vec<f64>>,
+    poss: Vec<Vec<f64>>,
     mine_num: usize,
     is_marked: bool, // game_board_marked是否被完全标记过
     has_poss: bool,  // 是否已经计算过概率

@@ -17,6 +17,8 @@ fn minesweeper_board_works() {
         vec![0, 1, -1, 1, 0, 1, 1, 1],
     ];
     let mut my_board = MinesweeperBoard::new(board);
+    my_board.step_flow(vec![("rc", (0, 0))]).unwrap();
+    my_board.step_flow(vec![("rr", (0, 0))]).unwrap();
     my_board.step_flow(vec![("lr", (0, 2))]).unwrap();
     my_board.board.iter().for_each(|x| println!("{:?}", x));
     my_board.game_board.iter().for_each(|x| println!("{:?}", x));
@@ -58,7 +60,7 @@ fn AvfVideo_works() {
 // cargo test --features rs -- --nocapture RmvVideo_works
 fn RmvVideo_works() {
     // 录像解析工具测试
-    let mut video = RmvVideo::new("exp.rmv");
+    let mut video = RmvVideo::new("large_path.rmv");
 
     let r = video.parse_video();
     video.data.print_event();
@@ -76,6 +78,7 @@ fn RmvVideo_works() {
     println!("is win: {:?}", video.data.is_completed);
     video.data.set_current_time(40.0);
     println!("STNB: {:?}", video.data.get_stnb().unwrap());
+    println!("path: {:?}", video.data.get_path());
     video.data.set_current_time(-1.0);
     println!("game_board: {:?}", video.data.get_game_board());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
@@ -87,7 +90,7 @@ fn RmvVideo_works() {
 // cargo test --features rs -- --nocapture RmvVideo_works
 fn EvfVideo_works() {
     // 录像解析工具测试
-    let mut video = EvfVideo::new("test.evf");
+    let mut video = EvfVideo::new("t.evf");
 
     let r = video.parse_video();
     // video.data.print_event();
@@ -116,9 +119,10 @@ fn EvfVideo_works() {
     println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
     println!("video_time: {:?}", video.data.get_video_time().unwrap());
     println!("is win: {:?}", video.data.is_completed);
-    video.data.set_current_time(7.711);
+    video.data.set_current_time(12.0);
     println!("STNB: {:?}", video.data.get_stnb().unwrap());
     println!("game_board: {:?}", video.data.get_game_board());
+    println!("game_board_poss: {:?}", video.data.get_game_board_poss());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
     // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
     video.data.print_comments();

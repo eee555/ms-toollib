@@ -744,7 +744,7 @@ pub struct GameDynamicParams {
     pub double_s: f64,
     pub cl_s: f64,
     pub flag_s: f64,
-    /// 四舍五入折算到16像素边长
+    /// 四舍五入折算到16像素边长，最终路径长度
     pub path: usize,
 }
 
@@ -1270,59 +1270,83 @@ impl BaseVideo {
         first_game_board.set_game_board(&vec![vec![10; self.width]; self.height]);
         self.game_board_stream.push(first_game_board);
         for ide in 0..self.video_action_state_recorder.len() {
-            self.video_action_state_recorder[ide].prior_game_board_id =
-                self.game_board_stream.len() - 1;
-            if self.video_action_state_recorder[ide].mouse != "mv" {
+            // 控制svi的生命周期
+            let mut svi = &mut self.video_action_state_recorder[ide];
+            svi.prior_game_board_id = self.game_board_stream.len() - 1;
+            if svi.mouse != "mv" {
                 let old_state = b.game_board_state;
                 // println!("{:?}, {:?}", self.events[ide].time, self.events[ide].mouse);
                 let u_level = b
                     .step(
-                        &self.video_action_state_recorder[ide].mouse,
+                        &svi.mouse,
                         (
-                            (self.video_action_state_recorder[ide].y / self.cell_pixel_size as u16)
-                                as usize,
-                            (self.video_action_state_recorder[ide].x / self.cell_pixel_size as u16)
-                                as usize,
+                            (svi.y / self.cell_pixel_size as u16) as usize,
+                            (svi.x / self.cell_pixel_size as u16) as usize,
                         ),
                     )
                     .unwrap();
-                self.video_action_state_recorder[ide].useful_level = u_level;
-                if u_level >= 2 {
+                // println!("{:?}, {:?}", svi.mouse, b.game_board);
+                svi.useful_level = u_level;
+                if u_level >= 1 {
                     let mut g_b = GameBoard::new(self.mine_num);
                     g_b.set_game_board(&b.game_board);
                     self.game_board_stream.push(g_b);
                     if old_state != GameBoardState::Playing {
-                        self.delta_time = self.video_action_state_recorder[ide].time;
+                        self.delta_time = svi.time;
                     }
+                    // println!("{:?}, {:?}", self.game_board_stream.len(), svi.mouse);
                 }
-                // println!("{:?}", b.game_board_state);
-                // println!("{:?}", b.bbbv_solved);
             }
-            self.video_action_state_recorder[ide].next_game_board_id =
-                self.game_board_stream.len() - 1;
-            self.video_action_state_recorder[ide].mouse_state = b.mouse_state.clone();
-            self.video_action_state_recorder[ide]
-                .key_dynamic_params
-                .left = b.left;
-            self.video_action_state_recorder[ide]
-                .key_dynamic_params
-                .right = b.right;
-            self.video_action_state_recorder[ide]
-                .key_dynamic_params
-                .bbbv_solved = b.bbbv_solved;
-            self.video_action_state_recorder[ide]
-                .key_dynamic_params
-                .double = b.double;
-            self.video_action_state_recorder[ide].key_dynamic_params.ce = b.ce;
-            self.video_action_state_recorder[ide]
-                .key_dynamic_params
-                .flag = b.flag;
-            self.video_action_state_recorder[ide]
-                .key_dynamic_params
-                .op_solved = 0;
-            self.video_action_state_recorder[ide]
-                .key_dynamic_params
-                .isl_solved = 0;
+            svi.next_game_board_id = self.game_board_stream.len() - 1;
+            svi.mouse_state = b.mouse_state.clone();
+            svi.key_dynamic_params.left = b.left;
+            svi.key_dynamic_params.right = b.right;
+            svi.key_dynamic_params.bbbv_solved = b.bbbv_solved;
+            svi.key_dynamic_params.double = b.double;
+            svi.key_dynamic_params.ce = b.ce;
+            svi.key_dynamic_params.flag = b.flag;
+            // 这两个很难搞
+            svi.key_dynamic_params.op_solved = 0;
+            svi.key_dynamic_params.isl_solved = 0;
+            let svi = &self.video_action_state_recorder[ide];
+            // 第一下操作不可能是在局面外的
+            if b.game_board_state == GameBoardState::Playing
+                || b.game_board_state == GameBoardState::Win
+                || b.game_board_state == GameBoardState::Loss
+            {
+                if svi.y >= self.height as u16 * self.cell_pixel_size as u16
+                    && svi.x >= self.width as u16 * self.cell_pixel_size as u16
+                {
+                    self.video_action_state_recorder[ide].path =
+                        self.video_action_state_recorder[ide - 1].path;
+                } else {
+                    let mut svi_1_y: u16;
+                    let mut svi_1_x: u16;
+                    let mut svi_1_path: f64;
+                    let mut skip = 1;
+                    loop {
+                        let svis = &self.video_action_state_recorder[ide - skip];
+                        svi_1_y = svis.y; // 距离上端
+                        svi_1_x = svis.x;
+                        svi_1_path = svis.path;
+                        if svi_1_y >= self.height as u16 * self.cell_pixel_size as u16
+                            && svi_1_x >= self.width as u16 * self.cell_pixel_size as u16
+                        {
+                            skip += 1;
+                            continue;
+                        } else {
+                            break;
+                        };
+                    }
+                    let mut svi = &mut self.video_action_state_recorder[ide];
+                    svi.path = svi_1_path
+                        + ((svi.y as f64 - svi_1_y as f64).powf(2.0)
+                            + (svi.x as f64 - svi_1_x as f64).powf(2.0))
+                        .powf(0.5)
+                            * 16.0
+                            / (self.cell_pixel_size as f64);
+                }
+            }
         }
         self.is_completed = b.game_board_state == GameBoardState::Win;
         self.game_dynamic_params.left = b.left;
@@ -1421,16 +1445,16 @@ impl BaseVideo {
             //         );
             //     }
             // }
-            println!(
-                "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
-                e.time, e.mouse, e.x, e.y, e.useful_level
-            );
-            // if e.mouse != "mv" {
-            //     println!(
-            //         "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
-            //         e.time, e.mouse, e.x, e.y, e.useful_level
-            //     );
-            // }
+            // println!(
+            //     "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+            //     e.time, e.mouse, e.x, e.y, e.useful_level
+            // );
+            if e.mouse != "mv" {
+                println!(
+                    "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+                    e.time, e.mouse, e.x, e.y, e.useful_level
+                );
+            }
             num += 1;
             // if e.mouse != "mv" {
             //     println!(
@@ -1500,11 +1524,12 @@ impl BaseVideo {
                     return vec![vec![p; self.height]; self.width];
                 }
             } else {
+                // println!("{:?}, {:?}",self.current_event_id, self.video_action_state_recorder.len());
                 return self.game_board_stream[self.video_action_state_recorder
                     [self.current_event_id]
                     .next_game_board_id as usize]
-                    .poss
-                    .clone();
+                    .get_poss()
+                    .to_vec();
                 // return self.events[id].prior_game_board.get_poss().clone();
             }
         }

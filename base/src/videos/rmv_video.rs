@@ -184,6 +184,7 @@ impl RmvVideo {
 
         self.data.offset += (properties_size - 4) as usize;
 
+        // 是不是第一个操作。录像里省略了第一个左键按下。
         let mut first_op_flag = true;
         loop {
             let c = self.data.get_u8()?;

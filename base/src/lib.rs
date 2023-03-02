@@ -29,7 +29,7 @@
 // cargo yank --vers 0.0.1
 mod utils;
 pub use utils::{
-    cal3BV, cal_op, cal_isl, cal_table_minenum_recursion, combine, laymine, laymine_op, refresh_board,
+    cal_bbbv, cal_op, cal_isl, cal_table_minenum_recursion, combine, laymine, laymine_op, refresh_board,
     refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure, enuOneStep, is_good_chording,
     cal_cell_nums
 };
@@ -53,7 +53,7 @@ pub use board::{GameBoard, Board};
 
 mod videos;
 pub use videos::{
-    AvfVideo, RmvVideo, EvfVideo, BaseVideo, MinesweeperBoard, GameBoardState, MouseState
+    AvfVideo, RmvVideo, EvfVideo, MvfVideo, BaseVideo, MinesweeperBoard, GameBoardState, MouseState
 };
 
 #[cfg(any(feature = "py", feature = "rs"))]

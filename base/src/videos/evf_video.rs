@@ -56,6 +56,15 @@ impl EvfVideo {
         self.data.static_params.bbbv = self.data.get_u16()? as usize;
         let t = self.data.get_u24()?;
         self.data.set_rtime(t as f64 / 1000.0).unwrap();
+        // for i in 0..500{
+        //     for j in 0..8 {
+        //         let a = self.data.get_u8()?;
+        //         print!("({:?}), ", a);
+        //     }
+        //     println!("");
+        // }
+
+
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
@@ -125,6 +134,7 @@ impl EvfVideo {
         cal_board_numbers(&mut self.data.board);
         let have_checksum;
 
+        // println!("&&&: {:?}",self.data.country);
         // for i in 0..500{
         //     for j in 0..8 {
         //         let a = self.data.get_u8()?;
@@ -135,12 +145,10 @@ impl EvfVideo {
 
 
         loop {
-            // dbg!("666");
             let byte = self.data.get_u8()?;
             let mouse;
             match byte {
                 0 => {
-                    // dbg!("0", self.data.offset);
                     have_checksum = true;
                     break;
                 }
@@ -154,7 +162,6 @@ impl EvfVideo {
                 8 => mouse = "pf",
                 9 => mouse = "cc",
                 255 => {
-                    // dbg!("255", self.data.offset);
                     have_checksum = false;
                     break;
                 }

@@ -146,6 +146,18 @@ impl GameBoard {
 /// 静态局面的包装类。  
 /// - 用途：筛选局面时，复杂的条件下，用于避免指标重复计算。  
 /// - 局限：hizi缺少算法。  
+/// 用Board类估算一亿局高级里有几个8的python代码如下：  
+/// ``` python3
+/// import ms_toollib as ms
+/// cell8_num = 0
+/// for i in range(100000000):
+///     # 在第一行第一列起手，做标准埋雷
+///     board = ms.laymine(row=16, column=30, mine_num=99, x0=0, y0=0)
+///     # 包一下，准备计算属性
+///     wrap_board = ms.Board(board)
+///     cell8_num += wrap_board.cell8
+/// print(f'数字8出现次数：{cell8_num}')
+/// ```
 #[derive(Clone)]
 pub struct Board {
     pub board: Vec<Vec<i32>>,
@@ -189,7 +201,7 @@ impl Board {
             has_cal_cells: false,
         }
     }
-    pub fn get_3BV(&mut self) -> usize {
+    pub fn get_bbbv(&mut self) -> usize {
         if self.has_cal_bbbv {
             return self.bbbv;
         }

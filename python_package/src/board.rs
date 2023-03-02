@@ -1586,7 +1586,7 @@ impl PyBoard {
     }
     #[getter]
     fn get_bbbv(&mut self) -> PyResult<usize> {
-        Ok(self.core.get_3BV())
+        Ok(self.core.get_bbbv())
     }
     #[getter]
     fn get_op(&mut self) -> PyResult<usize> {

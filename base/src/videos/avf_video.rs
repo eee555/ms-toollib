@@ -1,6 +1,6 @@
-use crate::MouseState;
-use crate::miscellaneous::s_to_ms;
-use crate::utils::{cal_board_numbers};
+// use crate::MouseState;
+// use crate::miscellaneous::s_to_ms;
+// use crate::utils::{cal_board_numbers};
 use std::cmp::{max, min};
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
 
@@ -223,6 +223,7 @@ impl AvfVideo {
                 _ => self.data.player_designator.push(v as u8),
             }
         }
+        self.data.software = "Arbiter".as_bytes().to_vec();
         // for i in 0..1000 {
         //     for j in 0..8 {
         //         print!("{:?},", self.get_char().unwrap() as u8);

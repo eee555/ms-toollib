@@ -566,36 +566,36 @@ pub fn cal3BVonIsland(Board: &Vec<Vec<i32>>) -> usize {
 }
 
 /// 计算局面的3BV
-pub fn cal3BV(Board: &Vec<Vec<i32>>) -> usize {
-    cal3BVonIsland(&Board) + cal_op(Board.clone())
+pub fn cal_bbbv(board: &Vec<Vec<i32>>) -> usize {
+    cal3BVonIsland(&board) + cal_op(board.clone())
 }
 
 /// 依据左击位置刷新局面
 /// - 注意：兼容18标记符和12标记符
 pub fn refresh_board(
-    Board: &Vec<Vec<i32>>,
-    BoardofGame: &mut Vec<Vec<i32>>,
-    mut ClickedPoses: Vec<(usize, usize)>,
+    board: &Vec<Vec<i32>>,
+    boardofGame: &mut Vec<Vec<i32>>,
+    mut clicked_poses: Vec<(usize, usize)>,
 ) {
     // println!("{:?}", ClickedPoses);
-    let row = Board.len();
-    let column = Board[0].len();
+    let row = board.len();
+    let column = board[0].len();
     let mut loss_flag = false;
-    while let Some(top) = ClickedPoses.pop() {
+    while let Some(top) = clicked_poses.pop() {
         let (i, j) = top;
-        if Board[i][j] > 0 {
-            BoardofGame[i][j] = Board[i][j];
-        } else if Board[i][j] == 0 {
-            BoardofGame[i][j] = 0;
+        if board[i][j] > 0 {
+            boardofGame[i][j] = board[i][j];
+        } else if board[i][j] == 0 {
+            boardofGame[i][j] = 0;
             for m in max(1, i) - 1..min(row, i + 2) {
                 for n in max(1, j) - 1..min(column, j + 2) {
-                    if (i != m || j != n) && (BoardofGame[m][n] == 10 || BoardofGame[m][n] == 12) {
-                        ClickedPoses.push((m, n));
+                    if (i != m || j != n) && (boardofGame[m][n] == 10 || boardofGame[m][n] == 12) {
+                        clicked_poses.push((m, n));
                     }
                 }
             }
         } else {
-            BoardofGame[i][j] = 15; // 标红雷，此处是雷，且踩到了
+            boardofGame[i][j] = 15; // 标红雷，此处是雷，且踩到了
             loss_flag = true;
         }
     }
@@ -603,8 +603,8 @@ pub fn refresh_board(
     if loss_flag {
         for i in 0..row {
             for j in 0..column {
-                if BoardofGame[i][j] == 11 && Board[i][j] != -1 {
-                    BoardofGame[i][j] = 14; // 叉雷，即标错的雷
+                if boardofGame[i][j] == 11 && board[i][j] != -1 {
+                    boardofGame[i][j] = 14; // 叉雷，即标错的雷
                 }
             }
         }
@@ -1384,7 +1384,7 @@ pub fn unsolvable_structure(BoardCheck: &Vec<Vec<i32>>) -> bool {
 }
 
 // 专用于高级局面的3BV快速计算
-pub fn cal3BV_exp(Board: &Vec<Vec<i32>>) -> usize {
+pub fn cal_bbbv_exp(Board: &Vec<Vec<i32>>) -> usize {
     let mut board = Board.clone();
     let mut op_id = 0;
     let mut op_list = [false; 200];

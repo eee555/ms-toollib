@@ -1,5 +1,5 @@
 use crate::utils::{
-    cal3BV, cal3BV_exp, cal_table_minenum_enum, cal_table_minenum_recursion, chunk_matrixes,
+    cal_bbbv, cal_bbbv_exp, cal_table_minenum_enum, cal_table_minenum_recursion, chunk_matrixes,
     combine, enuOneStep, enum_comb, find_a_border_cell, laymine, laymine_op, legalize_board,
     refresh_board, refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure,
     BigNumber, C_query, C,
@@ -718,7 +718,7 @@ pub fn laymine_solvable_thread(
                 }
             }
             let Board_ = laymine_op(row, column, mine_num, x0, y0);
-            Num3BV = cal3BV(&Board_);
+            Num3BV = cal_bbbv(&Board_);
             tx_.send((Board_, false)).unwrap();
         });
         handles.push(handle);
@@ -1105,7 +1105,7 @@ fn laymine_study_exp(x0: usize, y0: usize, n: usize) -> [usize; 382] {
                 }
             }
         }
-        bv_record[cal3BV_exp(&Board)] += 1;
+        bv_record[cal_bbbv_exp(&Board)] += 1;
     }
     bv_record
 }

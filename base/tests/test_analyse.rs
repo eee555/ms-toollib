@@ -1,5 +1,5 @@
 // 测试录像分析模块
-use ms_toollib::{AvfVideo, BaseVideo, EvfVideo, MinesweeperBoard, RmvVideo};
+use ms_toollib::{AvfVideo, BaseVideo, EvfVideo, MinesweeperBoard, RmvVideo, MvfVideo};
 use std::thread;
 
 #[test]
@@ -38,7 +38,7 @@ fn AvfVideo_works() {
     println!("标识：{:?}", video.data.player_designator);
     println!("局面：{:?}", video.data.board);
     video.data.set_current_time(0.0);
-    println!("game_board_stream：{:?}", video.data.game_board_stream[0]);
+    // println!("game_board_stream：{:?}", video.data.game_board_stream[0]);
     println!("局面：{:?}", video.data.get_game_board());
     println!("3BV：{:?}", video.data.static_params.bbbv);
     // println!("3BV：{:?}", video.s.s);
@@ -54,6 +54,9 @@ fn AvfVideo_works() {
         "survive_poss",
     ]);
     video.data.print_comments();
+    video.data.set_current_time(1000.0);
+    println!("solved_3BV：{:?}", video.data.get_bbbv_solved());
+    println!("thrp{:?}", video.data.get_thrp());
 }
 
 #[test]
@@ -81,6 +84,47 @@ fn RmvVideo_works() {
     println!("path: {:?}", video.data.get_path());
     video.data.set_current_time(-1.0);
     println!("game_board: {:?}", video.data.get_game_board());
+    // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
+    // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
+    // video.data.print_comments();
+}
+
+#[test]
+fn MvfVideo_works() {
+    // 录像解析工具测试
+    let mut video = MvfVideo::new("Zhang Shen Jia_Exp_38.82(3bv122).mvf");
+
+    let r = video.parse_video();
+    // video.data.print_event();
+    video.data.analyse();
+    // video.data.analyse_for_features(vec![
+    //     "high_risk_guess",
+    //     "jump_judge",
+    //     "needless_guess",
+    //     "mouse_trace",
+    //     "vision_transfer",
+    //     "survive_poss",
+    // ]);
+
+    // video.data.print_raw_data(400);
+    println!("board: {:?}", video.data.board);
+    println!("结果：{:?}", r);
+    println!("标识：{:?}", String::from_utf8(video.data.player_designator.clone()).unwrap());
+    println!("软件：{:?}", video.data.software);
+    println!("race_designator：{:?}", video.data.race_designator);
+    println!("3BV：{:?}", video.data.static_params.bbbv);
+    println!("宽度：{:?}", video.data.width);
+    println!("高度：{:?}", video.data.height);
+    println!("雷数：{:?}", video.data.mine_num);
+    // println!("3BV：{:?}", video.s.s);
+    println!("time：{:?}", video.data.get_rtime().unwrap());
+    println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
+    println!("video_time: {:?}", video.data.get_video_time().unwrap());
+    println!("is win: {:?}", video.data.is_completed);
+    video.data.set_current_time(12.0);
+    println!("STNB: {:?}", video.data.get_stnb().unwrap());
+    println!("game_board: {:?}", video.data.get_game_board());
+    println!("game_board_poss: {:?}", video.data.get_game_board_poss());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
     // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
     // video.data.print_comments();
@@ -142,7 +186,7 @@ fn BaseVideo_works() {
     ];
     let mut video = BaseVideo::new_before_game(board, 16);
     thread::sleep_ms(600);
-    println!("3BV：{:?}", video.static_params.bbbv);
+    // println!("3BV：{:?}", video.static_params.bbbv);
     video.step("rc", (17, 16)).unwrap();
     video.step("rr", (17, 16)).unwrap();
     video.step("rc", (16, 49)).unwrap();
@@ -177,6 +221,10 @@ fn BaseVideo_works() {
     video.step("lr", (112, 112)).unwrap();
     video.step("lc", (97, 112)).unwrap();
     video.step("lr", (97, 112)).unwrap();
+    video.set_player_designator("eee".as_bytes().to_vec()).unwrap();
+    video.set_race_designator("555".as_bytes().to_vec()).unwrap();
+    video.set_software("888".as_bytes().to_vec()).unwrap();
+    video.set_country("666".as_bytes().to_vec()).unwrap();
     video.print_event();
 
     println!("局面：{:?}", video.get_game_board());
@@ -207,13 +255,17 @@ fn BaseVideo_works() {
     let mut video = EvfVideo::new("test.evf");
     let r = video.parse_video();
     video.data.print_event();
-    video.data.analyse();
     // video.data.print_raw_data(400);
+    video.data.analyse();
+    // video.data.set_current_time(1.9);
     println!("结果：{:?}", r);
     println!("board：{:?}", video.data.board);
+    println!("game_board: {:?}", video.data.get_game_board());
+    println!("game_board_state: {:?}", video.data.game_board_state);
     println!("标识：{:?}", video.data.player_designator);
     println!("局面状态：{:?}", video.data.game_board_state);
     println!("软件：{:?}", video.data.software);
+    println!("国家：{:?}", video.data.country);
     println!("race_designator：{:?}", video.data.race_designator);
     println!("3BV：{:?}", video.data.static_params.bbbv);
     println!("宽度：{:?}", video.data.width);
@@ -222,6 +274,8 @@ fn BaseVideo_works() {
     // println!("3BV：{:?}", video.s.s);
     println!("time：{:?}", video.data.get_rtime().unwrap());
     println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
+    println!("start_time：{:?}", String::from_utf8(video.data.start_time.clone()).unwrap());
+    println!("end_time：{:?}", String::from_utf8(video.data.end_time.clone()).unwrap());
     println!("is win: {:?}", video.data.is_completed);
     video.data.set_current_time(1.9);
     println!("bbbv_solved(1.9s): {:?}", video.data.get_bbbv_solved());

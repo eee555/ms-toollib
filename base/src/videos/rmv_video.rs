@@ -237,6 +237,7 @@ impl RmvVideo {
             }
         }
         self.data.set_rtime(self.data.video_action_state_recorder.last().unwrap().time).unwrap();
+        self.data.software = "Viennasweeper".as_bytes().to_vec();
         self.data.can_analyse = true;
         return Ok(());
     }

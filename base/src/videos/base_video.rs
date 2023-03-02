@@ -3,7 +3,7 @@
 use crate::board::GameBoard;
 use crate::cal_cell_nums;
 use crate::miscellaneous::{s_to_ms, time_ms_between};
-use crate::utils::{cal3BV, cal_isl, cal_op, refresh_board};
+use crate::utils::{cal_bbbv, cal_isl, cal_op, refresh_board};
 use crate::videos::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
     analyse_super_fl_local, analyse_survive_poss, analyse_vision_transfer,
@@ -64,6 +64,8 @@ pub struct MinesweeperBoard {
     pointer_x: usize,
     pointer_y: usize,
     pre_flag_num: usize,
+    // 中键是否按下，配合“m”、“mc”、“mr”。
+    middle_hold: bool,
 }
 
 impl Default for MinesweeperBoard {
@@ -85,6 +87,7 @@ impl Default for MinesweeperBoard {
             pointer_x: 0,
             pointer_y: 0,
             pre_flag_num: 0,
+            middle_hold: false,
         }
     }
 }
@@ -246,70 +249,63 @@ impl MinesweeperBoard {
     /// 1：推进了局面，但没有改变ai对局面的判断，特指标雷。  
     /// 2：改变局面的操作，左键、双击。
     /// 3: 正确的双击.   
-    /// e的类型有8种，lc（左键按下）, lr（左键抬起）, rc（右键按下）, rr（右键抬起）, mc（中键按下）, mr（中键抬起）,   
-    ///     cc（双键按下，但不确定是哪个键），pf（在开始前预先标雷，而又失去了标记的过程）；这和arbiter是略微不同的。  
+    /// e的类型有11种，lc（左键按下）, lr（左键抬起）, rc（右键按下）, rr（右键抬起）, mc（中键按下）, mr（中键抬起）,   
+    ///     cc（双键按下，但不确定是哪个键），pf（在开始前预先标雷，而又失去了标记的过程）,   
+    ///     l（左键按下或抬起）, r（右键按下或抬起）, m（中键按下或抬起）。  
     /// ## 注意事项：
     /// - 在理想的鼠标状态机中，有些情况是不可能的，例如右键没有抬起就按下两次，但在阿比特中就观察到这种事情。
-    // 先确保正确，再优化吧
+    // 局面外按下的事件，以及连带的释放一律对鼠标状态没有任何影响，UI框架不会激活回调
+    // PreFlaging状态下不可能遇到l、r、m、mc、mr
+    // Ready状态下不可能遇到m、mc、mr
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
         // println!("e: {:?}", e);
+        if pos.0 == self.row && pos.1 == self.column && (e == "rc" || e == "lc" || e == "cc") {
+            // 这里按理应该报错，局面外的按下不该进来
+            return Ok(0);
+        }
         match self.game_board_state {
             GameBoardState::Ready => match e {
-                "rr" | "mv" => {}
-                "lc" => {
-                    self.mouse_state = MouseState::DownUp;
-                    if pos.0 < self.row && pos.1 < self.column {
-                        self.game_board_state = GameBoardState::PreFlaging;
-                    }
+                "mv" => {
                     return Ok(0);
                 }
-                "lr" => match self.mouse_state {
-                    MouseState::DownUp => {
-                        // 这里实际上不可能
-                        if pos.0 == self.row && pos.1 == self.column {
-                            self.mouse_state = MouseState::UpUp;
-                            return Ok(0);
-                        }
-                        if self.game_board[pos.0][pos.1] == 10 {
-                            self.game_board_state = GameBoardState::Playing;
-                        } else {
-                            return Ok(0);
-                        }
-                    }
-                    MouseState::Chording
-                    | MouseState::DownUpAfterChording
-                    | MouseState::ChordingNotFlag
-                    | MouseState::UpUp
-                    | MouseState::Undefined => {}
-                    _ => return Err(()),
-                },
+                "lc" | "l" => {
+                    self.game_board_state = GameBoardState::PreFlaging;
+                    self.mouse_state = MouseState::DownUp;
+                    return Ok(0);
+                }
                 "pf" => {
-                    if self.game_board[pos.0][pos.1] == 10 {
-                        self.pre_flag_num += 1;
-                        self.game_board_state = GameBoardState::PreFlaging;
-                        return self.right_click(pos.0, pos.1);
-                    } else {
-                        return Err(());
-                    }
+                    assert!(
+                        self.game_board[pos.0][pos.1] == 10,
+                        "按定义，pf不能在标雷上执行。请报告这个奇怪的录像。"
+                    );
+                    self.pre_flag_num += 1;
+                    self.game_board_state = GameBoardState::PreFlaging;
+                    return self.right_click(pos.0, pos.1);
                 }
-                "rc" => {
-                    if pos.0 == self.row && pos.1 == self.column {
-                        self.mouse_state = MouseState::UpDownNotFlag;
-                        return Ok(0);
-                    } else {
-                        self.pre_flag_num += 1;
-                        self.game_board_state = GameBoardState::PreFlaging;
-                        return self.right_click(pos.0, pos.1);
-                    }
+                "rc" | "r" => {
+                    self.pre_flag_num = 1;
+                    // 这里和上面规则矛盾了，要想办法
+                    self.game_board_state = GameBoardState::PreFlaging;
+                    self.mouse_state = MouseState::UpDown;
+                    return self.right_click(pos.0, pos.1);
                 }
-                _ => return Err(()),
+                _ => return Err(()), // rr、lr直接报错
             },
             GameBoardState::PreFlaging => match e {
-                "lc" | "rr" | "mv" => {}
+                "lc" | "rr" | "mv" => {} // 和playing状态下恰好一致
                 "lr" => match self.mouse_state {
                     MouseState::DownUp => {
                         if pos.0 == self.row && pos.1 == self.column {
                             self.mouse_state = MouseState::UpUp;
+                            if self.pre_flag_num == 0 {
+                                self.game_board_state = GameBoardState::Ready;
+                                self.flag = 0;
+                                self.flagedList.clear();
+                                self.double = 0;
+                                self.left = 0;
+                                self.right = 0;
+                                self.game_board[pos.0][pos.1] = 10;
+                            }
                             return Ok(0);
                         }
                         if self.game_board[pos.0][pos.1] == 10 {
@@ -326,18 +322,14 @@ impl MinesweeperBoard {
                     _ => return Err(()),
                 },
                 "pf" => {
-                    if self.game_board[pos.0][pos.1] == 10 {
-                        self.pre_flag_num += 1;
-                        return self.right_click(pos.0, pos.1);
-                    } else {
-                        return Err(());
-                    }
+                    assert!(
+                        self.game_board[pos.0][pos.1] == 10,
+                        "按定义，pf不能在标雷上执行。请报告这个奇怪的录像。"
+                    );
+                    self.pre_flag_num += 1;
+                    return self.right_click(pos.0, pos.1);
                 }
                 "rc" => {
-                    if pos.0 == self.row && pos.1 == self.column {
-                        self.mouse_state = MouseState::UpDownNotFlag;
-                        return Ok(0);
-                    }
                     if self.game_board[pos.0][pos.1] == 10 {
                         self.pre_flag_num += 1;
                         self.game_board_state = GameBoardState::PreFlaging;
@@ -364,15 +356,6 @@ impl MinesweeperBoard {
             GameBoardState::Playing => {}
             _ => return Ok(0),
         }
-        // if pos.0 == self.row && pos.1 == self.column {
-        //     // 发生这种事情，是由于阿比特会把点到局面外，改成点到最右下角
-        //     self.mouse_state = MouseState::UpUp;
-        //     return Ok(0);
-        // }
-        // if pos.0 >= self.row || pos.1 >= self.column {
-        //     // 越界错误，未定义的行为，不可恢复的错误
-        //     return Err(());
-        // }
         match e {
             "lc" => match self.mouse_state {
                 MouseState::UpUp => self.mouse_state = MouseState::DownUp,
@@ -416,13 +399,38 @@ impl MinesweeperBoard {
                 MouseState::UpUp => self.mouse_state = MouseState::UpUp,
                 MouseState::Undefined => self.mouse_state = MouseState::UpUp,
             },
-            "rc" => match self.mouse_state {
-                MouseState::UpUp => {
+            "l" => match self.mouse_state {
+                MouseState::DownUp => {
+                    self.mouse_state = MouseState::UpUp;
                     if pos.0 == self.row && pos.1 == self.column {
-                        // 点在界面外
-                        self.mouse_state = MouseState::UpDownNotFlag;
                         return Ok(0);
                     }
+                    // println!("x={:?}, y={:?}", pos.0, pos.1);
+                    return self.left_click(pos.0, pos.1);
+                }
+                MouseState::Chording => {
+                    self.mouse_state = MouseState::UpDown;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
+                    return self.chording_click(pos.0, pos.1);
+                }
+                MouseState::DownUpAfterChording => self.mouse_state = MouseState::UpUp,
+                MouseState::ChordingNotFlag => {
+                    self.mouse_state = MouseState::UpDown;
+                    self.right -= 1;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
+                    return self.chording_click(pos.0, pos.1);
+                }
+                MouseState::UpUp => self.mouse_state = MouseState::DownUp,
+                MouseState::UpDown => self.mouse_state = MouseState::Chording,
+                MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
+                MouseState::Undefined => self.mouse_state = MouseState::UpUp,
+            },
+            "rc" => match self.mouse_state {
+                MouseState::UpUp => {
                     if self.game_board[pos.0][pos.1] < 10 {
                         self.mouse_state = MouseState::UpDownNotFlag;
                     } else {
@@ -463,9 +471,50 @@ impl MinesweeperBoard {
                 MouseState::UpUp => self.mouse_state = MouseState::UpUp,
                 MouseState::Undefined => self.mouse_state = MouseState::UpUp,
             },
-            "mc" | "mv" => {}
+            "r" => match self.mouse_state {
+                MouseState::UpDown => self.mouse_state = MouseState::UpUp,
+                MouseState::UpDownNotFlag => self.mouse_state = MouseState::UpUp,
+                MouseState::Chording => {
+                    self.mouse_state = MouseState::DownUpAfterChording;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
+                    return self.chording_click(pos.0, pos.1);
+                }
+                MouseState::ChordingNotFlag => {
+                    self.mouse_state = MouseState::DownUpAfterChording;
+                    self.right -= 1;
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
+                    return self.chording_click(pos.0, pos.1);
+                }
+                // 以下情况其实是不可能的
+                MouseState::UpUp => {
+                    if self.game_board[pos.0][pos.1] < 10 {
+                        self.mouse_state = MouseState::UpDownNotFlag;
+                    } else {
+                        self.mouse_state = MouseState::UpDown;
+                    }
+                    return self.right_click(pos.0, pos.1);
+                }
+                MouseState::DownUp => self.mouse_state = MouseState::Chording,
+                MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,
+                MouseState::Undefined => self.mouse_state = MouseState::UpUp,
+            },
+            "mv" => {}
+            "mc" => {
+                self.middle_hold = true;
+            }
             "mr" => {
+                self.middle_hold = false;
                 return self.chording_click(pos.0, pos.1);
+            }
+            "m" => {
+                self.middle_hold = !self.middle_hold;
+                if !self.middle_hold {
+                    return self.chording_click(pos.0, pos.1);
+                }
             }
             "cc" => match self.mouse_state {
                 MouseState::DownUp => self.mouse_state = MouseState::Chording,
@@ -826,7 +875,7 @@ pub struct BaseVideo {
     pub is_fair: bool,
     /// 是不是盲扫，初始是false，不是盲扫的话，分析完还是false
     pub nf: bool,
-    /// 游戏模式。0是标准；1是upk；2是cheat；3是Density（我也不知道什么意思）；其他以后加
+    /// 游戏模式。0->标准、1->upk；2->cheat；3->Density（来自Viennasweeper、clone软件）、4->win7、5->竞速无猜、6->强无猜、7->弱无猜、8->准无猜、9->强可猜、10->弱可猜
     pub mode: u16,
     /// 游戏难度（级别）。3是初级；4是中级；5是高级；6是自定义。
     pub level: u8,
@@ -895,7 +944,7 @@ pub struct BaseVideo {
 impl Default for BaseVideo {
     fn default() -> Self {
         BaseVideo {
-            software: vec![0],
+            software: vec![],
             width: 0,
             height: 0,
             mine_num: 0,
@@ -916,12 +965,12 @@ impl Default for BaseVideo {
             delta_time: 0.0,
             current_time: 0.0,
             current_event_id: 0,
-            player_designator: vec![0],
-            race_designator: vec![0],
-            uniqueness_designator: vec![0],
-            start_time: vec![0],
-            end_time: vec![0],
-            country: vec![0],
+            player_designator: vec![],
+            race_designator: vec![],
+            uniqueness_designator: vec![],
+            start_time: vec![],
+            end_time: vec![],
+            country: vec![],
             raw_data: vec![],
             offset: 0,
             static_params: StaticParams::default(),
@@ -987,7 +1036,7 @@ impl BaseVideo {
     /// 游戏前实例化，游戏中不断调用step方法来维护。
     #[cfg(any(feature = "py", feature = "rs"))]
     pub fn new_before_game(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> BaseVideo {
-        let bbbv = cal3BV(&board);
+        let bbbv = cal_bbbv(&board);
         // 这里算出来的雷数不一定准
         let mine_num = board.iter().fold(0, |y, row| {
             y + row
@@ -1199,6 +1248,7 @@ impl BaseVideo {
         self.static_params = StaticParams::default();
         self.game_dynamic_params = GameDynamicParams::default();
         self.video_dynamic_params = VideoDynamicParams::default();
+        self.game_board_state = GameBoardState::Ready;
     }
     /// 获胜后标上所有的雷，没获胜则返回
     pub fn win_then_flag_all_mine(&mut self) {
@@ -1275,7 +1325,7 @@ impl BaseVideo {
             svi.prior_game_board_id = self.game_board_stream.len() - 1;
             if svi.mouse != "mv" {
                 let old_state = b.game_board_state;
-                // println!("{:?}, {:?}", self.events[ide].time, self.events[ide].mouse);
+                // println!("{:?}, {:?}", svi.mouse, svi.y);
                 let u_level = b
                     .step(
                         &svi.mouse,
@@ -1353,6 +1403,8 @@ impl BaseVideo {
         self.game_dynamic_params.left_s = b.left as f64 / self.game_dynamic_params.rtime;
         self.game_dynamic_params.right = b.right;
         self.game_dynamic_params.right_s = b.right as f64 / self.game_dynamic_params.rtime;
+        // println!("---{:?}", b.bbbv_solved);
+        self.video_dynamic_params.bbbv_solved = b.bbbv_solved;
         self.video_dynamic_params.ce = b.ce;
         self.video_dynamic_params.ce_s = b.ce as f64 / self.game_dynamic_params.rtime;
         self.game_dynamic_params.double = b.double;
@@ -1449,7 +1501,7 @@ impl BaseVideo {
             //     "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
             //     e.time, e.mouse, e.x, e.y, e.useful_level
             // );
-            if e.mouse != "mv" {
+            if e.mouse != "mmv" {
                 println!(
                     "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
                     e.time, e.mouse, e.x, e.y, e.useful_level
@@ -1671,7 +1723,7 @@ impl BaseVideo {
                 if self.width != board[0].len() || self.height != board.len() {
                     return Err(());
                 }
-                self.static_params.bbbv = cal3BV(&board);
+                self.static_params.bbbv = cal_bbbv(&board);
             }
             GameBoardState::Display | GameBoardState::Win | GameBoardState::Loss => return Err(()),
         }
@@ -1889,11 +1941,11 @@ impl BaseVideo {
     }
     pub fn get_etime(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
+        if bbbv_solved == 0 {
+            return Ok(0.0);
+        }
         if self.game_board_state == GameBoardState::Display {
             let t = self.video_action_state_recorder[self.current_event_id].time - self.delta_time;
-            if bbbv_solved == 0 {
-                return Ok(0.0);
-            }
             Ok(t / bbbv_solved as f64 * self.static_params.bbbv as f64)
         } else {
             let t = self.game_dynamic_params.rtime;
@@ -1902,16 +1954,22 @@ impl BaseVideo {
     }
     pub fn get_bbbv_s(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
-        if self.current_time < 0.00099 {
-            return Ok(0.0);
+        if self.game_board_state == GameBoardState::Display {
+            if self.current_time < 0.00099 {
+                return Ok(0.0);
+            }
+            return Ok(bbbv_solved as f64 / self.current_time);
         }
-        Ok(bbbv_solved as f64 / self.current_time)
+        Ok(bbbv_solved as f64 / self.game_dynamic_params.rtime)
     }
     pub fn get_bbbv_solved(&self) -> Result<usize, ()> {
         match self.game_board_state {
             GameBoardState::Display => Ok(self.video_action_state_recorder[self.current_event_id]
                 .key_dynamic_params
                 .bbbv_solved),
+            // GameBoardState::Win | GameBoardState::Loss => Ok(self
+            //     .video_dynamic_params
+            //     .bbbv_solved),
             GameBoardState::Win | GameBoardState::Loss => Ok(self
                 .video_action_state_recorder
                 .last()
@@ -1923,7 +1981,7 @@ impl BaseVideo {
     }
     pub fn get_stnb(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
-        // println!("self.current_time:{:?}", self.current_time);
+        // println!("self.current_time:{:?}", bbbv_solved);
         if self.game_board_state == GameBoardState::Display && self.current_time < 0.00099 {
             return Ok(0.0);
         }

@@ -7,7 +7,10 @@ use pyo3::wrap_pyfunction;
 
 use ms_toollib::*;
 mod board;
-pub use board::{PyAvfVideo, PyBaseVideo, PyEvfVideo, PyGameBoard, PyMinesweeperBoard, PyRmvVideo, PyBoard};
+pub use board::{
+    PyAvfVideo, PyBaseVideo, PyBoard, PyEvfVideo, PyGameBoard, PyMinesweeperBoard, PyMvfVideo,
+    PyRmvVideo,
+};
 
 // pip install maturin
 // maturin publish --manylinux 2014
@@ -55,9 +58,9 @@ fn py_laymine(
 }
 
 #[pyfunction]
-#[pyo3(name = "cal3BV")]
-fn py_cal3BV(board: Vec<Vec<i32>>) -> PyResult<usize> {
-    Ok(cal3BV(&board))
+#[pyo3(name = "cal_bbbv")]
+fn py_cal_bbbv(board: Vec<Vec<i32>>) -> PyResult<usize> {
+    Ok(cal_bbbv(&board))
 }
 
 #[pyfunction]
@@ -304,7 +307,7 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_refresh_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_matrixs, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_op, m)?)?;
-    m.add_function(wrap_pyfunction!(py_cal3BV, m)?)?;
+    m.add_function(wrap_pyfunction!(py_cal_bbbv, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine, m)?)?;
     m.add_function(wrap_pyfunction!(py_get_all_not_and_is_mine_on_board, m)?)?;
@@ -328,6 +331,7 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyMinesweeperBoard>()?;
     m.add_class::<PyAvfVideo>()?;
     m.add_class::<PyRmvVideo>()?;
+    m.add_class::<PyMvfVideo>()?;
     m.add_class::<PyEvfVideo>()?;
     m.add_class::<PyBaseVideo>()?;
     m.add_class::<PyGameBoard>()?;

@@ -1,7 +1,7 @@
 //! # 扫雷算法工具箱
-//! 基于Rust语言，提供扫雷相关算法的高效、内存安全的实现，并发布到各个平台。目前包括[crates.io](https://crates.io/crates/ms_toollib)、[pypi.org](https://pypi.org/project/ms-toollib/)、[npmjs.com](https://www.npmjs.com/package/ms-toollib)这三个平台。安装、使用这些工具箱需要有对应语言的基本的知识。以下是快速入门。
+//! 基于Rust语言，提供扫雷游戏相关算法的高效、内存安全的实现，并发布到各个平台。目前包括[crates.io](https://crates.io/crates/ms_toollib)、[pypi.org](https://pypi.org/project/ms-toollib/)、[npmjs.com](https://www.npmjs.com/package/ms-toollib)这三个平台。Python、Rust、Javascript、Typescript的用户可以流畅地使用相应的功能，C、C++的用户也可以使用。安装、使用这些工具箱需要有对应语言的基本的知识。项目地址在[ms_toollib](https://github.com/eee555/ms_toollib)。以下是快速入门。
 //! ## 局面格式说明
-//! - 游戏局面的变量名为game_board: Vec<Vec<i32>>；在Python中为List[List[int]]；在Javascript中为Array(Array())；在C中为struct Board { struct Row *rows; size_t n_row; }; struct Row { int32_t *cells; size_t n_column; }；在C++中为std::vector<int32_t>。其中0代表空；1到8代表数字1到8；10代表未打开；11代表算法认为是雷（百分百正确的），或玩家在游戏中标的雷（玩家认为这是雷，但玩家可能犯错）；12代表算法确定不是雷，但模样是未打开的样子；14表示踩到了雷游戏失败以后显示的标错的雷对应叉雷；15表示踩到了雷游戏失败了对应红雷；15表示背景不透明的白雷，失败后显示出来的其他的雷；18表示局面中，由于双击的高亮，导致看起来像0的格子。第一个索引是行，第二个索引是列，例如：高级中，game_board[0][0]代表最左上角位置、game_board[15][29]代表最右下角位置  
+//! - 游戏局面的变量名为game_board: Vec<Vec<i32>>；在Python中为List[List[int]]；在Javascript、Typescript中为Array(Array())；在C中为struct Board { struct Row *rows; size_t n_row; }; struct Row { int32_t *cells; size_t n_column; }；在C++中为std::vector<int32_t>。其中0代表空；1到8代表数字1到8；10代表未打开；11代表算法认为是雷（百分百正确的），或玩家在游戏中标的雷（玩家认为这是雷，但玩家可能犯错）；12代表算法确定不是雷，但模样是未打开的样子；14表示踩到了雷游戏失败以后显示的标错的雷对应叉雷；15表示踩到了雷游戏失败了对应红雷；15表示背景不透明的白雷，失败后显示出来的其他的雷；18表示局面中，由于双击的高亮，导致看起来像0的格子。第一个索引是行，第二个索引是列，例如：高级中，game_board[0][0]代表最左上角位置、game_board[15][29]代表最右下角位置  
 //! - 真实局面的变量名为board: Vec<Vec<i32>>。其中0代表空；1到8代表数字1到8；-1代表是雷。  
 //! - 解释：游戏局面和局面的区别在于，游戏局面是游戏时玩家看见的局面，随鼠标的点击操作而变化；而真实局面是可以看见雷的实际局面，不会随操作而变化。  
 //! - 注意：游戏局面中11的作用类似于游戏时的标雷，但是区别在于，玩家标出的雷可能是错误的，而算法的判断一定是正确的。这两种情况都用同一个数字表示。因为算法需要保证百分百的正确性，通俗地讲，玩家标出来的雷，算法一个也不相信；意味着这两种含义不可能同时出现。  

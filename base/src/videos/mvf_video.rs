@@ -208,10 +208,6 @@ impl MvfVideo {
         // println!("s: {:?}, byte: {:?}, bit: {:?}", s, byte, bit);
 
         let event_size = self.data.get_u24()?;
-
-        // println!("{:?}", byte);
-        // println!("{:?}", bit);
-
         let mut prev_rb;
         let mut prev_mb;
         let mut prev_lb;

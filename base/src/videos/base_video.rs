@@ -255,8 +255,6 @@ impl MinesweeperBoard {
     /// ## 注意事项：
     /// - 在理想的鼠标状态机中，有些情况是不可能的，例如右键没有抬起就按下两次，但在阿比特中就观察到这种事情。
     // 局面外按下的事件，以及连带的释放一律对鼠标状态没有任何影响，UI框架不会激活回调
-    // PreFlaging状态下不可能遇到l、r、m、mc、mr
-    // Ready状态下不可能遇到m、mc、mr
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
         // println!("e: {:?}", e);
         if pos.0 == self.row && pos.1 == self.column && (e == "rc" || e == "lc" || e == "cc") {
@@ -268,9 +266,17 @@ impl MinesweeperBoard {
                 "mv" => {
                     return Ok(0);
                 }
-                "lc" | "l" => {
-                    self.game_board_state = GameBoardState::PreFlaging;
-                    self.mouse_state = MouseState::DownUp;
+                "lc" => {
+                    //  "l"处理不了，很复杂，以后再说
+                    match self.mouse_state {
+                        MouseState::UpUp => {
+                            self.game_board_state = GameBoardState::PreFlaging;
+                            self.mouse_state = MouseState::DownUp
+                        }
+                        MouseState::UpDown => self.mouse_state = MouseState::Chording,
+                        MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
+                        _ => return Err(()),
+                    }
                     return Ok(0);
                 }
                 "pf" => {
@@ -282,29 +288,63 @@ impl MinesweeperBoard {
                     self.game_board_state = GameBoardState::PreFlaging;
                     return self.right_click(pos.0, pos.1);
                 }
-                "rc" | "r" => {
-                    self.pre_flag_num = 1;
-                    // 这里和上面规则矛盾了，要想办法
-                    self.game_board_state = GameBoardState::PreFlaging;
-                    self.mouse_state = MouseState::UpDown;
-                    return self.right_click(pos.0, pos.1);
+                //  "r"处理不了，很复杂，以后再说
+                "rc" => match self.mouse_state {
+                    MouseState::UpUp => {
+                        self.pre_flag_num = 1;
+                        self.game_board_state = GameBoardState::PreFlaging;
+                        self.mouse_state = MouseState::UpDown;
+                        return self.right_click(pos.0, pos.1);
+                    }
+                    MouseState::DownUpAfterChording => {
+                        self.mouse_state = MouseState::Chording;
+                        return Ok(0);
+                    }
+                    _ => return Err(()),
+                },
+                "lr" => match self.mouse_state {
+                    MouseState::Chording | MouseState::ChordingNotFlag => {
+                        self.mouse_state = MouseState::UpDown;
+                        return Ok(0);
+                    }
+                    MouseState::DownUpAfterChording => {
+                        self.mouse_state = MouseState::UpUp;
+                        return Ok(0);
+                    }
+                    _ => return Err(()),
+                },
+                "rr" => match self.mouse_state {
+                    MouseState::UpDown => {
+                        self.mouse_state = MouseState::UpUp;
+                        return Ok(0);
+                    }
+                    MouseState::Chording => {
+                        self.mouse_state = MouseState::DownUpAfterChording;
+                        return Ok(0);
+                    }
+                    _ => return Err(()),
+                },
+                "cc" => {
+                    match self.mouse_state {
+                        MouseState::DownUp => self.mouse_state = MouseState::Chording,
+                        MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,
+                        MouseState::UpDown => self.mouse_state = MouseState::Chording,
+                        MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
+                        _ => return Err(()),
+                    }
+                    return Ok(0);
                 }
-                _ => return Err(()), // rr、lr直接报错
+                _ => return Err(()),
             },
             GameBoardState::PreFlaging => match e {
-                "lc" | "rr" | "mv" => {} // 和playing状态下恰好一致
+                "lc" | "rr" | "mv" => {} // 和playing状态下恰好一致，主要是计算点击次数
                 "lr" => match self.mouse_state {
                     MouseState::DownUp => {
                         if pos.0 == self.row && pos.1 == self.column {
                             self.mouse_state = MouseState::UpUp;
                             if self.pre_flag_num == 0 {
                                 self.game_board_state = GameBoardState::Ready;
-                                self.flag = 0;
-                                self.flagedList.clear();
-                                self.double = 0;
-                                self.left = 0;
-                                self.right = 0;
-                                self.game_board[pos.0][pos.1] = 10;
+                                self.clear_click_num();
                             }
                             return Ok(0);
                         }
@@ -329,28 +369,53 @@ impl MinesweeperBoard {
                     self.pre_flag_num += 1;
                     return self.right_click(pos.0, pos.1);
                 }
-                "rc" => {
-                    if self.game_board[pos.0][pos.1] == 10 {
-                        self.pre_flag_num += 1;
-                        self.game_board_state = GameBoardState::PreFlaging;
-                        return self.right_click(pos.0, pos.1);
-                    } else {
-                        self.pre_flag_num -= 1;
-                        if self.pre_flag_num == 0 {
-                            self.game_board_state = GameBoardState::Ready;
-                            self.flag = 0;
-                            self.flagedList.clear();
-                            self.double = 0;
-                            self.left = 0;
-                            self.right = 0;
-                            self.game_board[pos.0][pos.1] = 10;
-                            return Ok(0);
-                        } else {
+                "rc" => match self.mouse_state {
+                    MouseState::UpUp => {
+                        self.mouse_state = MouseState::UpDown;
+                        if self.game_board[pos.0][pos.1] == 10 {
+                            self.pre_flag_num += 1;
+                            self.game_board_state = GameBoardState::PreFlaging;
                             return self.right_click(pos.0, pos.1);
+                        } else {
+                            self.pre_flag_num -= 1;
+                            if self.pre_flag_num == 0 {
+                                self.game_board_state = GameBoardState::Ready;
+                                self.flag = 0;
+                                self.flagedList.clear();
+                                self.double = 0;
+                                self.left = 0;
+                                self.right = 0;
+                                self.game_board[pos.0][pos.1] = 10;
+                                return Ok(0);
+                            } else {
+                                return self.right_click(pos.0, pos.1);
+                            }
                         }
                     }
+                    MouseState::DownUp => {
+                        if self.pre_flag_num == 0 {
+                            self.game_board_state = GameBoardState::Ready;
+                        }
+                        self.mouse_state = MouseState::Chording
+                    }
+                    MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,
+                    _ => return Err(()),
+                },
+                "cc" => {
+                    match self.mouse_state {
+                        MouseState::DownUp => {
+                            if self.pre_flag_num == 0 {
+                                self.game_board_state = GameBoardState::Ready;
+                            }
+                            self.mouse_state = MouseState::Chording;
+                        }
+                        MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,
+                        MouseState::UpDown => self.mouse_state = MouseState::Chording,
+                        MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
+                        _ => return Err(()),
+                    }
+                    return Ok(0);
                 }
-
                 _ => return Err(()),
             },
             GameBoardState::Playing => {}
@@ -605,6 +670,14 @@ impl MinesweeperBoard {
         self.game_board_state = GameBoardState::Ready;
         self.pointer_x = 0;
         self.pointer_y = 0;
+    }
+    // 清空状态机里的点击次数
+    fn clear_click_num(&mut self) {
+        self.flag = 0;
+        self.flagedList.clear();
+        self.double = 0;
+        self.left = 0;
+        self.right = 0;
     }
 }
 
@@ -1137,6 +1210,7 @@ impl BaseVideo {
                 self.is_completed = false;
                 // 这是和录像时间成绩有关
                 let t = t_ms as f64 / 1000.0;
+                self.static_params.bbbv = cal_bbbv(&self.board);
                 self.game_dynamic_params.rtime = t;
                 self.game_dynamic_params.rtime_ms = t_ms;
                 self.video_dynamic_params.etime =
@@ -1154,6 +1228,7 @@ impl BaseVideo {
                     .into_bytes();
                 self.is_completed = true;
                 let t = t_ms as f64 / 1000.0;
+                self.static_params.bbbv = cal_bbbv(&self.board);
                 self.game_dynamic_params.rtime = t;
                 self.game_dynamic_params.rtime_ms = t_ms;
                 self.video_dynamic_params.etime = t;
@@ -1723,7 +1798,6 @@ impl BaseVideo {
                 if self.width != board[0].len() || self.height != board.len() {
                     return Err(());
                 }
-                self.static_params.bbbv = cal_bbbv(&board);
             }
             GameBoardState::Display | GameBoardState::Win | GameBoardState::Loss => return Err(()),
         }

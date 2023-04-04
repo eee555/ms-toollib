@@ -284,8 +284,47 @@ fn BaseVideo_works() {
 }
 
 #[test]
-fn temp() {
-    let mut board=522u16.to_le_bytes();
-    
-    println!("{:?}", board);
+fn BaseVideo_works_2() {
+    let board = vec![
+        vec![1, 1, 2, 1, 1, 0, 0, 0],
+        vec![1, -1, 2, -1, 1, 0, 0, 0],
+        vec![1, 1, 2, 1, 1, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![2, 2, 1, 0, 0, 0, 0, 0],
+        vec![-1, -1, 2, 0, 0, 1, 1, 1],
+        vec![-1, -1, 3, 0, 0, 2, -1, 2],
+        vec![-1, -1, 2, 0, 0, 2, -1, 2],
+    ];
+    let mut video = BaseVideo::new_before_game(board, 16);
+    video.step("rc", (17, 16)).unwrap();
+    println!("{:?}", video.minesweeper_board.mouse_state);
+    println!("{:?}", video.game_board_state);
+
+
+    video.step("cc", (17, 16)).unwrap();
+    println!("{:?}", video.minesweeper_board.mouse_state);
+    println!("{:?}", video.game_board_state);
+
+    // thread::sleep_ms(2000);
+
+
+    video.step("lr", (17, 16)).unwrap();
+    // thread::sleep_ms(3000);
+
+    println!("{:?}", video.minesweeper_board.mouse_state);
+    println!("{:?}", video.game_board_state);
+    video.step("rr", (17, 16)).unwrap();
+    println!("44:{:?}", video.minesweeper_board.mouse_state);
+    println!("55:{:?}", video.game_board_state);
+    // println!("666:{:?}", video.minesweeper_board.game_board);
+
+    video.step("rc", (17, 16)).unwrap();
+    println!("66:{:?}", video.minesweeper_board.mouse_state);
+    println!("77:{:?}", video.game_board_state);
+    video.step("rr", (17, 16)).unwrap();
+    println!("88:{:?}", video.minesweeper_board.mouse_state);
+    println!("99:{:?}", video.game_board_state);
 }
+
+
+

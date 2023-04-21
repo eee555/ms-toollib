@@ -882,15 +882,15 @@ fn adjust_step(
 ) -> (Vec<Vec<i32>>, bool) {
     let mut b = board.clone(); // 克隆一个board的备份
     let mut bg = board_of_game.clone(); // 克隆一个board_of_game的备份
-    // let mut pc = plan_click.clone();
+                                        // let mut pc = plan_click.clone();
     let mut r = remain_mine_num; // 克隆一个当前还要埋的雷数的备份
     let mut rn = remain_not_mine_num; // 克隆一个当前还要埋的非雷数的备份
     for (x, y) in plan_click.into_iter() {
         bg[*x][*y] = 1;
     } // 点开当前的board_of_game的备份上的计划点开的格子，用1临时表示
-    // let b_backup = b.clone(); // 克隆一个board的备份
-    // let bg_backup = bg.clone(); // 克隆一个board_of_game的备份
-    
+      // let b_backup = b.clone(); // 克隆一个board的备份
+      // let bg_backup = bg.clone(); // 克隆一个board_of_game的备份
+
     let (Ases, xses, mut bses) = refresh_matrixses(&bg);
     // 所有分支的前沿都已遍历完成。
 

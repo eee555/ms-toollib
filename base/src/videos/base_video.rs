@@ -1378,7 +1378,7 @@ impl BaseVideo {
         self.static_params.cell6 = cell_nums[6];
         self.static_params.cell7 = cell_nums[7];
         self.static_params.cell8 = cell_nums[8];
-        self.static_params.op = cal_op(self.board.clone());
+        self.static_params.op = cal_op(&self.board);
         self.static_params.isl = cal_isl(&self.board);
     }
     /// 进行局面的推衍，计算基本的局面参数，记录所有中间过程。不包含概率计算。

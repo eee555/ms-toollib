@@ -207,7 +207,7 @@ impl Board {
         }
         let a = cal3BVonIsland(&self.board);
         if !self.has_cal_openings {
-            self.openings = cal_op(self.board.clone());
+            self.openings = cal_op(&self.board);
             self.has_cal_openings = true;
         }
         self.has_cal_bbbv = true;
@@ -218,7 +218,7 @@ impl Board {
             return self.openings;
         }
         self.has_cal_openings = true;
-        return cal_op(self.board.clone());
+        return cal_op(&self.board);
     }
     pub fn get_isl(&mut self) -> usize {
         if self.has_cal_islands {

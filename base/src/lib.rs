@@ -61,4 +61,6 @@ mod OBR;
 #[cfg(any(feature = "py", feature = "rs"))]
 pub use OBR::ImageBoard;
 
+mod safe_board;
+
 const ENUM_LIMIT: usize = 55;

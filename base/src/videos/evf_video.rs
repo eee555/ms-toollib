@@ -23,7 +23,7 @@ use crate::MouseState;
 /// ```
 pub struct EvfVideo {
     pub file_name: String,
-    pub data: BaseVideo,
+    pub data: BaseVideo<Vec<Vec<i32>>>,
 }
 
 impl EvfVideo {
@@ -31,7 +31,7 @@ impl EvfVideo {
     pub fn new(file_name: &str) -> EvfVideo {
         EvfVideo {
             file_name: file_name.to_string(),
-            data: BaseVideo::new_with_file(file_name),
+            data: BaseVideo::<Vec<Vec<i32>>>::new_with_file(file_name),
         }
     }
     #[cfg(feature = "js")]
@@ -63,7 +63,6 @@ impl EvfVideo {
         //     }
         //     println!("");
         // }
-
 
         loop {
             let the_byte = self.data.get_char()?;
@@ -143,7 +142,6 @@ impl EvfVideo {
         //     println!("");
         // }
 
-
         loop {
             let byte = self.data.get_u8()?;
             let mouse;
@@ -170,13 +168,15 @@ impl EvfVideo {
             let time = self.data.get_u24()? as f64 / 1000.0;
             let x = self.data.get_u16()?;
             let y = self.data.get_u16()?;
-            self.data.video_action_state_recorder.push(VideoActionStateRecorder {
-                time,
-                mouse: mouse.to_string(),
-                x,
-                y,
-                ..VideoActionStateRecorder::default()
-            });
+            self.data
+                .video_action_state_recorder
+                .push(VideoActionStateRecorder {
+                    time,
+                    mouse: mouse.to_string(),
+                    x,
+                    y,
+                    ..VideoActionStateRecorder::default()
+                });
         }
         let mut csum = [0; 32];
         if have_checksum {

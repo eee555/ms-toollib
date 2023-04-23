@@ -11,6 +11,7 @@ use getrandom::getrandom;
 use crate::board;
 
 use crate::safe_board;
+use crate::safe_board::BoardSize;
 use crate::ENUM_LIMIT;
 
 // 整个模块是最底层的一些小工具，如埋雷、局面分块、计算3BV等
@@ -19,13 +20,14 @@ use crate::ENUM_LIMIT;
 pub fn cal_op<T>(board_raw: &T) -> usize
 where
     T: std::ops::Index<usize> + safe_board::BoardSize,
-    T: std::ops::IndexMut<usize> + Clone,
     T::Output: std::ops::Index<usize, Output = i32>,
-    T::Output: std::ops::IndexMut<usize, Output = i32>,
 {
     let row = board_raw.get_row();
     let column = board_raw.get_column();
-    let mut board = board_raw.clone();
+    let mut board = vec![];
+    for _ in 0..row {
+        board.push(vec![0; column]);
+    }
     let mut op = 0;
     for i in 0..row {
         for j in 0..column {
@@ -40,16 +42,10 @@ where
 }
 
 // Board(x, y)位置的整个空都用数字1填满，仅计算Op用
-fn infect_board<T>(mut board: T, x: usize, y: usize) -> T
-where
-    T: std::ops::Index<usize> + safe_board::BoardSize,
-    T: std::ops::IndexMut<usize>,
-    T::Output: std::ops::Index<usize, Output = i32>,
-    T::Output: std::ops::IndexMut<usize, Output = i32>,
-{
+fn infect_board(mut board: Vec<Vec<i32>>, x: usize, y: usize) -> Vec<Vec<i32>> {
     // Board(x, y)位置的整个空都用数字1填满，仅计算Op用
-    let row = board.get_row();
-    let column = board.get_column();
+    let row = board.len();
+    let column = board[0].len();
     for i in max(1, x) - 1..min(row, x + 2) {
         for j in max(1, y) - 1..min(column, y + 2) {
             if board[i][j] == 0 {
@@ -62,9 +58,13 @@ where
 }
 
 /// 输入局面，计算岛  
-pub fn cal_isl(raw_board: &Vec<Vec<i32>>) -> usize {
-    let row = raw_board.len();
-    let column = raw_board[0].len();
+pub fn cal_isl<T>(raw_board: &T) -> usize
+where
+    T: std::ops::Index<usize> + safe_board::BoardSize,
+    T::Output: std::ops::Index<usize, Output = i32>,
+{
+    let row = raw_board.get_row();
+    let column = raw_board.get_column();
     let mut board = vec![vec![1; column]; row];
     for i in 0..row {
         for j in 0..column {
@@ -89,9 +89,13 @@ pub fn cal_isl(raw_board: &Vec<Vec<i32>>) -> usize {
 }
 
 /// 计算每个数字出现的次数  
-pub fn cal_cell_nums(raw_board: &Vec<Vec<i32>>) -> [usize; 9] {
-    let row = raw_board.len();
-    let column = raw_board[0].len();
+pub fn cal_cell_nums<T>(raw_board: &T) -> [usize; 9]
+where
+    T: std::ops::Index<usize> + BoardSize,
+    T::Output: std::ops::Index<usize, Output = i32>,
+{
+    let row = raw_board.get_row();
+    let column = raw_board.get_column();
     let mut ans = [0; 9];
     for i in 0..row {
         for j in 0..column {
@@ -558,9 +562,7 @@ pub fn laymine_op(
 pub fn cal3BVonIsland<T>(board: &T) -> usize
 where
     T: std::ops::Index<usize> + safe_board::BoardSize,
-    T: std::ops::IndexMut<usize>,
     T::Output: std::ops::Index<usize, Output = i32>,
-    T::Output: std::ops::IndexMut<usize, Output = i32>,
 {
     // 计算除空以外的3BV
     let row = board.get_row();
@@ -590,23 +592,24 @@ where
 pub fn cal_bbbv<T>(board: &T) -> usize
 where
     T: std::ops::Index<usize> + safe_board::BoardSize,
-    T: std::ops::IndexMut<usize> + Clone,
     T::Output: std::ops::Index<usize, Output = i32>,
-    T::Output: std::ops::IndexMut<usize, Output = i32>,
 {
     cal3BVonIsland(board) + cal_op(board)
 }
 
 /// 依据左击位置刷新局面
 /// - 注意：兼容18标记符和12标记符
-pub fn refresh_board(
-    board: &Vec<Vec<i32>>,
+pub fn refresh_board<T>(
+    board: &T,
     boardofGame: &mut Vec<Vec<i32>>,
     mut clicked_poses: Vec<(usize, usize)>,
-) {
+) where
+    T: std::ops::Index<usize> + safe_board::BoardSize,
+    T::Output: std::ops::Index<usize, Output = i32>,
+{
     // println!("{:?}", ClickedPoses);
-    let row = board.len();
-    let column = board[0].len();
+    let row = board.get_row();
+    let column = board.get_column();
     let mut loss_flag = false;
     while let Some(top) = clicked_poses.pop() {
         let (i, j) = top;

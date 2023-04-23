@@ -36,6 +36,9 @@ use tract_ndarray::Array;
 #[cfg(any(feature = "py", feature = "rs"))]
 use tract_onnx::prelude::*;
 
+
+use crate::safe_board::{BoardSize, SafeBoard};
+
 use crate::ENUM_LIMIT;
 
 // 中高级的算法，例如无猜埋雷、判雷引擎、计算概率
@@ -618,18 +621,19 @@ fn isVictory(board_of_game: &Vec<Vec<i32>>, Board: &Vec<Vec<i32>>) -> bool {
 /// <span id="is_solvable">从指定位置开始扫，判断局面是否无猜。  
 /// - 注意：周围一圈都是雷，那么若中间是雷不算猜，若中间不是雷算有猜。  
 /// - 注意：不考虑剩余雷数。
-pub fn is_solvable(Board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
-    if unsolvable_structure(&Board) {
+pub fn is_solvable(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool 
+{
+    if unsolvable_structure(&board) {
         //若包含不可判雷结构，则不是无猜
         return false;
     }
-    let row = Board.len();
-    let column = Board[0].len();
+    let row = board.len();
+    let column = board[0].len();
     let mut board_of_game = vec![vec![10; column]; row];
     // 10是未打开，11是标雷
     // 局面大小必须超过6*6
-    refresh_board(&Board, &mut board_of_game, vec![(x0, y0)]);
-    if isVictory(&board_of_game, &Board) {
+    refresh_board(board, &mut board_of_game, vec![(x0, y0)]);
+    if isVictory(&board_of_game, &board) {
         return true; // 暂且认为点一下就扫开也是可以的
     }
     loop {
@@ -656,8 +660,8 @@ pub fn is_solvable(Board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
         } else {
             not_mine = ans.0
         }
-        refresh_board(&Board, &mut board_of_game, not_mine);
-        if isVictory(&board_of_game, &Board) {
+        refresh_board(board, &mut board_of_game, not_mine);
+        if isVictory(&board_of_game, &board) {
             return true;
         }
     }

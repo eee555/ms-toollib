@@ -12,6 +12,8 @@ use std::cmp::{max, min};
 use std::fs;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
+use crate::safe_board::{BoardSize, SafeBoard};
+
 /// 没有时间、像素观念的局面状态机，侧重分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。  
 /// - 局限：不关注具体的线路（没有像素观念），因此不能计算path等。  
 /// - 注意：ce的计算与扫雷网是不同的，本工具箱中，重复标同一个雷只算一个ce，即反复标雷、取消标雷不算作ce。
@@ -39,8 +41,8 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 /// print('解决3BV数: ', v.solved3BV)
 /// print('局面: ', v.game_board)
 /// ```
-pub struct MinesweeperBoard {
-    pub board: Vec<Vec<i32>>,
+pub struct MinesweeperBoard<T> {
+    pub board: T,
     /// 局面
     pub game_board: Vec<Vec<i32>>,
     flagedList: Vec<(usize, usize)>, // 记录哪些雷曾经被标过，则再标这些雷不记为ce
@@ -68,7 +70,7 @@ pub struct MinesweeperBoard {
     middle_hold: bool,
 }
 
-impl Default for MinesweeperBoard {
+impl Default for MinesweeperBoard<Vec<Vec<i32>>> {
     fn default() -> Self {
         MinesweeperBoard {
             board: vec![],
@@ -92,10 +94,34 @@ impl Default for MinesweeperBoard {
     }
 }
 
-impl MinesweeperBoard {
-    pub fn new(board: Vec<Vec<i32>>) -> MinesweeperBoard {
-        let row = board.len();
-        let column = board[0].len();
+impl Default for MinesweeperBoard<SafeBoard> {
+    fn default() -> Self {
+        MinesweeperBoard {
+            board: SafeBoard::new(vec![]),
+            game_board: vec![],
+            flagedList: vec![],
+            left: 0,
+            right: 0,
+            double: 0,
+            ce: 0,
+            flag: 0,
+            bbbv_solved: 0,
+            row: 0,
+            column: 0,
+            mouse_state: MouseState::Undefined,
+            game_board_state: GameBoardState::Ready,
+            pointer_x: 0,
+            pointer_y: 0,
+            pre_flag_num: 0,
+            middle_hold: false,
+        }
+    }
+}
+
+impl MinesweeperBoard<Vec<Vec<i32>>> {
+    pub fn new(board: Vec<Vec<i32>>) -> MinesweeperBoard<Vec<Vec<i32>>> {
+        let row = board.get_row();
+        let column = board.get_column();
         MinesweeperBoard {
             board,
             row,
@@ -103,11 +129,51 @@ impl MinesweeperBoard {
             game_board: vec![vec![10; column]; row],
             flagedList: vec![],
             mouse_state: MouseState::UpUp,
-            ..MinesweeperBoard::default()
+            ..MinesweeperBoard::<Vec<Vec<i32>>>::default()
         }
     }
+    /// 初始化。对应强化学习领域gym的api中的reset。
+    pub fn reset(&mut self) {
+        self.game_board = vec![vec![10; self.column]; self.row];
+        self.board = vec![vec![0; self.column]; self.row];
+        self.left = 0;
+        self.right = 0;
+        self.double = 0;
+        self.ce = 0;
+        self.flag = 0;
+        self.left = 0;
+        self.bbbv_solved = 0;
+        self.flagedList = vec![];
+        self.mouse_state = MouseState::UpUp;
+        self.game_board_state = GameBoardState::Ready;
+        self.pointer_x = 0;
+        self.pointer_y = 0;
+    }
+}
+
+impl MinesweeperBoard<SafeBoard> {
+    pub fn new(board: SafeBoard) -> MinesweeperBoard<SafeBoard> {
+        let row = board.get_row();
+        let column = board.get_column();
+        MinesweeperBoard {
+            board,
+            row,
+            column,
+            game_board: vec![vec![10; column]; row],
+            flagedList: vec![],
+            mouse_state: MouseState::UpUp,
+            ..MinesweeperBoard::<SafeBoard>::default()
+        }
+    }
+}
+
+impl<T> MinesweeperBoard<T> {
     /// Playing状态下的左击，没有按下抬起之分
-    fn left_click(&mut self, x: usize, y: usize) -> Result<u8, ()> {
+    fn left_click(&mut self, x: usize, y: usize) -> Result<u8, ()>
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
         self.left += 1;
         if self.game_board[x][y] != 10 {
             return Ok(0);
@@ -142,7 +208,11 @@ impl MinesweeperBoard {
         }
     }
     /// Playing状态下的右击，没有按下抬起之分
-    fn right_click(&mut self, x: usize, y: usize) -> Result<u8, ()> {
+    fn right_click(&mut self, x: usize, y: usize) -> Result<u8, ()>
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
         self.right += 1;
         if self.game_board[x][y] < 10 {
             return Ok(0);
@@ -180,7 +250,11 @@ impl MinesweeperBoard {
         }
     }
     /// Playing状态下的双击，没有按下抬起之分
-    fn chording_click(&mut self, x: usize, y: usize) -> Result<u8, ()> {
+    fn chording_click(&mut self, x: usize, y: usize) -> Result<u8, ()>
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
         self.double += 1;
         if self.game_board[x][y] == 0 || self.game_board[x][y] >= 8 {
             return Ok(0);
@@ -230,7 +304,11 @@ impl MinesweeperBoard {
             Ok(0)
         }
     }
-    fn num_is_3BV(&self, x: usize, y: usize) -> bool {
+    fn num_is_3BV(&self, x: usize, y: usize) -> bool
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
         // 判断该大于0的数字是不是3BV
         // 如果是0，即使是3bv，依然返回false
         if self.board[x][y] <= 0 {
@@ -255,7 +333,11 @@ impl MinesweeperBoard {
     /// ## 注意事项：
     /// - 在理想的鼠标状态机中，有些情况是不可能的，例如右键没有抬起就按下两次，但在阿比特中就观察到这种事情。
     // 局面外按下的事件，以及连带的释放一律对鼠标状态没有任何影响，UI框架不会激活回调
-    pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
+    pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()>
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
         // println!("e: {:?}", e);
         if pos.0 == self.row && pos.1 == self.column && (e == "rc" || e == "lc" || e == "cc") {
             // 这里按理应该报错，局面外的按下不该进来
@@ -630,13 +712,22 @@ impl MinesweeperBoard {
     }
     /// 直接分析整局的操作流，中间也可以停顿
     /// 开始游戏前的任何操作也都记录次数
-    pub fn step_flow(&mut self, operation: Vec<(&str, (usize, usize))>) -> Result<(), ()> {
+    pub fn step_flow(&mut self, operation: Vec<(&str, (usize, usize))>) -> Result<(), ()>
+    where
+        T: std::ops::Index<usize> + BoardSize + Clone,
+        T::Output: std::ops::Index<usize, Output = i32>,
+        T::Output: std::ops::IndexMut<usize, Output = i32>,
+    {
         for op in operation {
             self.step(op.0, op.1)?;
         }
         Ok(())
     }
-    fn is_win(&mut self) -> bool {
+    fn is_win(&mut self) -> bool
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
         for j in self.pointer_y..self.column {
             if self.game_board[self.pointer_x][j] >= 10 && self.board[self.pointer_x][j] != -1 {
                 self.pointer_y = j;
@@ -653,23 +744,6 @@ impl MinesweeperBoard {
             }
         }
         true
-    }
-    /// 初始化。对应强化学习领域gym的api中的reset。
-    pub fn reset(&mut self) {
-        self.game_board = vec![vec![10; self.column]; self.row];
-        self.board = vec![vec![0; self.column]; self.row];
-        self.left = 0;
-        self.right = 0;
-        self.double = 0;
-        self.ce = 0;
-        self.flag = 0;
-        self.left = 0;
-        self.bbbv_solved = 0;
-        self.flagedList = vec![];
-        self.mouse_state = MouseState::UpUp;
-        self.game_board_state = GameBoardState::Ready;
-        self.pointer_x = 0;
-        self.pointer_y = 0;
     }
     // 清空状态机里的点击次数
     fn clear_click_num(&mut self) {
@@ -927,7 +1001,7 @@ impl Default for VideoDynamicParams {
     }
 }
 
-pub struct BaseVideo {
+pub struct BaseVideo<T> {
     /// 软件名
     pub software: Vec<u8>,
     /// 宽度，等同于column
@@ -955,9 +1029,9 @@ pub struct BaseVideo {
     /// 逻辑上，方格像素的尺寸。传统扫雷一般是16，只有元扫雷会把逻辑尺寸和实际尺寸统一起来。
     pub cell_pixel_size: u8,
     /// 仅在存录像时用到。貌似可以不用。
-    pub board: Vec<Vec<i32>>,
+    pub board: T,
     /// 局面状态机
-    pub minesweeper_board: MinesweeperBoard,
+    pub minesweeper_board: MinesweeperBoard<T>,
     /// 录像状态。貌似用不到。
     pub game_board_state: GameBoardState,
     /// 动作、状态记录器
@@ -1014,7 +1088,7 @@ pub struct BaseVideo {
     video_playing_pix_size_k: f64,
 }
 
-impl Default for BaseVideo {
+impl Default for BaseVideo<Vec<Vec<i32>>> {
     fn default() -> Self {
         BaseVideo {
             software: vec![],
@@ -1058,7 +1132,288 @@ impl Default for BaseVideo {
     }
 }
 
-impl BaseVideo {
+impl Default for BaseVideo<SafeBoard> {
+    fn default() -> Self {
+        BaseVideo {
+            software: vec![],
+            width: 0,
+            height: 0,
+            mine_num: 0,
+            is_completed: false,
+            is_offical: false,
+            is_fair: false,
+            nf: false,
+            mode: 0,
+            level: 0,
+            cell_pixel_size: 16,
+            board: SafeBoard::new(vec![]),
+            minesweeper_board: MinesweeperBoard::<SafeBoard>::default(),
+            game_board_state: GameBoardState::Display,
+            video_action_state_recorder: vec![],
+            game_board_stream: vec![],
+            video_start_instant: Instant::now(),
+            game_start_instant: Instant::now(),
+            delta_time: 0.0,
+            current_time: 0.0,
+            current_event_id: 0,
+            player_designator: vec![],
+            race_designator: vec![],
+            uniqueness_designator: vec![],
+            start_time: vec![],
+            end_time: vec![],
+            country: vec![],
+            raw_data: vec![],
+            offset: 0,
+            static_params: StaticParams::default(),
+            game_dynamic_params: GameDynamicParams::default(),
+            video_dynamic_params: VideoDynamicParams::default(),
+            checksum: [0; 32],
+            can_analyse: false,
+            // net_start_time: 0.0,
+            allow_set_rtime: false,
+            video_playing_pix_size_k: 1.0,
+        }
+    }
+}
+
+impl BaseVideo<Vec<Vec<i32>>> {
+    /// 重置游戏状态等，不重置标识等很多局都不会变的数据。点脸等，重开。
+    pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
+        self.game_board_stream.clear();
+        self.minesweeper_board = MinesweeperBoard::<Vec<Vec<i32>>>::new(vec![vec![0; column]; row]);
+        self.width = column;
+        self.height = row;
+        self.cell_pixel_size = pix_size;
+        self.video_action_state_recorder.clear();
+        self.game_board_stream.clear();
+        self.raw_data.clear();
+        self.static_params = StaticParams::default();
+        self.game_dynamic_params = GameDynamicParams::default();
+        self.video_dynamic_params = VideoDynamicParams::default();
+        self.game_board_state = GameBoardState::Ready;
+    }
+    /// 进行局面的推衍，计算基本的局面参数，记录所有中间过程。不包含概率计算。
+    /// - 对于avf录像，必须analyse以后才能正确获取是否扫完。
+    pub fn analyse(&mut self) {
+        // println!("{:?}, ", self.board);
+        assert!(
+            self.can_analyse,
+            "调用parse_video或扫完前，不能调用analyse方法"
+        );
+        // self.minesweeper_board
+        let mut b = MinesweeperBoard::<Vec<Vec<i32>>>::new(self.board.clone());
+        let mut first_game_board = GameBoard::new(self.mine_num);
+        first_game_board.set_game_board(&vec![vec![10; self.width]; self.height]);
+        self.game_board_stream.push(first_game_board);
+        for ide in 0..self.video_action_state_recorder.len() {
+            // 控制svi的生命周期
+            let mut svi = &mut self.video_action_state_recorder[ide];
+            svi.prior_game_board_id = self.game_board_stream.len() - 1;
+            if svi.mouse != "mv" {
+                let old_state = b.game_board_state;
+                // println!("{:?}, {:?}", svi.mouse, svi.y);
+                let u_level = b
+                    .step(
+                        &svi.mouse,
+                        (
+                            (svi.y / self.cell_pixel_size as u16) as usize,
+                            (svi.x / self.cell_pixel_size as u16) as usize,
+                        ),
+                    )
+                    .unwrap();
+                // println!("{:?}, {:?}", svi.mouse, b.game_board);
+                svi.useful_level = u_level;
+                if u_level >= 1 {
+                    let mut g_b = GameBoard::new(self.mine_num);
+                    g_b.set_game_board(&b.game_board);
+                    self.game_board_stream.push(g_b);
+                    if old_state != GameBoardState::Playing {
+                        self.delta_time = svi.time;
+                    }
+                    // println!("{:?}, {:?}", self.game_board_stream.len(), svi.mouse);
+                }
+            }
+            svi.next_game_board_id = self.game_board_stream.len() - 1;
+            svi.mouse_state = b.mouse_state.clone();
+            svi.key_dynamic_params.left = b.left;
+            svi.key_dynamic_params.right = b.right;
+            svi.key_dynamic_params.bbbv_solved = b.bbbv_solved;
+            svi.key_dynamic_params.double = b.double;
+            svi.key_dynamic_params.ce = b.ce;
+            svi.key_dynamic_params.flag = b.flag;
+            // 这两个很难搞
+            svi.key_dynamic_params.op_solved = 0;
+            svi.key_dynamic_params.isl_solved = 0;
+            let svi = &self.video_action_state_recorder[ide];
+            // 第一下操作不可能是在局面外的
+            if b.game_board_state == GameBoardState::Playing
+                || b.game_board_state == GameBoardState::Win
+                || b.game_board_state == GameBoardState::Loss
+            {
+                if svi.y >= self.height as u16 * self.cell_pixel_size as u16
+                    && svi.x >= self.width as u16 * self.cell_pixel_size as u16
+                {
+                    self.video_action_state_recorder[ide].path =
+                        self.video_action_state_recorder[ide - 1].path;
+                } else {
+                    let mut svi_1_y: u16;
+                    let mut svi_1_x: u16;
+                    let mut svi_1_path: f64;
+                    let mut skip = 1;
+                    loop {
+                        let svis = &self.video_action_state_recorder[ide - skip];
+                        svi_1_y = svis.y; // 距离上端
+                        svi_1_x = svis.x;
+                        svi_1_path = svis.path;
+                        if svi_1_y >= self.height as u16 * self.cell_pixel_size as u16
+                            && svi_1_x >= self.width as u16 * self.cell_pixel_size as u16
+                        {
+                            skip += 1;
+                            continue;
+                        } else {
+                            break;
+                        };
+                    }
+                    let mut svi = &mut self.video_action_state_recorder[ide];
+                    svi.path = svi_1_path
+                        + ((svi.y as f64 - svi_1_y as f64).powf(2.0)
+                            + (svi.x as f64 - svi_1_x as f64).powf(2.0))
+                        .powf(0.5)
+                            * 16.0
+                            / (self.cell_pixel_size as f64);
+                }
+            }
+        }
+        self.is_completed = b.game_board_state == GameBoardState::Win;
+        self.game_dynamic_params.left = b.left;
+        self.game_dynamic_params.left_s = b.left as f64 / self.game_dynamic_params.rtime;
+        self.game_dynamic_params.right = b.right;
+        self.game_dynamic_params.right_s = b.right as f64 / self.game_dynamic_params.rtime;
+        // println!("---{:?}", b.bbbv_solved);
+        self.video_dynamic_params.bbbv_solved = b.bbbv_solved;
+        self.video_dynamic_params.ce = b.ce;
+        self.video_dynamic_params.ce_s = b.ce as f64 / self.game_dynamic_params.rtime;
+        self.game_dynamic_params.double = b.double;
+        self.game_dynamic_params.cl = b.left + b.right + b.double;
+        self.game_dynamic_params.cl_s =
+            self.game_dynamic_params.cl as f64 / self.game_dynamic_params.rtime;
+        self.game_dynamic_params.flag = b.flag;
+        self.video_dynamic_params.bbbv_s =
+            self.static_params.bbbv as f64 / self.game_dynamic_params.rtime;
+        self.video_dynamic_params.rqp = self.game_dynamic_params.rtime
+            * self.game_dynamic_params.rtime
+            / self.static_params.bbbv as f64;
+        if self.height == 8 && self.width == 8 && self.mine_num == 10 {
+            self.video_dynamic_params.stnb = 47.22
+                / (self.game_dynamic_params.rtime.powf(1.7) / self.static_params.bbbv as f64)
+                * (b.bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5);
+        } else if self.height == 16 && self.width == 16 && self.mine_num == 40 {
+            self.video_dynamic_params.stnb = 153.73
+                / (self.game_dynamic_params.rtime.powf(1.7) / self.static_params.bbbv as f64)
+                * (b.bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5);
+        } else if self.height == 16 && self.width == 30 && self.mine_num == 99 {
+            self.video_dynamic_params.stnb = 435.001
+                / (self.game_dynamic_params.rtime.powf(1.7) / self.static_params.bbbv as f64)
+                * (b.bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5);
+        } // 凡自定义的stnb都等于0
+        self.video_dynamic_params.ioe = b.bbbv_solved as f64 / self.game_dynamic_params.cl as f64;
+        self.video_dynamic_params.corr = b.ce as f64 / self.game_dynamic_params.cl as f64;
+        self.video_dynamic_params.thrp = b.bbbv_solved as f64 / b.ce as f64;
+    }
+
+    /// 传入要检查的事件，会把结果记在comments字段里。
+    /// 可以传入high_risk_guess、jump_judge、needless_guess、mouse_trace、vision_transfer、survive_poss等。顺序不讲究。
+    /// #### 检查录像中所有的教科书式的fl局部（python）
+    /// ```python
+    /// import ms_toollib as ms
+    /// import re
+    /// v = ms.AvfVideo("z.avf"); # 用文件名实例化
+    /// v.parse_video()
+    /// v.analyse()
+    /// v.analyse_for_features(["super_fl_local"]) # 用哪些分析方法。分析结果会记录到events_comments字段里
+    /// for i in range(v.events_len): # 鼠标事件包括鼠标移动、按下、抬起
+    ///     c = v.events_comments(i) # 每一个鼠标事件，都有events_comments字段，记录了分析算法的结果
+    ///     if c != '':
+    ///         print('时间：', v.events_time(i), '事件：', c)
+    ///         step_num = int(re.findall(r"(?<=步数).*?(?=\))", c)[0]) # 正则提取要打印几步
+    ///         p = i
+    ///         for j in range(step_num):
+    ///             while v.events_useful_level(p) <= 0:
+    ///                 # 用events_useful_level字段辅助过滤不要看的事件
+    ///                 # 也可以用events_mouse_state字段来过滤
+    ///                 p += 1
+    ///             print('鼠标事件类型：', v.events_mouse(p),
+    ///                 '第几行：', v.events_y(p)//16,
+    ///                 '第几列：', v.events_x(p)//16)
+    ///             p += 1
+    /// ```
+    pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
+        // 事件分析，返回一个向量，格式是event索引、字符串event的类型
+        // error: 高风险的猜雷（猜对概率0.05）
+        // feature: 跳判
+        // error: 判雷失败
+        // feature: 双线操作
+        // feature: 破空（成功率0.98）
+        // error: 鼠标大幅绕路(500%)
+        // warning：鼠标绕路(200%)
+        // warning: 可以判雷时选择猜雷
+        // suspect: 点击速度过快(0.01)
+        // suspect: 鼠标移动过快(2)
+        //
+        for o in controller {
+            match o {
+                "high_risk_guess" => analyse_high_risk_guess(self),
+                "jump_judge" => analyse_jump_judge(self),
+                "needless_guess" => analyse_needless_guess(self),
+                "mouse_trace" => analyse_mouse_trace(self),
+                "vision_transfer" => analyse_vision_transfer(self),
+                "survive_poss" => analyse_survive_poss(self),
+                "super_fl_local" => analyse_super_fl_local(self),
+                _ => continue,
+            };
+        }
+    }
+}
+
+impl BaseVideo<SafeBoard> {
+    /// 重置游戏状态等，不重置标识等很多局都不会变的数据。点脸等，重开。
+    pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
+        self.game_board_stream.clear();
+        self.minesweeper_board =
+            MinesweeperBoard::<SafeBoard>::new(SafeBoard::new(vec![vec![0; column]; row]));
+        self.width = column;
+        self.height = row;
+        self.cell_pixel_size = pix_size;
+        self.video_action_state_recorder.clear();
+        self.game_board_stream.clear();
+        self.raw_data.clear();
+        self.static_params = StaticParams::default();
+        self.game_dynamic_params = GameDynamicParams::default();
+        self.video_dynamic_params = VideoDynamicParams::default();
+        self.game_board_state = GameBoardState::Ready;
+    }
+    /// 两种情况调用：游戏开始前、可猜模式（尺寸相等，雷数不检查）
+    pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()> {
+        match self.game_board_state {
+            GameBoardState::Playing | GameBoardState::Ready | GameBoardState::PreFlaging => {
+                if self.width != board[0].len() || self.height != board.len() {
+                    return Err(());
+                }
+            }
+            GameBoardState::Display | GameBoardState::Win | GameBoardState::Loss => return Err(()),
+        }
+        self.mine_num = board.iter().fold(0, |y, row| {
+            y + row
+                .iter()
+                .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
+        });
+        self.board = SafeBoard::new(board);
+        self.minesweeper_board.board = self.board.clone();
+        Ok(0)
+    }
+}
+
+impl<T> BaseVideo<T> {
     pub fn get_u8(&mut self) -> Result<u8, ErrReadVideoReason> {
         let t = self.raw_data.get(self.offset);
         self.offset += 1;
@@ -1092,10 +1447,10 @@ impl BaseVideo {
     }
 }
 
-impl BaseVideo {
+impl<T> BaseVideo<T> {
     /// 通过文件名构造。
     #[cfg(any(feature = "py", feature = "rs"))]
-    pub fn new_with_file(file_name: &str) -> BaseVideo {
+    pub fn new_with_file(file_name: &str) -> BaseVideo<Vec<Vec<i32>>> {
         let raw_data: Vec<u8> = fs::read(file_name).unwrap();
         // for i in 0..500 {
         //     print!("{:?}", raw_data[i] as char);
@@ -1108,7 +1463,9 @@ impl BaseVideo {
     }
     /// 游戏前实例化，游戏中不断调用step方法来维护。
     #[cfg(any(feature = "py", feature = "rs"))]
-    pub fn new_before_game(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> BaseVideo {
+    pub fn new_before_game(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> BaseVideo<SafeBoard> {
+        use crate::safe_board::BoardSize;
+
         let bbbv = cal_bbbv(&board);
         // 这里算出来的雷数不一定准
         let mine_num = board.iter().fold(0, |y, row| {
@@ -1116,20 +1473,21 @@ impl BaseVideo {
                 .iter()
                 .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
         });
+        let board = SafeBoard::new(board);
         let board_clone = board.clone();
         BaseVideo {
-            width: board[0].len(),
-            height: board.len(),
+            width: board.get_column(),
+            height: board.get_row(),
             mine_num,
             cell_pixel_size,
             board,
-            minesweeper_board: MinesweeperBoard::new(board_clone),
+            minesweeper_board: MinesweeperBoard::<SafeBoard>::new(board_clone),
             game_board_state: GameBoardState::Ready,
             static_params: StaticParams {
                 bbbv,
                 ..StaticParams::default()
             },
-            ..BaseVideo::default()
+            ..BaseVideo::<SafeBoard>::default()
         }
     }
     #[cfg(feature = "js")]
@@ -1142,7 +1500,11 @@ impl BaseVideo {
     }
     /// 步进
     /// - pos的单位是像素，(距离上方，距离左侧)
-    pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()> {
+    pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()>
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
         let step_instant = Instant::now();
         // 这是和录像时间戳有关
         let mut time_ms = step_instant
@@ -1310,21 +1672,21 @@ impl BaseVideo {
         // println!("push: {:?}, {:?}, ({:?}, {:?})", time, e, pos.0, pos.1);
         Ok(0)
     }
-    /// 重置游戏状态等，不重置标识等很多局都不会变的数据。点脸等，重开。
-    pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
-        self.game_board_stream.clear();
-        self.minesweeper_board = MinesweeperBoard::new(vec![vec![0; column]; row]);
-        self.width = column;
-        self.height = row;
-        self.cell_pixel_size = pix_size;
-        self.video_action_state_recorder.clear();
-        self.game_board_stream.clear();
-        self.raw_data.clear();
-        self.static_params = StaticParams::default();
-        self.game_dynamic_params = GameDynamicParams::default();
-        self.video_dynamic_params = VideoDynamicParams::default();
-        self.game_board_state = GameBoardState::Ready;
-    }
+    // /// 重置游戏状态等，不重置标识等很多局都不会变的数据。点脸等，重开。
+    // pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
+    //     self.game_board_stream.clear();
+    //     self.minesweeper_board = MinesweeperBoard::new(vec![vec![0; column]; row]);
+    //     self.width = column;
+    //     self.height = row;
+    //     self.cell_pixel_size = pix_size;
+    //     self.video_action_state_recorder.clear();
+    //     self.game_board_stream.clear();
+    //     self.raw_data.clear();
+    //     self.static_params = StaticParams::default();
+    //     self.game_dynamic_params = GameDynamicParams::default();
+    //     self.video_dynamic_params = VideoDynamicParams::default();
+    //     self.game_board_state = GameBoardState::Ready;
+    // }
     /// 获胜后标上所有的雷，没获胜则返回
     pub fn win_then_flag_all_mine(&mut self) {
         if self.minesweeper_board.game_board_state != GameBoardState::Win {
@@ -1340,7 +1702,11 @@ impl BaseVideo {
     }
     /// 失败后展示所有的雷，没失败则返回
     /// 这件事状态机不会自动做，因为有些模式失败后不标出所有的雷，如强无猜
-    pub fn loss_then_open_all_mine(&mut self) {
+    pub fn loss_then_open_all_mine(&mut self)
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
         if self.minesweeper_board.game_board_state != GameBoardState::Loss {
             return;
         }
@@ -1355,7 +1721,11 @@ impl BaseVideo {
         }
     }
     /// 游戏结束后，计算一批指标
-    fn gather_params_after_game(&mut self, t: f64) {
+    fn gather_params_after_game(&mut self, t: f64)
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
         self.game_dynamic_params.left = self.minesweeper_board.left;
         self.game_dynamic_params.right = self.minesweeper_board.right;
         self.game_dynamic_params.double = self.minesweeper_board.double;
@@ -1381,186 +1751,7 @@ impl BaseVideo {
         self.static_params.op = cal_op(&self.board);
         self.static_params.isl = cal_isl(&self.board);
     }
-    /// 进行局面的推衍，计算基本的局面参数，记录所有中间过程。不包含概率计算。
-    /// - 对于avf录像，必须analyse以后才能正确获取是否扫完。
-    pub fn analyse(&mut self) {
-        // println!("{:?}, ", self.board);
-        assert!(
-            self.can_analyse,
-            "调用parse_video或扫完前，不能调用analyse方法"
-        );
-        // self.minesweeper_board
-        let mut b = MinesweeperBoard::new(self.board.clone());
-        let mut first_game_board = GameBoard::new(self.mine_num);
-        first_game_board.set_game_board(&vec![vec![10; self.width]; self.height]);
-        self.game_board_stream.push(first_game_board);
-        for ide in 0..self.video_action_state_recorder.len() {
-            // 控制svi的生命周期
-            let mut svi = &mut self.video_action_state_recorder[ide];
-            svi.prior_game_board_id = self.game_board_stream.len() - 1;
-            if svi.mouse != "mv" {
-                let old_state = b.game_board_state;
-                // println!("{:?}, {:?}", svi.mouse, svi.y);
-                let u_level = b
-                    .step(
-                        &svi.mouse,
-                        (
-                            (svi.y / self.cell_pixel_size as u16) as usize,
-                            (svi.x / self.cell_pixel_size as u16) as usize,
-                        ),
-                    )
-                    .unwrap();
-                // println!("{:?}, {:?}", svi.mouse, b.game_board);
-                svi.useful_level = u_level;
-                if u_level >= 1 {
-                    let mut g_b = GameBoard::new(self.mine_num);
-                    g_b.set_game_board(&b.game_board);
-                    self.game_board_stream.push(g_b);
-                    if old_state != GameBoardState::Playing {
-                        self.delta_time = svi.time;
-                    }
-                    // println!("{:?}, {:?}", self.game_board_stream.len(), svi.mouse);
-                }
-            }
-            svi.next_game_board_id = self.game_board_stream.len() - 1;
-            svi.mouse_state = b.mouse_state.clone();
-            svi.key_dynamic_params.left = b.left;
-            svi.key_dynamic_params.right = b.right;
-            svi.key_dynamic_params.bbbv_solved = b.bbbv_solved;
-            svi.key_dynamic_params.double = b.double;
-            svi.key_dynamic_params.ce = b.ce;
-            svi.key_dynamic_params.flag = b.flag;
-            // 这两个很难搞
-            svi.key_dynamic_params.op_solved = 0;
-            svi.key_dynamic_params.isl_solved = 0;
-            let svi = &self.video_action_state_recorder[ide];
-            // 第一下操作不可能是在局面外的
-            if b.game_board_state == GameBoardState::Playing
-                || b.game_board_state == GameBoardState::Win
-                || b.game_board_state == GameBoardState::Loss
-            {
-                if svi.y >= self.height as u16 * self.cell_pixel_size as u16
-                    && svi.x >= self.width as u16 * self.cell_pixel_size as u16
-                {
-                    self.video_action_state_recorder[ide].path =
-                        self.video_action_state_recorder[ide - 1].path;
-                } else {
-                    let mut svi_1_y: u16;
-                    let mut svi_1_x: u16;
-                    let mut svi_1_path: f64;
-                    let mut skip = 1;
-                    loop {
-                        let svis = &self.video_action_state_recorder[ide - skip];
-                        svi_1_y = svis.y; // 距离上端
-                        svi_1_x = svis.x;
-                        svi_1_path = svis.path;
-                        if svi_1_y >= self.height as u16 * self.cell_pixel_size as u16
-                            && svi_1_x >= self.width as u16 * self.cell_pixel_size as u16
-                        {
-                            skip += 1;
-                            continue;
-                        } else {
-                            break;
-                        };
-                    }
-                    let mut svi = &mut self.video_action_state_recorder[ide];
-                    svi.path = svi_1_path
-                        + ((svi.y as f64 - svi_1_y as f64).powf(2.0)
-                            + (svi.x as f64 - svi_1_x as f64).powf(2.0))
-                        .powf(0.5)
-                            * 16.0
-                            / (self.cell_pixel_size as f64);
-                }
-            }
-        }
-        self.is_completed = b.game_board_state == GameBoardState::Win;
-        self.game_dynamic_params.left = b.left;
-        self.game_dynamic_params.left_s = b.left as f64 / self.game_dynamic_params.rtime;
-        self.game_dynamic_params.right = b.right;
-        self.game_dynamic_params.right_s = b.right as f64 / self.game_dynamic_params.rtime;
-        // println!("---{:?}", b.bbbv_solved);
-        self.video_dynamic_params.bbbv_solved = b.bbbv_solved;
-        self.video_dynamic_params.ce = b.ce;
-        self.video_dynamic_params.ce_s = b.ce as f64 / self.game_dynamic_params.rtime;
-        self.game_dynamic_params.double = b.double;
-        self.game_dynamic_params.cl = b.left + b.right + b.double;
-        self.game_dynamic_params.cl_s =
-            self.game_dynamic_params.cl as f64 / self.game_dynamic_params.rtime;
-        self.game_dynamic_params.flag = b.flag;
-        self.video_dynamic_params.bbbv_s =
-            self.static_params.bbbv as f64 / self.game_dynamic_params.rtime;
-        self.video_dynamic_params.rqp = self.game_dynamic_params.rtime
-            * self.game_dynamic_params.rtime
-            / self.static_params.bbbv as f64;
-        if self.height == 8 && self.width == 8 && self.mine_num == 10 {
-            self.video_dynamic_params.stnb = 47.22
-                / (self.game_dynamic_params.rtime.powf(1.7) / self.static_params.bbbv as f64)
-                * (b.bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5);
-        } else if self.height == 16 && self.width == 16 && self.mine_num == 40 {
-            self.video_dynamic_params.stnb = 153.73
-                / (self.game_dynamic_params.rtime.powf(1.7) / self.static_params.bbbv as f64)
-                * (b.bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5);
-        } else if self.height == 16 && self.width == 30 && self.mine_num == 99 {
-            self.video_dynamic_params.stnb = 435.001
-                / (self.game_dynamic_params.rtime.powf(1.7) / self.static_params.bbbv as f64)
-                * (b.bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5);
-        } // 凡自定义的stnb都等于0
-        self.video_dynamic_params.ioe = b.bbbv_solved as f64 / self.game_dynamic_params.cl as f64;
-        self.video_dynamic_params.corr = b.ce as f64 / self.game_dynamic_params.cl as f64;
-        self.video_dynamic_params.thrp = b.bbbv_solved as f64 / b.ce as f64;
-    }
-    /// 传入要检查的事件，会把结果记在comments字段里。
-    /// 可以传入high_risk_guess、jump_judge、needless_guess、mouse_trace、vision_transfer、survive_poss等。顺序不讲究。
-    /// #### 检查录像中所有的教科书式的fl局部（python）
-    /// ```python
-    /// import ms_toollib as ms
-    /// import re
-    /// v = ms.AvfVideo("z.avf"); # 用文件名实例化
-    /// v.parse_video()
-    /// v.analyse()
-    /// v.analyse_for_features(["super_fl_local"]) # 用哪些分析方法。分析结果会记录到events_comments字段里
-    /// for i in range(v.events_len): # 鼠标事件包括鼠标移动、按下、抬起
-    ///     c = v.events_comments(i) # 每一个鼠标事件，都有events_comments字段，记录了分析算法的结果
-    ///     if c != '':
-    ///         print('时间：', v.events_time(i), '事件：', c)
-    ///         step_num = int(re.findall(r"(?<=步数).*?(?=\))", c)[0]) # 正则提取要打印几步
-    ///         p = i
-    ///         for j in range(step_num):
-    ///             while v.events_useful_level(p) <= 0:
-    ///                 # 用events_useful_level字段辅助过滤不要看的事件
-    ///                 # 也可以用events_mouse_state字段来过滤
-    ///                 p += 1
-    ///             print('鼠标事件类型：', v.events_mouse(p),
-    ///                 '第几行：', v.events_y(p)//16,
-    ///                 '第几列：', v.events_x(p)//16)
-    ///             p += 1
-    /// ```
-    pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
-        // 事件分析，返回一个向量，格式是event索引、字符串event的类型
-        // error: 高风险的猜雷（猜对概率0.05）
-        // feature: 跳判
-        // error: 判雷失败
-        // feature: 双线操作
-        // feature: 破空（成功率0.98）
-        // error: 鼠标大幅绕路(500%)
-        // warning：鼠标绕路(200%)
-        // warning: 可以判雷时选择猜雷
-        // suspect: 点击速度过快(0.01)
-        // suspect: 鼠标移动过快(2)
-        //
-        for o in controller {
-            match o {
-                "high_risk_guess" => analyse_high_risk_guess(self),
-                "jump_judge" => analyse_jump_judge(self),
-                "needless_guess" => analyse_needless_guess(self),
-                "mouse_trace" => analyse_mouse_trace(self),
-                "vision_transfer" => analyse_vision_transfer(self),
-                "survive_poss" => analyse_survive_poss(self),
-                "super_fl_local" => analyse_super_fl_local(self),
-                _ => continue,
-            };
-        }
-    }
+
     pub fn print_event(&self) {
         let mut num = 0;
         for e in &self.video_action_state_recorder {
@@ -1618,7 +1809,7 @@ impl BaseVideo {
         }
     }
 }
-impl BaseVideo {
+impl<T> BaseVideo<T> {
     // 再实现一些get、set方法
     pub fn set_pix_size(&mut self, pix_size: u8) {
         if self.game_board_state != GameBoardState::Ready
@@ -1791,25 +1982,7 @@ impl BaseVideo {
         self.software = software;
         Ok(0)
     }
-    /// 两种情况调用：游戏开始前、可猜模式（尺寸相等，雷数不检查）
-    pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()> {
-        match self.game_board_state {
-            GameBoardState::Playing | GameBoardState::Ready | GameBoardState::PreFlaging => {
-                if self.width != board[0].len() || self.height != board.len() {
-                    return Err(());
-                }
-            }
-            GameBoardState::Display | GameBoardState::Win | GameBoardState::Loss => return Err(()),
-        }
-        self.mine_num = board.iter().fold(0, |y, row| {
-            y + row
-                .iter()
-                .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
-        });
-        self.board = board.clone();
-        self.minesweeper_board.board = board;
-        Ok(0)
-    }
+
     pub fn set_player_designator(&mut self, player_designator: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
@@ -2196,9 +2369,13 @@ impl BaseVideo {
     }
 }
 
-impl BaseVideo {
+impl<T> BaseVideo<T> {
     /// 按evf标准，编码出原始二进制数据
-    pub fn generate_evf_v0_raw_data(&mut self) {
+    pub fn generate_evf_v0_raw_data(&mut self)
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
         self.raw_data = vec![0, 0];
         if self.is_completed {
             self.raw_data[1] |= 0b1000_0000;

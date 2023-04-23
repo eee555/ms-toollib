@@ -25,7 +25,7 @@ use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateR
 /// ```
 pub struct AvfVideo {
     pub file_name: String,
-    pub data: BaseVideo,
+    pub data: BaseVideo<Vec<Vec<i32>>>,
 }
 
 impl AvfVideo {
@@ -33,7 +33,7 @@ impl AvfVideo {
     pub fn new(file_name: &str) -> AvfVideo {
         AvfVideo {
             file_name: file_name.to_string(),
-            data: BaseVideo::new_with_file(file_name),
+            data: BaseVideo::<Vec<Vec<i32>>>::new_with_file(file_name),
         }
     }
     #[cfg(feature = "js")]

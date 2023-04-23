@@ -26,14 +26,16 @@ fn encode(v: i32, rng: &mut rand::rngs::ThreadRng) -> (i32, i32, i32) {
 }
 
 fn decode(a: i32, b: i32, c: i32) -> i32 {
-    (a + b + c) % 20
+    let mut t = (a + b + c) % 20;
+    if t < 0 {
+        t += 20
+    }
+    t
 }
-
 
 /// 安全局面的行
 #[derive(Clone, Debug)]
 pub struct SafeBoardRow {
-    rng: rand::rngs::ThreadRng,
     value_1: Vec<i32>,
     value_2: Vec<i32>,
     value_3: Vec<i32>,
@@ -63,7 +65,6 @@ impl SafeBoardRow {
             value_3.push(c);
         }
         SafeBoardRow {
-            rng,
             value_1,
             value_2,
             value_3,

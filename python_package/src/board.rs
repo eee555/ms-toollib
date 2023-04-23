@@ -4,7 +4,12 @@ use pyo3::prelude::*;
 
 #[pyclass(name = "MinesweeperBoard")]
 pub struct PyMinesweeperBoard {
-    pub core: MinesweeperBoard,
+    pub core: MinesweeperBoard<Vec<Vec<i32>>>,
+}
+
+#[pyclass(name = "SafeMinesweeperBoard")]
+pub struct PySafeMinesweeperBoard {
+    pub core: MinesweeperBoard<SafeBoard>,
 }
 
 #[pymethods]
@@ -1481,22 +1486,22 @@ impl PyEvfVideo {
 
 #[pyclass(name = "BaseVideo")]
 pub struct PyBaseVideo {
-    pub core: BaseVideo,
+    pub core: BaseVideo<SafeBoard>,
 }
 
 #[pymethods]
 impl PyBaseVideo {
     #[new]
     pub fn new(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> PyBaseVideo {
-        let c = BaseVideo::new_before_game(board, cell_pixel_size);
+        let c = BaseVideo::<SafeBoard>::new_before_game(board, cell_pixel_size);
         PyBaseVideo { core: c }
     }
-    pub fn analyse(&mut self) {
-        self.core.analyse();
-    }
-    pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
-        self.core.analyse_for_features(controller);
-    }
+    // pub fn analyse(&mut self) {
+    //     self.core.analyse();
+    // }
+    // pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
+    //     self.core.analyse_for_features(controller);
+    // }
     pub fn generate_evf_v0_raw_data(&mut self) {
         self.core.generate_evf_v0_raw_data();
     }

@@ -9,7 +9,7 @@ use ms_toollib::*;
 mod board;
 pub use board::{
     PyAvfVideo, PyBaseVideo, PyBoard, PyEvfVideo, PyGameBoard, PyMinesweeperBoard, PyMvfVideo,
-    PyRmvVideo,
+    PyRmvVideo, PySafeMinesweeperBoard,
 };
 
 // pip install maturin
@@ -329,6 +329,7 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_is_able_to_solve, m)?)?;
     m.add_function(wrap_pyfunction!(py_enuOneStep, m)?)?;
     m.add_class::<PyMinesweeperBoard>()?;
+    m.add_class::<PySafeMinesweeperBoard>()?;
     m.add_class::<PyAvfVideo>()?;
     m.add_class::<PyRmvVideo>()?;
     m.add_class::<PyMvfVideo>()?;

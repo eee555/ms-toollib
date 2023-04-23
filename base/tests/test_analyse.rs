@@ -16,7 +16,7 @@ fn minesweeper_board_works() {
         vec![0, 1, 1, 1, 0, 2, -1, 2],
         vec![0, 1, -1, 1, 0, 1, 1, 1],
     ];
-    let mut my_board = MinesweeperBoard::new(board);
+    let mut my_board = MinesweeperBoard::<Vec<Vec<i32>>>::new(board);
     my_board.step_flow(vec![("rc", (0, 0))]).unwrap();
     my_board.step_flow(vec![("rr", (0, 0))]).unwrap();
     my_board.step_flow(vec![("lr", (0, 2))]).unwrap();
@@ -184,7 +184,7 @@ fn BaseVideo_works() {
         vec![-1, -1, 3, 0, 0, 2, -1, 2],
         vec![-1, -1, 2, 0, 0, 2, -1, 2],
     ];
-    let mut video = BaseVideo::new_before_game(board, 16);
+    let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
     thread::sleep_ms(600);
     // println!("3BV：{:?}", video.static_params.bbbv);
     video.step("rc", (17, 16)).unwrap();
@@ -295,7 +295,7 @@ fn BaseVideo_works_2() {
         vec![-1, -1, 3, 0, 0, 2, -1, 2],
         vec![-1, -1, 2, 0, 0, 2, -1, 2],
     ];
-    let mut video = BaseVideo::new_before_game(board, 16);
+    let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
     video.step("rc", (17, 16)).unwrap();
     println!("{:?}", video.minesweeper_board.mouse_state);
     println!("{:?}", video.game_board_state);

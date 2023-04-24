@@ -7,10 +7,25 @@ use pyo3::wrap_pyfunction;
 
 use ms_toollib::*;
 mod board;
-pub use board::{
-    PyAvfVideo, PyBaseVideo, PyBoard, PyEvfVideo, PyGameBoard, PyMinesweeperBoard, PyMvfVideo,
-    PyRmvVideo, PySafeMinesweeperBoard,
-};
+pub use board::{PyMinesweeperBoard, PySafeMinesweeperBoard};
+
+mod gameboard;
+pub use gameboard::{PyBoard, PyGameBoard};
+
+mod base_video;
+pub use base_video::PyBaseVideo;
+
+mod avf_video;
+pub use avf_video::PyAvfVideo;
+
+mod evf_video;
+pub use evf_video::PyEvfVideo;
+
+mod mvf_video;
+pub use mvf_video::PyMvfVideo;
+
+mod rmv_video;
+pub use rmv_video::PyRmvVideo;
 
 // pip install maturin
 // maturin publish --manylinux 2014
@@ -40,7 +55,7 @@ fn py_refresh_matrixs(
 #[pyfunction]
 #[pyo3(name = "cal_op")]
 fn py_cal_op(board: Vec<Vec<i32>>) -> PyResult<usize> {
-    Ok(cal_op(board))
+    Ok(cal_op(&board))
 }
 
 #[pyfunction]

@@ -7,7 +7,6 @@ pub struct PyGameBoard {
     pub core: GameBoard,
 }
 
-// 这个干嘛的，忘了
 impl PyGameBoard {
     pub fn set_core(&mut self, value: GameBoard) {
         self.core = value;

@@ -87,6 +87,26 @@ impl SafeBoard {
             counter: 0,
         }
     }
+    pub fn into_vec_vec(&self) -> Vec<Vec<i32>> {
+        let mut board_vec = vec![];
+        for row in &self.value {
+            let mut row_vec = vec![];
+            for i in 0..self.get_column() {
+                let v = decode(row.value_1[i], row.value_2[i], row.value_3[i]) as usize;
+                let t = row.table[v];
+                row_vec.push(t);
+            }
+            board_vec.push(row_vec);
+        }
+        board_vec
+    }
+    pub fn set(&mut self, board: Vec<Vec<i32>>) {
+        let mut safe_board = vec![];
+        for row in board {
+            safe_board.push(SafeBoardRow::new(row));
+        }
+        self.value = safe_board;
+    }
 }
 
 impl std::ops::Index<usize> for SafeBoardRow {

@@ -1,7 +1,27 @@
+use crate::PyGameBoard;
 use itertools::Itertools;
 use ms_toollib::*;
 use pyo3::prelude::*;
-use crate::PyGameBoard;
+
+#[pyclass(name = "SafeBoard")]
+pub struct PySafeBoard {
+    pub core: SafeBoard,
+}
+
+#[pymethods]
+impl PySafeBoard {
+    #[new]
+    pub fn new(board: Vec<Vec<i32>>) -> PySafeBoard {
+        let c = SafeBoard::new(board);
+        PySafeBoard { core: c }
+    }
+    pub fn into_vec_vec(&self) -> PyResult<Vec<Vec<i32>>> {
+        Ok(self.core.into_vec_vec())
+    }
+    pub fn set(&mut self, board: Vec<Vec<i32>>) {
+        self.core.set(board);
+    }
+}
 
 #[pyclass(name = "BaseVideo")]
 pub struct PyBaseVideo {
@@ -274,12 +294,16 @@ impl PyBaseVideo {
     pub fn events_prior_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
         let mut t = PyGameBoard::new(self.core.mine_num);
         t.set_core(
-            self.core.game_board_stream[self.core.video_action_state_recorder[index].prior_game_board_id].clone(),
+            self.core.game_board_stream
+                [self.core.video_action_state_recorder[index].prior_game_board_id]
+                .clone(),
         );
         Ok(t)
     }
     pub fn events_comments(&self, index: usize) -> PyResult<String> {
-        Ok(self.core.video_action_state_recorder[index].comments.clone())
+        Ok(self.core.video_action_state_recorder[index]
+            .comments
+            .clone())
     }
     pub fn events_mouse_state(&self, index: usize) -> PyResult<usize> {
         match self.core.video_action_state_recorder[index].mouse_state {
@@ -307,8 +331,9 @@ impl PyBaseVideo {
         self.core.set_board(board).unwrap();
     }
     #[getter]
-    fn get_board(&self) -> PyResult<Vec<Vec<i32>>> {
-        Ok(self.core.minesweeper_board.board.clone())
+    fn get_board(&self) -> PyResult<PySafeBoard> {
+        let mut t = PySafeBoard::new(self.core.minesweeper_board.board.into_vec_vec());
+        Ok(t)
     }
     #[getter]
     pub fn get_game_board(&self) -> PyResult<Vec<Vec<i32>>> {
@@ -372,7 +397,9 @@ impl PyBaseVideo {
     }
     #[setter]
     pub fn set_uniqueness_designator(&mut self, uniqueness_designator: Vec<u8>) {
-        self.core.set_uniqueness_designator(uniqueness_designator).unwrap();
+        self.core
+            .set_uniqueness_designator(uniqueness_designator)
+            .unwrap();
     }
     #[setter]
     pub fn set_country(&mut self, country: Vec<u8>) {

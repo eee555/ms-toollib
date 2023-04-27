@@ -13,7 +13,7 @@ mod gameboard;
 pub use gameboard::{PyBoard, PyGameBoard};
 
 mod base_video;
-pub use base_video::PyBaseVideo;
+pub use base_video::{PyBaseVideo, PySafeBoard};
 
 mod avf_video;
 pub use avf_video::PyAvfVideo;
@@ -352,5 +352,6 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyBaseVideo>()?;
     m.add_class::<PyGameBoard>()?;
     m.add_class::<PyBoard>()?;
+    m.add_class::<PySafeBoard>()?;
     Ok(())
 }

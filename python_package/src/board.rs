@@ -16,7 +16,7 @@ pub struct PySafeMinesweeperBoard {
 impl PyMinesweeperBoard {
     #[new]
     pub fn new(board: Vec<Vec<i32>>) -> PyMinesweeperBoard {
-        let c = MinesweeperBoard::new(board.clone());
+        let c = MinesweeperBoard::<Vec<Vec<i32>>>::new(board.clone());
         PyMinesweeperBoard { core: c }
     }
     pub fn step(&mut self, e: &str, pos: (usize, usize)) {
@@ -146,16 +146,16 @@ impl PySafeMinesweeperBoard {
     pub fn step(&mut self, e: &str, pos: (usize, usize)) {
         self.core.step(e, pos).unwrap();
     }
-    pub fn reset(&mut self) {
-        self.core.reset();
-    }
+    // pub fn reset(&mut self) {
+    //     self.core.reset();
+    // }
     pub fn step_flow(&mut self, operation: Vec<(&str, (usize, usize))>) {
         self.core.step_flow(operation).unwrap();
     }
     // 这个方法与强可猜、弱可猜、埋雷有关
     #[setter]
     fn set_board(&mut self, board: Vec<Vec<i32>>) {
-        self.core.board = board;
+        self.core.board.set(board);
     }
     // #[setter]
     // fn set_game_board(&mut self, game_board: Vec<Vec<i32>>) {
@@ -163,7 +163,7 @@ impl PySafeMinesweeperBoard {
     // }
     #[getter]
     fn get_board(&self) -> PyResult<Vec<Vec<i32>>> {
-        Ok(self.core.board.clone())
+        Ok(self.core.board.into_vec_vec())
     }
     #[getter]
     fn get_game_board(&self) -> PyResult<Vec<Vec<i32>>> {

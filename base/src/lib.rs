@@ -62,6 +62,6 @@ mod OBR;
 pub use OBR::ImageBoard;
 
 mod safe_board;
-pub use safe_board::{SafeBoard};
+pub use safe_board::{SafeBoard, SafeBoardRow};
 
 const ENUM_LIMIT: usize = 55;

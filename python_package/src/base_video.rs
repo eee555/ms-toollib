@@ -2,6 +2,20 @@ use crate::PyGameBoard;
 use itertools::Itertools;
 use ms_toollib::*;
 use pyo3::prelude::*;
+use pyo3::*;
+
+#[pyclass(name = "SafeBoardRow")]
+pub struct PySafeBoardRow {
+    pub core: SafeBoardRow,
+}
+
+#[pymethods]
+impl PySafeBoardRow {
+    #[new]
+    pub fn new(row: Vec<i32>) -> PySafeBoardRow {
+        PySafeBoardRow { core: SafeBoardRow::new(row) }
+    }
+}
 
 #[pyclass(name = "SafeBoard")]
 pub struct PySafeBoard {
@@ -20,6 +34,20 @@ impl PySafeBoard {
     }
     pub fn set(&mut self, board: Vec<Vec<i32>>) {
         self.core.set(board);
+    }
+}
+
+#[pyproto]
+impl PySequenceProtocol for PySafeBoardRow {
+    fn __getitem__(&self, key: isize) -> PyResult<i32> {
+        Ok(self.core[key as usize])
+    }
+}
+
+#[pyproto]
+impl PySequenceProtocol for PySafeBoard {
+    fn __getitem__(&self, key: isize) -> PyResult<PySafeBoardRow> {
+        Ok(PySafeBoardRow::new(self.core[key as usize].into_vec()))
     }
 }
 

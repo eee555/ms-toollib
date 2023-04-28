@@ -53,7 +53,7 @@ pub struct SafeBoard {
 }
 
 impl SafeBoardRow {
-    fn new(v: Vec<i32>) -> SafeBoardRow {
+    pub fn new(v: Vec<i32>) -> SafeBoardRow {
         let mut rng = rand::thread_rng();
         let mut value_1 = vec![];
         let mut value_2 = vec![];
@@ -73,6 +73,15 @@ impl SafeBoardRow {
             ],
             counter: 0,
         }
+    }
+    pub fn into_vec(&self) -> Vec<i32> {
+        let mut row_vec = vec![];
+        for i in 0..self.value_1.len() {
+            let v = decode(self.value_1[i], self.value_2[i], self.value_3[i]) as usize;
+            let t = self.table[v];
+            row_vec.push(t);
+        }
+        row_vec
     }
 }
 

@@ -89,6 +89,10 @@ impl PyBaseVideo {
         self.core.loss_then_open_all_mine();
     }
     #[getter]
+    fn get_raw_data(&self) -> PyResult<Vec<u8>> {
+        Ok(self.core.get_raw_data().unwrap())
+    }
+    #[getter]
     fn get_time(&self) -> PyResult<f64> {
         Ok(self.core.get_time())
     }
@@ -360,7 +364,7 @@ impl PyBaseVideo {
     }
     #[getter]
     fn get_board(&self) -> PyResult<PySafeBoard> {
-        let mut t = PySafeBoard::new(self.core.minesweeper_board.board.into_vec_vec());
+        let t = PySafeBoard::new(self.core.minesweeper_board.board.into_vec_vec());
         Ok(t)
     }
     #[getter]

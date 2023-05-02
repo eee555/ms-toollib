@@ -24,16 +24,17 @@ where
 {
     let row = board_raw.get_row();
     let column = board_raw.get_column();
-    let mut board = vec![];
-    for _ in 0..row {
-        board.push(vec![0; column]);
+    let mut board = vec![vec![0; column]; row];
+    for i in 0..row {
+        for j in 0..column {
+            board[i][j] = board_raw[i][j];
+        }
     }
     let mut op = 0;
     for i in 0..row {
         for j in 0..column {
             if board[i][j] == 0 {
-                board[i][j] = 1;
-                board = infect_board(board, i, j);
+                infect_board(&mut board, i, j);
                 op += 1;
             }
         }
@@ -42,19 +43,17 @@ where
 }
 
 // Board(x, y)位置的整个空都用数字1填满，仅计算Op用
-fn infect_board(mut board: Vec<Vec<i32>>, x: usize, y: usize) -> Vec<Vec<i32>> {
-    // Board(x, y)位置的整个空都用数字1填满，仅计算Op用
+fn infect_board(board: &mut Vec<Vec<i32>>, x: usize, y: usize) {
     let row = board.len();
     let column = board[0].len();
+    board[x][y] = 1;
     for i in max(1, x) - 1..min(row, x + 2) {
         for j in max(1, y) - 1..min(column, y + 2) {
             if board[i][j] == 0 {
-                board[i][j] = 1;
-                board = infect_board(board, i, j);
+                infect_board(board, i, j);
             }
         }
     }
-    board
 }
 
 /// 输入局面，计算岛  

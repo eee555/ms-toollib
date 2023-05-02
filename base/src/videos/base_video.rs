@@ -12,8 +12,7 @@ use std::fs;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use crate::safe_board::{BoardSize, SafeBoard};
-use crate::{MinesweeperBoard, MouseState, GameBoardState};
-
+use crate::{GameBoardState, MinesweeperBoard, MouseState};
 
 /// 读录像文件失败的原因
 #[derive(Debug)]
@@ -313,6 +312,8 @@ pub struct BaseVideo<T> {
     // net_start_time: f64,
     // 允许设置最终成绩，解析录像文件时用
     allow_set_rtime: bool,
+    // 是否有checksum
+    has_checksum: bool,
     // 播放录像文件时用，按几倍放大来播放，涉及回报的鼠标位置
     video_playing_pix_size_k: f64,
 }
@@ -355,6 +356,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             checksum: [0; 32],
             can_analyse: false,
             // net_start_time: 0.0,
+            has_checksum: false,
             allow_set_rtime: false,
             video_playing_pix_size_k: 1.0,
         }
@@ -399,6 +401,7 @@ impl Default for BaseVideo<SafeBoard> {
             checksum: [0; 32],
             can_analyse: false,
             // net_start_time: 0.0,
+            has_checksum: false,
             allow_set_rtime: false,
             video_playing_pix_size_k: 1.0,
         }
@@ -729,7 +732,7 @@ impl<T> BaseVideo<T> {
     /// - pos的单位是像素，(距离上方，距离左侧)
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()>
     where
-        T: std::ops::Index<usize> + BoardSize+std::fmt::Debug,
+        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         let step_instant = Instant::now();
@@ -1267,14 +1270,37 @@ impl<T> BaseVideo<T> {
         self.country = country;
         Ok(0)
     }
+    /// 在生成二进制数据前得出checksum，则用这个
     pub fn set_checksum(&mut self, checksum: [u8; 32]) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
             return Err(());
         };
-        self.checksum = checksum;
-        Ok(0)
+        if self.raw_data.is_empty() {
+            self.checksum = checksum;
+            self.has_checksum = true;
+            return Ok(0);
+        }
+        if !self.has_checksum {
+            *self.raw_data.last_mut().unwrap() = 0;
+            self.raw_data.append(&mut checksum.clone().to_vec().to_owned());
+            return Ok(0);
+        } else {
+            let ptr = self.raw_data.len() - 32;
+            for i in 0..32 {
+                self.raw_data[ptr + i] = checksum[i];
+            }
+            return Ok(0);
+        }
+    }
+    pub fn get_raw_data(&self) -> Result<Vec<u8>, ()> {
+        if self.game_board_state != GameBoardState::Win
+            && self.game_board_state != GameBoardState::Loss
+        {
+            return Err(());
+        }
+        Ok(self.raw_data.clone())
     }
     pub fn get_left(&self) -> usize {
         match self.game_board_state {
@@ -1705,7 +1731,8 @@ impl<T> BaseVideo<T> {
             self.raw_data.push((event.y >> 8).try_into().unwrap());
             self.raw_data.push((event.y % 256).try_into().unwrap());
         }
-        if !self.checksum.is_empty() {
+        self.raw_data.push(255);
+        if self.has_checksum {
             self.raw_data.push(0);
             self.raw_data
                 .append(&mut self.checksum.clone().to_vec().to_owned());
@@ -1713,6 +1740,12 @@ impl<T> BaseVideo<T> {
             self.raw_data.push(255);
         }
     }
+    // /// 在二进制数据最后添加checksum。通过generate_evf_v0_raw_data或push_checksum添加checksum二选一。
+    // /// 若无checksum就用generate_evf_v0_raw_data
+    // pub fn push_checksum(&mut self, checksum: &mut Vec<u8>) {
+    //     *self.raw_data.last_mut().unwrap() = 0;
+    //     self.raw_data.append(checksum);
+    // }
     /// 存evf文件，自动加后缀，xxx.evf重复变成xxx(2).evf
     pub fn save_to_evf_file(&self, file_name: &str) {
         let file_exist =

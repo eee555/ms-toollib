@@ -250,6 +250,7 @@ fn BaseVideo_works() {
     println!("cell0: {:?}", video.static_params.cell0);
 
     video.generate_evf_v0_raw_data();
+    video.set_checksum([8; 32]).unwrap();
     video.save_to_evf_file("test");
 
     let mut video = EvfVideo::new("test.evf");

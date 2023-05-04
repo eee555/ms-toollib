@@ -395,6 +395,10 @@ impl PyBaseVideo {
     pub fn get_x_y(&self) -> PyResult<(u16, u16)> {
         Ok(self.core.get_x_y().unwrap())
     }
+    #[getter]
+    pub fn get_checksum(&self) -> PyResult<[u8; 32]> {
+        Ok(self.core.get_checksum().unwrap())
+    }
     #[setter]
     pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {
         self.core.set_video_playing_pix_size(pix_size);

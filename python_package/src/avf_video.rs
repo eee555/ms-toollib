@@ -32,6 +32,10 @@ impl PyAvfVideo {
         self.core.data.save_to_evf_file(file_name);
     }
     #[getter]
+    fn get_raw_data(&self) -> PyResult<Vec<u8>> {
+        Ok(self.core.data.get_raw_data().unwrap())
+    }
+    #[getter]
     fn get_time(&self) -> PyResult<f64> {
         Ok(self.core.data.get_time())
     }
@@ -330,6 +334,10 @@ impl PyAvfVideo {
     #[getter]
     pub fn get_x_y(&self) -> PyResult<(u16, u16)> {
         Ok(self.core.data.get_x_y().unwrap())
+    }
+    #[getter]
+    pub fn get_checksum(&self) -> PyResult<[u8; 32]> {
+        Ok(self.core.data.get_checksum().unwrap())
     }
     #[setter]
     pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {

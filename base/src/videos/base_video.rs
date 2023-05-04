@@ -1277,14 +1277,12 @@ impl<T> BaseVideo<T> {
         {
             return Err(());
         };
-        if self.raw_data.is_empty() {
-            self.checksum = checksum;
-            self.has_checksum = true;
-            return Ok(0);
-        }
         if !self.has_checksum {
             *self.raw_data.last_mut().unwrap() = 0;
-            self.raw_data.append(&mut checksum.clone().to_vec().to_owned());
+            self.raw_data
+                .append(&mut checksum.clone().to_vec().to_owned());
+            self.checksum = checksum;
+            self.has_checksum = true;
             return Ok(0);
         } else {
             let ptr = self.raw_data.len() - 32;
@@ -1297,6 +1295,7 @@ impl<T> BaseVideo<T> {
     pub fn get_raw_data(&self) -> Result<Vec<u8>, ()> {
         if self.game_board_state != GameBoardState::Win
             && self.game_board_state != GameBoardState::Loss
+            && self.game_board_state != GameBoardState::Display
         {
             return Err(());
         }
@@ -1605,6 +1604,15 @@ impl<T> BaseVideo<T> {
             MouseState::Undefined => 8,
         }
     }
+    pub fn get_checksum(&self) -> Result<[u8; 32], ()> {
+        if self.game_board_state != GameBoardState::Win
+            && self.game_board_state != GameBoardState::Loss
+            && self.game_board_state != GameBoardState::Display
+        {
+            return Err(());
+        }
+        Ok(self.checksum.clone())
+    }
     // 录像播放时，返回鼠标的坐标
     pub fn get_x_y(&self) -> Result<(u16, u16), ()> {
         if self.game_board_state != GameBoardState::Display {
@@ -1731,7 +1739,6 @@ impl<T> BaseVideo<T> {
             self.raw_data.push((event.y >> 8).try_into().unwrap());
             self.raw_data.push((event.y % 256).try_into().unwrap());
         }
-        self.raw_data.push(255);
         if self.has_checksum {
             self.raw_data.push(0);
             self.raw_data

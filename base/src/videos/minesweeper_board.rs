@@ -1,9 +1,7 @@
+use crate::utils::refresh_board;
 
-use crate::utils::{refresh_board};
-
-use std::cmp::{max, min};
 use crate::safe_board::{BoardSize, SafeBoard};
-
+use std::cmp::{max, min};
 
 /// 没有时间、像素观念的局面状态机，侧重分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。  
 /// - 局限：不关注具体的线路（没有像素观念），因此不能计算path等。  
@@ -327,7 +325,7 @@ impl<T> MinesweeperBoard<T> {
     // 局面外按下的事件，以及连带的释放一律对鼠标状态没有任何影响，UI框架不会激活回调
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()>
     where
-        T: std::ops::Index<usize> + BoardSize+std::fmt::Debug,
+        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         // println!("e: {:?}", e);
@@ -720,6 +718,11 @@ impl<T> MinesweeperBoard<T> {
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         for j in self.pointer_y..self.column {
+            if self.game_board[self.pointer_x][j] < 10 {
+                if self.game_board[self.pointer_x][j] != self.board[self.pointer_x][j] {
+                    return false; // 安全性相关（发生作弊）
+                }
+            }
             if self.game_board[self.pointer_x][j] >= 10 && self.board[self.pointer_x][j] != -1 {
                 self.pointer_y = j;
                 return false;
@@ -727,6 +730,11 @@ impl<T> MinesweeperBoard<T> {
         }
         for i in self.pointer_x + 1..self.row {
             for j in 0..self.column {
+                if self.game_board[i][j] < 10 {
+                    if self.game_board[i][j] != self.board[i][j] {
+                        return false; // 安全性相关（发生作弊）
+                    }
+                }
                 if self.game_board[i][j] >= 10 && self.board[i][j] != -1 {
                     self.pointer_x = i;
                     self.pointer_y = j;

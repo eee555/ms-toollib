@@ -329,10 +329,17 @@ impl<T> MinesweeperBoard<T> {
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         // println!("e: {:?}", e);
-        if pos.0 == self.row && pos.1 == self.column && (e == "rc" || e == "lc" || e == "cc") {
-            // 这里按理应该报错，局面外的按下不该进来
-            return Ok(0);
-        }
+        // if pos.0 == self.row && pos.1 == self.column {
+        //     // 按理局面外按下的不该进来
+        //     match e {
+        //         "rc" => {
+        //             return Ok(0);
+        //         }
+        //         "lc" => {}
+        //         "cc" => {}
+        //         _ => {}
+        //     }
+        // }
         match self.game_board_state {
             GameBoardState::Ready => match e {
                 "mv" => {
@@ -342,8 +349,10 @@ impl<T> MinesweeperBoard<T> {
                     //  "l"处理不了，很复杂，以后再说
                     match self.mouse_state {
                         MouseState::UpUp => {
-                            self.game_board_state = GameBoardState::PreFlaging;
-                            self.mouse_state = MouseState::DownUp
+                            self.mouse_state = MouseState::DownUp;
+                            if pos.0 < self.row && pos.1 < self.column {
+                                self.game_board_state = GameBoardState::PreFlaging;
+                            }
                         }
                         MouseState::UpDown => self.mouse_state = MouseState::Chording,
                         MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
@@ -363,10 +372,13 @@ impl<T> MinesweeperBoard<T> {
                 //  "r"处理不了，很复杂，以后再说
                 "rc" => match self.mouse_state {
                     MouseState::UpUp => {
-                        self.pre_flag_num = 1;
-                        self.game_board_state = GameBoardState::PreFlaging;
                         self.mouse_state = MouseState::UpDown;
-                        return self.right_click(pos.0, pos.1);
+                        if pos.0 < self.row && pos.1 < self.column {
+                            self.pre_flag_num = 1;
+                            self.game_board_state = GameBoardState::PreFlaging;
+                            return self.right_click(pos.0, pos.1);
+                        }
+                        return Ok(0);
                     }
                     MouseState::DownUpAfterChording => {
                         self.mouse_state = MouseState::Chording;
@@ -380,6 +392,12 @@ impl<T> MinesweeperBoard<T> {
                         return Ok(0);
                     }
                     MouseState::DownUpAfterChording => {
+                        self.mouse_state = MouseState::UpUp;
+                        return Ok(0);
+                    }
+                    MouseState::DownUp | MouseState::UpUp => {
+                        // 按理进不来
+                        // 局面外按下鼠标（所以没有进入preflag状态），再在局面外松开鼠标
                         self.mouse_state = MouseState::UpUp;
                         return Ok(0);
                     }
@@ -444,31 +462,35 @@ impl<T> MinesweeperBoard<T> {
                 "rc" => match self.mouse_state {
                     MouseState::UpUp => {
                         self.mouse_state = MouseState::UpDown;
-                        if self.game_board[pos.0][pos.1] == 10 {
-                            self.pre_flag_num += 1;
-                            self.game_board_state = GameBoardState::PreFlaging;
-                            return self.right_click(pos.0, pos.1);
-                        } else {
-                            self.pre_flag_num -= 1;
-                            if self.pre_flag_num == 0 {
-                                self.game_board_state = GameBoardState::Ready;
-                                self.flag = 0;
-                                self.flagedList.clear();
-                                self.double = 0;
-                                self.left = 0;
-                                self.right = 0;
-                                self.game_board[pos.0][pos.1] = 10;
-                                return Ok(0);
-                            } else {
+                        if pos.0 < self.row && pos.1 < self.column {
+                            if self.game_board[pos.0][pos.1] == 10 {
+                                self.pre_flag_num += 1;
+                                self.game_board_state = GameBoardState::PreFlaging;
                                 return self.right_click(pos.0, pos.1);
+                            } else {
+                                self.pre_flag_num -= 1;
+                                if self.pre_flag_num == 0 {
+                                    self.game_board_state = GameBoardState::Ready;
+                                    self.flag = 0;
+                                    self.flagedList.clear();
+                                    self.double = 0;
+                                    self.left = 0;
+                                    self.right = 0;
+                                    self.game_board[pos.0][pos.1] = 10;
+                                    return Ok(0);
+                                } else {
+                                    return self.right_click(pos.0, pos.1);
+                                }
                             }
                         }
                     }
                     MouseState::DownUp => {
-                        if self.pre_flag_num == 0 {
-                            self.game_board_state = GameBoardState::Ready;
+                        self.mouse_state = MouseState::Chording;
+                        if pos.0 < self.row && pos.1 < self.column {
+                            if self.pre_flag_num == 0 {
+                                self.game_board_state = GameBoardState::Ready;
+                            }
                         }
-                        self.mouse_state = MouseState::Chording
                     }
                     MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,
                     _ => return Err(()),
@@ -476,8 +498,10 @@ impl<T> MinesweeperBoard<T> {
                 "cc" => {
                     match self.mouse_state {
                         MouseState::DownUp => {
-                            if self.pre_flag_num == 0 {
-                                self.game_board_state = GameBoardState::Ready;
+                            if pos.0 < self.row && pos.1 < self.column {
+                                if self.pre_flag_num == 0 {
+                                    self.game_board_state = GameBoardState::Ready;
+                                }
                             }
                             self.mouse_state = MouseState::Chording;
                         }
@@ -568,12 +592,16 @@ impl<T> MinesweeperBoard<T> {
             },
             "rc" => match self.mouse_state {
                 MouseState::UpUp => {
-                    if self.game_board[pos.0][pos.1] < 10 {
-                        self.mouse_state = MouseState::UpDownNotFlag;
+                    if pos.0 < self.row && pos.1 < self.column {
+                        if self.game_board[pos.0][pos.1] < 10 {
+                            self.mouse_state = MouseState::UpDownNotFlag;
+                        } else {
+                            self.mouse_state = MouseState::UpDown;
+                        }
+                        return self.right_click(pos.0, pos.1);
                     } else {
-                        self.mouse_state = MouseState::UpDown;
+                        self.mouse_state = MouseState::UpDownNotFlag;
                     }
-                    return self.right_click(pos.0, pos.1);
                 }
                 MouseState::DownUp => self.mouse_state = MouseState::Chording,
                 MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,

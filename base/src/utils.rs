@@ -4,6 +4,7 @@ use rand::seq::SliceRandom;
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::thread_rng;
 use std::cmp::{max, min};
+use std::println;
 // use std::convert::TryInto;
 #[cfg(feature = "js")]
 use getrandom::getrandom;
@@ -108,12 +109,12 @@ where
 }
 
 /// 根据游戏局面生成矩阵，不分块。输入必须保证是合法的游戏局面。  
-/// - 注意：优点是含义明确，便于理解。但由于不分块，拟弃用
+/// - 注意：优点是含义明确，便于理解。但不分块
 pub fn refresh_matrix(
-    BoardofGame: &Vec<Vec<i32>>,
+    game_board: &Vec<Vec<i32>>,
 ) -> (Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<i32>) {
-    let row = BoardofGame.len();
-    let column = BoardofGame[0].len();
+    let row = game_board.len();
+    let column = game_board[0].len();
     let mut MatrixA: Vec<Vec<i32>> = Vec::new();
     let mut Matrixx: Vec<(usize, usize)> = Vec::new();
     let mut Matrixb: Vec<i32> = Vec::new();
@@ -122,24 +123,24 @@ pub fn refresh_matrix(
 
     for i in 0..row {
         for j in 0..column {
-            if BoardofGame[i][j] > 0 && BoardofGame[i][j] < 10 {
+            if game_board[i][j] > 0 && game_board[i][j] < 10 {
                 let mut flag: bool = false;
                 for m in max(1, i) - 1..min(row, i + 2) {
                     for n in max(1, j) - 1..min(column, j + 2) {
-                        if BoardofGame[m][n] == 10 {
+                        if game_board[m][n] == 10 {
                             flag = true;
                         }
                     }
                 }
                 if flag {
                     MatrixA.push(vec![0; MatrixAColumnNum]);
-                    Matrixb.push(BoardofGame[i][j]);
+                    Matrixb.push(game_board[i][j]);
                     MatrixARowNum += 1;
                     for m in max(1, i) - 1..min(row, i + 2) {
                         for n in max(1, j) - 1..min(column, j + 2) {
-                            if BoardofGame[m][n] == 11 {
+                            if game_board[m][n] == 11 {
                                 Matrixb[MatrixARowNum - 1] -= 1
-                            } else if BoardofGame[m][n] == 10 {
+                            } else if game_board[m][n] == 10 {
                                 let mut flag_exit: bool = false;
                                 for idMatrixx in 0..MatrixAColumnNum {
                                     if Matrixx[idMatrixx].0 == m && Matrixx[idMatrixx].1 == n {
@@ -190,7 +191,7 @@ pub fn refresh_matrixs(
     let mut all_cell: Vec<(usize, usize)> = vec![]; // 记录所有周围有未打开格子的数字的位置
     for i in 0..row {
         for j in 0..column {
-            if board_of_game[i][j] > 0 && board_of_game[i][j] < 10 {
+            if board_of_game[i][j] >= 0 && board_of_game[i][j] < 10 {
                 'outer: for m in max(1, i) - 1..min(row, i + 2) {
                     for n in max(1, j) - 1..min(column, j + 2) {
                         if board_of_game[m][n] == 10 {
@@ -317,18 +318,16 @@ pub fn refresh_matrixses(
         // 不可能为0，至少为1
         return (vec![As], vec![xs], vec![bs]);
     }
-    let mut adjacency_matrix = vec![vec![false; As.len()]; As.len()];
     // 邻接矩阵
-    let mut board_mark = board_of_game.clone();
+    let mut adjacency_matrix = vec![vec![false; As.len()]; As.len()];
     // 局面的复刻，用于标记遍历过的格子
+    let mut board_mark = board_of_game.clone();
     let mut cell_10 = vec![];
     for i in 0..row {
         for j in 0..column {
             if board_mark[i][j] == 10 {
                 board_mark[i][j] = 21;
                 let mut flag_c = false;
-                // cell_10.push(vec![]);
-                // cell_10.last_mut().unwrap().push((i, j));
                 let mut buffer = vec![];
                 buffer.push((i, j));
                 // 标志是否搜索完的缓冲区
@@ -443,6 +442,7 @@ pub trait js_shuffle {
 #[cfg(feature = "js")]
 impl js_shuffle for Vec<i32> {
     fn shuffle_(&mut self) {
+        // 存疑！！！！！
         let l = self.len();
         for i in 1..l {
             let id = get_random_int(i + 1);
@@ -974,7 +974,7 @@ fn cal_table_minenum_recursion_step(
 ) -> bool {
     // mine_vec: 是雷位置都记录下来，只记录一个索引，可能有重复
     let cells_num = matrixA_squeeze[0].len();
-    if idx == cells_num {
+    if idx >= cells_num {
         //终止条件
         let total_mines_num: usize = mine_vec.iter().sum();
         table_minenum[1][total_mines_num] += current_amount;
@@ -988,7 +988,6 @@ fn cal_table_minenum_recursion_step(
     let mut upper_limit = combination_relationship[idx].len();
     let mut lower_limit = 0usize;
     for cell_i in &cell_to_equation_map[idx] {
-        // println!("idx = {:?}; matrix_b_remain = {:?}", idx, matrix_b_remain);
         if matrixA_squeeze[*cell_i][idx] == 0 {
             continue;
         }
@@ -996,7 +995,6 @@ fn cal_table_minenum_recursion_step(
             matrix_b_remain[*cell_i],
             combination_relationship[idx].len() as i32,
         );
-        // println!("combination_relationship = {:?}", combination_relationship);
         let mut lower_limit_i = matrix_b_remain[*cell_i];
         for j in &equation_to_cell_map[*cell_i] {
             if j > &idx {
@@ -1011,6 +1009,8 @@ fn cal_table_minenum_recursion_step(
         }
     }
 
+    // println!("{:?}, {:?}", lower_limit, upper_limit + 1);
+    // if lower_limit < upper_limit + 1 {
     for u in lower_limit..upper_limit + 1 {
         // let b = mine_vec[idx];
         mine_vec[idx] = u;
@@ -1019,7 +1019,7 @@ fn cal_table_minenum_recursion_step(
                 matrix_b_remain[*tt] -= u as i32;
             }
         }
-        let is_end = cal_table_minenum_recursion_step(
+        let _ = cal_table_minenum_recursion_step(
             idx + 1,
             current_amount * C_query(combination_relationship[idx].len(), u),
             table_minenum,
@@ -1037,6 +1037,7 @@ fn cal_table_minenum_recursion_step(
         }
         mine_vec[idx] = 0;
     }
+    // }
     false
 }
 
@@ -1082,6 +1083,8 @@ pub fn cal_table_minenum_recursion(
         &equation_to_cell_map,
         &mut (vec![0; cells_num]),
     );
+    // println!("table_cell_minenum{:?}", table_cell_minenum);
+    // println!("table_minenum{:?}", table_minenum);
     while table_minenum[1][0] == 0 {
         table_minenum[0].remove(0);
         table_minenum[1].remove(0);
@@ -1505,7 +1508,7 @@ pub fn cal_bbbv_exp(Board: &Vec<Vec<i32>>) -> usize {
 
 // 把局面合法化：只能合法化简单的情况，不能应付所有的情况！因为检查一个局面是否合法也是NP难的
 // 配合局面光学识别算法
-// 局面中标记的标准是10为待判的雷，1到8，11为已知必然是雷的位置，12是已知必然非雷的位置
+// 局面中标记的标准是10为待判的雷，1到8，没有11、12
 pub fn legalize_board(board: &mut Vec<Vec<i32>>) {
     let row = board.len();
     let column = board[0].len();
@@ -1514,24 +1517,12 @@ pub fn legalize_board(board: &mut Vec<Vec<i32>>) {
             if board[x][y] <= -1 || board[x][y] >= 13 || board[x][y] == 9 {
                 // 把局面中明显未定义的数字改成未打开
                 board[x][y] = 10;
-            } else if board[x][y] == 10 {
-                'outer: for i in max(1, x) - 1..min(row, x + 2) {
-                    for j in max(1, y) - 1..min(column, y + 2) {
-                        if board[i][j] == 0 {
-                            // 把周围有0的未打开的格子确定为一定非雷
-                            // 这种局面对于游戏而言是合法的，但不利于算法处理
-                            // 因此在这里就处理掉
-                            board[x][y] = 12;
-                            break 'outer;
-                        }
-                    }
-                }
             } else if board[x][y] >= 1 && board[x][y] <= 8 {
                 let mut mine_num_limit = 0;
                 for i in max(1, x) - 1..min(row, x + 2) {
                     for j in max(1, y) - 1..min(column, y + 2) {
                         if board[i][j] == 10 || board[i][j] == 11 {
-                            // 局面中的数字不能大于周围的雷数
+                            // 局面中的数字不能大于周围的未知格数
                             mine_num_limit += 1;
                         }
                     }

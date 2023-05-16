@@ -328,4 +328,32 @@ fn BaseVideo_works_2() {
 }
 
 
+#[test]
+fn BaseVideo_works_3() {
+    let board = vec![
+        vec![1, 1, 2, 1, 1, 0, 0, 0],
+        vec![1, -1, 2, -1, 1, 0, 0, 0],
+        vec![1, 1, 2, 1, 1, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![2, 2, 1, 0, 0, 0, 0, 0],
+        vec![-1, -1, 2, 0, 0, 1, 1, 1],
+        vec![-1, -1, 3, 0, 0, 2, -1, 2],
+        vec![-1, -1, 2, 0, 0, 2, -1, 2],
+    ];
+    let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
+    video.step("rc", (128, 128)).unwrap();
+    println!("{:?}", video.minesweeper_board.mouse_state);
+    println!("{:?}", video.game_board_state);
+    video.step("rr", (128, 128)).unwrap();
+    println!("{:?}", video.minesweeper_board.mouse_state);
+    println!("{:?}", video.game_board_state);
+    video.step("rc", (128, 128)).unwrap();
+    println!("{:?}", video.minesweeper_board.mouse_state);
+    println!("{:?}", video.game_board_state);
+    video.step("rr", (128, 128)).unwrap();
+    println!("{:?}", video.minesweeper_board.mouse_state);
+    println!("{:?}", video.game_board_state);
+
+
+}
 

@@ -23,6 +23,7 @@ use rand::prelude::*;
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
+use std::println;
 use std::time;
 
 use std::cmp::{max, min};
@@ -35,7 +36,6 @@ use tract_ndarray::Array;
 
 #[cfg(any(feature = "py", feature = "rs"))]
 use tract_onnx::prelude::*;
-
 
 use crate::safe_board::{BoardSize, SafeBoard};
 
@@ -138,7 +138,7 @@ pub fn solve_minus(
 
 /// 单集合判雷引擎。
 /// - 输入：3个矩阵、局面。
-/// - 返回：是雷、非雷的格子，在传入的局面上标是雷（11）和非雷（12）。  
+/// - 返回：非雷、是雷的格子，在传入的局面上标是雷（11）和非雷（12）。  
 /// - 注意：会维护系数矩阵、格子矩阵和数字矩阵，删、改、分段。
 pub fn solve_direct(
     As: &mut Vec<Vec<Vec<i32>>>,
@@ -208,7 +208,7 @@ pub fn solve_direct(
 /// - 注意：若没有内部未知区域，返回NaN。
 pub fn cal_possibility(
     board_of_game: &Vec<Vec<i32>>,
-    mut mine_num: f64,
+    mine_num: f64,
 ) -> Result<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize), usize> {
     // 如果超出枚举长度限制，记录并返回这个长度，以此体现局面的求解难度。
     let mut exceed_len = 0;
@@ -265,8 +265,6 @@ pub fn cal_possibility(
             }
             Err(e) => {
                 if e == 1 {
-                    // table_mine_num_i=[vec![0],vec![0]];
-                    // table_cell_mine_num_i=[vec![0],vec![0]].to_vec();
                     return Err(1); // 这是不合法、矛盾的的局面
                 } else {
                     return Err(2); // 这是不可能的，枚举器不可能返回2这种错误，但是需要这样写通过rust的编译
@@ -288,7 +286,7 @@ pub fn cal_possibility(
         min_mine_num += table_mine_num_s[i][0].iter().min().unwrap();
         max_mine_num += table_mine_num_s[i][0].iter().max().unwrap();
     }
-    let mine_num = if mine_num <= 1.0 {
+    let mine_num = if mine_num < 1.0 {
         let mn = ((board_of_game.len() * board_of_game[0].len()) as f64 * mine_num) as usize;
         min(
             max(mn - is_mine_num, min_mine_num),
@@ -299,6 +297,10 @@ pub fn cal_possibility(
     };
 
     max_mine_num = min(max_mine_num, mine_num);
+    if max_mine_num < min_mine_num {
+        return Err(3); // 这种错误，例如一共10个雷，却出现了3个不相邻的5
+    }
+    // println!("{:?}, {:?}, {:?}", max_mine_num, mine_num, min_mine_num);
     let unknow_mine_num: Vec<usize> =
         (mine_num - max_mine_num..min(mine_num - min_mine_num, unknow_block) + 1).collect();
     // 这里的写法存在极小的风险，例如边缘格雷数分布是0，1，3，而我们直接认为了可能有2
@@ -515,7 +517,7 @@ pub fn cal_is_op_possibility_cells(
                     let p;
                     match cal_possibility_onboard(&board_of_game_modified, mine_num) {
                         Ok((ppp, _)) => p = ppp,
-                        Err(e) => {
+                        Err(_) => {
                             poss[cell_id] = 0.0;
                             break 'outer;
                         }
@@ -621,8 +623,7 @@ fn isVictory(board_of_game: &Vec<Vec<i32>>, Board: &Vec<Vec<i32>>) -> bool {
 /// <span id="is_solvable">从指定位置开始扫，判断局面是否无猜。  
 /// - 注意：周围一圈都是雷，那么若中间是雷不算猜，若中间不是雷算有猜。  
 /// - 注意：不考虑剩余雷数。
-pub fn is_solvable(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool 
-{
+pub fn is_solvable(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
     if unsolvable_structure(&board) {
         //若包含不可判雷结构，则不是无猜
         return false;
@@ -696,7 +697,7 @@ pub fn laymine_solvable_thread(
         max_times -= max_time;
         let flag_exit = Arc::clone(&flag_exit);
         let handle = thread::spawn(move || {
-            let mut Num3BV;
+            // let Num3BV;
             let mut counter = 0;
             let mut Board = vec![vec![0; column]; row];
             // let mut para = [0, 0, 0];
@@ -722,7 +723,7 @@ pub fn laymine_solvable_thread(
                 }
             }
             let Board_ = laymine_op(row, column, mine_num, x0, y0);
-            Num3BV = cal_bbbv(&Board_);
+            // Num3BV = cal_bbbv(&Board_);
             tx_.send((Board_, false)).unwrap();
         });
         handles.push(handle);
@@ -1250,11 +1251,11 @@ pub fn agent_step(board_of_game: Vec<Vec<i32>>, pos: (usize, usize)) -> Result<u
     let image_2: Tensor = Array::from_shape_vec((1, 2), vec![0f32; 2]).unwrap().into();
     let ans = model.run(tvec!(image, image_2)).unwrap();
     let aaa = ans[0].to_array_view::<i32>().unwrap();
-    println!("{:?}", aaa);
+    // println!("{:?}", aaa);
     Ok(30)
 }
 
-/// 对局面用单集合、双集合判雷引擎，快速标雷、标非雷，以供概率计算引擎处理。  
+/// 对局面用单集合、双集合判雷引擎，快速标雷、标非雷，以供概率计算引擎处理。这是非常重要的加速。  
 /// 相当于一种预处理，即先标出容易计算的。  
 /// - 注意：在rust中，cal_possibility往往需要和mark_board搭配使用，而在其他语言（python）中可能不需要如此！这是由于其ffi不支持原地操作。
 pub fn mark_board(board_of_game: &mut Vec<Vec<i32>>) {

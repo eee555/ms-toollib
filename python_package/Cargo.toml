@@ -1,6 +1,6 @@
 [package]
 name = "ms_toollib"
-version = "1.4.5"
+version = "1.4.6"
 description = "Algorithms  for Minesweeper"
 documentation = "https://docs.rs/ms_toollib/"
 license = "MIT"

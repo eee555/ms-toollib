@@ -242,11 +242,26 @@ fn py_cal_possibility(
 #[pyfunction]
 #[pyo3(name = "cal_possibility_onboard")]
 fn py_cal_possibility_onboard(
+    // 采用了加速算法，只接受有解的局面
     mut board_of_game: Vec<Vec<i32>>,
     mine_num: f64,
 ) -> PyResult<(Vec<Vec<f64>>, [usize; 3])> {
     // mine_num为局面中雷的总数，不管有没有标
     mark_board(&mut board_of_game);
+    match cal_possibility_onboard(&board_of_game, mine_num) {
+        Ok(t) => return Ok(t),
+        Err(e) => return Ok((vec![], [0, 0, 0])),
+    };
+}
+
+#[pyfunction]
+#[pyo3(name = "cal_possibility_onboard_unsafe")]
+fn py_cal_possibility_onboard_unsafe(
+    // 未采用加速算法，可以接受无解的局面
+    mut board_of_game: Vec<Vec<i32>>,
+    mine_num: f64,
+) -> PyResult<(Vec<Vec<f64>>, [usize; 3])> {
+    // mine_num为局面中雷的总数，不管有没有标
     match cal_possibility_onboard(&board_of_game, mine_num) {
         Ok(t) => return Ok(t),
         Err(e) => return Ok((vec![], [0, 0, 0])),
@@ -339,6 +354,7 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_sample_3BVs_exp, m)?)?;
     m.add_function(wrap_pyfunction!(py_OBR_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
+    m.add_function(wrap_pyfunction!(py_cal_possibility_onboard_unsafe, m)?)?;
     m.add_function(wrap_pyfunction!(py_mark_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_guess_while_needless, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_able_to_solve, m)?)?;

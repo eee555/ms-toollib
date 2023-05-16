@@ -626,6 +626,7 @@ impl BaseVideo<SafeBoard> {
     }
     /// 两种情况调用：游戏开始前、可猜模式（尺寸相等，雷数不检查）
     pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()> {
+        assert!(!board.is_empty());
         match self.game_board_state {
             GameBoardState::Playing | GameBoardState::Ready | GameBoardState::PreFlaging => {
                 if self.width != board[0].len() || self.height != board.len() {
@@ -639,6 +640,17 @@ impl BaseVideo<SafeBoard> {
                 .iter()
                 .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
         });
+        self.height = board.len();
+        self.width = board[0].len();
+        if self.height == 8 && self.width == 8 && self.mine_num == 10 {
+            self.level = 3;
+        } else if self.height == 16 && self.width == 16 && self.mine_num == 40 {
+            self.level = 4;
+        } else if self.height == 16 && self.width == 30 && self.mine_num == 99 {
+            self.level = 5;
+        } else {
+            self.level = 6;
+        }
         self.board = SafeBoard::new(board);
         self.minesweeper_board.board = self.board.clone();
         Ok(0)
@@ -730,6 +742,7 @@ impl<T> BaseVideo<T> {
     }
     /// 步进
     /// - pos的单位是像素，(距离上方，距离左侧)
+    /// - 如果操作发生在界外，要求转换成pos=(row*pixsize, column*pixsize)
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()>
     where
         T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
@@ -752,7 +765,6 @@ impl<T> BaseVideo<T> {
         let x = pos.0 / self.cell_pixel_size as usize;
         let y = pos.1 / self.cell_pixel_size as usize;
 
-        // println!("{:?}", (x, y));
         let a = self.minesweeper_board.step(e, (x, y))?;
         self.game_board_state = self.minesweeper_board.game_board_state;
         match self.game_board_state {

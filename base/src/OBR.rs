@@ -7,7 +7,7 @@ use std::cmp::{max, min};
 /// - 原理：使用了索贝尔(Sobel)算子、中值滤波、动态规划求解最短路径、霍夫(Hough)变换等。  
 /// - 注意：这个类用到的魔法数字太多，源码不宜查阅。建议直接看[OBR_board](#OBR_board)这个函数。
 pub struct ImageBoard {
-    data_vec: Vec<usize>,
+    // data_vec: Vec<usize>,
     height: usize,
     width: usize,
     data: [Vec<Vec<f32>>; 3],
@@ -38,9 +38,9 @@ impl ImageBoard {
             }
         }
         ImageBoard {
-            data_vec: data_vec,
-            height: height,
-            width: width,
+            // data_vec: data_vec,
+            height,
+            width,
             data: d,
             r_1: 0,
             r_2: 0,

@@ -1,5 +1,5 @@
 // 测试录像分析模块
-use ms_toollib::{AvfVideo, BaseVideo, EvfVideo, MinesweeperBoard, RmvVideo, MvfVideo};
+use ms_toollib::{AvfVideo, BaseVideo, EvfVideo, MinesweeperBoard, MvfVideo, RmvVideo};
 use std::thread;
 
 #[test]
@@ -17,12 +17,18 @@ fn minesweeper_board_works() {
         vec![0, 1, -1, 1, 0, 1, 1, 1],
     ];
     let mut my_board = MinesweeperBoard::<Vec<Vec<i32>>>::new(board);
-    my_board.step_flow(vec![("rc", (0, 0))]).unwrap();
-    my_board.step_flow(vec![("rr", (0, 0))]).unwrap();
-    my_board.step_flow(vec![("lr", (0, 2))]).unwrap();
+    my_board.step_flow(vec![("rc", (4, 1))]).unwrap();
+    my_board.step_flow(vec![("rr", (4, 1))]).unwrap();
+    my_board.step_flow(vec![("lc", (5, 1))]).unwrap();
+    my_board.step_flow(vec![("lr", (5, 1))]).unwrap();
+    my_board.step_flow(vec![("rc", (4, 1))]).unwrap();
+    my_board.step_flow(vec![("rr", (4, 1))]).unwrap();
+    my_board.step_flow(vec![("lc", (4, 1))]).unwrap();
+    my_board.step_flow(vec![("lr", (4, 1))]).unwrap();
     my_board.board.iter().for_each(|x| println!("{:?}", x));
     my_board.game_board.iter().for_each(|x| println!("{:?}", x));
     println!("{:?}", my_board.game_board_state);
+    println!("bbbv_solved:{:?}", my_board.bbbv_solved);
 }
 
 #[test]
@@ -109,7 +115,10 @@ fn MvfVideo_works() {
     // video.data.print_raw_data(400);
     println!("board: {:?}", video.data.board);
     println!("结果：{:?}", r);
-    println!("标识：{:?}", String::from_utf8(video.data.player_designator.clone()).unwrap());
+    println!(
+        "标识：{:?}",
+        String::from_utf8(video.data.player_designator.clone()).unwrap()
+    );
     println!("软件：{:?}", video.data.software);
     println!("race_designator：{:?}", video.data.race_designator);
     println!("3BV：{:?}", video.data.static_params.bbbv);
@@ -134,10 +143,10 @@ fn MvfVideo_works() {
 // cargo test --features rs -- --nocapture RmvVideo_works
 fn EvfVideo_works() {
     // 录像解析工具测试
-    let mut video = EvfVideo::new("t.evf");
+    let mut video = EvfVideo::new("b_0_22.800_3BV=17_3BVs=0.789_匿名玩家(anonymous player).evf");
 
     let r = video.parse_video();
-    // video.data.print_event();
+    video.data.print_event();
     video.data.analyse();
     video.data.analyse_for_features(vec![
         "high_risk_guess",
@@ -150,6 +159,7 @@ fn EvfVideo_works() {
 
     // video.data.print_raw_data(400);
     println!("board: {:?}", video.data.board);
+    println!("cell_pixel_size：{:?}", video.data.cell_pixel_size);
     println!("结果：{:?}", r);
     println!("标识：{:?}", video.data.player_designator);
     println!("软件：{:?}", video.data.software);
@@ -221,8 +231,12 @@ fn BaseVideo_works() {
     video.step("lr", (112, 112)).unwrap();
     video.step("lc", (97, 112)).unwrap();
     video.step("lr", (97, 112)).unwrap();
-    video.set_player_designator("eee".as_bytes().to_vec()).unwrap();
-    video.set_race_designator("555".as_bytes().to_vec()).unwrap();
+    video
+        .set_player_designator("eee".as_bytes().to_vec())
+        .unwrap();
+    video
+        .set_race_designator("555".as_bytes().to_vec())
+        .unwrap();
     video.set_software("888".as_bytes().to_vec()).unwrap();
     video.set_country("666".as_bytes().to_vec()).unwrap();
     video.print_event();
@@ -275,8 +289,14 @@ fn BaseVideo_works() {
     // println!("3BV：{:?}", video.s.s);
     println!("time：{:?}", video.data.get_rtime().unwrap());
     println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
-    println!("start_time：{:?}", String::from_utf8(video.data.start_time.clone()).unwrap());
-    println!("end_time：{:?}", String::from_utf8(video.data.end_time.clone()).unwrap());
+    println!(
+        "start_time：{:?}",
+        String::from_utf8(video.data.start_time.clone()).unwrap()
+    );
+    println!(
+        "end_time：{:?}",
+        String::from_utf8(video.data.end_time.clone()).unwrap()
+    );
     println!("is win: {:?}", video.data.is_completed);
     video.data.set_current_time(1.9);
     println!("bbbv_solved(1.9s): {:?}", video.data.get_bbbv_solved());
@@ -287,46 +307,326 @@ fn BaseVideo_works() {
 #[test]
 fn BaseVideo_works_2() {
     let board = vec![
-        vec![1, 1, 2, 1, 1, 0, 0, 0],
-        vec![1, -1, 2, -1, 1, 0, 0, 0],
-        vec![1, 1, 2, 1, 1, 0, 0, 0],
-        vec![0, 0, 0, 0, 0, 0, 0, 0],
-        vec![2, 2, 1, 0, 0, 0, 0, 0],
-        vec![-1, -1, 2, 0, 0, 1, 1, 1],
-        vec![-1, -1, 3, 0, 0, 2, -1, 2],
-        vec![-1, -1, 2, 0, 0, 2, -1, 2],
+        vec![0, 0, 0, 0, 1, 1, 1, 0],
+        vec![0, 0, 0, 0, 1, -1, 2, 1],
+        vec![0, 1, 1, 1, 2, 2, 3, -1],
+        vec![0, 1, -1, 2, 2, -1, 2, 1],
+        vec![1, 3, 4, -1, 2, 1, 1, 0],
+        vec![2, -1, -1, 3, 2, 0, 0, 0],
+        vec![-1, 3, 3, -1, 1, 0, 1, 1],
+        vec![1, 1, 1, 1, 1, 0, 1, -1],
     ];
-    let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
-    video.step("rc", (17, 16)).unwrap();
-    println!("{:?}", video.minesweeper_board.mouse_state);
-    println!("{:?}", video.game_board_state);
+// println!("{:?}", ms_toollib::cal_bbbv(&board));
+    let mut my_board = MinesweeperBoard::<Vec<Vec<i32>>>::new(board);
+    my_board.step_flow(vec![("lc", (2, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (2, 3))]).unwrap();
+    my_board.step_flow(vec![("lc", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("cc", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("rr", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("rr", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("lc", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("cc", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("rr", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("rc", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("cc", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("rr", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("lc", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("cc", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("rr", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("rc", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("rr", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("lc", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("lc", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("rc", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("rr", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("lc", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (1, 3))]).unwrap();
+    my_board.step_flow(vec![("lc", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("rc", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("rr", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("lc", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (0, 3))]).unwrap();
+    my_board.step_flow(vec![("lc", (3, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (3, 3))]).unwrap();
+    my_board.step_flow(vec![("lc", (3, 4))]).unwrap();
+    my_board.step_flow(vec![("lr", (3, 4))]).unwrap();
+    my_board.step_flow(vec![("rc", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("rr", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("lc", (4, 2))]).unwrap();
+    my_board.step_flow(vec![("lr", (4, 2))]).unwrap();
+    my_board.step_flow(vec![("lc", (4, 2))]).unwrap();
+    my_board.step_flow(vec![("cc", (4, 2))]).unwrap();
+    my_board.step_flow(vec![("lr", (4, 2))]).unwrap();
+    my_board.step_flow(vec![("rr", (4, 2))]).unwrap();
+    my_board.step_flow(vec![("rc", (4, 2))]).unwrap();
+    my_board.step_flow(vec![("cc", (4, 2))]).unwrap();
+    my_board.step_flow(vec![("rr", (4, 2))]).unwrap();
+    my_board.step_flow(vec![("lr", (4, 2))]).unwrap();
+    my_board.step_flow(vec![("lc", (3, 4))]).unwrap();
+    my_board.step_flow(vec![("cc", (3, 4))]).unwrap();
+    my_board.step_flow(vec![("rr", (3, 4))]).unwrap();
+    my_board.step_flow(vec![("lr", (3, 4))]).unwrap();
+    my_board.step_flow(vec![("rc", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("rr", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("rc", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("rr", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("rc", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("rr", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("rc", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("rr", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("lc", (2, 2))]).unwrap();
+    my_board.step_flow(vec![("lr", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("lc", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("lr", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("lc", (3, 2))]).unwrap();
+    my_board.step_flow(vec![("lr", (4, 4))]).unwrap();
+    my_board.step_flow(vec![("rc", (4, 3))]).unwrap();
+    my_board.step_flow(vec![("rr", (4, 3))]).unwrap();
+    my_board.step_flow(vec![("rc", (3, 5))]).unwrap();
+    my_board.step_flow(vec![("rr", (3, 5))]).unwrap();
+    my_board.step_flow(vec![("lc", (3, 4))]).unwrap();
+    my_board.step_flow(vec![("cc", (3, 4))]).unwrap();
+    my_board.step_flow(vec![("lr", (3, 4))]).unwrap();
+    my_board.step_flow(vec![("rr", (3, 4))]).unwrap();
+    my_board.step_flow(vec![("lc", (4, 4))]).unwrap();
+    my_board.step_flow(vec![("cc", (4, 4))]).unwrap();
+    my_board.step_flow(vec![("rr", (4, 4))]).unwrap();
+    my_board.step_flow(vec![("lr", (4, 4))]).unwrap();
+    my_board.step_flow(vec![("rc", (1, 5))]).unwrap();
+    my_board.step_flow(vec![("rr", (1, 5))]).unwrap();
+    my_board.step_flow(vec![("lc", (2, 5))]).unwrap();
+    my_board.step_flow(vec![("cc", (2, 5))]).unwrap();
+    my_board.step_flow(vec![("rr", (2, 5))]).unwrap();
+    my_board.step_flow(vec![("lr", (2, 5))]).unwrap();
+    my_board.step_flow(vec![("lc", (2, 5))]).unwrap();
+    my_board.step_flow(vec![("cc", (2, 6))]).unwrap();
+    my_board.step_flow(vec![("rr", (2, 6))]).unwrap();
+    my_board.step_flow(vec![("lr", (2, 6))]).unwrap();
+    my_board.step_flow(vec![("lc", (0, 5))]).unwrap();
+    my_board.step_flow(vec![("lr", (0, 5))]).unwrap();
+    my_board.step_flow(vec![("lc", (8, 8))]).unwrap();
+    my_board.step_flow(vec![("lr", (8, 8))]).unwrap();
+    my_board.step_flow(vec![("lc", (0, 7))]).unwrap();
+    my_board.step_flow(vec![("lr", (0, 7))]).unwrap();
+    my_board.step_flow(vec![("lc", (7, 3))]).unwrap();
+    my_board.step_flow(vec![("lr", (7, 3))]).unwrap();
+    my_board.step_flow(vec![("lc", (6, 2))]).unwrap();
+    my_board.step_flow(vec![("lr", (6, 2))]).unwrap();
+    my_board.step_flow(vec![("lc", (7, 2))]).unwrap();
+    my_board.step_flow(vec![("lr", (7, 2))]).unwrap();
+    my_board.step_flow(vec![("lc", (5, 0))]).unwrap();
+    my_board.step_flow(vec![("lr", (5, 0))]).unwrap();
+    my_board.step_flow(vec![("lc", (7, 1))]).unwrap();
+    my_board.step_flow(vec![("lr", (7, 1))]).unwrap();
+    my_board.step_flow(vec![("lc", (6, 1))]).unwrap();
+    my_board.step_flow(vec![("lr", (6, 1))]).unwrap();
+    my_board.step_flow(vec![("lc", (7, 0))]).unwrap();
+    my_board.step_flow(vec![("lr", (7, 0))]).unwrap();
 
+    println!("game_board_state:{:?}", my_board.game_board_state);
+    println!("bbbv_solved:{:?}", my_board.bbbv_solved);
+    println!("game_board:{:?}", my_board.game_board);
 
-    video.step("cc", (17, 16)).unwrap();
-    println!("{:?}", video.minesweeper_board.mouse_state);
-    println!("{:?}", video.game_board_state);
+    //     let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 27);
+    //     video.step("lc", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("rc", (65, 95)).unwrap();
+    // video.step("cc", (65, 95)).unwrap();
+    // video.step("rr", (65, 95)).unwrap();
+    // video.step("cc", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("cc", (65, 95)).unwrap();
+    // video.step("rr", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("rc", (65, 95)).unwrap();
+    // video.step("cc", (65, 95)).unwrap();
+    // video.step("rr", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("lc", (65, 95)).unwrap();
+    // video.step("cc", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("rr", (65, 95)).unwrap();
+    // video.step("lc", (65, 95)).unwrap();
+    // video.step("cc", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("rr", (65, 95)).unwrap();
+    // video.step("lc", (65, 95)).unwrap();
+    // video.step("cc", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("rr", (65, 95)).unwrap();
+    // video.step("lc", (65, 95)).unwrap();
+    // video.step("cc", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("rr", (65, 95)).unwrap();
+    // video.step("lc", (65, 95)).unwrap();
+    // video.step("cc", (65, 95)).unwrap();
+    // video.step("rr", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("lc", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("lc", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("lc", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("lc", (65, 95)).unwrap();
+    // video.step("lr", (65, 95)).unwrap();
+    // video.step("rc", (65, 95)).unwrap();
+    // video.step("rr", (65, 95)).unwrap();
+    // video.step("rc", (65, 95)).unwrap();
+    // video.step("rr", (65, 95)).unwrap();
+    // video.step("lc", (65, 95)).unwrap();
+    // video.step("lr", (59, 95)).unwrap();
+    // video.step("lc", (216, 216)).unwrap();
+    // video.step("lr", (216, 216)).unwrap();
+    // video.step("lc", (216, 216)).unwrap();
+    // video.step("lr", (216, 216)).unwrap();
+    // video.step("lc", (216, 216)).unwrap();
+    // video.step("lr", (216, 216)).unwrap();
+    // video.step("lc", (216, 216)).unwrap();
+    // video.step("lr", (216, 216)).unwrap();
+    // video.step("lc", (216, 216)).unwrap();
+    // video.step("lr", (216, 216)).unwrap();
+    // video.step("rc", (216, 216)).unwrap();
+    // video.step("rr", (216, 216)).unwrap();
+    // video.step("lc", (216, 216)).unwrap();
+    // video.step("lr", (216, 216)).unwrap();
+    // video.step("rc", (216, 216)).unwrap();
+    // video.step("rr", (216, 216)).unwrap();
+    // video.step("rc", (216, 216)).unwrap();
+    // video.step("rr", (216, 216)).unwrap();
+    // video.step("lc", (22, 95)).unwrap();
+    // video.step("cc", (22, 95)).unwrap();
+    // video.step("lr", (22, 95)).unwrap();
+    // video.step("rr", (4, 96)).unwrap();
+    // video.step("rc", (216, 216)).unwrap();
+    // video.step("rr", (216, 216)).unwrap();
+    // video.step("rc", (216, 216)).unwrap();
+    // video.step("cc", (216, 216)).unwrap();
+    // video.step("lr", (216, 216)).unwrap();
+    // video.step("rr", (216, 216)).unwrap();
+    // // video.step("lc", (216, 216)).unwrap();
+    // // video.step("cc", (216, 216)).unwrap();
+    // // video.step("rr", (29, 96)).unwrap();
+    // // video.step("lr", (29, 96)).unwrap();
+    // // video.step("lc", (29, 96)).unwrap();
+    // // video.step("cc", (29, 96)).unwrap();
+    // // video.step("lr", (19, 96)).unwrap();
+    // // video.step("rr", (16, 96)).unwrap();
+    // // video.step("rc", (8, 96)).unwrap();
+    // // video.step("cc", (8, 96)).unwrap();
+    // // video.step("lr", (8, 96)).unwrap();
+    // // video.step("rr", (8, 96)).unwrap();
+    // // video.step("lc", (43, 96)).unwrap();
+    // // video.step("cc", (43, 96)).unwrap();
+    // // video.step("lr", (43, 96)).unwrap();
+    // // video.step("rr", (43, 96)).unwrap();
+    // // video.step("rc", (38, 98)).unwrap();
+    // // video.step("rr", (38, 98)).unwrap();
+    // // video.step("lc", (38, 98)).unwrap();
+    // // video.step("lr", (38, 98)).unwrap();
+    // // video.step("lc", (38, 98)).unwrap();
+    // // video.step("lr", (38, 98)).unwrap();
+    // // video.step("rc", (38, 98)).unwrap();
+    // // video.step("rr", (38, 98)).unwrap();
+    // // video.step("lc", (38, 98)).unwrap();
+    // // video.step("lr", (38, 98)).unwrap();
+    // // video.step("lc", (17, 98)).unwrap();
+    // // video.step("lr", (17, 98)).unwrap();
+    // // video.step("rc", (17, 97)).unwrap();
+    // // video.step("rr", (17, 97)).unwrap();
+    // // video.step("lc", (17, 97)).unwrap();
+    // // video.step("lr", (17, 97)).unwrap();
+    // // video.step("lc", (87, 82)).unwrap();
+    // // video.step("lr", (87, 82)).unwrap();
+    // // video.step("lc", (92, 111)).unwrap();
+    // // video.step("lr", (92, 112)).unwrap();
+    // // video.step("rc", (93, 69)).unwrap();
+    // // video.step("rr", (93, 69)).unwrap();
+    // // video.step("lc", (108, 69)).unwrap();
+    // // video.step("lr", (115, 69)).unwrap();
+    // // video.step("lc", (114, 69)).unwrap();
+    // // video.step("cc", (114, 69)).unwrap();
+    // // video.step("lr", (114, 69)).unwrap();
+    // // video.step("rr", (114, 69)).unwrap();
+    // // video.step("rc", (114, 69)).unwrap();
+    // // video.step("cc", (114, 69)).unwrap();
+    // // video.step("rr", (114, 69)).unwrap();
+    // // video.step("lr", (114, 69)).unwrap();
+    // // video.step("lc", (81, 111)).unwrap();
+    // // video.step("cc", (81, 111)).unwrap();
+    // // video.step("rr", (81, 111)).unwrap();
+    // // video.step("lr", (81, 112)).unwrap();
+    // // video.step("rc", (93, 64)).unwrap();
+    // // video.step("rr", (93, 64)).unwrap();
+    // // video.step("rc", (93, 64)).unwrap();
+    // // video.step("rr", (93, 64)).unwrap();
+    // // video.step("rc", (93, 64)).unwrap();
+    // // video.step("rr", (93, 64)).unwrap();
+    // // video.step("rc", (92, 66)).unwrap();
+    // // video.step("rr", (92, 66)).unwrap();
+    // // video.step("lc", (73, 68)).unwrap();
+    // // video.step("lr", (104, 72)).unwrap();
+    // // video.step("lc", (104, 72)).unwrap();
+    // // video.step("lr", (104, 72)).unwrap();
+    // // video.step("lc", (90, 71)).unwrap();
+    // // video.step("lr", (118, 123)).unwrap();
+    // // video.step("rc", (117, 95)).unwrap();
+    // // video.step("rr", (117, 95)).unwrap();
+    // // video.step("rc", (85, 144)).unwrap();
+    // // video.step("rr", (86, 144)).unwrap();
+    // // video.step("lc", (88, 119)).unwrap();
+    // // video.step("cc", (88, 119)).unwrap();
+    // // video.step("lr", (91, 119)).unwrap();
+    // // video.step("rr", (91, 119)).unwrap();
+    // // video.step("lc", (111, 115)).unwrap();
+    // // video.step("cc", (117, 115)).unwrap();
+    // // video.step("rr", (122, 115)).unwrap();
+    // // video.step("lr", (122, 115)).unwrap();
+    // // video.step("rc", (39, 148)).unwrap();
+    // // video.step("rr", (39, 148)).unwrap();
+    // // video.step("lc", (61, 146)).unwrap();
+    // // video.step("cc", (61, 146)).unwrap();
+    // // video.step("rr", (62, 146)).unwrap();
+    // // video.step("lr", (62, 146)).unwrap();
+    // // video.step("lc", (65, 161)).unwrap();
+    // // video.step("cc", (66, 163)).unwrap();
+    // // video.step("rr", (66, 166)).unwrap();
+    // // video.step("lr", (61, 176)).unwrap();
+    // // video.step("lc", (16, 145)).unwrap();
+    // // video.step("lr", (16, 145)).unwrap();
+    // // video.step("lc", (216, 216)).unwrap();
+    // // video.step("lr", (216, 216)).unwrap();
+    // // video.step("lc", (8, 198)).unwrap();
+    // // video.step("lr", (8, 198)).unwrap();
+    // // video.step("lc", (193, 91)).unwrap();
+    // // video.step("lr", (194, 92)).unwrap();
+    // // video.step("lc", (173, 69)).unwrap();
+    // // video.step("lr", (173, 69)).unwrap();
+    // // video.step("lc", (195, 68)).unwrap();
+    // // video.step("lr", (206, 68)).unwrap();
+    // // video.step("lc", (150, 24)).unwrap();
+    // // video.step("lr", (150, 24)).unwrap();
+    // // video.step("lc", (198, 49)).unwrap();
+    // // video.step("lr", (199, 49)).unwrap();
+    // // video.step("lc", (176, 41)).unwrap();
+    // // video.step("lr", (176, 41)).unwrap();
+    // // video.step("lc", (200, 13)).unwrap();
+    // // video.step("lr", (200, 13)).unwrap();
 
-    // thread::sleep_ms(2000);
-
-
-    video.step("lr", (17, 16)).unwrap();
-    // thread::sleep_ms(3000);
-
-    println!("{:?}", video.minesweeper_board.mouse_state);
-    println!("{:?}", video.game_board_state);
-    video.step("rr", (17, 16)).unwrap();
-    println!("44:{:?}", video.minesweeper_board.mouse_state);
-    println!("55:{:?}", video.game_board_state);
-    // println!("666:{:?}", video.minesweeper_board.game_board);
-
-    video.step("rc", (17, 16)).unwrap();
-    println!("66:{:?}", video.minesweeper_board.mouse_state);
-    println!("77:{:?}", video.game_board_state);
-    video.step("rr", (17, 16)).unwrap();
-    println!("88:{:?}", video.minesweeper_board.mouse_state);
-    println!("99:{:?}", video.game_board_state);
+    //     println!("{:?}", video.minesweeper_board.mouse_state);
+    //     println!("{:?}", video.game_board_state);
+    //     println!("{:?}", video.get_game_board());
+    //     println!("bbbv: {:?}", video.static_params.bbbv);
+    //     println!("get_bbbv_solved: {:?}", video.get_bbbv_solved());
 }
-
 
 #[test]
 fn BaseVideo_works_3() {
@@ -353,7 +653,108 @@ fn BaseVideo_works_3() {
     video.step("rr", (128, 128)).unwrap();
     println!("{:?}", video.minesweeper_board.mouse_state);
     println!("{:?}", video.game_board_state);
-
-
 }
 
+#[test]
+fn BaseVideo_works_4() {
+    let board = vec![
+        vec![ 0,  0, 2, -1, 2, 0,  0,  0],
+        vec![ 0,  0, 3, -1, 3, 0,  0,  0],
+        vec![ 0,  0, 2, -1, 2, 0,  0,  0],
+        vec![ 0,  0, 1,  1, 1, 1,  1,  1],
+        vec![ 0,  0, 0,  0, 0, 1, -1, -1],
+        vec![ 1,  1, 0,  0, 0, 1,  2, -1],
+        vec![-1,  3, 1,  0, 0, 0,  2, -1],
+        vec![-1, -1, 1,  0, 0, 0,  2, -1],
+    ];
+    let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
+    thread::sleep_ms(600);
+    // println!("3BV：{:?}", video.static_params.bbbv);
+    video.step("rc", (32, 49)).unwrap();
+    video.step("rr", (32, 49)).unwrap();
+    thread::sleep_ms(20);
+    video.step("lc", (48, 64)).unwrap();
+    thread::sleep_ms(20);
+    video.step("lr", (48, 64)).unwrap();
+    thread::sleep_ms(20);
+    video.step("lc", (48, 64)).unwrap();
+    thread::sleep_ms(20);
+    video.step("rc", (48, 64)).unwrap();
+    thread::sleep_ms(20);
+    video.step("lr", (48, 64)).unwrap();
+    thread::sleep_ms(20);
+    video.step("rr", (48, 64)).unwrap();
+
+    println!("局面：{:?}", video.get_game_board());
+    println!("标识：{:?}", video.player_designator);
+    println!("局面状态：{:?}", video.game_board_state);
+
+    video
+        .set_player_designator("eee".as_bytes().to_vec())
+        .unwrap();
+    video
+        .set_race_designator("555".as_bytes().to_vec())
+        .unwrap();
+    video.set_software("888".as_bytes().to_vec()).unwrap();
+    video.set_country("666".as_bytes().to_vec()).unwrap();
+    video.print_event();
+
+    println!(
+        "3BV：{:?}/{:?}",
+        video.get_bbbv_solved(),
+        video.static_params.bbbv
+    );
+    println!("ce：{:?}", video.get_ce());
+    println!("高度：{:?}", video.height);
+    println!("雷数：{:?}", video.mine_num);
+    println!("time：{:?}", video.get_rtime());
+    println!("time_ms：{:?}", video.get_rtime_ms());
+    println!("is win: {:?}", video.is_completed);
+    println!("STNB: {:?}", video.get_stnb());
+    println!("start_time: {:?}", video.start_time);
+    println!("end_time: {:?}", video.end_time);
+    println!("path: {:?}", video.get_path());
+    println!("etime: {:?}", video.get_etime());
+    println!("op: {:?}", video.static_params.op);
+    println!("cell0: {:?}", video.static_params.cell0);
+
+    video.generate_evf_v0_raw_data();
+    video.set_checksum([8; 32]).unwrap();
+    video.save_to_evf_file("test");
+
+    let mut video = EvfVideo::new("test.evf");
+    let r = video.parse_video();
+    video.data.print_event();
+    // video.data.print_raw_data(400);
+    video.data.analyse();
+    // video.data.set_current_time(1.9);
+    println!("结果：{:?}", r);
+    println!("board：{:?}", video.data.board);
+    println!("game_board: {:?}", video.data.get_game_board());
+    println!("game_board_state: {:?}", video.data.game_board_state);
+    println!("标识：{:?}", video.data.player_designator);
+    println!("局面状态：{:?}", video.data.game_board_state);
+    println!("软件：{:?}", video.data.software);
+    println!("国家：{:?}", video.data.country);
+    println!("race_designator：{:?}", video.data.race_designator);
+    println!("3BV：{:?}", video.data.static_params.bbbv);
+    println!("宽度：{:?}", video.data.width);
+    println!("高度：{:?}", video.data.height);
+    println!("雷数：{:?}", video.data.mine_num);
+    // println!("3BV：{:?}", video.s.s);
+    println!("time：{:?}", video.data.get_rtime().unwrap());
+    println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
+    println!(
+        "start_time：{:?}",
+        String::from_utf8(video.data.start_time.clone()).unwrap()
+    );
+    println!(
+        "end_time：{:?}",
+        String::from_utf8(video.data.end_time.clone()).unwrap()
+    );
+    println!("is win: {:?}", video.data.is_completed);
+    video.data.set_current_time(1.9);
+    println!("bbbv_solved(1.9s): {:?}", video.data.get_bbbv_solved());
+    println!("etime(1.9s): {:?}", video.data.get_etime());
+    println!("STNB(1.9s): {:?}", video.data.get_stnb().unwrap());
+}

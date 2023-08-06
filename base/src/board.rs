@@ -1,12 +1,7 @@
 ﻿// 局面相关的类，录像在video
 
-use crate::algorithms::{
-    cal_possibility_onboard, solve_direct, solve_enumerate, solve_minus,
-};
-use crate::utils::{
-    cal3BVonIsland, cal_cell_nums, cal_isl, cal_op, refresh_matrixs,
-};
-
+use crate::algorithms::{cal_possibility_onboard, solve_direct, solve_enumerate, solve_minus};
+use crate::utils::{cal3BVonIsland, cal_cell_nums, cal_isl, cal_op, refresh_matrixs};
 
 /// 静态游戏局面的包装类。  
 /// 所有计算过的属性都会保存在这里。缓存计算结果的局面。  
@@ -76,10 +71,14 @@ impl GameBoard {
             return;
         }
         let (mut a_s, mut x_s, mut b_s, _, _) = refresh_matrixs(&self.game_board_marked);
-        let mut ans = solve_direct(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked).0;
+        let mut ans = solve_direct(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked)
+            .unwrap()
+            .0;
         self.basic_not_mine.append(&mut ans);
 
-        let mut ans = solve_minus(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked).0;
+        let mut ans = solve_minus(&mut a_s, &mut x_s, &mut b_s, &mut self.game_board_marked)
+            .unwrap()
+            .0;
         self.basic_not_mine.append(&mut ans);
         for i in &self.basic_not_mine {
             self.game_board_marked[i.0][i.1] = 12;

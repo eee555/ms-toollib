@@ -1,3 +1,4 @@
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
@@ -133,7 +134,17 @@ fn py_solve_direct(
     Vec<(usize, usize)>,
     Vec<(usize, usize)>,
 )> {
-    let (not, is) = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game);
+    let not;
+    let is;
+    let t = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game);
+    match t {
+        Ok(aa) => {
+            not = aa.0;
+            is = aa.1;
+        }
+        Err(code) => return Err(PyErr::new::<PyRuntimeError, _>(format!("code: {}.", code))),
+    };
+    // let (not, is) = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game);
     Ok((As, xs, bs, board_of_game, not, is))
 }
 
@@ -231,40 +242,34 @@ fn py_cal_possibility(
 ) -> PyResult<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize)> {
     // mine_num为局面中雷的总数，不管有没有标
     // 还返回局面中雷数的范围
-    mark_board(&mut board_of_game);
+    let legal_flag = mark_board(&mut board_of_game);
+    match legal_flag {
+        Ok(_) => {}
+        Err(_) => return Err(PyErr::new::<PyRuntimeError, _>("标记阶段无解的局面")),
+    }
     match cal_possibility(&board_of_game, mine_num) {
         Ok(t) => return Ok(t),
-        Err(1) => return Err(PyErr::new::<PyTypeError, _>("无解的局面")),
-        _ => return Err(PyErr::new::<PyTypeError, _>("未知的错误")),
+        Err(1) => return Err(PyErr::new::<PyRuntimeError, _>("枚举阶段无解的局面")),
+        _ => return Err(PyErr::new::<PyRuntimeError, _>("未知的错误")),
     };
 }
 
 #[pyfunction]
 #[pyo3(name = "cal_possibility_onboard")]
 fn py_cal_possibility_onboard(
-    // 采用了加速算法，只接受有解的局面
+    // 可以接受无解的局面
     mut board_of_game: Vec<Vec<i32>>,
     mine_num: f64,
 ) -> PyResult<(Vec<Vec<f64>>, [usize; 3])> {
     // mine_num为局面中雷的总数，不管有没有标
-    mark_board(&mut board_of_game);
+    let legal_flag = mark_board(&mut board_of_game);
+    match legal_flag {
+        Ok(_) => {}
+        Err(_) => return Err(PyErr::new::<PyRuntimeError, _>("标记阶段无解的局面")),
+    }
     match cal_possibility_onboard(&board_of_game, mine_num) {
         Ok(t) => return Ok(t),
-        Err(e) => return Ok((vec![], [0, 0, 0])),
-    };
-}
-
-#[pyfunction]
-#[pyo3(name = "cal_possibility_onboard_unsafe")]
-fn py_cal_possibility_onboard_unsafe(
-    // 未采用加速算法，可以接受无解的局面
-    mut board_of_game: Vec<Vec<i32>>,
-    mine_num: f64,
-) -> PyResult<(Vec<Vec<f64>>, [usize; 3])> {
-    // mine_num为局面中雷的总数，不管有没有标
-    match cal_possibility_onboard(&board_of_game, mine_num) {
-        Ok(t) => return Ok(t),
-        Err(e) => return Ok((vec![], [0, 0, 0])),
+        Err(_) => return Err(PyErr::new::<PyRuntimeError, _>("枚举阶段无解的局面")),
     };
 }
 
@@ -354,7 +359,6 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_sample_3BVs_exp, m)?)?;
     m.add_function(wrap_pyfunction!(py_OBR_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
-    m.add_function(wrap_pyfunction!(py_cal_possibility_onboard_unsafe, m)?)?;
     m.add_function(wrap_pyfunction!(py_mark_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_guess_while_needless, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_able_to_solve, m)?)?;

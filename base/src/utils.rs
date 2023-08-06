@@ -4,7 +4,6 @@ use rand::seq::SliceRandom;
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::thread_rng;
 use std::cmp::{max, min};
-use std::println;
 // use std::convert::TryInto;
 #[cfg(feature = "js")]
 use getrandom::getrandom;
@@ -596,8 +595,8 @@ where
     cal3BVonIsland(board) + cal_op(board)
 }
 
-/// 依据左击位置刷新局面
-/// - 注意：兼容18标记符和12标记符
+/// 依据左击位置刷新局面。如踩雷，标上或14、15标记
+/// - 注意：兼容12标记符
 pub fn refresh_board<T>(
     board: &T,
     boardofGame: &mut Vec<Vec<i32>>,
@@ -606,9 +605,9 @@ pub fn refresh_board<T>(
     T: std::ops::Index<usize> + safe_board::BoardSize,
     T::Output: std::ops::Index<usize, Output = i32>,
 {
-    // println!("{:?}", ClickedPoses);
     let row = board.get_row();
     let column = board.get_column();
+    // 是否踩雷
     let mut loss_flag = false;
     while let Some(top) = clicked_poses.pop() {
         let (i, j) = top;
@@ -971,18 +970,21 @@ fn cal_table_minenum_recursion_step(
     cell_to_equation_map: &Vec<Vec<usize>>,
     equation_to_cell_map: &Vec<Vec<usize>>,
     mine_vec: &mut Vec<usize>,
-) -> bool {
+) -> Result<bool, usize> {
     // mine_vec: 是雷位置都记录下来，只记录一个索引，可能有重复
     let cells_num = matrixA_squeeze[0].len();
     if idx >= cells_num {
         //终止条件
         let total_mines_num: usize = mine_vec.iter().sum();
+        if total_mines_num >= table_minenum[1].len() {
+            return Err(5);
+        }
         table_minenum[1][total_mines_num] += current_amount;
         for (idn, n) in mine_vec.iter().enumerate() {
             table_cell_minenum[total_mines_num][idn] +=
                 current_amount * n / combination_relationship[idn].len();
         }
-        return true;
+        return Ok(true);
     }
 
     let mut upper_limit = combination_relationship[idx].len();
@@ -1031,14 +1033,14 @@ fn cal_table_minenum_recursion_step(
             &cell_to_equation_map,
             &equation_to_cell_map,
             mine_vec,
-        );
+        )?;
         for tt in &cell_to_equation_map[idx] {
             matrix_b_remain[*tt] += u as i32;
         }
         mine_vec[idx] = 0;
     }
     // }
-    false
+    Ok(false)
 }
 
 pub fn cal_table_minenum_recursion(
@@ -1070,6 +1072,8 @@ pub fn cal_table_minenum_recursion(
     // println!("cell_to_equation_map = {:?}; equation_to_cell_map = {:?}", cell_to_equation_map, equation_to_cell_map);
 
     let mut table_cell_minenum: Vec<Vec<usize>> = vec![vec![0; cells_num]; cells_num_total + 1];
+    
+    // println!("{:?}", matrixA_squeeze);
     cal_table_minenum_recursion_step(
         0,
         1,
@@ -1082,7 +1086,7 @@ pub fn cal_table_minenum_recursion(
         &cell_to_equation_map,
         &equation_to_cell_map,
         &mut (vec![0; cells_num]),
-    );
+    )?;
     // println!("table_cell_minenum{:?}", table_cell_minenum);
     // println!("table_minenum{:?}", table_minenum);
     while table_minenum[1][0] == 0 {

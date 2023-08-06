@@ -52,7 +52,7 @@ pub fn solve_minus(
     xs: &mut Vec<Vec<(usize, usize)>>,
     bs: &mut Vec<Vec<i32>>,
     board_of_game: &mut Vec<Vec<i32>>,
-) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
+) -> Result<(Vec<(usize, usize)>, Vec<(usize, usize)>), usize>{
     let block_num = bs.len();
     // let mut flag = false;
     let mut not_mine = vec![];
@@ -129,23 +129,24 @@ pub fn solve_minus(
         bs.remove(b);
         xs.remove(b);
     }
-    let (mut not, mut is) = solve_direct(As, xs, bs, board_of_game); // 没错，双集合判雷的最后一步是用单集合再过一轮。理由：（1）这样才不会报错（2）单集合复杂度很低，不费事
+    let (mut not, mut is) = solve_direct(As, xs, bs, board_of_game)?; // 没错，双集合判雷的最后一步是用单集合再过一轮。理由：（1）这样才不会报错（2）单集合复杂度很低，不费事
     not_mine.append(&mut not);
     is_mine.append(&mut is);
     chunk_matrixes(As, xs, bs);
-    (not_mine, is_mine)
+    Ok((not_mine, is_mine))
 }
 
 /// 单集合判雷引擎。
 /// - 输入：3个矩阵、局面。
 /// - 返回：非雷、是雷的格子，在传入的局面上标是雷（11）和非雷（12）。  
+/// - 返回Err(6)表示：比如数字2的周围只有1个格子没打开  
 /// - 注意：会维护系数矩阵、格子矩阵和数字矩阵，删、改、分段。
 pub fn solve_direct(
     As: &mut Vec<Vec<Vec<i32>>>,
     xs: &mut Vec<Vec<(usize, usize)>>,
     bs: &mut Vec<Vec<i32>>,
     board_of_game: &mut Vec<Vec<i32>>,
-) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
+) -> Result<(Vec<(usize, usize)>, Vec<(usize, usize)>), usize> {
     let mut is_mine = vec![];
     let mut not_mine = vec![];
 
@@ -196,8 +197,16 @@ pub fn solve_direct(
             xs.remove(b);
         }
     }
+    let ans = bs.iter().find(|&b| match b.iter().find(|&&x| x < 0) {
+        Some(_) => return true,
+        None => return false,
+    });
+    match ans {
+        Some(_) => return Err(6),
+        None => {}
+    }
     chunk_matrixes(As, xs, bs);
-    (not_mine, is_mine)
+    Ok((not_mine, is_mine))
 }
 
 /// 游戏局面概率计算引擎。  
@@ -206,6 +215,7 @@ pub fn solve_direct(
 /// - 注意：若超出枚举长度（45），则该区块的部分返回平均概率，且返回所需的枚举长度。  
 /// - 返回：所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数（未知雷数 = 总雷数 - 已经标出的雷）的范围。  
 /// - 注意：若没有内部未知区域，返回NaN。
+/// - 局限：空中间出现一个数字，这种错误的局面，不能检查出来
 pub fn cal_possibility(
     board_of_game: &Vec<Vec<i32>>,
     mine_num: f64,
@@ -264,11 +274,9 @@ pub fn cal_possibility(
                 // block_num_calable += 1;
             }
             Err(e) => {
-                if e == 1 {
-                    return Err(1); // 这是不合法、矛盾的的局面
-                } else {
-                    return Err(2); // 这是不可能的，枚举器不可能返回2这种错误，但是需要这样写通过rust的编译
-                }
+                // 1: 这是不明显的，通过枚举才能发现的不合法、矛盾的的局面
+                // 5: 这是明显的、不合法、矛盾的的局面
+                return Err(e);
             }
         };
         // min_max_mine_num[0] += table_mine_num_i[0][0];
@@ -293,7 +301,12 @@ pub fn cal_possibility(
             max_mine_num + unknow_block,
         )
     } else {
-        mine_num as usize - is_mine_num
+        let mm = (mine_num as usize).overflowing_sub(is_mine_num);
+        match mm.1 {
+            false => mm.0,
+            // 标雷环节没有查出错误，而且标了很多雷，算概率环节会返回17
+            true => return Err(17),
+        }
     };
 
     max_mine_num = min(max_mine_num, mine_num);
@@ -547,7 +560,7 @@ pub fn cal_is_op_possibility_cells(
 ///     vec![10, 10, 10, 10, 10, 10, 10, 10],
 /// ];
 /// let (As, xs, bs, _, _) = refresh_matrixs(&game_board);
-/// let ans = solve_enumerate(&As, &xs, &bs, 30);
+/// let ans = solve_enumerate(&As, &xs, &bs, 40);
 /// print!("{:?}", ans);
 /// ```
 /// - 注意：不修改输入进来的局面，即不帮助标雷（这个设计后续可能修改）；也不维护3个矩阵。因为枚举引擎是最后使用的  
@@ -639,10 +652,10 @@ pub fn is_solvable(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
     }
     loop {
         let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
-        let ans = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game);
+        let ans = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game).unwrap();
         let mut not_mine;
         if ans.0.is_empty() && ans.1.is_empty() {
-            let ans = solve_minus(&mut As, &mut xs, &mut bs, &mut board_of_game);
+            let ans = solve_minus(&mut As, &mut xs, &mut bs, &mut board_of_game).unwrap();
             if ans.0.is_empty() && ans.1.is_empty() {
                 let ans = solve_enumerate(&As, &xs, &bs);
                 if ans.0.is_empty() && ans.1.is_empty() {
@@ -1256,12 +1269,28 @@ pub fn agent_step(board_of_game: Vec<Vec<i32>>, pos: (usize, usize)) -> Result<u
 }
 
 /// 对局面用单集合、双集合判雷引擎，快速标雷、标非雷，以供概率计算引擎处理。这是非常重要的加速。  
-/// 相当于一种预处理，即先标出容易计算的。  
+/// 相当于一种预处理，即先标出容易计算的。mark可能因为无解而报错，此时返回错误码。  
+/// 若不合法，直接中断，不继续标记。  
 /// - 注意：在rust中，cal_possibility往往需要和mark_board搭配使用，而在其他语言（python）中可能不需要如此！这是由于其ffi不支持原地操作。
-pub fn mark_board(board_of_game: &mut Vec<Vec<i32>>) {
+pub fn mark_board(board_of_game: &mut Vec<Vec<i32>>) -> Result<(), usize> {
     let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
-    solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
+    solve_direct(&mut As, &mut xs, &mut bs, board_of_game)?;
+    for i in 0..As.len() {
+        for j in 0..As[i].len() {
+            if As[i][j].iter().sum::<i32>() < bs[i][j] || bs[i][j] < 0 {
+                return Err(7);
+            }
+        }
+    }
     solve_minus(&mut As, &mut xs, &mut bs, board_of_game);
+    for i in 0..As.len() {
+        for j in 0..As[i].len() {
+            if As[i][j].iter().sum::<i32>() < bs[i][j] || bs[i][j] < 0 {
+                return Err(8);
+            }
+        }
+    }
+    Ok(())
 }
 
 /// 求出游戏局面中所有非雷、是雷的位置。  
@@ -1272,12 +1301,12 @@ pub fn get_all_not_and_is_mine_on_board(
     bs: &mut Vec<Vec<i32>>,
     board_of_game: &mut Vec<Vec<i32>>,
 ) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
-    let mut ans = solve_direct(As, xs, bs, board_of_game);
+    let mut ans = solve_direct(As, xs, bs, board_of_game).unwrap();
     let mut is_mine = vec![];
     let mut not_mine = vec![];
     not_mine.append(&mut ans.0);
     is_mine.append(&mut ans.1);
-    let mut ans = solve_minus(As, xs, bs, board_of_game);
+    let mut ans = solve_minus(As, xs, bs, board_of_game).unwrap();;
     not_mine.append(&mut ans.0);
     is_mine.append(&mut ans.1);
     let mut ans = solve_enumerate(As, xs, bs);
@@ -1312,10 +1341,10 @@ pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, u
             .iter()
             .position(|r| r.iter().any(|x| x.contains(&xy)))
             .unwrap();
-        let mut As = &mut Ases[t];
-        let mut xs = &mut xses[t];
-        let mut bs = &mut bses[t];
-        let (n, _) = solve_direct(As, xs, bs, board_of_game);
+        let As = &mut Ases[t];
+        let xs = &mut xses[t];
+        let bs = &mut bses[t];
+        let (n, _) = solve_direct(As, xs, bs, board_of_game).unwrap();
         if !flag_border && !n.is_empty() {
             return 3;
         }
@@ -1324,7 +1353,7 @@ pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, u
             12 => return 1,
             11 => return 4,
             _ => {
-                let (n, _) = solve_minus(As, xs, bs, board_of_game);
+                let (n, _) = solve_minus(As, xs, bs, board_of_game).unwrap();;
                 if !flag_border && !n.is_empty() {
                     return 3;
                 }

@@ -1010,10 +1010,13 @@ impl<T> BaseVideo<T> {
             //     "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
             //     e.time, e.mouse, e.x, e.y, e.useful_level
             // );
-            if e.mouse != "mmv" {
+            if e.mouse != "mv" {
                 println!(
-                    "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
-                    e.time, e.mouse, e.x, e.y, e.useful_level
+                    "my_board.step_flow(vec![({:?}, ({:?}, {:?}))]).unwrap();",
+                    // "video.step({:?}, ({:?}, {:?})).unwrap();",
+                    e.mouse,
+                    e.y / self.cell_pixel_size as u16,
+                    e.x / self.cell_pixel_size as u16
                 );
             }
             num += 1;
@@ -1630,12 +1633,20 @@ impl<T> BaseVideo<T> {
         if self.game_board_state != GameBoardState::Display {
             return Err(());
         };
-        Ok((
-            (self.video_action_state_recorder[self.current_event_id].x as f64
-                * self.video_playing_pix_size_k) as u16,
-            (self.video_action_state_recorder[self.current_event_id].y as f64
-                * self.video_playing_pix_size_k) as u16,
-        ))
+        let mut k = 0;
+        loop {
+            if self.video_action_state_recorder[self.current_event_id - k].x
+                < self.cell_pixel_size as u16 * self.width as u16
+            {
+                return Ok((
+                    (self.video_action_state_recorder[self.current_event_id - k].x as f64
+                        * self.video_playing_pix_size_k) as u16,
+                    (self.video_action_state_recorder[self.current_event_id - k].y as f64
+                        * self.video_playing_pix_size_k) as u16,
+                ));
+            }
+            k += 1;
+        }
     }
     // 录像播放时，设置按何种像素播放，涉及鼠标位置回报
     pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {

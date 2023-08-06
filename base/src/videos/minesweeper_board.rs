@@ -167,25 +167,27 @@ impl<T> MinesweeperBoard<T> {
         if self.game_board[x][y] != 10 {
             return Ok(0);
         }
-        refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
+        // refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
         match self.board[x][y] {
             0 => {
-                self.bbbv_solved += 1;
+                if self.cell_is_op_completed(x, y, &mut vec![vec![false; self.column]; self.row]) {
+                    self.bbbv_solved += 1;
+                }
                 self.ce += 1;
-                // refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
+                refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
                 if self.is_win() {
                     self.game_board_state = GameBoardState::Win;
                 }
                 Ok(2)
             }
             -1 => {
-                // refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
+                refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
                 self.game_board_state = GameBoardState::Loss;
                 Ok(0)
             }
             _ => {
-                // refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
-                if self.num_is_3BV(x, y) {
+                refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
+                if self.cell_is_bbbv(x, y) {
                     self.bbbv_solved += 1;
                 }
                 self.ce += 1;
@@ -253,7 +255,6 @@ impl<T> MinesweeperBoard<T> {
         let mut chordingCells = vec![]; // 未打开的格子的集合
         let mut flagedNum = 0; // 双击点周围的标雷数
         let mut surround3BV = 0; // 周围的3BV
-        let mut flag_ch_op = false; // 是否通过双击开空了：一次双击最多打开一个空
         for i in max(1, x) - 1..min(self.row, x + 2) {
             for j in max(1, y) - 1..min(self.column, y + 2) {
                 if i != x || j != y {
@@ -264,28 +265,34 @@ impl<T> MinesweeperBoard<T> {
                         chordingCells.push((i, j));
                         flagChordingUseful = true;
                         if self.board[i][j] > 0 {
-                            if self.num_is_3BV(i, j) {
+                            if self.cell_is_bbbv(i, j) {
                                 surround3BV += 1;
                             }
-                        } else if self.board[i][j] == 0 {
-                            flag_ch_op = true;
                         }
+                        // else if self.board[i][j] == 0 {
+                        //     flag_ch_op = true;
+                        //     surround_op_x = i;
+                        //     surround_op_y = j;
+                        // }
                     }
                 }
             }
         }
         if flagedNum == self.game_board[x][y] && flagChordingUseful {
-            self.ce += 1;
-            self.bbbv_solved += surround3BV;
-            if flag_ch_op {
-                self.bbbv_solved += 1;
-            }
             for ch in &chordingCells {
                 if self.board[ch.0][ch.1] == -1 {
                     self.game_board_state = GameBoardState::Loss;
                 }
             }
+            self.ce += 1;
+            self.bbbv_solved += surround3BV;
+            self.bbbv_solved += self.op_num_around_cell(x, y);
             refresh_board(&self.board, &mut self.game_board, chordingCells);
+            // if flag_ch_op {
+            //     if self.cell_is_op_completed(surround_op_x, surround_op_y) {
+            //         self.bbbv_solved += 1;
+            //     }
+            // }
             if self.is_win() {
                 self.game_board_state = GameBoardState::Win;
             }
@@ -294,7 +301,7 @@ impl<T> MinesweeperBoard<T> {
             Ok(0)
         }
     }
-    fn num_is_3BV(&self, x: usize, y: usize) -> bool
+    fn cell_is_bbbv(&self, x: usize, y: usize) -> bool
     where
         T: std::ops::Index<usize> + BoardSize,
         T::Output: std::ops::Index<usize, Output = i32>,
@@ -309,6 +316,78 @@ impl<T> MinesweeperBoard<T> {
                 if self.board[i][j] == 0 {
                     return false;
                 }
+            }
+        }
+        true
+    }
+    // 在传入格子上双击以后，将新打开的（完整）op数。（已打开的不算）
+    // 这个格子不是雷、双击是合法的
+    // 只可能返回0，1，2
+    fn op_num_around_cell(&self, x: usize, y: usize) -> usize
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        let mut op_num = 0;
+        let mut game_board_mark = vec![vec![false; self.column]; self.row];
+        // println!("666");
+        if x > 0 && y > 0 {
+            if self.game_board[x - 1][y - 1] == 10 && self.board[x - 1][y - 1] == 0 {
+                if self.cell_is_op_completed(x - 1, y - 1, &mut game_board_mark) {
+                    op_num += 1;
+                }
+            }
+        }
+        if x > 0 && y + 1 < self.column {
+            if self.game_board[x - 1][y + 1] == 10 && self.board[x - 1][y + 1] == 0 {
+                if self.cell_is_op_completed(x - 1, y + 1, &mut game_board_mark) {
+                    op_num += 1;
+                }
+            }
+        }
+        if x + 1 < self.row && y > 0 {
+            if self.game_board[x + 1][y - 1] == 10 && self.board[x + 1][y - 1] == 0 {
+                if self.cell_is_op_completed(x + 1, y - 1, &mut game_board_mark) {
+                    op_num += 1;
+                }
+            }
+        }
+        if x + 1 < self.row && y + 1 < self.column {
+            if self.game_board[x + 1][y + 1] == 10 && self.board[x + 1][y + 1] == 0 {
+                if self.cell_is_op_completed(x + 1, y + 1, &mut game_board_mark) {
+                    op_num += 1;
+                }
+            }
+        }
+        op_num
+    }
+
+    // 是局面上能够完全打开的op（在游戏局面上是没有打开的状态，点下后能够完全打开）
+    // 这是为了防范一种特殊情况，在空上面右击标雷使得空打开的时候不能完全打开；没有完全打开的空，不应计入3bv。
+    fn cell_is_op_completed(&self, x: usize, y: usize, game_board_mark: &mut Vec<Vec<bool>>) -> bool
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        // let mut game_board_mark = vec![vec![false; self.column]; self.row];
+        let mut poses = vec![(x, y)];
+        while let Some(top) = poses.pop() {
+            let (i, j) = top;
+            if self.board[i][j] > 0 {
+                continue;
+            } else if self.board[i][j] == 0 {
+                if self.game_board[i][j] == 11 {
+                    return false;
+                }
+                game_board_mark[i][j] = true;
+                for m in max(1, i) - 1..min(self.row, i + 2) {
+                    for n in max(1, j) - 1..min(self.column, j + 2) {
+                        if (i != m || j != n) && (!game_board_mark[m][n]) {
+                            poses.push((m, n));
+                        }
+                    }
+                }
+            } else {
             }
         }
         true

@@ -94,7 +94,16 @@ fn py_solve_minus(
     Vec<(usize, usize)>,
     Vec<(usize, usize)>,
 )> {
-    let (not, is) = solve_minus(&mut As, &mut xs, &mut bs, &mut board_of_game);
+    let not;
+    let is;
+    let t = solve_minus(&mut As, &mut xs, &mut bs, &mut board_of_game);
+    match t {
+        Ok(aa) => {
+            not = aa.0;
+            is = aa.1;
+        }
+        Err(code) => return Err(PyErr::new::<PyRuntimeError, _>(format!("code: {}.", code))),
+    };
     Ok((As, xs, bs, board_of_game, not, is))
 }
 

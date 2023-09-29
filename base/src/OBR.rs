@@ -467,7 +467,7 @@ impl ImageBoard {
                 let mut left = 0;
                 let mut right = 0;
                 let mut max_flag = true;
-                let mut max_num = xx[i];
+                let max_num = xx[i];
                 for j in max(7, i)-7..i {
                     if xx[j] >= xx[i] {
                         left += 1;
@@ -552,7 +552,7 @@ impl ImageBoard {
     }
 
     pub fn get_pos_pixel(&mut self) {
-        let mut x = self.data.clone();
+        let x = self.data.clone();
         let mut row = x[0].len() - 2;
         let mut column = x[0][0].len() - 2;
         // LoG算子,Prewitt算子,Sobel算子

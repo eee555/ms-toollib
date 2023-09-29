@@ -1,8 +1,8 @@
 use crate::utils::{
-    cal_bbbv, cal_bbbv_exp, cal_table_minenum_enum, cal_table_minenum_recursion, chunk_matrixes,
-    combine, enuOneStep, enum_comb, find_a_border_cell, laymine, laymine_op, legalize_board,
-    refresh_board, refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure,
-    BigNumber, C_query, C,
+    cal_bbbv_exp, cal_table_minenum_recursion, chunk_matrixes,
+    combine, find_a_border_cell, laymine, laymine_op, legalize_board,
+    refresh_board, refresh_matrixs, refresh_matrixses, unsolvable_structure,
+    BigNumber, C,
 };
 
 #[cfg(feature = "js")]
@@ -20,11 +20,10 @@ use rand::thread_rng;
 
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::prelude::*;
-#[cfg(any(feature = "py", feature = "rs"))]
-use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use std::println;
-use std::time;
+
+
+
 
 use std::cmp::{max, min};
 use std::sync::mpsc;
@@ -37,7 +36,7 @@ use tract_ndarray::Array;
 #[cfg(any(feature = "py", feature = "rs"))]
 use tract_onnx::prelude::*;
 
-use crate::safe_board::{BoardSize, SafeBoard};
+
 
 use crate::ENUM_LIMIT;
 
@@ -61,8 +60,8 @@ pub fn solve_minus(
     for b in (0..block_num).rev() {
         let mut not_mine_rel = vec![];
         let mut is_mine_rel = vec![];
-        let mut matrixColumn = xs[b].len();
-        let mut matrixRow = bs[b].len();
+        let matrixColumn = xs[b].len();
+        let matrixRow = bs[b].len();
         if matrixRow <= 1 {
             continue; // 整段只有一个数字，比如角落的1
         }
@@ -218,19 +217,19 @@ pub fn solve_direct(
 /// - 局限：空中间出现一个数字，这种错误的局面，不能检查出来
 pub fn cal_possibility(
     board_of_game: &Vec<Vec<i32>>,
-    mine_num: f64,
+    minenum: f64,
 ) -> Result<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize), usize> {
     // 如果超出枚举长度限制，记录并返回这个长度，以此体现局面的求解难度。
     let mut exceed_len = 0;
     let mut p = vec![];
-    let mut table_cell_mine_num_s: Vec<Vec<Vec<usize>>> = vec![];
+    let mut table_cell_minenum_s: Vec<Vec<Vec<usize>>> = vec![];
     // 每段每格雷数表：记录了每段每格（或者地位等同的复合格）、每种总雷数下的是雷情况数
     let mut comb_relp_s = vec![]; // 记录了方格的组合关系
                                   // let mut enum_comb_table_s = vec![];
-    let mut table_mine_num_s: Vec<[Vec<usize>; 2]> = vec![];
+    let mut table_minenum_s: Vec<[Vec<usize>; 2]> = vec![];
     // 每段雷数分布表：记录了每段（不包括内部段）每种总雷数下的是雷总情况数
     // 例如：[[[17, 18, 19, 20, 21, 22, 23, 24], [48, 2144, 16872, 49568, 68975, 48960, 16608, 2046]]]
-    let (mut matrix_a_s, mut matrix_x_s, mut matrix_b_s, mut unknow_block, is_mine_num) =
+    let (mut matrix_a_s, mut matrix_x_s, mut matrix_b_s, mut unknow_block, is_minenum) =
         refresh_matrixs(&board_of_game);
     for i in (0..matrix_a_s.len()).rev() {
         let matrix_x_s_len = matrix_x_s[i].len();
@@ -250,7 +249,7 @@ pub fn cal_possibility(
 
     let mut matrixA_squeeze_s: Vec<Vec<Vec<i32>>> = vec![];
     let mut matrixx_squeeze_s: Vec<Vec<(usize, usize)>> = vec![];
-    // let mut min_max_mine_num = [0, 0];
+    // let mut min_max_minenum = [0, 0];
     for i in 0..block_num {
         let (matrixA_squeeze, matrixx_squeeze, combination_relationship) =
             combine(&matrix_a_s[i], &matrix_x_s[i]);
@@ -260,17 +259,17 @@ pub fn cal_possibility(
     }
     // 分段枚举后，根据雷数限制，删除某些情况
     for i in 0..block_num {
-        let table_mine_num_i;
-        let table_cell_mine_num_i;
+        let table_minenum_i;
+        let table_cell_minenum_i;
         match cal_table_minenum_recursion(
             &matrixA_squeeze_s[i],
             &matrixx_squeeze_s[i],
             &matrix_b_s[i],
             &comb_relp_s[i],
         ) {
-            Ok((table_mine_num_i_, table_cell_mine_num_i_)) => {
-                table_mine_num_i = table_mine_num_i_;
-                table_cell_mine_num_i = table_cell_mine_num_i_;
+            Ok((table_minenum_i_, table_cell_minenum_i_)) => {
+                table_minenum_i = table_minenum_i_;
+                table_cell_minenum_i = table_cell_minenum_i_;
                 // block_num_calable += 1;
             }
             Err(e) => {
@@ -279,29 +278,29 @@ pub fn cal_possibility(
                 return Err(e);
             }
         };
-        // min_max_mine_num[0] += table_mine_num_i[0][0];
-        // min_max_mine_num[1] += table_mine_num_i[0][table_mine_num_i[0].len() - 1];
+        // min_max_minenum[0] += table_minenum_i[0][0];
+        // min_max_minenum[1] += table_minenum_i[0][table_minenum_i[0].len() - 1];
 
-        table_cell_mine_num_s.push(table_cell_mine_num_i);
-        table_mine_num_s.push(table_mine_num_i);
+        table_cell_minenum_s.push(table_cell_minenum_i);
+        table_minenum_s.push(table_minenum_i);
     } // 第一步，整理出每段每格雷数情况表、每段雷数分布表、每段雷分布情况总数表
-    let mut min_mine_num = 0;
-    let mut max_mine_num = 0;
+    let mut min_minenum = 0;
+    let mut max_minenum = 0;
 
     // let block_num = block_num_calable;
 
     for i in 0..block_num {
-        min_mine_num += table_mine_num_s[i][0].iter().min().unwrap();
-        max_mine_num += table_mine_num_s[i][0].iter().max().unwrap();
+        min_minenum += table_minenum_s[i][0].iter().min().unwrap();
+        max_minenum += table_minenum_s[i][0].iter().max().unwrap();
     }
-    let mine_num = if mine_num < 1.0 {
-        let mn = ((board_of_game.len() * board_of_game[0].len()) as f64 * mine_num) as usize;
+    let minenum = if minenum < 1.0 {
+        let mn = ((board_of_game.len() * board_of_game[0].len()) as f64 * minenum) as usize;
         min(
-            max(mn - is_mine_num, min_mine_num),
-            max_mine_num + unknow_block,
+            max(mn - is_minenum, min_minenum),
+            max_minenum + unknow_block,
         )
     } else {
-        let mm = (mine_num as usize).overflowing_sub(is_mine_num);
+        let mm = (minenum as usize).overflowing_sub(is_minenum);
         match mm.1 {
             false => mm.0,
             // 标雷环节没有查出错误，而且标了很多雷，算概率环节会返回17
@@ -309,71 +308,71 @@ pub fn cal_possibility(
         }
     };
 
-    max_mine_num = min(max_mine_num, mine_num);
-    if max_mine_num < min_mine_num {
+    max_minenum = min(max_minenum, minenum);
+    if max_minenum < min_minenum {
         return Err(3); // 这种错误，例如一共10个雷，却出现了3个不相邻的5
     }
-    // println!("{:?}, {:?}, {:?}", max_mine_num, mine_num, min_mine_num);
-    let unknow_mine_num: Vec<usize> =
-        (mine_num - max_mine_num..min(mine_num - min_mine_num, unknow_block) + 1).collect();
+    // println!("{:?}, {:?}, {:?}", max_minenum, minenum, min_minenum);
+    let unknow_minenum: Vec<usize> =
+        (minenum - max_minenum..min(minenum - min_minenum, unknow_block) + 1).collect();
     // 这里的写法存在极小的风险，例如边缘格雷数分布是0，1，3，而我们直接认为了可能有2
     let mut unknow_mine_s_num = vec![];
-    for i in &unknow_mine_num {
+    for i in &unknow_minenum {
         unknow_mine_s_num.push(C(unknow_block, *i));
     }
     // 第二步，整理内部未知段雷数分布表，并筛选。这样内部未知雷段和边缘雷段的地位视为几乎等同，但数据结构不同
-    table_mine_num_s.push([unknow_mine_num.clone(), vec![]]);
+    table_minenum_s.push([unknow_minenum.clone(), vec![]]);
     // 这里暂时不知道怎么写，目前这样写浪费了几个字节的内存
-    // 未知区域的情况数随雷数的分布不能存在表table_mine_num中，因为格式不一样，后者是大数类型
+    // 未知区域的情况数随雷数的分布不能存在表table_minenum中，因为格式不一样，后者是大数类型
     let mut mine_in_each_block = (0..block_num + 1)
-        .map(|i| 0..table_mine_num_s[i][0].len())
+        .map(|i| 0..table_minenum_s[i][0].len())
         .multi_cartesian_product()
         .collect::<Vec<_>>();
     for i in (0..mine_in_each_block.len()).rev() {
         let mut total_num = 0;
         for j in 0..block_num + 1 {
-            total_num += table_mine_num_s[j][0][mine_in_each_block[i][j]];
+            total_num += table_minenum_s[j][0][mine_in_each_block[i][j]];
         }
-        if total_num != mine_num {
+        if total_num != minenum {
             mine_in_each_block.remove(i);
         }
     }
     // println!("mine_in_each_block: {:?}", mine_in_each_block);
     // 第三步，枚举每段雷数情况索引表：行代表每种情况，列代表每段雷数的索引，最后一列代表未知区域雷数
-    let mut table_mine_num_other: Vec<Vec<BigNumber>> = vec![];
+    let mut table_minenum_other: Vec<Vec<BigNumber>> = vec![];
     for i in 0..block_num + 1 {
-        table_mine_num_other.push(vec![
+        table_minenum_other.push(vec![
             BigNumber { a: 0.0, b: 0 };
-            table_mine_num_s[i][0].len()
+            table_minenum_s[i][0].len()
         ]);
     } // 初始化
     for s in mine_in_each_block {
         for i in 0..block_num {
             let mut s_num = BigNumber { a: 1.0, b: 0 };
-            let mut s_mn = mine_num; // 未知区域中的雷数
+            let mut s_mn = minenum; // 未知区域中的雷数
             for j in 0..block_num {
                 if i != j {
-                    s_num.mul_usize(table_mine_num_s[j][1][s[j]]);
+                    s_num.mul_usize(table_minenum_s[j][1][s[j]]);
                 }
-                s_mn -= table_mine_num_s[j][0][s[j]];
+                s_mn -= table_minenum_s[j][0][s[j]];
             }
-            let ps = unknow_mine_num.iter().position(|x| *x == s_mn).unwrap();
+            let ps = unknow_minenum.iter().position(|x| *x == s_mn).unwrap();
             s_num.mul_big_number(&unknow_mine_s_num[ps]);
-            table_mine_num_other[i][s[i]].add_big_number(&s_num);
+            table_minenum_other[i][s[i]].add_big_number(&s_num);
         }
         let mut s_num = BigNumber { a: 1.0, b: 0 };
-        let mut s_mn = mine_num; // 未知区域中的雷数
+        let mut s_mn = minenum; // 未知区域中的雷数
         for j in 0..block_num {
-            s_num.mul_usize(table_mine_num_s[j][1][s[j]]);
-            s_mn -= table_mine_num_s[j][0][s[j]];
+            s_num.mul_usize(table_minenum_s[j][1][s[j]]);
+            s_mn -= table_minenum_s[j][0][s[j]];
         }
-        let ps = unknow_mine_num.iter().position(|x| *x == s_mn).unwrap();
-        table_mine_num_other[block_num][ps].add_big_number(&s_num);
+        let ps = unknow_minenum.iter().position(|x| *x == s_mn).unwrap();
+        table_minenum_other[block_num][ps].add_big_number(&s_num);
     }
     // 第四步，计算每段其他雷数情况表
     let mut T = BigNumber { a: 0.0, b: 0 };
     for i in 0..unknow_mine_s_num.len() {
-        let mut t = table_mine_num_other[block_num][i].clone();
+        let mut t = table_minenum_other[block_num][i].clone();
         t.mul_big_number(&unknow_mine_s_num[i]);
         T.add_big_number(&t);
     }
@@ -384,9 +383,9 @@ pub fn cal_possibility(
             let cells_len = comb_relp_s[i][cells_id].len();
             for cell_id in 0..cells_len {
                 let mut s_cell = BigNumber { a: 0.0, b: 0 };
-                for s in 0..table_mine_num_other[i].len() {
-                    let mut o = table_mine_num_other[i][s].clone();
-                    o.mul_usize(table_cell_mine_num_s[i][s][cells_id]);
+                for s in 0..table_minenum_other[i].len() {
+                    let mut o = table_minenum_other[i][s].clone();
+                    o.mul_usize(table_cell_minenum_s[i][s][cells_id]);
                     s_cell.add_big_number(&o);
                 }
                 let p_cell = s_cell.div_big_num(&T);
@@ -397,10 +396,10 @@ pub fn cal_possibility(
     }
     // 第六步，计算边缘每格是雷的概率
     let mut u_s = BigNumber { a: 0.0, b: 0 };
-    for i in 0..unknow_mine_num.len() {
-        let mut u = table_mine_num_other[block_num][i].clone();
+    for i in 0..unknow_minenum.len() {
+        let mut u = table_minenum_other[block_num][i].clone();
         u.mul_big_number(&unknow_mine_s_num[i]);
-        u.mul_usize(unknow_mine_num[i]);
+        u.mul_usize(unknow_minenum[i]);
         u_s.add_big_number(&u);
     }
     let p_unknow = u_s.div_big_num(&T) / unknow_block as f64;
@@ -410,9 +409,9 @@ pub fn cal_possibility(
         p,
         p_unknow,
         [
-            min_mine_num + is_mine_num,
-            mine_num + is_mine_num,
-            max_mine_num + is_mine_num + unknow_block,
+            min_minenum + is_minenum,
+            minenum + is_minenum,
+            max_minenum + is_minenum + unknow_block,
         ],
         exceed_len,
     ))
@@ -466,10 +465,10 @@ pub fn cal_possibility(
 /// ```
 pub fn cal_possibility_onboard(
     board_of_game: &Vec<Vec<i32>>,
-    mine_num: f64,
+    minenum: f64,
 ) -> Result<(Vec<Vec<f64>>, [usize; 3]), usize> {
     let mut p = vec![vec![-1.0; board_of_game[0].len()]; board_of_game.len()];
-    let pp = cal_possibility(&board_of_game, mine_num)?;
+    let pp = cal_possibility(&board_of_game, minenum)?;
     for i in pp.0 {
         p[i.0 .0][i.0 .1] = i.1;
     }
@@ -494,6 +493,7 @@ pub fn cal_possibility_onboard(
 /// - 返回：坐标处开空的概率。  
 /// # Example
 /// ```
+/// use ms_toollib::cal_is_op_possibility_cells;
 /// let game_board = vec![
 ///     vec![10, 10,  1,  1, 10,  1,  0,  0],
 ///     vec![10, 10,  1, 10, 10,  3,  2,  1],
@@ -509,7 +509,7 @@ pub fn cal_possibility_onboard(
 /// ```
 pub fn cal_is_op_possibility_cells(
     board_of_game: &Vec<Vec<i32>>,
-    mine_num: f64,
+    minenum: f64,
     cells: &Vec<[usize; 2]>,
 ) -> Vec<f64> {
     let mut poss = vec![1.0; cells.len()];
@@ -528,7 +528,7 @@ pub fn cal_is_op_possibility_cells(
                     continue;
                 } else {
                     let p;
-                    match cal_possibility_onboard(&board_of_game_modified, mine_num) {
+                    match cal_possibility_onboard(&board_of_game_modified, minenum) {
                         Ok((ppp, _)) => p = ppp,
                         Err(_) => {
                             poss[cell_id] = 0.0;
@@ -590,23 +590,23 @@ pub fn solve_enumerate(
         matrixx_squeeze_s.push(matrixx_squeeze);
     }
     for i in 0..block_num {
-        let (table_mine_num_i, table_cell_mine_num_i) = cal_table_minenum_recursion(
+        let (table_minenum_i, table_cell_minenum_i) = cal_table_minenum_recursion(
             &matrixA_squeeze_s[i],
             &matrixx_squeeze_s[i],
             &bs[i],
             &comb_relp_s[i],
         )
         .unwrap();
-        for jj in 0..table_cell_mine_num_i[0].len() {
+        for jj in 0..table_cell_minenum_i[0].len() {
             let mut s_num = 0; // 该合成格子的总情况数
-            for ii in 0..table_cell_mine_num_i.len() {
-                s_num += table_cell_mine_num_i[ii][jj];
+            for ii in 0..table_cell_minenum_i.len() {
+                s_num += table_cell_minenum_i[ii][jj];
             }
             if s_num == 0 {
                 for kk in &comb_relp_s[i][jj] {
                     not_mine.push(xs[i][*kk]);
                 }
-            } else if s_num == table_mine_num_i[1].iter().sum::<usize>() * comb_relp_s[i][jj].len()
+            } else if s_num == table_minenum_i[1].iter().sum::<usize>() * comb_relp_s[i][jj].len()
             {
                 for kk in &comb_relp_s[i][jj] {
                     is_mine.push(xs[i][*kk]);
@@ -653,7 +653,7 @@ pub fn is_solvable(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
     loop {
         let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
         let ans = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game).unwrap();
-        let mut not_mine;
+        let not_mine;
         if ans.0.is_empty() && ans.1.is_empty() {
             let ans = solve_minus(&mut As, &mut xs, &mut bs, &mut board_of_game).unwrap();
             if ans.0.is_empty() && ans.1.is_empty() {
@@ -695,7 +695,7 @@ pub fn is_solvable(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
 pub fn laymine_solvable_thread(
     row: usize,
     column: usize,
-    mine_num: usize,
+    minenum: usize,
     x0: usize,
     y0: usize,
     mut max_times: usize,
@@ -704,7 +704,8 @@ pub fn laymine_solvable_thread(
     let mut handles = vec![];
     let flag_exit = Arc::new(Mutex::new(0));
     let (tx, rx) = mpsc::channel(); // mpsc 是多个发送者，一个接收者
-    for ii in (1..9).rev() {
+    // println!("{:?}", thread::available_parallelism().unwrap());
+    for ii in (1..=8).rev() {
         let tx_ = mpsc::Sender::clone(&tx);
         let max_time = max_times / ii;
         max_times -= max_time;
@@ -721,7 +722,7 @@ pub fn laymine_solvable_thread(
                         break;
                     }
                 } // 这段用花括号控制生命周期
-                let Board_ = laymine_op(row, column, mine_num, x0, y0);
+                let Board_ = laymine_op(row, column, minenum, x0, y0);
                 counter += 1;
                 if is_solvable(&Board_, x0, y0) {
                     for i in 0..row {
@@ -735,7 +736,7 @@ pub fn laymine_solvable_thread(
                     break;
                 }
             }
-            let Board_ = laymine_op(row, column, mine_num, x0, y0);
+            let Board_ = laymine_op(row, column, minenum, x0, y0);
             // Num3BV = cal_bbbv(&Board_);
             tx_.send((Board_, false)).unwrap();
         });
@@ -765,7 +766,7 @@ pub fn laymine_solvable_thread(
 pub fn laymine_solvable(
     row: usize,
     column: usize,
-    mine_num: usize,
+    minenum: usize,
     x0: usize,
     y0: usize,
     max_times: usize,
@@ -773,13 +774,13 @@ pub fn laymine_solvable(
     let mut times = 0;
     let mut Board;
     while times < max_times {
-        Board = laymine_op(row, column, mine_num, x0, y0);
+        Board = laymine_op(row, column, minenum, x0, y0);
         times += 1;
         if is_solvable(&Board, x0, y0) {
             return (Board, true);
         }
     }
-    Board = laymine_op(row, column, mine_num, x0, y0);
+    Board = laymine_op(row, column, minenum, x0, y0);
     (Board, false)
 }
 
@@ -796,7 +797,7 @@ pub fn laymine_solvable(
 pub fn laymine_solvable_adjust(
     row: usize,
     column: usize,
-    mine_num: usize,
+    minenum: usize,
     x0: usize,
     y0: usize,
 ) -> (Vec<Vec<i32>>, bool) {
@@ -814,24 +815,24 @@ pub fn laymine_solvable_adjust(
             area_op = 6;
         }
     }
-    if row * column - area_op < mine_num {
+    if row * column - area_op < minenum {
         // 雷数太多以致起手无法开空，此时放弃无猜，返回任意一种局面
-        let t = laymine(row, column, mine_num, x0, y0);
-        if row * column - mine_num == 1 {
+        let t = laymine(row, column, minenum, x0, y0);
+        if row * column - minenum == 1 {
             return (t, true);
         } else {
             return (t, false);
         }
     }
-    if row * column == area_op + mine_num {
-        return (laymine_op(row, column, mine_num, x0, y0), true);
+    if row * column == area_op + minenum {
+        return (laymine_op(row, column, minenum, x0, y0), true);
     }
 
     board = vec![vec![-10; column]; row];
     let mut board_of_game = vec![vec![10; column]; row];
     board_of_game[x0][y0] = 0;
-    let remain_mine_num = mine_num;
-    let remain_not_mine_num = row * column - area_op - mine_num;
+    let remain_minenum = minenum;
+    let remain_not_minenum = row * column - area_op - minenum;
     let mut cells_plan_to_click = vec![];
     // 初始化第一步计划点开的格子
     for j in max(1, x0) - 1..min(row, x0 + 2) {
@@ -847,8 +848,8 @@ pub fn laymine_solvable_adjust(
         &board,
         &board_of_game,
         &cells_plan_to_click,
-        remain_mine_num,
-        remain_not_mine_num,
+        remain_minenum,
+        remain_not_minenum,
     );
     // println!("+++++");
     // b.iter().for_each(|i| {
@@ -857,7 +858,7 @@ pub fn laymine_solvable_adjust(
     //     println!("")
     // });
     if !flag || b.is_empty() {
-        return (laymine_op(row, column, mine_num, x0, y0), false);
+        return (laymine_op(row, column, minenum, x0, y0), false);
     }
     for i in 0..row {
         for j in 0..column {
@@ -895,14 +896,14 @@ fn adjust_step(
     board: &Vec<Vec<i32>>,            // 当前的board，数字没有计算，只有0，-1，-10
     board_of_game: &Vec<Vec<i32>>,    // 当前的board_of_game，数字没有计算，只有10，1
     plan_click: &Vec<(usize, usize)>, // 当前计划点开的格子，递归部分要保证点开后，局面是有解开的可能的
-    remain_mine_num: usize,           // 当前还要埋的雷数
-    remain_not_mine_num: usize,       // 当前还要埋的非雷数
+    remain_minenum: usize,           // 当前还要埋的雷数
+    remain_not_minenum: usize,       // 当前还要埋的非雷数
 ) -> (Vec<Vec<i32>>, bool) {
     let mut b = board.clone(); // 克隆一个board的备份
     let mut bg = board_of_game.clone(); // 克隆一个board_of_game的备份
                                         // let mut pc = plan_click.clone();
-    let mut r = remain_mine_num; // 克隆一个当前还要埋的雷数的备份
-    let mut rn = remain_not_mine_num; // 克隆一个当前还要埋的非雷数的备份
+    let mut r = remain_minenum; // 克隆一个当前还要埋的雷数的备份
+    let mut rn = remain_not_minenum; // 克隆一个当前还要埋的非雷数的备份
     for (x, y) in plan_click.into_iter() {
         bg[*x][*y] = 1;
     } // 点开当前的board_of_game的备份上的计划点开的格子，用1临时表示
@@ -936,50 +937,50 @@ fn adjust_step(
     }
     // 前沿格子————此格子在边缘，且是没有埋过雷的
     let xs_cell_num = front_xs_0.iter().fold(0, |acc, x| acc + x.len());
-    let mine_num_except = (xs_cell_num as f64 * r as f64 / (rn + r) as f64) as usize;
+    let minenum_except = (xs_cell_num as f64 * r as f64 / (rn + r) as f64) as usize;
     // let mut success_flag = false;
     // 对不同雷数循环
     'inner: for i in 0..xs_cell_num + 1 {
-        // 根据算法的映射，计算出mine_num，计划的埋雷量
-        let mine_num;
-        if mine_num_except == 0 || xs_cell_num == 0 {
-            mine_num = 0;
-        } else if mine_num_except == xs_cell_num {
-            mine_num = mine_num_except;
+        // 根据算法的映射，计算出minenum，计划的埋雷量
+        let minenum;
+        if minenum_except == 0 || xs_cell_num == 0 {
+            minenum = 0;
+        } else if minenum_except == xs_cell_num {
+            minenum = minenum_except;
         } else if i == xs_cell_num - 1 {
-            mine_num = 0;
+            minenum = 0;
         } else if i == xs_cell_num {
-            mine_num = xs_cell_num;
-        } else if xs_cell_num > mine_num_except * 2 {
-            let z = mine_num_except * 2 - 1;
+            minenum = xs_cell_num;
+        } else if xs_cell_num > minenum_except * 2 {
+            let z = minenum_except * 2 - 1;
             if i < z {
                 if i % 2 == 1 {
-                    mine_num = mine_num_except + (i + 1) / 2;
+                    minenum = minenum_except + (i + 1) / 2;
                 } else {
-                    mine_num = mine_num_except - i / 2;
+                    minenum = minenum_except - i / 2;
                 }
             } else {
-                mine_num = i + 1;
+                minenum = i + 1;
             }
         } else {
-            let z = (xs_cell_num - mine_num_except) * 2 - 1;
+            let z = (xs_cell_num - minenum_except) * 2 - 1;
             if i < z {
                 if i % 2 == 1 {
-                    mine_num = mine_num_except + (i + 1) / 2;
+                    minenum = minenum_except + (i + 1) / 2;
                 } else {
-                    mine_num = mine_num_except - i / 2;
+                    minenum = minenum_except - i / 2;
                 }
             } else {
-                mine_num = xs_cell_num - i - 1;
+                minenum = xs_cell_num - i - 1;
             }
         }
         // 排除显而易见不可能的情况。
-        if mine_num > r || xs_cell_num - mine_num > rn {
+        if minenum > r || xs_cell_num - minenum > rn {
             continue;
         }
         // 对每种雷数，重复尝试5次。
-        for u in 0..3 {
-            adjust_the_area_on_board(&mut b, &front_xs_0, mine_num);
+        for _u in 0..3 {
+            adjust_the_area_on_board(&mut b, &front_xs_0, minenum);
             // 以下的循环用来修正b向量
             for bb in 0..bs_0.len() {
                 for ss in 0..bs_0[bb].len() {
@@ -1014,8 +1015,8 @@ fn adjust_step(
                     return (b.clone(), true);
                 }
                 // pc.append(&mut n);
-                r -= mine_num;
-                rn -= xs_cell_num - mine_num;
+                r -= minenum;
+                rn -= xs_cell_num - minenum;
                 let a = adjust_step(&b, &bg, &n, r, rn);
                 if a.1 {
                     if !a.0.is_empty() {
@@ -1024,8 +1025,8 @@ fn adjust_step(
                 } else {
                     b = board.clone();
                     bg = board_of_game.clone();
-                    r = remain_mine_num;
-                    rn = remain_not_mine_num;
+                    r = remain_minenum;
+                    rn = remain_not_minenum;
                     // continue 'inner;
                     continue;
                 }
@@ -1039,13 +1040,13 @@ fn adjust_step(
 fn adjust_the_area_on_board(
     board: &mut Vec<Vec<i32>>,
     area_current_adjust: &Vec<Vec<(usize, usize)>>,
-    mine_num: usize,
+    minenum: usize,
 ) {
     // let row = board.len();
     // let column = board[0].len();
     let cell_num = area_current_adjust.iter().fold(0, |acc, x| acc + x.len());
-    let mut b = vec![0; cell_num - mine_num];
-    b.append(&mut vec![-1; mine_num]);
+    let mut b = vec![0; cell_num - minenum];
+    b.append(&mut vec![-1; minenum]);
 
     #[cfg(any(feature = "py", feature = "rs"))]
     let mut rng = thread_rng();
@@ -1072,7 +1073,7 @@ pub fn sample_3BVs_exp(x0: usize, y0: usize, n: usize) -> [usize; 382] {
     // 16线程计算
     let n0 = n / 16;
     let mut threads = vec![];
-    for i in 0..16 {
+    for _i in 0..16 {
         let join_item = thread::spawn(move || -> [usize; 382] { laymine_study_exp(x0, y0, n0) });
         threads.push(join_item);
     }
@@ -1091,7 +1092,7 @@ fn laymine_study_exp(x0: usize, y0: usize, n: usize) -> [usize; 382] {
     // let area: usize = 16 * 30 - 1;
     let pointer = x0 + y0 * 16;
     let mut bv_record = [0; 382];
-    for id in 0..n {
+    for _id in 0..n {
         let mut Board1Dim = [0; 479];
         for i in 380..479 {
             Board1Dim[i] = -1;
@@ -1234,8 +1235,8 @@ pub fn OBR_board(
 
 // 扫雷AI
 #[cfg(any(feature = "py", feature = "rs"))]
-pub fn agent_step(board_of_game: Vec<Vec<i32>>, pos: (usize, usize)) -> Result<usize, String> {
-    let board_of_game_input: Vec<Vec<f32>> = board_of_game
+pub fn agent_step(board_of_game: Vec<Vec<i32>>, _pos: (usize, usize)) -> Result<usize, String> {
+    let _board_of_game_input: Vec<Vec<f32>> = board_of_game
         .into_iter()
         .map(|x| x.into_iter().map(|y| y as f32).collect::<Vec<f32>>())
         .collect_vec();
@@ -1263,7 +1264,7 @@ pub fn agent_step(board_of_game: Vec<Vec<i32>>, pos: (usize, usize)) -> Result<u
         .into();
     let image_2: Tensor = Array::from_shape_vec((1, 2), vec![0f32; 2]).unwrap().into();
     let ans = model.run(tvec!(image, image_2)).unwrap();
-    let aaa = ans[0].to_array_view::<i32>().unwrap();
+    let _aaa = ans[0].to_array_view::<i32>().unwrap();
     // println!("{:?}", aaa);
     Ok(30)
 }

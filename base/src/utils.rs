@@ -8,7 +8,7 @@ use std::cmp::{max, min};
 #[cfg(feature = "js")]
 use getrandom::getrandom;
 
-use crate::board;
+
 
 use crate::safe_board;
 use crate::safe_board::BoardSize;
@@ -179,11 +179,11 @@ pub fn refresh_matrixs(
     // 根据游戏局面分块生成矩阵。分段的数据结构是最外面再套一层Vec
     // board_of_game必须且肯定是正确标雷的游戏局面，但不需要标全，不能标非雷
     // 矩阵的行和列都可能有重复
-    // unknow_block是未知格子数量, is_mine_num是标出的是雷的数量
+    // unknow_block是未知格子数量, is_minenum是标出的是雷的数量
     let row = board_of_game.len();
     let column = board_of_game[0].len();
     let mut unknow_block = 0;
-    let mut is_mine_num = 0;
+    let mut is_minenum = 0;
     let mut matrix_as = vec![];
     let mut matrix_xs = vec![];
     let mut matrix_bs = vec![];
@@ -213,7 +213,7 @@ pub fn refresh_matrixs(
                     unknow_block += 1;
                 }
             } else if board_of_game[i][j] == 11 {
-                is_mine_num += 1;
+                is_minenum += 1;
             }
         }
     }
@@ -296,7 +296,7 @@ pub fn refresh_matrixs(
         all_cell.remove(0);
         p += 1;
     }
-    (matrix_as, matrix_xs, matrix_bs, unknow_block, is_mine_num)
+    (matrix_as, matrix_xs, matrix_bs, unknow_block, is_minenum)
 }
 
 /// 根据游戏局面生成矩阵，分段、且分块。输入的必须保证是合法的游戏局面。  
@@ -455,35 +455,35 @@ impl js_shuffle for Vec<i32> {
 /// 通用标准埋雷引擎。
 /// - 标准埋雷规则：起手位置非雷，其余位置的雷服从均匀分布。
 /// - 输出：二维的局面，其中0代表空，1~8代表1~8，-1代表雷。
-pub fn laymine(row: usize, column: usize, MineNum: usize, X0: usize, Y0: usize) -> Vec<Vec<i32>> {
+pub fn laymine(row: usize, column: usize, minenum: usize, X0: usize, Y0: usize) -> Vec<Vec<i32>> {
     let area: usize = row * column - 1;
-    let mut Board1Dim: Vec<i32> = vec![];
-    Board1Dim.reserve(area);
-    Board1Dim = vec![0; area - MineNum];
-    Board1Dim.append(&mut vec![-1; MineNum]);
+    let mut board1_dim: Vec<i32> = vec![];
+    board1_dim.reserve(area);
+    board1_dim = vec![0; area - minenum];
+    board1_dim.append(&mut vec![-1; minenum]);
 
     #[cfg(any(feature = "py", feature = "rs"))]
     let mut rng = thread_rng();
 
     #[cfg(any(feature = "py", feature = "rs"))]
-    Board1Dim.shuffle(&mut rng);
+    board1_dim.shuffle(&mut rng);
 
     #[cfg(feature = "js")]
-    Board1Dim.shuffle_();
+    board1_dim.shuffle_();
 
-    let mut Board1Dim_2: Vec<i32> = vec![];
-    Board1Dim_2.reserve(area + 1);
+    let mut board1_dim_2: Vec<i32> = vec![];
+    board1_dim_2.reserve(area + 1);
     let pointer = X0 + Y0 * row;
     for i in 0..pointer {
-        Board1Dim_2.push(Board1Dim[i]);
+        board1_dim_2.push(board1_dim[i]);
     }
-    Board1Dim_2.push(0);
+    board1_dim_2.push(0);
     for i in pointer..area {
-        Board1Dim_2.push(Board1Dim[i]);
+        board1_dim_2.push(board1_dim[i]);
     }
     let mut Board: Vec<Vec<i32>> = vec![vec![0; column]; row];
     for i in 0..(area + 1) {
-        if Board1Dim_2[i] < 0 {
+        if board1_dim_2[i] < 0 {
             let x = i % row;
             let y = i / row;
             Board[x][y] = -1;
@@ -505,7 +505,7 @@ pub fn laymine(row: usize, column: usize, MineNum: usize, X0: usize, Y0: usize) 
 pub fn laymine_op(
     row: usize,
     column: usize,
-    MineNum: usize,
+    minenum: usize,
     X0: usize,
     Y0: usize,
 ) -> Vec<Vec<i32>> {
@@ -522,17 +522,17 @@ pub fn laymine_op(
         }
     }
     let area = row * column - areaOp;
-    let mut Board1Dim = vec![0; area - MineNum];
-    Board1Dim.append(&mut vec![-1; MineNum]);
+    let mut board1_dim = vec![0; area - minenum];
+    board1_dim.append(&mut vec![-1; minenum]);
 
     #[cfg(any(feature = "py", feature = "rs"))]
     let mut rng = thread_rng();
 
     #[cfg(any(feature = "py", feature = "rs"))]
-    Board1Dim.shuffle(&mut rng);
+    board1_dim.shuffle(&mut rng);
 
     #[cfg(feature = "js")]
-    Board1Dim.shuffle_();
+    board1_dim.shuffle_();
 
     let mut Board = vec![vec![0; column]; row];
     let mut skip = 0;
@@ -543,7 +543,7 @@ pub fn laymine_op(
             skip += 1;
             continue;
         }
-        if Board1Dim[i - skip] < 0 {
+        if board1_dim[i - skip] < 0 {
             Board[x][y] = -1;
             for j in max(1, x) - 1..min(row, x + 2) {
                 for k in max(1, y) - 1..min(column, y + 2) {
@@ -885,12 +885,12 @@ pub fn enum_comb(
     enum_comb_table
 }
 
-fn enumerateSub(Col: usize, MineNum: usize) -> Vec<Vec<usize>> {
+fn enumerateSub(Col: usize, minenum: usize) -> Vec<Vec<usize>> {
     let mut Out: Vec<Vec<usize>> = vec![];
-    for i in (0..Col).combinations(MineNum) {
+    for i in (0..Col).combinations(minenum) {
         Out.push(vec![0; Col]);
         let len = Out.len() - 1;
-        for j in 0..MineNum {
+        for j in 0..minenum {
             Out[len][i[j]] = 1;
         }
     }
@@ -918,7 +918,7 @@ pub fn enuOneStep(mut AllTable: Vec<Vec<usize>>, TableId: Vec<usize>, b: i32) ->
             DelId.push(i);
             continue;
         }
-        let mut AddedTable = enumerateSub(NewId.len(), ExtraMine as usize);
+        let AddedTable = enumerateSub(NewId.len(), ExtraMine as usize);
         for t in 0..NewId.len() {
             AllTable[i][NewId[t]] = AddedTable[0][t];
         }
@@ -1072,7 +1072,7 @@ pub fn cal_table_minenum_recursion(
     // println!("cell_to_equation_map = {:?}; equation_to_cell_map = {:?}", cell_to_equation_map, equation_to_cell_map);
 
     let mut table_cell_minenum: Vec<Vec<usize>> = vec![vec![0; cells_num]; cells_num_total + 1];
-    
+
     // println!("{:?}", matrixA_squeeze);
     cal_table_minenum_recursion_step(
         0,
@@ -1522,16 +1522,16 @@ pub fn legalize_board(board: &mut Vec<Vec<i32>>) {
                 // 把局面中明显未定义的数字改成未打开
                 board[x][y] = 10;
             } else if board[x][y] >= 1 && board[x][y] <= 8 {
-                let mut mine_num_limit = 0;
+                let mut minenum_limit = 0;
                 for i in max(1, x) - 1..min(row, x + 2) {
                     for j in max(1, y) - 1..min(column, y + 2) {
                         if board[i][j] == 10 || board[i][j] == 11 {
                             // 局面中的数字不能大于周围的未知格数
-                            mine_num_limit += 1;
+                            minenum_limit += 1;
                         }
                     }
                 }
-                board[x][y] = min(board[x][y], mine_num_limit);
+                board[x][y] = min(board[x][y], minenum_limit);
             }
         }
     }

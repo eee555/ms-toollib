@@ -1,9 +1,9 @@
-use crate::miscellaneous::s_to_ms;
+
 use crate::utils::cal_board_numbers;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
-use crate::MouseState;
-use std::cmp::{max, min};
-use std::ops::Index;
+
+
+
 
 /// mvf录像解析器。  
 /// - 功能：解析mvf格式的录像，有详细分析录像的方法。  
@@ -112,12 +112,12 @@ impl MvfVideo {
         let mut bit = [0u8; 40];
         let mut e = [0u8; 5];
 
-        let month = self.data.get_u8()?;
-        let day = self.data.get_u8()?;
-        let year = self.data.get_u16()?;
-        let hour = self.data.get_u8()?;
-        let minute = self.data.get_u8()?;
-        let second = self.data.get_u8()?;
+        let _month = self.data.get_u8()?;
+        let _day = self.data.get_u8()?;
+        let _year = self.data.get_u16()?;
+        let _hour = self.data.get_u8()?;
+        let _minute = self.data.get_u8()?;
+        let _second = self.data.get_u8()?;
 
         // //Next 2 bytes are Level and Mode
         self.data.level = self.data.get_u8()? + 2;
@@ -309,7 +309,7 @@ impl MvfVideo {
         self.data.can_analyse = true;
         let mut c = self.data.get_u8()?;
         let d = self.data.get_u8()?;
-        let size: usize; // 动作总数量
+        let _size: usize; // 动作总数量
         if c == 0x11 && d == 0x4D {
             self.data.offset += 25;
             c = self.data.get_u8()?;

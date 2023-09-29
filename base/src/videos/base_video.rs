@@ -439,7 +439,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.game_board_stream.push(first_game_board);
         for ide in 0..self.video_action_state_recorder.len() {
             // 控制svi的生命周期
-            let mut svi = &mut self.video_action_state_recorder[ide];
+            let svi = &mut self.video_action_state_recorder[ide];
             svi.prior_game_board_id = self.game_board_stream.len() - 1;
             if svi.mouse != "mv" {
                 let old_state = b.game_board_state;
@@ -506,7 +506,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
                             break;
                         };
                     }
-                    let mut svi = &mut self.video_action_state_recorder[ide];
+                    let svi = &mut self.video_action_state_recorder[ide];
                     svi.path = svi_1_path
                         + ((svi.y as f64 - svi_1_y as f64).powf(2.0)
                             + (svi.x as f64 - svi_1_x as f64).powf(2.0))

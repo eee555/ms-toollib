@@ -1,6 +1,4 @@
-
-
-use crate::utils::{cal_board_numbers};
+use crate::utils::cal_board_numbers;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
 
 /// rmv录像解析器。  
@@ -35,10 +33,10 @@ impl RmvVideo {
         }
     }
     #[cfg(feature = "js")]
-    pub fn new(video_data: Vec<u8>) -> RmvVideo {
+    pub fn new(video_data: Vec<u8>, file_name: &str) -> RmvVideo {
         RmvVideo {
             file_name: file_name.to_string(),
-            data: BaseVideo::new(video_data),
+            data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
         }
     }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
@@ -164,12 +162,14 @@ impl RmvVideo {
             for _ in 0..num_pre_flags {
                 let c = self.data.get_u8()? as u16;
                 let d = self.data.get_u8()? as u16;
-                self.data.video_action_state_recorder.push(VideoActionStateRecorder {
-                    mouse: "pf".to_string(),
-                    x: d * 16,
-                    y: c * 16,
-                    ..VideoActionStateRecorder::default()
-                });
+                self.data
+                    .video_action_state_recorder
+                    .push(VideoActionStateRecorder {
+                        mouse: "pf".to_string(),
+                        x: d * 16,
+                        y: c * 16,
+                        ..VideoActionStateRecorder::default()
+                    });
             }
         }
 
@@ -201,30 +201,34 @@ impl RmvVideo {
                     }
                     if first_op_flag {
                         first_op_flag = false;
-                        self.data.video_action_state_recorder.push(VideoActionStateRecorder {
+                        self.data
+                            .video_action_state_recorder
+                            .push(VideoActionStateRecorder {
+                                time: time as f64 / 1000.0,
+                                mouse: "lc".to_string(),
+                                x,
+                                y,
+                                ..VideoActionStateRecorder::default()
+                            });
+                    }
+                    self.data
+                        .video_action_state_recorder
+                        .push(VideoActionStateRecorder {
                             time: time as f64 / 1000.0,
-                            mouse: "lc".to_string(),
-                            x,
-                            y,
+                            mouse: match c {
+                                1 => "mv".to_string(),
+                                2 => "lc".to_string(),
+                                3 => "lr".to_string(),
+                                4 => "rc".to_string(),
+                                5 => "rr".to_string(),
+                                6 => "mc".to_string(),
+                                7 => "mr".to_string(),
+                                _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
+                            },
+                            x: x,
+                            y: y,
                             ..VideoActionStateRecorder::default()
                         });
-                    }
-                    self.data.video_action_state_recorder.push(VideoActionStateRecorder {
-                        time: time as f64 / 1000.0,
-                        mouse: match c {
-                            1 => "mv".to_string(),
-                            2 => "lc".to_string(),
-                            3 => "lr".to_string(),
-                            4 => "rc".to_string(),
-                            5 => "rr".to_string(),
-                            6 => "mc".to_string(),
-                            7 => "mr".to_string(),
-                            _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
-                        },
-                        x: x,
-                        y: y,
-                        ..VideoActionStateRecorder::default()
-                    });
                 }
             } else if c == 8 {
                 return Err(ErrReadVideoReason::InvalidParams);
@@ -236,7 +240,9 @@ impl RmvVideo {
                 return Err(ErrReadVideoReason::InvalidParams);
             }
         }
-        self.data.set_rtime(self.data.video_action_state_recorder.last().unwrap().time).unwrap();
+        self.data
+            .set_rtime(self.data.video_action_state_recorder.last().unwrap().time)
+            .unwrap();
         self.data.software = "Viennasweeper".as_bytes().to_vec();
         self.data.can_analyse = true;
         return Ok(());

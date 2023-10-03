@@ -1,3 +1,4 @@
+#[cfg(any(feature = "py", feature = "rs"))]
 use rand::Rng;
 
 
@@ -14,6 +15,7 @@ use rand::Rng;
 //     SafeBoard::new(board)
 // }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 fn encode(v: i32, rng: &mut rand::rngs::ThreadRng) -> (i32, i32, i32) {
     let a = rng.gen_range(-2_0000_0000i32..2_0000_0001);
     let b = rng.gen_range(-1_0000i32..1_0001);
@@ -24,6 +26,7 @@ fn encode(v: i32, rng: &mut rand::rngs::ThreadRng) -> (i32, i32, i32) {
     (a, b, c)
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 fn decode(a: i32, b: i32, c: i32) -> i32 {
     let mut t = (a + b + c) % 20;
     if t < 0 {
@@ -51,6 +54,7 @@ pub struct SafeBoard {
     counter: usize,
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl SafeBoardRow {
     pub fn new(v: Vec<i32>) -> SafeBoardRow {
         let mut rng = rand::thread_rng();
@@ -84,6 +88,7 @@ impl SafeBoardRow {
     }
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl SafeBoard {
     pub fn new(v: Vec<Vec<i32>>) -> SafeBoard {
         let mut safe_board = vec![];
@@ -117,6 +122,7 @@ impl SafeBoard {
     }
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl std::ops::Index<usize> for SafeBoardRow {
     type Output = i32;
     fn index(&self, index: usize) -> &Self::Output {
@@ -153,6 +159,7 @@ impl std::ops::Index<usize> for SafeBoardRow {
 //     }
 // }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl Iterator for SafeBoardRow {
     type Item = i32;
     fn next(&mut self) -> Option<Self::Item> {
@@ -170,6 +177,7 @@ impl Iterator for SafeBoardRow {
     }
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl ExactSizeIterator for SafeBoardRow {
     fn len(&self) -> usize {
         self.value_1.len()
@@ -233,6 +241,7 @@ impl BoardSize for &Vec<Vec<i32>> {
     }
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl BoardSize for SafeBoard {
     fn get_row(&self) -> usize {
         self.value.len()
@@ -242,6 +251,7 @@ impl BoardSize for SafeBoard {
     }
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl BoardSize for &SafeBoard {
     fn get_row(&self) -> usize {
         self.value.len()

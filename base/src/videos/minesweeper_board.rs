@@ -83,6 +83,7 @@ impl Default for MinesweeperBoard<Vec<Vec<i32>>> {
     }
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl Default for MinesweeperBoard<SafeBoard> {
     fn default() -> Self {
         MinesweeperBoard {
@@ -140,6 +141,7 @@ impl MinesweeperBoard<Vec<Vec<i32>>> {
     }
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl MinesweeperBoard<SafeBoard> {
     pub fn new(board: SafeBoard) -> MinesweeperBoard<SafeBoard> {
         let row = board.get_row();
@@ -520,6 +522,7 @@ impl<T> MinesweeperBoard<T> {
                         if self.game_board[pos.0][pos.1] == 10 {
                             self.game_board_state = GameBoardState::Playing;
                         } else {
+                            self.mouse_state = MouseState::UpUp;
                             return Ok(0);
                         }
                     }
@@ -596,6 +599,7 @@ impl<T> MinesweeperBoard<T> {
             GameBoardState::Playing => {}
             _ => return Ok(0),
         }
+        // 状态为playing，就继续往下走
         match e {
             "lc" => match self.mouse_state {
                 MouseState::UpUp => self.mouse_state = MouseState::DownUp,

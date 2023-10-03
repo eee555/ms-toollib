@@ -1,7 +1,8 @@
 ﻿use ms_toollib as ms;
 
+// cargo install wasm-pack
+// cargo install wasm-bindgen-cli
 // cargo generate --git https://github.com/rustwasm/wasm-pack-template
-// wasm-pack build
 // npm init wasm-app www
 // cd www
 // npm install
@@ -13,6 +14,10 @@
 // 打包给webpack等bundler使用：wasm-pack build
 // 打包给nodejs使用：wasm-pack build --target nodejs
 // 发布wasm-pack publish
+// 发布wasm-pack publish --target nodejs
+// npm config set registry https://registry.npmmirror.com/
+// npm config set registry https://registry.npm.taobao.org/
+// npm config set registry https://registry.npmjs.org/
 
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -51,7 +56,7 @@ pub fn cal3BV(board_json: &str) -> i32 {
                 .collect::<Vec<_>>(),
         );
     }
-    ms::cal3BV(&res) as i32
+    ms::cal_bbbv(&res) as i32
 }
 
 #[wasm_bindgen]
@@ -71,7 +76,7 @@ pub fn cal_op(board_json: &str) -> i32 {
                 .collect::<Vec<_>>(),
         );
     }
-    ms::cal_op(res) as i32
+    ms::cal_op(&res) as i32
 }
 
 #[wasm_bindgen]

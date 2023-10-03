@@ -1,9 +1,5 @@
-
 use crate::utils::cal_board_numbers;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
-
-
-
 
 /// mvf录像解析器。  
 /// - 功能：解析mvf格式的录像，有详细分析录像的方法。  
@@ -37,10 +33,10 @@ impl MvfVideo {
         }
     }
     #[cfg(feature = "js")]
-    pub fn new(video_data: Vec<u8>) -> MvfVideo {
+    pub fn new(video_data: Vec<u8>, file_name: &str) -> MvfVideo {
         MvfVideo {
             file_name: file_name.to_string(),
-            data: BaseVideo::new(video_data),
+            data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
         }
     }
     fn read_board(&mut self, add: i32) -> Result<(), ErrReadVideoReason> {

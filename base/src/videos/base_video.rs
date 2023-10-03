@@ -12,6 +12,7 @@ use std::fs;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use crate::safe_board::{BoardSize, SafeBoard};
+
 use crate::{GameBoardState, MinesweeperBoard, MouseState};
 
 /// 读录像文件失败的原因
@@ -363,6 +364,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
     }
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl Default for BaseVideo<SafeBoard> {
     fn default() -> Self {
         BaseVideo {
@@ -607,6 +609,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
     }
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl BaseVideo<SafeBoard> {
     /// 重置游戏状态等，不重置标识等很多局都不会变的数据。点脸等，重开。
     pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
@@ -733,10 +736,10 @@ impl<T> BaseVideo<T> {
         }
     }
     #[cfg(feature = "js")]
-    pub fn new(video_data: Vec<u8>) -> BaseVideo {
+    pub fn new(raw_data: Vec<u8>) -> BaseVideo<Vec<Vec<i32>>> {
         // video_data = video_data.into_vec();
         BaseVideo {
-            video_data,
+            raw_data,
             ..BaseVideo::default()
         }
     }

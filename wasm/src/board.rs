@@ -5,8 +5,12 @@ use wasm_bindgen::prelude::*;
 // 局面自动机
 #[wasm_bindgen(inspectable)]
 pub struct MinesweeperBoard {
-    core: ms::MinesweeperBoard,
+    core: ms::MinesweeperBoard<Vec<Vec<i32>>>,
 }
+
+#[wasm_bindgen]
+pub struct CursorPos(pub u16, pub u16);
+
 #[wasm_bindgen]
 impl MinesweeperBoard {
     pub fn new(board: &str) -> MinesweeperBoard {
@@ -53,20 +57,20 @@ impl MinesweeperBoard {
         self.core.right as u32
     }
     #[wasm_bindgen(getter)]
-    pub fn get_chording(&self) -> u32 {
-        self.core.chording as u32
+    pub fn get_double(&self) -> u32 {
+        self.core.double as u32
     }
     #[wasm_bindgen(getter)]
-    pub fn get_ces(&self) -> u32 {
-        self.core.ces as u32
+    pub fn get_ce(&self) -> u32 {
+        self.core.ce as u32
     }
     #[wasm_bindgen(getter)]
     pub fn get_flag(&self) -> u32 {
         self.core.flag as u32
     }
     #[wasm_bindgen(getter)]
-    pub fn get_solved3BV(&self) -> u32 {
-        self.core.solved3BV as u32
+    pub fn get_bbbv_solved(&self) -> u32 {
+        self.core.bbbv_solved as u32
     }
     #[wasm_bindgen(getter)]
     pub fn get_row(&self) -> u32 {
@@ -83,6 +87,8 @@ impl MinesweeperBoard {
             ms::GameBoardState::Playing => 2,
             ms::GameBoardState::Win => 3,
             ms::GameBoardState::Loss => 4,
+            ms::GameBoardState::PreFlaging => 5,
+            ms::GameBoardState::Display => 6,
         }
     }
     #[wasm_bindgen(getter)]
@@ -100,190 +106,276 @@ impl MinesweeperBoard {
     }
 }
 
-
-
-
-
 #[wasm_bindgen(inspectable)]
 pub struct AvfVideo {
     core: ms::AvfVideo,
 }
+
 #[wasm_bindgen]
 impl AvfVideo {
-    pub fn new(data: Box<[u8]>) -> AvfVideo {
+    #[wasm_bindgen(constructor)]
+    pub fn new(data: Box<[u8]>, file_name: &str) -> AvfVideo {
         let data = data.into_vec();
         AvfVideo {
-            core: ms::AvfVideo::new(data),
+            core: ms::AvfVideo::new(data, file_name),
         }
     }
     pub fn parse_video(&mut self) {
         self.core.parse_video().unwrap();
     }
     pub fn analyse(&mut self) {
-        self.core.analyse();
+        self.core.data.analyse();
     }
     // 用不到先不写
     // pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
     //     self.core.analyse_for_features(controller);
     // }
     #[wasm_bindgen(getter)]
+    pub fn get_raw_data(&self) -> Vec<u8> {
+        self.core.data.get_raw_data().unwrap()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_time(&self) -> f64 {
+        self.core.data.get_time()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_software(&self) -> Vec<u8> {
+        self.core.data.software.clone()
+    }
+    #[wasm_bindgen(getter)]
     pub fn get_row(&self) -> u32 {
-        self.core.height as u32
+        self.core.data.height as u32
     }
     #[wasm_bindgen(getter)]
     pub fn get_column(&self) -> u32 {
-        self.core.width as u32
+        self.core.data.width as u32
     }
     #[wasm_bindgen(getter)]
-    pub fn get_mine_num(&self) -> u32 {
-        self.core.mine_num as u32
+    pub fn get_level(&self) -> u32 {
+        self.core.data.level as u32
     }
     #[wasm_bindgen(getter)]
-    pub fn get_bbbv(&self) -> u32 {
-        self.core.static_params.bbbv as u32
+    pub fn get_mode(&self) -> u16 {
+        self.core.data.mode
     }
     #[wasm_bindgen(getter)]
-    pub fn get_player(&self) -> String {
-        self.core.player.clone()
+    pub fn get_is_completed(&self) -> bool {
+        self.core.data.is_completed
     }
     #[wasm_bindgen(getter)]
-    pub fn get_openings(&self) -> u32 {
-        self.core.static_params.openings as u32
+    pub fn get_is_offical(&self) -> bool {
+        self.core.data.is_offical
     }
     #[wasm_bindgen(getter)]
-    pub fn get_islands(&self) -> u32 {
-        self.core.static_params.islands as u32
+    pub fn get_is_fair(&self) -> bool {
+        self.core.data.is_fair
     }
     #[wasm_bindgen(getter)]
-    pub fn get_hizi(&self) -> u32 {
-        self.core.static_params.hizi as u32
+    pub fn get_mine_num(&self) -> usize {
+        self.core.data.mine_num
     }
     #[wasm_bindgen(getter)]
-    pub fn get_cell0(&self) -> u32 {
-        self.core.static_params.cell0 as u32
+    pub fn get_player_designator(&self) -> Vec<u8> {
+        self.core.data.player_designator.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_cell1(&self) -> u32 {
-        self.core.static_params.cell1 as u32
+    pub fn get_race_designator(&self) -> Vec<u8> {
+        self.core.data.race_designator.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_cell2(&self) -> u32 {
-        self.core.static_params.cell2 as u32
+    pub fn get_uniqueness_designator(&self) -> Vec<u8> {
+        self.core.data.uniqueness_designator.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_cell3(&self) -> u32 {
-        self.core.static_params.cell3 as u32
+    pub fn get_country(&self) -> Vec<u8> {
+        self.core.data.country.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_cell4(&self) -> u32 {
-        self.core.static_params.cell4 as u32
+    pub fn get_bbbv(&self) -> usize {
+        self.core.data.static_params.bbbv
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_start_time(&self) -> Vec<u8> {
+        self.core.data.start_time.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_end_time(&self) -> Vec<u8> {
+        self.core.data.end_time.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_op(&self) -> usize {
+        self.core.data.static_params.op
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_isl(&self) -> usize {
+        self.core.data.static_params.isl
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_hizi(&self) -> usize {
+        self.core.data.static_params.hizi
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_cell0(&self) -> usize {
+        self.core.data.static_params.cell0
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_cell1(&self) -> usize {
+        self.core.data.static_params.cell1
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_cell2(&self) -> usize {
+        self.core.data.static_params.cell2
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_cell3(&self) -> usize {
+        self.core.data.static_params.cell3
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_cell4(&self) -> usize {
+        self.core.data.static_params.cell4
     }
     #[wasm_bindgen(getter)]
     pub fn get_cell5(&self) -> u32 {
-        self.core.static_params.cell5 as u32
+        self.core.data.static_params.cell5 as u32
     }
     #[wasm_bindgen(getter)]
     pub fn get_cell6(&self) -> u32 {
-        self.core.static_params.cell6 as u32
+        self.core.data.static_params.cell6 as u32
     }
     #[wasm_bindgen(getter)]
     pub fn get_cell7(&self) -> u32 {
-        self.core.static_params.cell7 as u32
+        self.core.data.static_params.cell7 as u32
     }
     #[wasm_bindgen(getter)]
     pub fn get_cell8(&self) -> u32 {
-        self.core.static_params.cell8 as u32
+        self.core.data.static_params.cell8 as u32
     }
     #[wasm_bindgen(getter)]
-    pub fn get_r_time(&self) -> f64 {
-        self.core.dynamic_params.r_time
+    pub fn get_rtime(&self) -> f64 {
+        self.core.data.get_rtime().unwrap()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_rtime_ms(&self) -> u32 {
+        self.core.data.get_rtime_ms().unwrap()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_etime(&self) -> f64 {
+        self.core.data.get_etime().unwrap()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_video_time(&self) -> f64 {
+        self.core.data.get_video_time().unwrap()
     }
     #[wasm_bindgen(getter)]
     pub fn get_bbbv_s(&self) -> f64 {
-        self.core.dynamic_params.bbbv_s
+        self.core.data.get_bbbv_s().unwrap()
     }
     #[wasm_bindgen(getter)]
     pub fn get_stnb(&self) -> f64 {
-        self.core.dynamic_params.stnb
+        self.core.data.get_stnb().unwrap()
     }
     #[wasm_bindgen(getter)]
     pub fn get_rqp(&self) -> f64 {
-        self.core.dynamic_params.rqp
+        self.core.data.get_rqp().unwrap()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_lefts(&self) -> u32 {
-        self.core.dynamic_params.lefts as u32
+    pub fn get_left(&self) -> usize {
+        self.core.data.get_left()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_rights(&self) -> u32 {
-        self.core.dynamic_params.rights as u32
+    pub fn get_right(&self) -> usize {
+        self.core.data.get_right()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_chordings(&self) -> u32 {
-        self.core.dynamic_params.chordings as u32
+    pub fn get_double(&self) -> usize {
+        self.core.data.get_double()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_clicks(&self) -> u32 {
-        self.core.dynamic_params.clicks as u32
+    pub fn get_cl(&self) -> usize {
+        self.core.data.get_cl()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_flags(&self) -> u32 {
-        self.core.dynamic_params.flags as u32
+    pub fn get_flag(&self) -> usize {
+        self.core.data.get_flag()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_ces(&self) -> u32 {
-        self.core.dynamic_params.ces as u32
+    pub fn get_bbbv_solved(&self) -> usize {
+        self.core.data.get_bbbv_solved().unwrap()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_lefts_s(&self) -> f64 {
-        self.core.dynamic_params.lefts_s
+    pub fn get_ce(&self) -> usize {
+        self.core.data.get_ce().unwrap()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_rights_s(&self) -> f64 {
-        self.core.dynamic_params.rights_s
+    pub fn get_left_s(&self) -> f64 {
+        self.core.data.get_left_s()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_chordings_s(&self) -> f64 {
-        self.core.dynamic_params.chordings_s
+    pub fn get_right_s(&self) -> f64 {
+        self.core.data.get_right_s()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_clicks_s(&self) -> f64 {
-        self.core.dynamic_params.clicks_s
+    pub fn get_double_s(&self) -> f64 {
+        self.core.data.get_double_s()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_ces_s(&self) -> f64 {
-        self.core.dynamic_params.ces_s
+    pub fn get_cl_s(&self) -> f64 {
+        self.core.data.get_cl_s()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_events_len(&self) -> u32 {
-        self.core.events.len() as u32
+    pub fn get_flag_s(&self) -> f64 {
+        self.core.data.get_flag_s()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_path(&self) -> f64 {
+        self.core.data.get_path()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_ce_s(&self) -> f64 {
+        self.core.data.get_ce_s().unwrap()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_ioe(&self) -> f64 {
+        self.core.data.get_ioe().unwrap()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_thrp(&self) -> f64 {
+        self.core.data.get_thrp().unwrap()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_corr(&self) -> f64 {
+        self.core.data.get_corr().unwrap()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_events_len(&self) -> usize {
+        self.core.data.video_action_state_recorder.len()
     }
     pub fn events_time(&self, index: usize) -> f64 {
-        self.core.events[index].time
+        self.core.data.video_action_state_recorder[index].time
     }
     pub fn events_mouse(&self, index: usize) -> String {
-        self.core.events[index].mouse.clone()
+        self.core.data.video_action_state_recorder[index].mouse.clone()
     }
     pub fn events_x(&self, index: usize) -> u32 {
-        self.core.events[index].x as u32
+        self.core.data.video_action_state_recorder[index].x as u32
     }
     pub fn events_y(&self, index: usize) -> u32 {
-        self.core.events[index].y as u32
+        self.core.data.video_action_state_recorder[index].y as u32
     }
     pub fn events_useful_level(&self, index: usize) -> u32 {
-        self.core.events[index].useful_level as u32
+        self.core.data.video_action_state_recorder[index].useful_level as u32
     }
     // 这里用不到先不往下写
-    // pub fn events_posteriori_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
+    // pub fn events_posteriori_game_board(&self, index: usize) -> PyGameBoard> {
     //     let mut t = PyGameBoard::new(self.core.mine_num);
     //     t.set_core(self.core.events[index].posteriori_game_board.clone());
     //     Ok(t)
     // }
-    pub fn events_comments(&self, index: usize) -> String {
-        self.core.events[index].comments.clone()
-    }
+    // pub fn events_comments(&self, index: usize) -> String {
+    //     self.core.events[index].comments.clone()
+    // }
     pub fn events_mouse_state(&self, index: usize) -> u32 {
-        match self.core.events[index].mouse_state {
+        match self.core.data.video_action_state_recorder[index].mouse_state {
             ms::MouseState::UpUp => 1,
             ms::MouseState::UpDown => 2,
             ms::MouseState::UpDownNotFlag => 3,
@@ -296,23 +388,23 @@ impl AvfVideo {
     }
     #[wasm_bindgen(getter)]
     pub fn get_current_event_id(&self) -> u32 {
-        self.core.current_event_id as u32
+        self.core.data.current_event_id as u32
     }
     #[wasm_bindgen(setter)]
     pub fn set_current_event_id(&mut self, id: usize) {
-        self.core.current_event_id = id
+        self.core.data.current_event_id = id
     }
     #[wasm_bindgen(getter)]
     pub fn get_game_board(&self) -> String {
-        vec2json(&self.core.get_game_board())
+        vec2json(&self.core.data.get_game_board())
     }
     #[wasm_bindgen(getter)]
     pub fn get_game_board_poss(&mut self) -> String {
-        vec2json(&self.core.get_game_board_poss())
+        vec2json(&self.core.data.get_game_board_poss())
     }
     #[wasm_bindgen(getter)]
     pub fn get_mouse_state(&self) -> u32 {
-        match self.core.events[self.core.current_event_id].mouse_state {
+        match self.core.data.video_action_state_recorder[self.core.data.current_event_id].mouse_state {
             ms::MouseState::UpUp => 1,
             ms::MouseState::UpDown => 2,
             ms::MouseState::UpDownNotFlag => 3,
@@ -323,18 +415,30 @@ impl AvfVideo {
             ms::MouseState::Undefined => 8,
         }
     }
-    /// 局面状态（录像播放器的局面状态始终等于1，没有ready、win、fail的概念）
+    /// 局面状态
     #[wasm_bindgen(getter)]
-    pub fn get_game_board_state(&self) -> u32 {
-        1
+    pub fn get_game_board_state(&self) -> usize {
+        match self.core.data.game_board_state {
+            ms::GameBoardState::Ready => 1,
+            ms::GameBoardState::Playing => 2,
+            ms::GameBoardState::Win => 3,
+            ms::GameBoardState::Loss => 4,
+            ms::GameBoardState::PreFlaging => 5,
+            ms::GameBoardState::Display => 6,
+        }
     }
-    /// 返回当前光标的位置，播放录像用，用不到先不写
-    // #[wasm_bindgen(getter)]
-    // pub fn get_x_y(&self) -> (u32, u32) {
-    //     (self.core.events[self.core.current_event_id].x, self.core.events[self.core.current_event_id].y)
-    // }
+    /// 返回当前光标的位置，播放录像用
+    #[wasm_bindgen(getter)]
+    pub fn get_x_y(&self) -> CursorPos {
+        let (x, y) = self.core.data.get_x_y().unwrap();
+        CursorPos(x, y)
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_checksum(&self) -> Vec<u8> {
+        self.core.data.get_checksum().unwrap().to_vec()
+    }
     #[wasm_bindgen(setter)]
-    pub fn set_time(&mut self, time: f64) {
-        self.core.set_current_event_time(time);
+    pub fn set_current_time(&mut self, time: f64) {
+        self.core.data.set_current_time(time);
     }
 }

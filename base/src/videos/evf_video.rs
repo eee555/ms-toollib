@@ -35,10 +35,10 @@ impl EvfVideo {
         }
     }
     #[cfg(feature = "js")]
-    pub fn new(video_data: Vec<u8>) -> EvfVideo {
+    pub fn new(video_data: Vec<u8>, file_name: &str) -> EvfVideo {
         EvfVideo {
             file_name: file_name.to_string(),
-            data: BaseVideo::new(video_data),
+            data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
         }
     }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {

@@ -2,16 +2,23 @@
 
 use crate::board::GameBoard;
 use crate::cal_cell_nums;
-use crate::miscellaneous::{s_to_ms, time_ms_between};
+#[cfg(any(feature = "py", feature = "rs"))]
+use crate::miscellaneous::{time_ms_between};
+use crate::miscellaneous::{s_to_ms};
 use crate::utils::{cal_bbbv, cal_isl, cal_op};
 use crate::videos::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
     analyse_super_fl_local, analyse_survive_poss, analyse_vision_transfer,
 };
 use std::fs;
+#[cfg(any(feature = "py", feature = "rs"))]
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
+#[cfg(feature = "js")]
+use web_sys::console;
 
-use crate::safe_board::{BoardSize, SafeBoard};
+#[cfg(any(feature = "py", feature = "rs"))]
+use crate::safe_board::{SafeBoard};
+use crate::safe_board::{BoardSize};
 
 use crate::{GameBoardState, MinesweeperBoard, MouseState};
 
@@ -268,8 +275,10 @@ pub struct BaseVideo<T> {
     /// 游戏局面流，从一开始没有打开任何格子（包含玩家游戏前的标雷过程），到最后打开了所有
     pub game_board_stream: Vec<GameBoard>,
     /// 游戏开始的时间，由计时器控制，仅游戏时用
+    #[cfg(any(feature = "py", feature = "rs"))]
     pub video_start_instant: Instant,
     /// 第一次有效的左键抬起的时间，由计时器控制，仅游戏时用, new_before_game方法里用到，真正开始的时间
+    #[cfg(any(feature = "py", feature = "rs"))]
     pub game_start_instant: Instant,
     /// 第一次有效的左键抬起的时间，格式不同，只在录像播放模式用到
     delta_time: f64,
@@ -338,7 +347,9 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             game_board_state: GameBoardState::Display,
             video_action_state_recorder: vec![],
             game_board_stream: vec![],
+            #[cfg(any(feature = "py", feature = "rs"))]
             video_start_instant: Instant::now(),
+            #[cfg(any(feature = "py", feature = "rs"))]
             game_start_instant: Instant::now(),
             delta_time: 0.0,
             current_time: 0.0,
@@ -553,6 +564,8 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.video_dynamic_params.ioe = b.bbbv_solved as f64 / self.game_dynamic_params.cl as f64;
         self.video_dynamic_params.corr = b.ce as f64 / self.game_dynamic_params.cl as f64;
         self.video_dynamic_params.thrp = b.bbbv_solved as f64 / b.ce as f64;
+        // 最后，计算静态指标
+        self.cal_static_params();
     }
 
     /// 传入要检查的事件，会把结果记在comments字段里。
@@ -740,12 +753,14 @@ impl<T> BaseVideo<T> {
         // video_data = video_data.into_vec();
         BaseVideo {
             raw_data,
+            allow_set_rtime: true,
             ..BaseVideo::default()
         }
     }
     /// 步进
     /// - pos的单位是像素，(距离上方，距离左侧)
     /// - 如果操作发生在界外，要求转换成pos=(row*pixsize, column*pixsize)
+    #[cfg(any(feature = "py", feature = "rs"))]
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()>
     where
         T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
@@ -934,6 +949,7 @@ impl<T> BaseVideo<T> {
     //     self.game_board_state = GameBoardState::Ready;
     // }
     /// 获胜后标上所有的雷，没获胜则返回
+    #[cfg(any(feature = "py", feature = "rs"))]
     pub fn win_then_flag_all_mine(&mut self) {
         if self.minesweeper_board.game_board_state != GameBoardState::Win {
             return;
@@ -948,6 +964,7 @@ impl<T> BaseVideo<T> {
     }
     /// 失败后展示所有的雷，没失败则返回
     /// 这件事状态机不会自动做，因为有些模式失败后不标出所有的雷，如强无猜
+    #[cfg(any(feature = "py", feature = "rs"))]
     pub fn loss_then_open_all_mine(&mut self)
     where
         T: std::ops::Index<usize> + BoardSize,
@@ -967,6 +984,7 @@ impl<T> BaseVideo<T> {
         }
     }
     /// 游戏结束后，计算一批指标
+    #[cfg(any(feature = "py", feature = "rs"))]
     fn gather_params_after_game(&mut self, t: f64)
     where
         T: std::ops::Index<usize> + BoardSize,
@@ -984,6 +1002,14 @@ impl<T> BaseVideo<T> {
         self.game_dynamic_params.double_s = self.minesweeper_board.double as f64 / t;
         self.game_dynamic_params.flag_s = self.minesweeper_board.flag as f64 / t;
         self.game_dynamic_params.cl_s = self.game_dynamic_params.cl as f64 / t;
+        self.cal_static_params();
+    }
+    // 计算除fps以外的静态指标
+    fn cal_static_params(&mut self) 
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+        {
         let cell_nums = cal_cell_nums(&self.board);
         self.static_params.cell0 = cell_nums[0];
         self.static_params.cell1 = cell_nums[1];
@@ -1111,7 +1137,8 @@ impl<T> BaseVideo<T> {
         self.allow_set_rtime = false;
         Ok(0)
     }
-    /// 用于计数器上显示的时间,和arbiter一致
+    /// 用于(游戏时)计数器上显示的时间,和arbiter一致
+    #[cfg(any(feature = "py", feature = "rs"))]
     pub fn get_time(&self) -> f64 {
         match self.game_board_state {
             GameBoardState::Playing => {
@@ -1372,11 +1399,13 @@ impl<T> BaseVideo<T> {
             }
             GameBoardState::Loss | GameBoardState::Win => self.game_dynamic_params.left_s,
             GameBoardState::PreFlaging | GameBoardState::Ready => 0.0,
+            #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
                 let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
                 self.get_left() as f64 * 1000.0 / t_ms
             }
+            _ => 0.0,
         }
     }
     pub fn get_right_s(&self) -> f64 {
@@ -1389,11 +1418,13 @@ impl<T> BaseVideo<T> {
             }
             GameBoardState::Loss | GameBoardState::Win => self.game_dynamic_params.right_s,
             GameBoardState::PreFlaging | GameBoardState::Ready => 0.0,
+            #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
                 let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
                 self.get_right() as f64 * 1000.0 / t_ms
             }
+            _ => 0.0,
         }
     }
     pub fn get_double_s(&self) -> f64 {
@@ -1406,11 +1437,13 @@ impl<T> BaseVideo<T> {
             }
             GameBoardState::Loss | GameBoardState::Win => self.game_dynamic_params.double_s,
             GameBoardState::PreFlaging | GameBoardState::Ready => 0.0,
+            #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
                 let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
                 self.get_double() as f64 * 1000.0 / t_ms
             }
+            _ => 0.0,
         }
     }
     pub fn get_cl_s(&self) -> f64 {
@@ -1423,11 +1456,13 @@ impl<T> BaseVideo<T> {
             }
             GameBoardState::Loss | GameBoardState::Win => self.game_dynamic_params.cl_s,
             GameBoardState::PreFlaging | GameBoardState::Ready => 0.0,
+            #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
                 let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
                 self.get_cl() as f64 * 1000.0 / t_ms
             }
+            _ => 0.0,
         }
     }
     pub fn get_flag_s(&self) -> f64 {
@@ -1440,11 +1475,13 @@ impl<T> BaseVideo<T> {
             }
             GameBoardState::Loss | GameBoardState::Win => self.game_dynamic_params.flag_s,
             GameBoardState::PreFlaging | GameBoardState::Ready => 0.0,
+            #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
                 let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
                 self.get_flag() as f64 * 1000.0 / t_ms
             }
+            _ => 0.0,
         }
     }
     pub fn get_path(&self) -> f64 {
@@ -1656,7 +1693,7 @@ impl<T> BaseVideo<T> {
         self.video_playing_pix_size_k = pix_size as f64 / self.cell_pixel_size as f64;
     }
 }
-
+#[cfg(any(feature = "py", feature = "rs"))]
 impl<T> BaseVideo<T> {
     /// 按evf标准，编码出原始二进制数据
     pub fn generate_evf_v0_raw_data(&mut self)

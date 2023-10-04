@@ -1,6 +1,13 @@
 use crate::transfor::{json2vec, trans_opt, vec2json};
+use crate::web_sys;
 use ms_toollib as ms;
 use wasm_bindgen::prelude::*;
+
+pub fn set_panic_hook() {
+    // https://github.com/rustwasm/console_error_panic_hook#readme
+    #[cfg(feature = "console_error_panic_hook")]
+    console_error_panic_hook::set_once();
+}
 
 // 局面自动机
 #[wasm_bindgen(inspectable)]
@@ -113,13 +120,21 @@ pub struct AvfVideo {
 
 #[wasm_bindgen]
 impl AvfVideo {
-    #[wasm_bindgen(constructor)]
+    // #[wasm_bindgen]
     pub fn new(data: Box<[u8]>, file_name: &str) -> AvfVideo {
+        set_panic_hook();
         let data = data.into_vec();
         AvfVideo {
             core: ms::AvfVideo::new(data, file_name),
         }
     }
+    // pub fn new(file_name: &str) -> AvfVideo {
+    //     // web_sys::console::log_1(&"2313464".into());
+    //     set_panic_hook();
+    //     AvfVideo {
+    //         core: ms::AvfVideo::new(vec![0;200], file_name),
+    //     }
+    // }
     pub fn parse_video(&mut self) {
         self.core.parse_video().unwrap();
     }
@@ -135,24 +150,20 @@ impl AvfVideo {
         self.core.data.get_raw_data().unwrap()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_time(&self) -> f64 {
-        self.core.data.get_time()
-    }
-    #[wasm_bindgen(getter)]
     pub fn get_software(&self) -> Vec<u8> {
         self.core.data.software.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn get_row(&self) -> u32 {
-        self.core.data.height as u32
+    pub fn get_row(&self) -> usize {
+        self.core.data.height
     }
     #[wasm_bindgen(getter)]
-    pub fn get_column(&self) -> u32 {
-        self.core.data.width as u32
+    pub fn get_column(&self) -> usize {
+        self.core.data.width
     }
     #[wasm_bindgen(getter)]
-    pub fn get_level(&self) -> u32 {
-        self.core.data.level as u32
+    pub fn get_level(&self) -> u8 {
+        self.core.data.level
     }
     #[wasm_bindgen(getter)]
     pub fn get_mode(&self) -> u16 {
@@ -235,20 +246,20 @@ impl AvfVideo {
         self.core.data.static_params.cell4
     }
     #[wasm_bindgen(getter)]
-    pub fn get_cell5(&self) -> u32 {
-        self.core.data.static_params.cell5 as u32
+    pub fn get_cell5(&self) -> usize {
+        self.core.data.static_params.cell5
     }
     #[wasm_bindgen(getter)]
-    pub fn get_cell6(&self) -> u32 {
-        self.core.data.static_params.cell6 as u32
+    pub fn get_cell6(&self) -> usize {
+        self.core.data.static_params.cell6
     }
     #[wasm_bindgen(getter)]
-    pub fn get_cell7(&self) -> u32 {
-        self.core.data.static_params.cell7 as u32
+    pub fn get_cell7(&self) -> usize {
+        self.core.data.static_params.cell7
     }
     #[wasm_bindgen(getter)]
-    pub fn get_cell8(&self) -> u32 {
-        self.core.data.static_params.cell8 as u32
+    pub fn get_cell8(&self) -> usize {
+        self.core.data.static_params.cell8
     }
     #[wasm_bindgen(getter)]
     pub fn get_rtime(&self) -> f64 {
@@ -354,16 +365,18 @@ impl AvfVideo {
         self.core.data.video_action_state_recorder[index].time
     }
     pub fn events_mouse(&self, index: usize) -> String {
-        self.core.data.video_action_state_recorder[index].mouse.clone()
+        self.core.data.video_action_state_recorder[index]
+            .mouse
+            .clone()
     }
-    pub fn events_x(&self, index: usize) -> u32 {
-        self.core.data.video_action_state_recorder[index].x as u32
+    pub fn events_x(&self, index: usize) -> u16 {
+        self.core.data.video_action_state_recorder[index].x
     }
-    pub fn events_y(&self, index: usize) -> u32 {
-        self.core.data.video_action_state_recorder[index].y as u32
+    pub fn events_y(&self, index: usize) -> u16 {
+        self.core.data.video_action_state_recorder[index].y
     }
-    pub fn events_useful_level(&self, index: usize) -> u32 {
-        self.core.data.video_action_state_recorder[index].useful_level as u32
+    pub fn events_useful_level(&self, index: usize) -> u8 {
+        self.core.data.video_action_state_recorder[index].useful_level
     }
     // 这里用不到先不往下写
     // pub fn events_posteriori_game_board(&self, index: usize) -> PyGameBoard> {
@@ -387,8 +400,8 @@ impl AvfVideo {
         }
     }
     #[wasm_bindgen(getter)]
-    pub fn get_current_event_id(&self) -> u32 {
-        self.core.data.current_event_id as u32
+    pub fn get_current_event_id(&self) -> usize {
+        self.core.data.current_event_id
     }
     #[wasm_bindgen(setter)]
     pub fn set_current_event_id(&mut self, id: usize) {
@@ -404,7 +417,9 @@ impl AvfVideo {
     }
     #[wasm_bindgen(getter)]
     pub fn get_mouse_state(&self) -> u32 {
-        match self.core.data.video_action_state_recorder[self.core.data.current_event_id].mouse_state {
+        match self.core.data.video_action_state_recorder[self.core.data.current_event_id]
+            .mouse_state
+        {
             ms::MouseState::UpUp => 1,
             ms::MouseState::UpDown => 2,
             ms::MouseState::UpDownNotFlag => 3,

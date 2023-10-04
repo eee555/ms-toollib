@@ -1,6 +1,10 @@
 use crate::utils::refresh_board;
 
-use crate::safe_board::{BoardSize, SafeBoard};
+#[cfg(any(feature = "py", feature = "rs"))]
+use crate::safe_board::{SafeBoard};
+
+use crate::safe_board::{BoardSize};
+
 use std::cmp::{max, min};
 
 /// 没有时间、像素观念的局面状态机，侧重分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。  

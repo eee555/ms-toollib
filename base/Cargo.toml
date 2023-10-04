@@ -13,7 +13,7 @@ authors = ["Wang Jianing <wangjianing@88.com>"]
 
 [features]
 default = ["js"]
-js = ["getrandom"]
+js = ["getrandom", "web-sys"]
 py = ["rand", "tract-onnx"]
 rs = ["rand", "tract-onnx"]
 
@@ -24,6 +24,11 @@ optional  = true
 [dependencies.getrandom]
 version = "0.2.3"
 features = ["js"]
+optional  = true
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = ['console']
 optional  = true
 
 [dependencies.tract-onnx]

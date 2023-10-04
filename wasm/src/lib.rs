@@ -12,6 +12,7 @@
 // npm config set registry https://registry.npmjs.org
 
 // 打包给webpack等bundler使用：wasm-pack build
+// wasm-pack build --debug
 // 打包给nodejs使用：wasm-pack build --target nodejs
 // 发布wasm-pack publish
 // 发布wasm-pack publish --target nodejs
@@ -23,8 +24,9 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 
 use wasm_bindgen::prelude::*;
+use web_sys;
 mod board;
-use board::{MinesweeperBoard};
+// use board::{MinesweeperBoard,AvfVideo};
 mod transfor;
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -39,8 +41,14 @@ extern "C" {
     fn log(s: &str);
 }
 
+pub fn set_panic_hook() {
+    // https://github.com/rustwasm/console_error_panic_hook#readme
+    #[cfg(feature = "console_error_panic_hook")]
+    console_error_panic_hook::set_once();
+}
+
 #[wasm_bindgen]
-pub fn cal3BV(board_json: &str) -> i32 {
+pub fn cal_bbbv(board_json: &str) -> i32 {
     // set_panic_hook();
     let board_: serde_json::Value = serde_json::from_str(&board_json).unwrap();
     let board__ = board_.as_array().unwrap();

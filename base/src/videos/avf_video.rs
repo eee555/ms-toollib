@@ -3,6 +3,8 @@
 // use crate::utils::{cal_board_numbers};
 use std::cmp::{max, min};
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
+#[cfg(feature = "js")]
+use web_sys::console;
 
 
 /// avf录像解析器。  
@@ -162,7 +164,7 @@ impl AvfVideo {
         }
         s = str::replace(&s, ",", "."); // 有些录像小数点是逗号
         match s.parse::<f64>() {
-            Ok(v) => self.data.set_rtime(v).unwrap(),
+            Ok(v) => self.data.set_rtime(v - 1.0).unwrap(),
             Err(_) => return Err(ErrReadVideoReason::InvalidParams),
         };
         let mut buffer = [0u8; 8];

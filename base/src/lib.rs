@@ -39,7 +39,7 @@ mod miscellaneous;
 mod algorithms;
 #[cfg(any(feature = "py", feature = "rs"))]
 pub use algorithms::{laymine_solvable_thread, sample_3BVs_exp, OBR_board, agent_step};
-// #[cfg(feature = "js")]
+
 pub use algorithms::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard,
     get_all_not_and_is_mine_on_board, is_solvable, laymine_solvable, laymine_solvable_adjust,
@@ -61,7 +61,11 @@ mod OBR;
 #[cfg(any(feature = "py", feature = "rs"))]
 pub use OBR::ImageBoard;
 
+// #[cfg(any(feature = "py", feature = "rs"))]
 mod safe_board;
-pub use safe_board::{SafeBoard, SafeBoardRow};
+#[cfg(any(feature = "py", feature = "rs"))]
+use crate::safe_board::{SafeBoard};
+
+use crate::safe_board::{BoardSize};
 
 const ENUM_LIMIT: usize = 55;

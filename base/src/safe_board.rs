@@ -36,6 +36,7 @@ fn decode(a: i32, b: i32, c: i32) -> i32 {
 }
 
 /// 安全局面的行
+#[cfg(any(feature = "py", feature = "rs"))]
 #[derive(Clone, Debug)]
 pub struct SafeBoardRow {
     value_1: Vec<i32>,
@@ -47,6 +48,7 @@ pub struct SafeBoardRow {
 }
 
 /// 安全局面
+#[cfg(any(feature = "py", feature = "rs"))]
 #[derive(Clone, Debug)]
 pub struct SafeBoard {
     value: Vec<SafeBoardRow>,
@@ -184,6 +186,7 @@ impl ExactSizeIterator for SafeBoardRow {
     }
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl Iterator for SafeBoard {
     type Item = SafeBoardRow;
     fn next(&mut self) -> Option<Self::Item> {
@@ -197,6 +200,7 @@ impl Iterator for SafeBoard {
     }
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
 impl std::ops::Index<usize> for SafeBoard {
     type Output = SafeBoardRow;
     fn index(&self, index: usize) -> &Self::Output {

@@ -40,6 +40,9 @@ impl RmvVideo {
         }
     }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
+        // self.data.is_completed; // 该格式解析前不能确定是否扫完
+        self.data.is_offical = true;
+        self.data.is_fair = true;
         match self.data.get_char() {
             Ok('*') => {}
             Ok(_) => return Err(ErrReadVideoReason::FileIsNotRmv),

@@ -62,7 +62,10 @@ fn AvfVideo_works() {
     video.data.print_comments();
     video.data.set_current_time(1000.0);
     println!("solved_3BV：{:?}", video.data.get_bbbv_solved());
-    println!("thrp{:?}", video.data.get_thrp());
+    println!("thrp: {:?}", video.data.get_thrp());
+    println!("level: {:?}", video.data.level);
+    println!("is_valid: {:?}", video.data.is_valid());
+    
 }
 
 #[test]
@@ -81,6 +84,7 @@ fn RmvVideo_works() {
     println!("宽度：{:?}", video.data.width);
     println!("高度：{:?}", video.data.height);
     println!("雷数：{:?}", video.data.mine_num);
+    println!("level：{:?}", video.data.level);
     // println!("3BV：{:?}", video.s.s);
     println!("time：{:?}", video.data.get_rtime().unwrap());
     println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
@@ -93,6 +97,7 @@ fn RmvVideo_works() {
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
     // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
     // video.data.print_comments();
+    // video.data.is_valid();
 }
 
 #[test]
@@ -125,6 +130,7 @@ fn MvfVideo_works() {
     println!("宽度：{:?}", video.data.width);
     println!("高度：{:?}", video.data.height);
     println!("雷数：{:?}", video.data.mine_num);
+    println!("level：{:?}", video.data.level);
     // println!("3BV：{:?}", video.s.s);
     println!("time：{:?}", video.data.get_rtime().unwrap());
     println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());

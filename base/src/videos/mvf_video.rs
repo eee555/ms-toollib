@@ -103,7 +103,7 @@ impl MvfVideo {
     }
     fn read_097(&mut self) -> Result<(), ErrReadVideoReason> {
         // 读时间戳
-        const mult: f64 = 100000000.0;
+        const MULT: f64 = 100000000.0;
         let mut byte = [0; 40];
         let mut bit = [0u8; 40];
         let mut e = [0u8; 5];
@@ -159,25 +159,25 @@ impl MvfVideo {
 
         let magic_code = &format!(
             "{:08}",
-            ((num3 + 1000.0).cos() * mult).abs().round() as usize
+            ((num3 + 1000.0).cos() * MULT).abs().round() as usize
         );
         for i in 0..8 {
             s[i] = magic_code.chars().nth(i).unwrap();
         }
 
-        let magic_code = &format!("{:08}", ((num2.sqrt()).sin() * mult).abs().round() as usize);
+        let magic_code = &format!("{:08}", ((num2.sqrt()).sin() * MULT).abs().round() as usize);
         for i in 0..8 {
             s[i + 8] = magic_code.chars().nth(i).unwrap();
         }
 
-        let magic_code = &format!("{:08}", (num3.cos() * mult).abs().round() as usize);
+        let magic_code = &format!("{:08}", (num3.cos() * MULT).abs().round() as usize);
         for i in 0..8 {
             s[i + 16] = magic_code.chars().nth(i).unwrap();
         }
 
         let magic_code = &format!(
             "{:08}",
-            ((num1.sqrt() + 1000.0).sin() * mult).abs().round() as usize
+            ((num1.sqrt() + 1000.0).sin() * MULT).abs().round() as usize
         );
         for i in 0..8 {
             s[i + 24] = magic_code.chars().nth(i).unwrap();
@@ -185,7 +185,7 @@ impl MvfVideo {
 
         let magic_code = &format!(
             "{:08}",
-            (((num2 + 1000.0).sqrt()).cos() * mult).abs().round() as usize
+            (((num2 + 1000.0).sqrt()).cos() * MULT).abs().round() as usize
         );
         for i in 0..8 {
             s[i + 32] = magic_code.chars().nth(i).unwrap();
@@ -303,6 +303,9 @@ impl MvfVideo {
     }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
         self.data.can_analyse = true;
+        // self.data.is_completed; // 该格式解析前不能确定是否扫完
+        self.data.is_offical = true;
+        self.data.is_fair = true;
         let mut c = self.data.get_u8()?;
         let d = self.data.get_u8()?;
         let _size: usize; // 动作总数量

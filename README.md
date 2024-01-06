@@ -6,7 +6,7 @@
 - pypi.org
 - npmjs.com
 
-可在Rust、Python(Windows、Linux)、Nodejs、VUE3/Typescript、C、C++、julia等语言/平台中使用，并提供案例，可快速上手。项目呈起步阶段，相关技术问题可以提供一对一交流解决。欢迎star、pull request、fork、issue（提需求、报bug等）
+可在Rust、Python(Windows、Linux)、Nodejs、VUE3/Typescript、C、C++、julia等语言/平台中使用，并提供案例，可快速上手。项目呈比较成熟阶段，相关技术问题可以提供一对一交流解决。欢迎star、pull request、fork、issue（提需求、报bug等）
 
 Algorithms for minesweeper, published on various platforms.
 
@@ -18,9 +18,9 @@ python>=3.7, <=3.10(windows): 1.4.7
 
 python>=3.7, <=3.8(linux): 1.3.10
 
-javascript/typescript: 1.3.8
+javascript/typescript: 1.4.0
 
-nodejs: 1.2.7
+nodejs: 1.4.0-alpha
 
 crate: 1.4.7
 

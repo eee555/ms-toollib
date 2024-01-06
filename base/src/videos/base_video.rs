@@ -2,9 +2,9 @@
 
 use crate::board::GameBoard;
 use crate::cal_cell_nums;
+use crate::miscellaneous::s_to_ms;
 #[cfg(any(feature = "py", feature = "rs"))]
-use crate::miscellaneous::{time_ms_between};
-use crate::miscellaneous::{s_to_ms};
+use crate::miscellaneous::time_ms_between;
 use crate::utils::{cal_bbbv, cal_isl, cal_op};
 use crate::videos::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
@@ -16,9 +16,9 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 #[cfg(feature = "js")]
 use web_sys::console;
 
+use crate::safe_board::BoardSize;
 #[cfg(any(feature = "py", feature = "rs"))]
-use crate::safe_board::{SafeBoard};
-use crate::safe_board::{BoardSize};
+use crate::safe_board::SafeBoard;
 
 use crate::{GameBoardState, MinesweeperBoard, MouseState};
 
@@ -1005,11 +1005,11 @@ impl<T> BaseVideo<T> {
         self.cal_static_params();
     }
     // 计算除fps以外的静态指标
-    fn cal_static_params(&mut self) 
+    fn cal_static_params(&mut self)
     where
         T: std::ops::Index<usize> + BoardSize,
         T::Output: std::ops::Index<usize, Output = i32>,
-        {
+    {
         let cell_nums = cal_cell_nums(&self.board);
         self.static_params.cell0 = cell_nums[0];
         self.static_params.cell1 = cell_nums[1];
@@ -1693,6 +1693,8 @@ impl<T> BaseVideo<T> {
         self.video_playing_pix_size_k = pix_size as f64 / self.cell_pixel_size as f64;
     }
 }
+
+// 和文件操作相关的一些方法
 #[cfg(any(feature = "py", feature = "rs"))]
 impl<T> BaseVideo<T> {
     /// 按evf标准，编码出原始二进制数据
@@ -1840,6 +1842,42 @@ impl<T> BaseVideo<T> {
                 }
                 id += 1;
             }
+        }
+    }
+}
+
+// 录像审核相关的方法
+impl<T> BaseVideo<T> {
+    /// 录像是否合法。排名网站的自动审核录像策略。检查是否扫完、是否有标识、是否用合法的软件。不检查校验码。
+    /// - 返回：0正常，1不合法，3不确定
+    /// 若步数很少，例如使用平板，返回3
+    pub fn is_valid(&self) -> u8 {
+        if self.software == "Arbiter".as_bytes().to_vec() {
+        } else if self.software == "Viennasweeper".as_bytes().to_vec() {
+            let start_time = ((self.start_time[0] - 48) as u64) * 1000000000
+                + ((self.start_time[1] - 48) as u64) * 100000000
+                + ((self.start_time[2] - 48) as u64) * 10000000
+                + ((self.start_time[3] - 48) as u64) * 1000000
+                + ((self.start_time[4] - 48) as u64) * 100000
+                + ((self.start_time[5] - 48) as u64) * 10000
+                + ((self.start_time[6] - 48) as u64) * 1000
+                + ((self.start_time[7] - 48) as u64) * 100
+                + ((self.start_time[8] - 48) as u64) * 10
+                + (self.start_time[9] - 48) as u64;
+            if start_time > 1682265600 {
+                // 2023-04-24 00:00:00后被禁
+                return 1;
+            }
+        } else {
+            return 1;
+        }
+        if self.video_action_state_recorder.len() as f64 / (self.static_params.bbbv as f64) < 10.0 {
+            return 3;
+        }
+        if self.is_completed {
+            return 0;
+        } else {
+            return 1;
         }
     }
 }

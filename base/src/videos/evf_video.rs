@@ -50,6 +50,15 @@ impl EvfVideo {
         self.data.height = self.data.get_u8()? as usize;
         self.data.width = self.data.get_u8()? as usize;
         self.data.mine_num = self.data.get_u16()? as usize;
+        if self.data.height == 8 && self.data.width == 8 && self.data.mine_num == 10 {
+            self.data.level = 3;
+        } else if self.data.height == 16 && self.data.width == 16 && self.data.mine_num == 40 {
+            self.data.level = 4;
+        } else if self.data.height == 16 && self.data.width == 30 && self.data.mine_num == 99 {
+            self.data.level = 5;
+        } else {
+            self.data.level = 6;
+        }
         // println!("{:?}", self.data.mine_num);
         self.data.cell_pixel_size = self.data.get_u8()?;
         self.data.mode = self.data.get_u16()?;

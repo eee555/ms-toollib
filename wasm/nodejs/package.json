@@ -17,6 +17,6 @@
   },
   "homepage": "https://docs.rs/ms_toollib/latest/ms_toollib/",
   "dependencies": {
-    "ms-toollib": "file:../pkg"
+    
   }
 }

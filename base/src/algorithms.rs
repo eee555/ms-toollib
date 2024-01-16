@@ -60,17 +60,17 @@ pub fn solve_minus(
     for b in (0..block_num).rev() {
         let mut not_mine_rel = vec![];
         let mut is_mine_rel = vec![];
-        let matrixColumn = xs[b].len();
-        let matrixRow = bs[b].len();
-        if matrixRow <= 1 {
+        let matrix_column = xs[b].len();
+        let matrix_row = bs[b].len();
+        if matrix_row <= 1 {
             continue; // 整段只有一个数字，比如角落的1
         }
-        for i in 1..matrixRow {
+        for i in 1..matrix_row {
             for j in 0..i {
                 let mut ADval1 = vec![];
                 let mut ADvaln1 = vec![];
                 let mut FlagAdj = false;
-                for k in 0..matrixColumn {
+                for k in 0..matrix_column {
                     if As[b][i][k] >= 1 && As[b][j][k] >= 1 {
                         FlagAdj = true;
                         continue;
@@ -151,43 +151,43 @@ pub fn solve_direct(
 
     let block_num = bs.len();
     for b in (0..block_num).rev() {
-        let mut matrixColumn = xs[b].len();
-        let mut matrixRow = bs[b].len();
-        for i in (0..matrixRow).rev() {
+        let mut matrix_column = xs[b].len();
+        let mut matrix_row = bs[b].len();
+        for i in (0..matrix_row).rev() {
             if As[b][i].iter().sum::<i32>() == bs[b][i] {
-                for k in (0..matrixColumn).rev() {
+                for k in (0..matrix_column).rev() {
                     if As[b][i][k] >= 1 {
                         is_mine.push((xs[b][k].0, xs[b][k].1));
                         board_of_game[xs[b][k].0][xs[b][k].1] = 11;
                         xs[b].remove(k);
-                        for t in 0..matrixRow {
+                        for t in 0..matrix_row {
                             bs[b][t] -= As[b][t][k];
                             As[b][t].remove(k);
                         }
-                        matrixColumn -= 1;
+                        matrix_column -= 1;
                     }
                 }
                 As[b].remove(i);
                 bs[b].remove(i);
-                matrixRow -= 1;
+                matrix_row -= 1;
             }
         }
-        for i in (0..matrixRow).rev() {
+        for i in (0..matrix_row).rev() {
             if bs[b][i] == 0 {
-                for k in (0..matrixColumn).rev() {
+                for k in (0..matrix_column).rev() {
                     if As[b][i][k] >= 1 {
                         not_mine.push(xs[b][k]);
                         board_of_game[xs[b][k].0][xs[b][k].1] = 12;
                         xs[b].remove(k);
-                        for t in 0..matrixRow {
+                        for t in 0..matrix_row {
                             As[b][t].remove(k);
                         }
-                        matrixColumn -= 1;
+                        matrix_column -= 1;
                     }
                 }
                 As[b].remove(i);
                 bs[b].remove(i);
-                matrixRow -= 1;
+                matrix_row -= 1;
             }
         }
         if bs[b].is_empty() {
@@ -211,9 +211,9 @@ pub fn solve_direct(
 /// 游戏局面概率计算引擎。  
 /// - 输入：局面、未被标出的雷数。未被标出的雷数大于等于1时，理解成实际数量；小于1时理解为比例。  
 /// - 注意：局面中可以标雷（11）和非类（12），但必须全部标对。  
-/// - 注意：若超出枚举长度（45），则该区块的部分返回平均概率，且返回所需的枚举长度。  
-/// - 返回：所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数（未知雷数 = 总雷数 - 已经标出的雷）的范围。  
-/// - 注意：若没有内部未知区域，返回NaN。
+/// - 注意：若超出枚举长度（固定值55），则该区块的部分返回平均概率，且返回所需的枚举长度。  
+/// - 返回：所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数（未知雷数 = 总雷数 - 已经标出的雷）的范围、上述“所需的枚举长度”。  
+/// - 注意：若没有内部未知区域，“内部未知格子是雷的概率”返回NaN。
 /// - 局限：空中间出现一个数字，这种错误的局面，不能检查出来
 pub fn cal_possibility(
     board_of_game: &Vec<Vec<i32>>,
@@ -772,16 +772,16 @@ pub fn laymine_solvable(
     max_times: usize,
 ) -> (Vec<Vec<i32>>, bool) {
     let mut times = 0;
-    let mut Board;
+    let mut board;
     while times < max_times {
-        Board = laymine_op(row, column, minenum, x0, y0);
+        board = laymine_op(row, column, minenum, x0, y0);
         times += 1;
-        if is_solvable(&Board, x0, y0) {
-            return (Board, true);
+        if is_solvable(&board, x0, y0) {
+            return (board, true);
         }
     }
-    Board = laymine_op(row, column, minenum, x0, y0);
-    (Board, false)
+    board = laymine_op(row, column, minenum, x0, y0);
+    (board, false)
 }
 
 /// 调整法无猜埋雷。可以生成任意雷密度的无猜局面。但雷不满足均匀分布。  
@@ -1093,38 +1093,38 @@ fn laymine_study_exp(x0: usize, y0: usize, n: usize) -> [usize; 382] {
     let pointer = x0 + y0 * 16;
     let mut bv_record = [0; 382];
     for _id in 0..n {
-        let mut Board1Dim = [0; 479];
+        let mut board1_dim = [0; 479];
         for i in 380..479 {
-            Board1Dim[i] = -1;
+            board1_dim[i] = -1;
         }
 
-        Board1Dim.shuffle(&mut rng);
-        let mut Board1Dim_2 = [0; 480];
+        board1_dim.shuffle(&mut rng);
+        let mut board1_dim_2 = [0; 480];
         // Board1Dim_2.reserve(area + 1);
 
         for i in 0..pointer {
-            Board1Dim_2[i] = Board1Dim[i];
+            board1_dim_2[i] = board1_dim[i];
         }
-        Board1Dim_2[pointer] = 0;
+        board1_dim_2[pointer] = 0;
         for i in pointer..479 {
-            Board1Dim_2[i + 1] = Board1Dim[i];
+            board1_dim_2[i + 1] = board1_dim[i];
         }
-        let mut Board: Vec<Vec<i32>> = vec![vec![0; 30]; 16];
+        let mut board: Vec<Vec<i32>> = vec![vec![0; 30]; 16];
         for i in 0..480 {
-            if Board1Dim_2[i] < 0 {
+            if board1_dim_2[i] < 0 {
                 let x = i % 16;
                 let y = i / 16;
-                Board[x][y] = -1;
+                board[x][y] = -1;
                 for j in max(1, x) - 1..min(16, x + 2) {
                     for k in max(1, y) - 1..min(30, y + 2) {
-                        if Board[j][k] >= 0 {
-                            Board[j][k] += 1;
+                        if board[j][k] >= 0 {
+                            board[j][k] += 1;
                         }
                     }
                 }
             }
         }
-        bv_record[cal_bbbv_exp(&Board)] += 1;
+        bv_record[cal_bbbv_exp(&board)] += 1;
     }
     bv_record
 }
@@ -1283,7 +1283,7 @@ pub fn mark_board(board_of_game: &mut Vec<Vec<i32>>) -> Result<(), usize> {
             }
         }
     }
-    solve_minus(&mut As, &mut xs, &mut bs, board_of_game);
+    let _ = solve_minus(&mut As, &mut xs, &mut bs, board_of_game);
     for i in 0..As.len() {
         for j in 0..As[i].len() {
             if As[i][j].iter().sum::<i32>() < bs[i][j] || bs[i][j] < 0 {
@@ -1335,7 +1335,7 @@ pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, u
     if board_of_game[xy.0][xy.1] < 10 {
         return 5;
     }
-    let mut flag_need = true;
+    let mut flag_need;
     let (mut Ases, mut xses, mut bses) = refresh_matrixses(&board_of_game);
     if let (Some(xy), flag_border) = find_a_border_cell(board_of_game, xy) {
         let t = xses
@@ -1399,11 +1399,11 @@ pub fn is_able_to_solve(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) 
         })
     });
     let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
-    solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
+    let _ = solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
     if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {
         return true;
     }
-    solve_minus(&mut As, &mut xs, &mut bs, board_of_game);
+    let _ = solve_minus(&mut As, &mut xs, &mut bs, board_of_game);
     if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {
         return true;
     }

@@ -35,7 +35,7 @@ fn minesweeper_board_works() {
 // cargo test --features rs -- --nocapture AvfVideo_works
 fn AvfVideo_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("jze.avf");
+    let mut video = AvfVideo::new("zsw.avf");
 
     let r = video.parse_video();
     println!("结果：{:?}", r);
@@ -45,7 +45,7 @@ fn AvfVideo_works() {
     println!("局面：{:?}", video.data.board);
     video.data.set_current_time(0.0);
     // println!("game_board_stream：{:?}", video.data.game_board_stream[0]);
-    println!("局面：{:?}", video.data.get_game_board());
+    // println!("局面：{:?}", video.data.get_game_board());
     println!("3BV：{:?}", video.data.static_params.bbbv);
     // println!("3BV：{:?}", video.s.s);
     println!("time：{:?}", video.data.get_rtime().unwrap());
@@ -61,7 +61,9 @@ fn AvfVideo_works() {
     ]);
     video.data.print_comments();
     video.data.set_current_time(1000.0);
+    println!("局面: {:?}", video.data.get_game_board());
     println!("solved_3BV：{:?}", video.data.get_bbbv_solved());
+    println!("3BV/s：{:?}", video.data.get_bbbv_s());
     println!("thrp: {:?}", video.data.get_thrp());
     println!("level: {:?}", video.data.level);
     println!("is_valid: {:?}", video.data.is_valid());

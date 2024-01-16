@@ -1405,7 +1405,8 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
                 self.get_left() as f64 * 1000.0 / t_ms
             }
-            _ => 0.0,
+            #[cfg(any(feature = "js"))]
+            GameBoardState::Playing => 0.0,
         }
     }
     pub fn get_right_s(&self) -> f64 {
@@ -1424,7 +1425,8 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
                 self.get_right() as f64 * 1000.0 / t_ms
             }
-            _ => 0.0,
+            #[cfg(any(feature = "js"))]
+            GameBoardState::Playing => 0.0,
         }
     }
     pub fn get_double_s(&self) -> f64 {
@@ -1443,7 +1445,8 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
                 self.get_double() as f64 * 1000.0 / t_ms
             }
-            _ => 0.0,
+            #[cfg(any(feature = "js"))]
+            GameBoardState::Playing => 0.0,
         }
     }
     pub fn get_cl_s(&self) -> f64 {
@@ -1462,7 +1465,8 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
                 self.get_cl() as f64 * 1000.0 / t_ms
             }
-            _ => 0.0,
+            #[cfg(any(feature = "js"))]
+            GameBoardState::Playing => 0.0,
         }
     }
     pub fn get_flag_s(&self) -> f64 {
@@ -1481,7 +1485,8 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
                 self.get_flag() as f64 * 1000.0 / t_ms
             }
-            _ => 0.0,
+            #[cfg(any(feature = "js"))]
+            GameBoardState::Playing => 0.0,
         }
     }
     pub fn get_path(&self) -> f64 {
@@ -1849,8 +1854,8 @@ impl<T> BaseVideo<T> {
 // 录像审核相关的方法
 impl<T> BaseVideo<T> {
     /// 录像是否合法。排名网站的自动审核录像策略。检查是否扫完、是否有标识、是否用合法的软件。不检查校验码。
-    /// - 返回：0正常，1不合法，3不确定
-    /// 若步数很少，例如使用平板，返回3
+    /// - 返回：0合法，1不合法，3不确定
+    /// - 若步数很少，例如使用平板，返回3
     pub fn is_valid(&self) -> u8 {
         if self.software == "Arbiter".as_bytes().to_vec() {
         } else if self.software == "Viennasweeper".as_bytes().to_vec() {

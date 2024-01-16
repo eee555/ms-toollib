@@ -1,9 +1,9 @@
 use crate::utils::refresh_board;
 
 #[cfg(any(feature = "py", feature = "rs"))]
-use crate::safe_board::{SafeBoard};
+use crate::safe_board::SafeBoard;
 
-use crate::safe_board::{BoardSize};
+use crate::safe_board::BoardSize;
 
 use std::cmp::{max, min};
 
@@ -257,20 +257,21 @@ impl<T> MinesweeperBoard<T> {
         if self.game_board[x][y] == 0 || self.game_board[x][y] >= 8 {
             return Ok(0);
         }
-        let mut flagChordingUseful = false; // 双击有效的基础上，周围是否有未打开的格子
-        let mut chordingCells = vec![]; // 未打开的格子的集合
-        let mut flagedNum = 0; // 双击点周围的标雷数
+        let mut flag_chording_useful = false; // 双击有效的基础上，周围是否有未打开的格子
+        let mut chording_cells = vec![]; // 未打开的格子的集合
+        let mut flaged_num = 0; // 双击点周围的标雷数
         let mut surround3BV = 0; // 周围的3BV
         for i in max(1, x) - 1..min(self.row, x + 2) {
             for j in max(1, y) - 1..min(self.column, y + 2) {
                 if i != x || j != y {
                     if self.game_board[i][j] == 11 {
-                        flagedNum += 1
+                        flaged_num += 1
                     }
                     if self.game_board[i][j] == 10 {
-                        chordingCells.push((i, j));
-                        flagChordingUseful = true;
+                        chording_cells.push((i, j));
+                        flag_chording_useful = true;
                         if self.board[i][j] > 0 {
+                            // 通过双击打开岛上的3BV
                             if self.cell_is_bbbv(i, j) {
                                 surround3BV += 1;
                             }
@@ -284,8 +285,8 @@ impl<T> MinesweeperBoard<T> {
                 }
             }
         }
-        if flagedNum == self.game_board[x][y] && flagChordingUseful {
-            for ch in &chordingCells {
+        if flaged_num == self.game_board[x][y] && flag_chording_useful {
+            for ch in &chording_cells {
                 if self.board[ch.0][ch.1] == -1 {
                     self.game_board_state = GameBoardState::Loss;
                 }
@@ -293,7 +294,7 @@ impl<T> MinesweeperBoard<T> {
             self.ce += 1;
             self.bbbv_solved += surround3BV;
             self.bbbv_solved += self.op_num_around_cell(x, y);
-            refresh_board(&self.board, &mut self.game_board, chordingCells);
+            refresh_board(&self.board, &mut self.game_board, chording_cells);
             // if flag_ch_op {
             //     if self.cell_is_op_completed(surround_op_x, surround_op_y) {
             //         self.bbbv_solved += 1;
@@ -336,32 +337,12 @@ impl<T> MinesweeperBoard<T> {
     {
         let mut op_num = 0;
         let mut game_board_mark = vec![vec![false; self.column]; self.row];
-        // println!("666");
-        if x > 0 && y > 0 {
-            if self.game_board[x - 1][y - 1] == 10 && self.board[x - 1][y - 1] == 0 {
-                if self.cell_is_op_completed(x - 1, y - 1, &mut game_board_mark) {
-                    op_num += 1;
-                }
-            }
-        }
-        if x > 0 && y + 1 < self.column {
-            if self.game_board[x - 1][y + 1] == 10 && self.board[x - 1][y + 1] == 0 {
-                if self.cell_is_op_completed(x - 1, y + 1, &mut game_board_mark) {
-                    op_num += 1;
-                }
-            }
-        }
-        if x + 1 < self.row && y > 0 {
-            if self.game_board[x + 1][y - 1] == 10 && self.board[x + 1][y - 1] == 0 {
-                if self.cell_is_op_completed(x + 1, y - 1, &mut game_board_mark) {
-                    op_num += 1;
-                }
-            }
-        }
-        if x + 1 < self.row && y + 1 < self.column {
-            if self.game_board[x + 1][y + 1] == 10 && self.board[x + 1][y + 1] == 0 {
-                if self.cell_is_op_completed(x + 1, y + 1, &mut game_board_mark) {
-                    op_num += 1;
+        for i in max(1, x) - 1..min(self.row, x + 2) {
+            for j in max(1, y) - 1..min(self.column, y + 2) {
+                if self.game_board[i][j] == 10 && self.board[i][j] == 0 && !game_board_mark[i][j] {
+                    if self.cell_is_op_completed(i, j, &mut game_board_mark) {
+                        op_num += 1;
+                    }
                 }
             }
         }

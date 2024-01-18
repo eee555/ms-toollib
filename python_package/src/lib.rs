@@ -6,7 +6,7 @@ use pyo3::wrap_pyfunction;
 // use pyo3::class::basic::PyObjectProtocol;
 // use std::cmp::{max, min};
 
-use ms_toollib::*;
+use ms_toollib_original::*;
 mod board;
 pub use board::{PyMinesweeperBoard, PySafeMinesweeperBoard};
 
@@ -60,7 +60,7 @@ fn py_cal_op(board: Vec<Vec<i32>>) -> PyResult<usize> {
 }
 
 #[pyfunction]
-#[pyo3(name = "laymine", text_signature = "(row, column, mine_num, x0, y0)")]
+#[pyo3(name = "laymine", signature = (row, column, mine_num, x0, y0))]
 fn py_laymine(
     row: usize,
     column: usize,
@@ -160,7 +160,7 @@ fn py_solve_direct(
 #[pyfunction]
 #[pyo3(
     name = "laymine_op",
-    text_signature = "(row, column, mine_num, x0, y0)"
+    signature = (row, column, mine_num, x0, y0)
 )]
 fn py_laymine_op(
     row: usize,
@@ -194,10 +194,10 @@ fn py_is_solvable(board: Vec<Vec<i32>>, x0: usize, y0: usize) -> PyResult<bool> 
     Ok(is_solvable(&board, x0, y0))
 }
 
-#[pyfunction(max_times = 1000000)]
+#[pyfunction]
 #[pyo3(
     name = "laymine_solvable",
-    text_signature = "(row, column, mine_num, x0, y0, max_times)"
+    signature = (row, column, mine_num, x0, y0, max_times = 1000000)
 )]
 pub fn py_laymine_solvable(
     row: usize,
@@ -210,10 +210,10 @@ pub fn py_laymine_solvable(
     Ok(laymine_solvable(row, column, mine_num, x0, y0, max_times))
 }
 
-#[pyfunction(max_times = 1000000)]
+#[pyfunction]
 #[pyo3(
     name = "laymine_solvable_thread",
-    text_signature = "(row, column, mine_num, x0, y0, max_times)"
+    signature = (row, column, mine_num, x0, y0, max_times = 1000000)
 )]
 pub fn py_laymine_solvable_thread(
     row: usize,
@@ -231,7 +231,7 @@ pub fn py_laymine_solvable_thread(
 #[pyfunction]
 #[pyo3(
     name = "laymine_solvable_adjust",
-    text_signature = "(row, column, mine_num, x0, y0)"
+    signature = (row, column, mine_num, x0, y0)
 )]
 pub fn py_laymine_solvable_adjust(
     row: usize,
@@ -289,7 +289,7 @@ fn py_sample_3BVs_exp(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
 }
 
 #[pyfunction]
-#[pyo3(name = "OBR_board", text_signature = "(data_vec, height, width)")]
+#[pyo3(name = "OBR_board", signature = (data_vec, height, width))]
 fn py_OBR_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
     // Ok(OBR_board(data_vec, height, width).unwrap())
     match OBR_board(data_vec, height, width) {

@@ -18,9 +18,9 @@ python>=3.7, <=3.10(windows): 1.4.7
 
 python>=3.7, <=3.8(linux): 1.3.10
 
-javascript/typescript: 1.4.1
+javascript/typescript (webpack等bundler): 1.4.2
 
-nodejs: 1.4.0-alpha
+javascript/typescript (nodejs): 1.4.0-alpha
 
 crate: 1.4.7
 

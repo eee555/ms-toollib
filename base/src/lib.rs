@@ -66,7 +66,8 @@ pub use OBR::ImageBoard;
 // #[cfg(any(feature = "py", feature = "rs"))]
 mod safe_board;
 #[cfg(any(feature = "py", feature = "rs"))]
-use crate::safe_board::{SafeBoard};
+pub use crate::safe_board::{SafeBoard};
+pub use crate::safe_board::{SafeBoardRow};
 
 use crate::safe_board::{BoardSize};
 

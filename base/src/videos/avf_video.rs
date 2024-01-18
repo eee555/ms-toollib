@@ -14,6 +14,7 @@ use web_sys::console;
 /// v = ms.AvfVideo("video_name.avf") # 第一步，读取文件的二进制内容
 /// v.parse_video() # 第二步，解析文件的二进制内容
 /// v.analyse() # 第三步，根据解析到的内容，推衍整个局面
+/// v.current_time = 999999 # 第四步，把录像时间调到最后，或任何关注的时间点（默认是0）
 /// print(v.bbbv)
 /// print(v.clicks)
 /// print(v.clicks_s)
@@ -24,6 +25,28 @@ use web_sys::console;
 /// for i in range(v.events_len):
 ///     if v.events_useful_level(i) >= 2:
 ///         print(v.events_posteriori_game_board(i).poss)
+/// ```
+/// 
+/// - 在python中被继承的示例。  
+/// ```python
+/// class MyVideo(ms.AvfVideo):
+///     def __new__(cls, f):
+///         return ms.AvfVideo.__new__(cls, f)
+///     def __init__(self, f):
+///         super(MyVideo, self).__init__()
+///     def print_something(self):
+///         self.parse_video()
+///         self.analyse()
+///         self.current_time = 999999
+///         print(f"mode: {self.mode}")
+///         print(f"level: {self.level}")
+///         print(f"time:{self.time}")
+///         print(f"bbbv: {self.bbbv}")
+///         print(f"cl:{self.cl}")
+///         print(f"ce: {self.ce}")
+///         print(f"flag: {self.flag}")
+/// m_v = MyVideo("jze.avf")
+/// m_v.print_something()
 /// ```
 pub struct AvfVideo {
     pub file_name: String,

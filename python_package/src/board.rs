@@ -1,5 +1,5 @@
 ﻿use itertools::Itertools;
-use ms_toollib::*;
+use ms_toollib_original::*;
 use pyo3::prelude::*;
 
 #[pyclass(name = "MinesweeperBoard")]

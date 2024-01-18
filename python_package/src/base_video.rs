@@ -1,6 +1,6 @@
 use crate::PyGameBoard;
 use itertools::Itertools;
-use ms_toollib::*;
+use ms_toollib_original::*;
 use pyo3::prelude::*;
 use pyo3::*;
 
@@ -15,9 +15,13 @@ impl PySafeBoardRow {
     pub fn new(row: Vec<i32>) -> PySafeBoardRow {
         PySafeBoardRow { core: SafeBoardRow::new(row) }
     }
+    fn __getitem__(&self, key: isize) -> PyResult<i32> {
+        Ok(self.core[key as usize])
+    }
 }
 
-#[pyclass(name = "SafeBoard")]
+#[pyclass]
+#[pyo3(name = "SafeBoard", subclass)]
 pub struct PySafeBoard {
     pub core: SafeBoard,
 }
@@ -35,23 +39,27 @@ impl PySafeBoard {
     pub fn set(&mut self, board: Vec<Vec<i32>>) {
         self.core.set(board);
     }
-}
-
-#[pyproto]
-impl PySequenceProtocol for PySafeBoardRow {
-    fn __getitem__(&self, key: isize) -> PyResult<i32> {
-        Ok(self.core[key as usize])
-    }
-}
-
-#[pyproto]
-impl PySequenceProtocol for PySafeBoard {
     fn __getitem__(&self, key: isize) -> PyResult<PySafeBoardRow> {
         Ok(PySafeBoardRow::new(self.core[key as usize].into_vec()))
     }
 }
 
-#[pyclass(name = "BaseVideo")]
+// #[pyproto]
+// impl PySequenceProtocol for PySafeBoardRow {
+//     fn __getitem__(&self, key: isize) -> PyResult<i32> {
+//         Ok(self.core[key as usize])
+//     }
+// }
+
+// #[pyproto]
+// impl PySequenceProtocol for PySafeBoard {
+//     fn __getitem__(&self, key: isize) -> PyResult<PySafeBoardRow> {
+//         Ok(PySafeBoardRow::new(self.core[key as usize].into_vec()))
+//     }
+// }
+
+#[pyclass]
+#[pyo3(name = "BaseVideo", subclass)]
 pub struct PyBaseVideo {
     pub core: BaseVideo<SafeBoard>,
 }

@@ -1,10 +1,10 @@
 use itertools::Itertools;
-use ms_toollib::*;
+use ms_toollib_original::*;
 use pyo3::prelude::*;
 use crate::PyGameBoard;
 
 
-#[pyclass(name = "AvfVideo")]
+#[pyclass(name = "AvfVideo", subclass)]
 pub struct PyAvfVideo {
     pub core: AvfVideo,
 }

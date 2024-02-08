@@ -443,6 +443,10 @@ macro_rules! generate_video {
                 pub fn get_checksum(&self) -> Vec<u8> {
                     self.core.data.get_checksum().unwrap().to_vec()
                 }
+                #[wasm_bindgen(getter)]
+                pub fn get_pix_size(&self) -> u8 {
+                    self.core.data.get_pix_size().unwrap()
+                }
                 #[wasm_bindgen(setter)]
                 pub fn set_current_time(&mut self, time: f64) {
                     self.core.data.set_current_time(time);

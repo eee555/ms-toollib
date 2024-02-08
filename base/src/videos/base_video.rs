@@ -1693,8 +1693,18 @@ impl<T> BaseVideo<T> {
             k += 1;
         }
     }
+    // 返回录像文件里记录的方格尺寸。flop_new播放器里会用到。这是因为元扫雷和flop播放器的播放机制不同。
+    pub fn get_pix_size(&self) -> Result<u8, ()> {
+        if self.game_board_state != GameBoardState::Display {
+            return Err(());
+        };
+        Ok(self.cell_pixel_size)
+    }
     // 录像播放时，设置按何种像素播放，涉及鼠标位置回报
     pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {
+        if self.game_board_state != GameBoardState::Display {
+            panic!("");
+        };
         self.video_playing_pix_size_k = pix_size as f64 / self.cell_pixel_size as f64;
     }
 }

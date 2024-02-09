@@ -282,7 +282,7 @@ pub struct BaseVideo<T> {
     pub game_start_instant: Instant,
     /// 第一次有效的左键抬起的时间，格式不同，只在录像播放模式用到
     delta_time: f64,
-    /// 当前时间，仅录像播放时用
+    /// 当前时间，仅录像播放时用。有负数。
     pub current_time: f64,
     /// 当前指针指向
     pub current_event_id: usize,
@@ -767,6 +767,14 @@ impl<T> BaseVideo<T> {
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         let step_instant = Instant::now();
+        // match self.game_board_state {
+        //     GameBoardState::Ready | GameBoardState::PreFlaging => {
+        //         let mut time_ms = step_instant
+        //             .duration_since(self.video_start_instant)
+        //             .as_millis() as u32;
+        //         let mut time = time_ms as f64 / 1000.0;
+        //     }
+        // }
         // 这是和录像时间戳有关
         let mut time_ms = step_instant
             .duration_since(self.video_start_instant)
@@ -823,7 +831,10 @@ impl<T> BaseVideo<T> {
             // 不可能
             GameBoardState::Display => {}
             GameBoardState::Loss => {
-                let t_ms = time_ms_between(step_instant, self.game_start_instant);
+                // let t_ms = time_ms_between(step_instant, self.game_start_instant);
+                let t_ms = step_instant
+                    .duration_since(self.game_start_instant)
+                    .as_millis() as u32;
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
@@ -838,11 +849,13 @@ impl<T> BaseVideo<T> {
                 self.game_dynamic_params.rtime_ms = t_ms;
                 self.video_dynamic_params.etime =
                     t / self.minesweeper_board.bbbv_solved as f64 * self.static_params.bbbv as f64;
-
                 self.gather_params_after_game(t);
             }
             GameBoardState::Win => {
-                let t_ms = time_ms_between(step_instant, self.game_start_instant);
+                // let t_ms = time_ms_between(step_instant, self.game_start_instant);
+                let t_ms = step_instant
+                    .duration_since(self.game_start_instant)
+                    .as_millis() as u32;
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
@@ -855,7 +868,6 @@ impl<T> BaseVideo<T> {
                 self.game_dynamic_params.rtime = t;
                 self.game_dynamic_params.rtime_ms = t_ms;
                 self.video_dynamic_params.etime = t;
-
                 self.gather_params_after_game(t);
             }
         }
@@ -1128,6 +1140,7 @@ impl<T> BaseVideo<T> {
         }
     }
     // 录像解析时，设置游戏时间，时间成绩。
+    // 什么意思？
     pub fn set_rtime(&mut self, time: f64) -> Result<u8, ()> {
         if !self.allow_set_rtime {
             return Err(());
@@ -1172,7 +1185,8 @@ impl<T> BaseVideo<T> {
         }
         Ok(self.game_dynamic_params.rtime_ms)
     }
-    /// video_time是录像的总时长。录像市场比时间成绩多一部分。
+    /// video_time是录像的总时长。录像时长比时间成绩多一部分。
+    /// 涉及到录像播放器的拖动条最大最小值。
     pub fn get_video_time(&self) -> Result<f64, ()> {
         if self.game_board_state != GameBoardState::Display {
             return Err(());
@@ -1182,7 +1196,8 @@ impl<T> BaseVideo<T> {
     }
     /// 录像播放时，按时间设置current_time；超出两端范围取两端。
     /// 游戏时不要调用。
-    pub fn set_current_time(&mut self, time: f64) {
+    pub fn set_current_time(&mut self, mut time: f64) {
+        time += self.delta_time;
         if time > self.video_action_state_recorder[self.current_event_id].time {
             loop {
                 if self.current_event_id >= self.video_action_state_recorder.len() - 1 {
@@ -1210,7 +1225,8 @@ impl<T> BaseVideo<T> {
                 }
             }
         }
-        self.current_time = self.video_action_state_recorder[self.current_event_id].time;
+        self.current_time =
+            self.video_action_state_recorder[self.current_event_id].time - self.delta_time;
     }
     /// 设置current_event_id
     pub fn set_current_event_id(&mut self, id: usize) -> Result<u8, ()> {
@@ -1218,7 +1234,7 @@ impl<T> BaseVideo<T> {
             return Err(());
         };
         self.current_event_id = id;
-        self.current_time = self.video_action_state_recorder[id].time;
+        self.current_time = self.video_action_state_recorder[id].time - self.delta_time;
         Ok(0)
     }
     pub fn set_is_offical(&mut self, is_offical: bool) -> Result<u8, ()> {
@@ -1505,8 +1521,7 @@ impl<T> BaseVideo<T> {
             return Ok(0.0);
         }
         if self.game_board_state == GameBoardState::Display {
-            let t = self.video_action_state_recorder[self.current_event_id].time - self.delta_time;
-            Ok(t / bbbv_solved as f64 * self.static_params.bbbv as f64)
+            Ok(self.current_time / bbbv_solved as f64 * self.static_params.bbbv as f64)
         } else {
             let t = self.game_dynamic_params.rtime;
             Ok(t / bbbv_solved as f64 * self.static_params.bbbv as f64)

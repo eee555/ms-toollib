@@ -8,9 +8,12 @@ pub fn s_to_ms(time: f64) -> u32 {
 }
 
 /// 返回以毫秒为单位的时间。四舍五入。
+// 拟弃用，被代替：let mut time_ms = step_instant
+// .duration_since(self.video_start_instant)
+// .as_millis() as u32;
 #[cfg(any(feature = "py", feature = "rs"))]
-pub fn time_ms_between(futurn: Instant, past: Instant) -> u32 {
-    (futurn.duration_since(past).as_micros() as f64 / 1000.0).round() as u32
+pub fn time_ms_between(future: Instant, past: Instant) -> u32 {
+    (future.duration_since(past).as_micros() as f64 / 1000.0).round() as u32
 }
 
 

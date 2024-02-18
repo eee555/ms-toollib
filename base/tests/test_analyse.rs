@@ -136,7 +136,8 @@ fn MvfVideo_works() {
     // println!("3BV：{:?}", video.s.s);
     println!("time：{:?}", video.data.get_rtime().unwrap());
     println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
-    println!("video_time: {:?}", video.data.get_video_time().unwrap());
+    println!("video_start_time: {:?}", video.data.get_video_start_time().unwrap());
+    println!("video_end_time: {:?}", video.data.get_video_end_time().unwrap());
     println!("is win: {:?}", video.data.is_completed);
     video.data.set_current_time(12.0);
     println!("STNB: {:?}", video.data.get_stnb().unwrap());
@@ -151,7 +152,7 @@ fn MvfVideo_works() {
 // cargo test --features rs -- --nocapture RmvVideo_works
 fn EvfVideo_works() {
     // 录像解析工具测试
-    let mut video = EvfVideo::new("b_0_22.800_3BV=17_3BVs=0.789_匿名玩家(anonymous player).evf");
+    let mut video = EvfVideo::new("b_6_7.542_3BV=19_3BVs=2.519_444.evf");
 
     let r = video.parse_video();
     video.data.print_event();
@@ -177,14 +178,17 @@ fn EvfVideo_works() {
     println!("高度：{:?}", video.data.height);
     println!("雷数：{:?}", video.data.mine_num);
     // println!("3BV：{:?}", video.s.s);
-    println!("time：{:?}", video.data.get_rtime().unwrap());
-    println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
-    println!("video_time: {:?}", video.data.get_video_time().unwrap());
+    println!("rtime：{:?}", video.data.get_rtime().unwrap());
+    println!("rtime_ms：{:?}", video.data.get_rtime_ms().unwrap());
+    println!("video_start_time: {:?}", video.data.get_video_start_time().unwrap());
+    println!("video_end_time: {:?}", video.data.get_video_end_time().unwrap());
     println!("is win: {:?}", video.data.is_completed);
-    video.data.set_current_time(12.0);
+    video.data.set_current_time(0.001);
+    println!("time：{:?}", video.data.get_time());
     println!("STNB: {:?}", video.data.get_stnb().unwrap());
+    println!("bbbv_solved: {:?}", video.data.get_bbbv_solved().unwrap());
     println!("game_board: {:?}", video.data.get_game_board());
-    println!("game_board_poss: {:?}", video.data.get_game_board_poss());
+    // println!("game_board_poss: {:?}", video.data.get_game_board_poss());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
     // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
     video.data.print_comments();

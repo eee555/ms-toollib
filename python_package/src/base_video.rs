@@ -229,8 +229,12 @@ impl PyBaseVideo {
         Ok(self.core.get_etime().unwrap())
     }
     #[getter]
-    pub fn get_video_time(&self) -> PyResult<f64> {
-        Ok(self.core.get_video_time().unwrap())
+    pub fn get_video_start_time(&self) -> PyResult<f64> {
+        Ok(self.core.get_video_start_time().unwrap())
+    }
+    #[getter]
+    pub fn get_video_end_time(&self) -> PyResult<f64> {
+        Ok(self.core.get_video_end_time().unwrap())
     }
     #[getter]
     fn get_bbbv_s(&self) -> PyResult<f64> {

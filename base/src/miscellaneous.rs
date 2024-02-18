@@ -1,6 +1,6 @@
 // 杂项工具
 #[cfg(any(feature = "py", feature = "rs"))]
-use std::time::{Instant};
+use std::time::Instant;
 
 /// 将游戏时间从IEEE754标准规定的64位浮点数转为精确的以毫秒为单位的整数。四舍五入。
 pub fn s_to_ms(time: f64) -> u32 {

@@ -49,6 +49,7 @@ pub enum ErrReadVideoReason {
 
 /// 录像里的局面活动（点击或移动）、指标状态(该活动完成后的)、先验后验局面索引
 pub struct VideoActionStateRecorder {
+    /// 相对时间，从0开始，大于rtime
     pub time: f64,
     /// 操作类型，这几种："mv", "lc", "lr", "rc", "rr", "mc", "mr", "pf"
     pub mouse: String,
@@ -274,12 +275,13 @@ pub struct BaseVideo<T> {
     pub video_action_state_recorder: Vec<VideoActionStateRecorder>,
     /// 游戏局面流，从一开始没有打开任何格子（包含玩家游戏前的标雷过程），到最后打开了所有
     pub game_board_stream: Vec<GameBoard>,
-    /// 游戏开始的时间，由计时器控制，仅游戏时用
+    /// 录像开始的时间，由计时器控制，仅游戏时用
     #[cfg(any(feature = "py", feature = "rs"))]
     pub video_start_instant: Instant,
     /// 第一次有效的左键抬起的时间，由计时器控制，仅游戏时用, new_before_game方法里用到，真正开始的时间
     #[cfg(any(feature = "py", feature = "rs"))]
-    pub game_start_instant: Instant,
+    // pub game_start_instant: Instant,
+    pub game_start_ms: u32,
     /// 第一次有效的左键抬起的时间，格式不同，只在录像播放模式用到
     delta_time: f64,
     /// 当前时间，仅录像播放时用。有负数。
@@ -350,7 +352,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             #[cfg(any(feature = "py", feature = "rs"))]
             video_start_instant: Instant::now(),
             #[cfg(any(feature = "py", feature = "rs"))]
-            game_start_instant: Instant::now(),
+            game_start_ms: 0,
             delta_time: 0.0,
             current_time: 0.0,
             current_event_id: 0,
@@ -396,7 +398,7 @@ impl Default for BaseVideo<SafeBoard> {
             video_action_state_recorder: vec![],
             game_board_stream: vec![],
             video_start_instant: Instant::now(),
-            game_start_instant: Instant::now(),
+            game_start_ms: 0,
             delta_time: 0.0,
             current_time: 0.0,
             current_event_id: 0,
@@ -776,9 +778,10 @@ impl<T> BaseVideo<T> {
         //     }
         // }
         // 这是和录像时间戳有关
-        let mut time_ms = step_instant
-            .duration_since(self.video_start_instant)
-            .as_millis() as u32;
+        // let mut time_ms = step_instant
+        //     .duration_since(self.video_start_instant)
+        //     .as_millis() as u32;
+        let mut time_ms = time_ms_between(step_instant, self.video_start_instant);
         let mut time = time_ms as f64 / 1000.0;
         let old_state = self.minesweeper_board.game_board_state;
         if old_state == GameBoardState::Loss
@@ -802,9 +805,7 @@ impl<T> BaseVideo<T> {
             GameBoardState::PreFlaging => {
                 if old_state != GameBoardState::PreFlaging {
                     self.video_start_instant = step_instant;
-                    time_ms = step_instant
-                        .duration_since(self.video_start_instant)
-                        .as_millis() as u32;
+                    time_ms = time_ms_between(step_instant, self.video_start_instant);
                     time = time_ms as f64 / 1000.0;
                 }
             }
@@ -812,12 +813,10 @@ impl<T> BaseVideo<T> {
                 if old_state != GameBoardState::Playing {
                     if old_state == GameBoardState::Ready {
                         self.video_start_instant = step_instant;
-                        time_ms = step_instant
-                            .duration_since(self.video_start_instant)
-                            .as_millis() as u32;
+                        time_ms = time_ms_between(step_instant, self.video_start_instant);
                         time = time_ms as f64 / 1000.0;
                     }
-                    self.game_start_instant = step_instant;
+                    self.game_start_ms = time_ms;
                     // 高精度的时间戳，单位为微秒
                     // https://doc.rust-lang.org/std/time/struct.Instant.html
                     self.start_time = SystemTime::now()
@@ -831,10 +830,7 @@ impl<T> BaseVideo<T> {
             // 不可能
             GameBoardState::Display => {}
             GameBoardState::Loss => {
-                // let t_ms = time_ms_between(step_instant, self.game_start_instant);
-                let t_ms = step_instant
-                    .duration_since(self.game_start_instant)
-                    .as_millis() as u32;
+                let t_ms = time_ms - self.game_start_ms;
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
@@ -852,10 +848,7 @@ impl<T> BaseVideo<T> {
                 self.gather_params_after_game(t);
             }
             GameBoardState::Win => {
-                // let t_ms = time_ms_between(step_instant, self.game_start_instant);
-                let t_ms = step_instant
-                    .duration_since(self.game_start_instant)
-                    .as_millis() as u32;
+                let t_ms = time_ms - self.game_start_ms;
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
@@ -1039,28 +1032,28 @@ impl<T> BaseVideo<T> {
     pub fn print_event(&self) {
         let mut num = 0;
         for e in &self.video_action_state_recorder {
-            // if num < 800 {
-            //     if e.mouse != "mv" {
-            //         println!(
-            //             "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
-            //             e.time, e.mouse, e.x, e.y, e.useful_level
-            //         );
-            //     }
-            // }
+            if num < 800 {
+                if e.mouse != "mv" {
+                    println!(
+                        "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+                        e.time, e.mouse, e.x, e.y, e.useful_level
+                    );
+                }
+            }
             // println!(
             //     "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
             //     e.time, e.mouse, e.x, e.y, e.useful_level
             // );
-            if e.mouse != "mv" {
-                println!(
-                    "my_board.step_flow(vec![({:?}, ({:?}, {:?}))]).unwrap();",
-                    // "video.step({:?}, ({:?}, {:?})).unwrap();",
-                    e.mouse,
-                    e.y / self.cell_pixel_size as u16,
-                    e.x / self.cell_pixel_size as u16
-                );
-            }
-            num += 1;
+            // if e.mouse != "mv" {
+            //     println!(
+            //         "my_board.step_flow(vec![({:?}, ({:?}, {:?}))]).unwrap();",
+            //         // "video.step({:?}, ({:?}, {:?})).unwrap();",
+            //         e.mouse,
+            //         e.y / self.cell_pixel_size as u16,
+            //         e.x / self.cell_pixel_size as u16
+            //     );
+            // }
+            // num += 1;
             // if e.mouse != "mv" {
             //     println!(
             //         "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
@@ -1156,7 +1149,9 @@ impl<T> BaseVideo<T> {
         match self.game_board_state {
             GameBoardState::Playing => {
                 let now = Instant::now();
-                return now.duration_since(self.game_start_instant).as_millis() as f64 / 1000.0;
+                // return now.duration_since(self.game_start_instant).as_millis() as f64 / 1000.0;
+                let time_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
+                return (time_ms - self.game_start_ms) as f64 / 1000.0;
             }
             GameBoardState::PreFlaging => {
                 let now = Instant::now();
@@ -1185,18 +1180,33 @@ impl<T> BaseVideo<T> {
         }
         Ok(self.game_dynamic_params.rtime_ms)
     }
-    /// video_time是录像的总时长。录像时长比时间成绩多一部分。
-    /// 涉及到录像播放器的拖动条最大最小值。
-    pub fn get_video_time(&self) -> Result<f64, ()> {
+    /// 录像播放器时间的开始值
+    /// 理论上：video_start_time = -self.delta_time
+    pub fn get_video_start_time(&self) -> Result<f64, ()> {
         if self.game_board_state != GameBoardState::Display {
             return Err(());
         }
-        Ok(self.video_action_state_recorder.last().unwrap().time)
-        // Ok(self.game_dynamic_params.rtime + self.delta_time)
+        Ok(-self.delta_time)
+    }
+    /// 录像播放器时间的结束值
+    /// 理论上：video_end_time = rtime
+    pub fn get_video_end_time(&self) -> Result<f64, ()> {
+        if self.game_board_state != GameBoardState::Display {
+            return Err(());
+        }
+        Ok(self.video_action_state_recorder.last().unwrap().time - self.delta_time)
+        // Ok(self.game_dynamic_params.rtime)
     }
     /// 录像播放时，按时间设置current_time；超出两端范围取两端。
     /// 游戏时不要调用。
     pub fn set_current_time(&mut self, mut time: f64) {
+        self.current_time = time;
+        if self.current_time < self.get_video_start_time().unwrap() {
+            self.current_time = self.get_video_start_time().unwrap()
+        }
+        if self.current_time > self.get_video_end_time().unwrap() {
+            self.current_time = self.get_video_end_time().unwrap()
+        }
         time += self.delta_time;
         if time > self.video_action_state_recorder[self.current_event_id].time {
             loop {
@@ -1225,8 +1235,8 @@ impl<T> BaseVideo<T> {
                 }
             }
         }
-        self.current_time =
-            self.video_action_state_recorder[self.current_event_id].time - self.delta_time;
+        // self.current_time =
+        //     self.video_action_state_recorder[self.current_event_id].time - self.delta_time;
     }
     /// 设置current_event_id
     pub fn set_current_event_id(&mut self, id: usize) -> Result<u8, ()> {
@@ -1418,8 +1428,8 @@ impl<T> BaseVideo<T> {
             #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
-                let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
-                self.get_left() as f64 * 1000.0 / t_ms
+                let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
+                self.get_left() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
@@ -1438,8 +1448,8 @@ impl<T> BaseVideo<T> {
             #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
-                let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
-                self.get_right() as f64 * 1000.0 / t_ms
+                let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
+                self.get_right() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
@@ -1458,8 +1468,8 @@ impl<T> BaseVideo<T> {
             #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
-                let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
-                self.get_double() as f64 * 1000.0 / t_ms
+                let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
+                self.get_double() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
@@ -1478,8 +1488,8 @@ impl<T> BaseVideo<T> {
             #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
-                let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
-                self.get_cl() as f64 * 1000.0 / t_ms
+                let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
+                self.get_cl() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
@@ -1498,8 +1508,8 @@ impl<T> BaseVideo<T> {
             #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
-                let t_ms = now.duration_since(self.game_start_instant).as_millis() as f64;
-                self.get_flag() as f64 * 1000.0 / t_ms
+                let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
+                self.get_flag() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
@@ -1556,7 +1566,8 @@ impl<T> BaseVideo<T> {
     }
     pub fn get_stnb(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
-        // println!("self.current_time:{:?}", bbbv_solved);
+        // println!("self.current_time:{:?}", self.current_time);
+        // println!("self.game_board_state:{:?}", self.game_board_state);
         if self.game_board_state == GameBoardState::Display && self.current_time < 0.00099 {
             return Ok(0.0);
         }
@@ -1569,9 +1580,12 @@ impl<T> BaseVideo<T> {
         }
 
         if self.game_board_state == GameBoardState::Display {
-            let t = self.video_action_state_recorder[self.current_event_id].time - self.delta_time;
-            Ok(c * self.static_params.bbbv as f64 / t.powf(1.7)
-                * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5))
+            // let t = self.current_time - self.delta_time;
+            // println!("t:{:?}", t);
+            Ok(
+                c * self.static_params.bbbv as f64 / self.current_time.powf(1.7)
+                    * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5),
+            )
         } else {
             Ok(
                 c * self.static_params.bbbv as f64 / self.game_dynamic_params.rtime.powf(1.7)

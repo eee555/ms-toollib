@@ -12,7 +12,24 @@ authors = [
 maintainers = [
   {name = "Wang Jianing", email = "wangjianing@88.com"}
 ]
-classifiers = [ "Programming Language :: Python" ]
+classifier = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Rust",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Python Modules"
+]
+project-url = { homepage = "https://github.com/eee555/ms_toollib" }
+
+
 
 # dependencies = [
 #   "httpx",
@@ -44,7 +61,7 @@ repository = "https://github.com/eee555/ms_toollib"
 
 
 [build-system]
-requires = ["maturin>=0.12,<0.13"]
+requires = ["maturin>=1.4.0"]
 build-backend = "maturin"
 
 # [tool.maturin]

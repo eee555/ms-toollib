@@ -21,28 +21,6 @@ itertools = { version ="0.6.0" }
 name = "ms_toollib"
 crate-type = ["cdylib", "lib"]
 
-[package.metadata.maturin]
-classifier = [
-  "Development Status :: 4 - Beta",
-  "License :: OSI Approved :: MIT License",
-  "Programming Language :: Rust",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Topic :: Software Development :: Libraries",
-  "Topic :: Software Development :: Libraries :: Python Modules"
-]
-maintainer = "eee555"
-maintainer-email = "wangjn@88.com"
-requires-python = ">=3.7"
-project-url = { homepage = "https://github.com/eee555/" }
-
-
 
 # [profile.release]
 # opt-level = 'z'

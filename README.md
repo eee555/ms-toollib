@@ -14,7 +14,7 @@ Algorithms for minesweeper, published on various platforms.
 最新版本号统计：  
 版本号越大，代表越新、功能越完善、bug越少（可以催）。
 
-python>=3.7, <=3.10(windows): 1.4.7
+python>=3.7, <=3.10(windows): 1.4.8
 
 python>=3.7, <=3.8(linux): 1.3.10
 

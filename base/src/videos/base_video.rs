@@ -302,6 +302,8 @@ pub struct BaseVideo<T> {
     pub end_time: Vec<u8>,
     /// 国家。预留字段，暂时不能解析。
     pub country: Vec<u8>,
+    /// 设备信息相关的uuid。例如在元扫雷中，长度为32。
+    pub device_uuid: Vec<u8>,
     /// 原始二进制数据
     raw_data: Vec<u8>,
     /// 解析二进制文件数据时的指针
@@ -362,6 +364,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             start_time: vec![],
             end_time: vec![],
             country: vec![],
+            device_uuid: vec![],
             raw_data: vec![],
             offset: 0,
             static_params: StaticParams::default(),
@@ -408,6 +411,7 @@ impl Default for BaseVideo<SafeBoard> {
             start_time: vec![],
             end_time: vec![],
             country: vec![],
+            device_uuid: vec![],
             raw_data: vec![],
             offset: 0,
             static_params: StaticParams::default(),
@@ -1091,14 +1095,15 @@ impl<T> BaseVideo<T> {
 }
 impl<T> BaseVideo<T> {
     // 再实现一些get、set方法
-    pub fn set_pix_size(&mut self, pix_size: u8) {
+    pub fn set_pix_size(&mut self, pix_size: u8) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Ready
             && self.game_board_state != GameBoardState::Win
             && self.game_board_state != GameBoardState::Loss
         {
-            return;
+            return Err(());
         }
         self.cell_pixel_size = pix_size;
+        Ok(0)
     }
     /// 获取当前录像时刻的后验的游戏局面
     pub fn get_game_board(&self) -> Vec<Vec<i32>> {
@@ -1339,6 +1344,15 @@ impl<T> BaseVideo<T> {
             return Err(());
         };
         self.country = country;
+        Ok(0)
+    }
+    pub fn set_device_uuid(&mut self, device_uuid: Vec<u8>) -> Result<u8, ()> {
+        if self.game_board_state != GameBoardState::Win
+            && self.game_board_state != GameBoardState::Loss
+        {
+            return Err(());
+        }
+        self.device_uuid = device_uuid;
         Ok(0)
     }
     /// 在生成二进制数据前得出checksum，则用这个
@@ -1801,6 +1815,8 @@ impl<T> BaseVideo<T> {
         self.raw_data.append(&mut self.end_time.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data.append(&mut self.country.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data.append(&mut self.device_uuid.clone().to_owned());
         self.raw_data.push(0);
 
         let mut byte = 0;

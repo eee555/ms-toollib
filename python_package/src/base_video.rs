@@ -454,6 +454,10 @@ impl PyBaseVideo {
         self.core.set_country(country).unwrap();
     }
     #[setter]
+    pub fn set_device_uuid(&mut self, device_uuid: Vec<u8>) {
+        self.core.set_device_uuid(device_uuid).unwrap();
+    }
+    #[setter]
     pub fn set_checksum(&mut self, checksum: [u8; 32]) {
         self.core.set_checksum(checksum).unwrap();
     }

@@ -122,6 +122,13 @@ impl EvfVideo {
             }
             self.data.country.push(the_byte as u8);
         }
+        loop {
+            let the_byte = self.data.get_char()?;
+            if the_byte == '\0' {
+                break;
+            }
+            self.data.device_uuid.push(the_byte as u8);
+        }
 
         self.data.board = vec![vec![0; self.data.width]; self.data.height];
 

@@ -15,17 +15,18 @@ export default defineComponent({
   setup() {
     let board = reactive([[0]]);
     let bbbv = ref(0);
+
     const get_board = async () => {
-      while(board.length > 0) {
+      while (board.length > 0) {
         board.pop();
       }
       const ms = await import("ms-toollib");
       const rows = 16;
       const columns = 30;
       let b = JSON.parse(ms.laymine_solvable(rows, columns, 99, 0, 0, 10000))[0];
-      for(let i = 0; i < rows; i++) {
+      for (let i = 0; i < rows; i++) {
         board.push([])
-        for(let j = 0; j < columns; j++) {
+        for (let j = 0; j < columns; j++) {
           board[i].push(b[i][j])
         }
       }
@@ -50,14 +51,17 @@ export default defineComponent({
 h3 {
   margin: 40px 0 0;
 }
+
 ul {
   list-style-type: none;
   padding: 0;
 }
+
 li {
   display: inline-block;
   margin: 0 10px;
 }
+
 a {
   color: #42b983;
 }

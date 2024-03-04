@@ -1816,7 +1816,8 @@ impl<T> BaseVideo<T> {
         self.raw_data.push(0);
         self.raw_data.append(&mut self.country.clone().to_owned());
         self.raw_data.push(0);
-        self.raw_data.append(&mut self.device_uuid.clone().to_owned());
+        self.raw_data
+            .append(&mut self.device_uuid.clone().to_owned());
         self.raw_data.push(0);
 
         let mut byte = 0;
@@ -1909,10 +1910,12 @@ impl<T> BaseVideo<T> {
 // 录像审核相关的方法
 impl<T> BaseVideo<T> {
     /// 录像是否合法。排名网站的自动审核录像策略。检查是否扫完、是否有标识、是否用合法的软件。不检查校验码。
+    /// 必须在分析完后调用
     /// - 返回：0合法，1不合法，3不确定
     /// - 若步数很少，例如使用平板，返回3
     pub fn is_valid(&self) -> u8 {
         if self.software == "Arbiter".as_bytes().to_vec() {
+            // 对于arbiter，开源界没有鉴定的能力，只能追溯
         } else if self.software == "Viennasweeper".as_bytes().to_vec() {
             let start_time = ((self.start_time[0] - 48) as u64) * 1000000000
                 + ((self.start_time[1] - 48) as u64) * 100000000
@@ -1928,13 +1931,29 @@ impl<T> BaseVideo<T> {
                 // 2023-04-24 00:00:00后被禁
                 return 1;
             }
+        } else if self.software == "元3.2".as_bytes().to_vec()
+            || self.software == "元3.1.7".as_bytes().to_vec()
+        {
+            if self.checksum.iter().all(|&e| e == self.checksum[0]) {
+                // 大概率是使用了测试用的校验和
+                return 1;
+            }
+            if !self.is_fair {
+                // 被软件判定使用了辅助手段
+                return 1;
+            }
         } else {
+            // 仅限如上三种软件
             return 1;
         }
+
         if self.video_action_state_recorder.len() as f64 / (self.static_params.bbbv as f64) < 10.0 {
+            // 缺少鼠标移动细节，报不确定
             return 3;
         }
+
         if self.is_completed {
+            // 最后，检查是否完成
             return 0;
         } else {
             return 1;

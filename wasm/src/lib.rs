@@ -20,11 +20,11 @@
 // npm config set registry https://registry.npm.taobao.org/
 // npm config set registry https://registry.npmjs.org/
 
-use serde::{Deserialize, Serialize};
+// use serde::{Deserialize, Serialize};
 use serde_json;
 
 use wasm_bindgen::prelude::*;
-use web_sys;
+// use web_sys;
 mod board;
 // use board::{MinesweeperBoard,AvfVideo};
 mod transfor;

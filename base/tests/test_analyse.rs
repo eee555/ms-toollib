@@ -152,7 +152,7 @@ fn MvfVideo_works() {
 // cargo test --features rs -- --nocapture RmvVideo_works
 fn EvfVideo_works() {
     // 录像解析工具测试
-    let mut video = EvfVideo::new("b_6_7.542_3BV=19_3BVs=2.519_444.evf");
+    let mut video = EvfVideo::new("i_0_36.248_3BV=67_3BVs=1.848_胜多负少.evf");
 
     let r = video.parse_video();
     video.data.print_event();
@@ -172,6 +172,7 @@ fn EvfVideo_works() {
     println!("结果：{:?}", r);
     println!("标识：{:?}", video.data.player_designator);
     println!("软件：{:?}", video.data.software);
+    println!("比较：{:?}", "元3.1.7".as_bytes().to_vec());
     println!("race_designator：{:?}", video.data.race_designator);
     println!("3BV：{:?}", video.data.static_params.bbbv);
     println!("宽度：{:?}", video.data.width);
@@ -183,6 +184,9 @@ fn EvfVideo_works() {
     println!("video_start_time: {:?}", video.data.get_video_start_time().unwrap());
     println!("video_end_time: {:?}", video.data.get_video_end_time().unwrap());
     println!("is win: {:?}", video.data.is_completed);
+    println!("is_offical: {:?}", video.data.is_offical);
+    println!("is_fair: {:?}", video.data.is_fair);
+    println!("is_valid: {:?}", video.data.is_valid());
     video.data.set_current_time(0.001);
     println!("time：{:?}", video.data.get_time());
     println!("STNB: {:?}", video.data.get_stnb().unwrap());

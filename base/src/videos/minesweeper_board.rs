@@ -508,7 +508,7 @@ impl<T> MinesweeperBoard<T> {
                             self.game_board_state = GameBoardState::Playing;
                         } else {
                             self.mouse_state = MouseState::UpUp;
-                            return Ok(0);
+                            // 往下走，左键数可能后面还需要+1
                         }
                     }
                     MouseState::Chording

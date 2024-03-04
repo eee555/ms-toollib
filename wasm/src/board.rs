@@ -193,6 +193,10 @@ macro_rules! generate_video {
                     self.core.data.country.clone()
                 }
                 #[wasm_bindgen(getter)]
+                pub fn get_device_uuid(&self) -> Vec<u8> {
+                    self.core.data.device_uuid.clone()
+                }
+                #[wasm_bindgen(getter)]
                 pub fn get_bbbv(&self) -> usize {
                     self.core.data.static_params.bbbv
                 }
@@ -265,8 +269,12 @@ macro_rules! generate_video {
                     self.core.data.get_etime().unwrap()
                 }
                 #[wasm_bindgen(getter)]
-                pub fn get_video_time(&self) -> f64 {
-                    self.core.data.get_video_time().unwrap()
+                pub fn get_video_start_time(&self) -> f64 {
+                    self.core.data.get_video_start_time().unwrap()
+                }
+                #[wasm_bindgen(getter)]
+                pub fn get_video_end_time(&self) -> f64 {
+                    self.core.data.get_video_end_time().unwrap()
                 }
                 #[wasm_bindgen(getter)]
                 pub fn get_bbbv_s(&self) -> f64 {

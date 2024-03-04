@@ -4,7 +4,7 @@ import * as wasm from "wasm-main";
 const a = [[0, 0, 1, -1, 2, -1, 1, 0], [0, 0, 2, 2, 3, 1, 1, 0], [0, 1, 2, -1, 1, 0, 0, 0],
 [0, 1, -1, 3, 2, 0, 0, 0], [2, 3, 3, -1, 2, 1, 1, 0], [-1, -1, 2, 2, 3, -1, 1, 0],
 [2, 2, 1, 1, -1, 3, 2, 0], [0, 0, 0, 1, 2, -1, 1, 0]];
-let bv = wasm.cal3BV(JSON.stringify(a));
+let bv = wasm.cal_bbbv(JSON.stringify(a));
 console.log(bv);
 
 const b = [[1, 10, 10, 10, 10, 10, 10, 10, 10],
@@ -33,7 +33,7 @@ console.log(m.get_game_board);
 const request = new XMLHttpRequest()
 request.onload = () => {
     let r = new Uint8Array(request.response);
-    let video = wasm.AvfVideo.new(r)
+    let video = wasm.EvfVideo.new(r, "test.evf")
     video.parse_video()
     console.log(video.get_bbbv);
     console.log(video.get_player);
@@ -41,11 +41,15 @@ request.onload = () => {
     for (var i = 0; i < 100; i++) {
         console.log(video.events_x(i), video.events_y(i), video.events_mouse(i));
     }
-}
+    console.log(video.get_is_fair);
+    console.log(video.get_is_offical);
+    console.log(video.get_is_completed);
+    console.log(video.is_valid());
+} 
 request.onerror = (e) => {
     console.log(555);
 }
-request.open('GET', "jze.avf")
+request.open('GET', "test.evf")
 request.responseType = 'arraybuffer'
 request.send()
 

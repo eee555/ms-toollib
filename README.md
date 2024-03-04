@@ -1,5 +1,7 @@
 # ms_toollib
 
+[![ms_toollib](https://img.shields.io/badge/ms_toollib-v1.4.7-brightgreen.svg)](https://github.com/eee555/ms_toollib)
+
 史上唯一专门的、跨平台、跨语言的扫雷算法工具箱。已发布到：
 
 - crates.io

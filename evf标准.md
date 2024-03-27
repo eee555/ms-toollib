@@ -7,7 +7,7 @@
 
 ## 二、evf：史上第二款开源的扫雷录像格式
 
-*本标准全文和历史版本均开源在：https://github.com/eee555/ms_toollib/evf标准.md*
+*本标准全文和历史版本均开源在：https://github.com/eee555/ms_toollib/blob/main/evf%E6%A0%87%E5%87%86.md*
 
 无论avf还是rmv，扫雷录像的文件格式在技术上逐渐定型，Arbiter、Viennasweeper等专业复刻版本可以轻松地记录并播放它们自己产生的录像。但这种“软件中心”的模式是封闭的，这些格式的文件只能自产自销，新的软件永远不能产生这些格式的文件。按照[thefinerminer](https://minesweepergame.com/forum/viewtopic.php?f=26&t=1330)的说法，这些复刻版本都是突然出现然后消失的。目前，由于开发人员退圈，对这些文件的解析均依赖逆向，开发人员无法安全、自由地在各种格式之间转换。为了克服这个问题，一方面，freesweeper首次实现了在一款软件上播放多种格式。另一方面，freesweeper也能将其他格式的录像文件转换成[rawvf](https://github.com/thefinerminer/minesweeper-rawvf)格式（这是首款开源的扫雷录像格式）。同时能够播放多种格式和将多种格式转换成统一的格式无疑是未来发展的方向。然而，rawvf格式是已占用磁盘空间为代价换取人类易读的，不符合工程实践的一般原则。
 

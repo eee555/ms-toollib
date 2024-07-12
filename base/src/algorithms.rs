@@ -1,9 +1,10 @@
 use crate::utils::{
-    cal_bbbv_exp, cal_table_minenum_recursion, chunk_matrixes,
-    combine, find_a_border_cell, laymine, laymine_op, legalize_board,
-    refresh_board, refresh_matrixs, refresh_matrixses, unsolvable_structure,
-    BigNumber, C,
+    cal_bbbv_exp, cal_table_minenum_recursion, chunk_matrixes, combine, find_a_border_cell,
+    laymine, laymine_op, legalize_board, refresh_board, refresh_matrixs, refresh_matrixses,
+    unsolvable_structure, BigNumber, C,
 };
+
+use crate::videos::{MinesweeperBoard, GameBoardState};
 
 #[cfg(feature = "js")]
 use crate::utils::js_shuffle;
@@ -21,10 +22,6 @@ use rand::thread_rng;
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::prelude::*;
 
-
-
-
-
 use std::cmp::{max, min};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
@@ -35,8 +32,6 @@ use tract_ndarray::Array;
 
 #[cfg(any(feature = "py", feature = "rs"))]
 use tract_onnx::prelude::*;
-
-
 
 use crate::ENUM_LIMIT;
 
@@ -51,7 +46,7 @@ pub fn solve_minus(
     xs: &mut Vec<Vec<(usize, usize)>>,
     bs: &mut Vec<Vec<i32>>,
     board_of_game: &mut Vec<Vec<i32>>,
-) -> Result<(Vec<(usize, usize)>, Vec<(usize, usize)>), usize>{
+) -> Result<(Vec<(usize, usize)>, Vec<(usize, usize)>), usize> {
     let block_num = bs.len();
     // let mut flag = false;
     let mut not_mine = vec![];
@@ -214,7 +209,7 @@ pub fn solve_direct(
 /// - 注意：若超出枚举长度（固定值55），则该区块的部分返回平均概率，且返回所需的枚举长度。  
 /// - 返回：所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数（未知雷数 = 总雷数 - 已经标出的雷）的范围、上述“所需的枚举长度”。  
 /// - 注意：若没有内部未知区域，“内部未知格子是雷的概率”返回NaN。
-/// - 局限：空中间出现一个数字，这种错误的局面，不能检查出来
+/// - 局限：不能将所有矛盾的局面都检查出来。例如空中间出现一个数字，这种错误的局面，不能检查出来。
 pub fn cal_possibility(
     board_of_game: &Vec<Vec<i32>>,
     minenum: f64,
@@ -606,8 +601,7 @@ pub fn solve_enumerate(
                 for kk in &comb_relp_s[i][jj] {
                     not_mine.push(xs[i][*kk]);
                 }
-            } else if s_num == table_minenum_i[1].iter().sum::<usize>() * comb_relp_s[i][jj].len()
-            {
+            } else if s_num == table_minenum_i[1].iter().sum::<usize>() * comb_relp_s[i][jj].len() {
                 for kk in &comb_relp_s[i][jj] {
                     is_mine.push(xs[i][*kk]);
                 }
@@ -617,15 +611,14 @@ pub fn solve_enumerate(
     (not_mine, is_mine)
 }
 
-// 判断当前是否获胜
+// 判断当前是否获胜，单次
 // 游戏局面中必须没有标错的雷
-// 这个函数不具备普遍意义
-fn isVictory(board_of_game: &Vec<Vec<i32>>, Board: &Vec<Vec<i32>>) -> bool {
-    let row = board_of_game.len();
-    let col = board_of_game[0].len();
+fn is_victory(game_board: &Vec<Vec<i32>>, board: &Vec<Vec<i32>>) -> bool {
+    let row = game_board.len();
+    let col = game_board[0].len();
     for i in 0..row {
         for j in 0..col {
-            if board_of_game[i][j] == 10 && Board[i][j] != -1 {
+            if game_board[i][j] == 10 && board[i][j] != -1 {
                 return false;
             }
         }
@@ -633,29 +626,81 @@ fn isVictory(board_of_game: &Vec<Vec<i32>>, Board: &Vec<Vec<i32>>) -> bool {
     return true;
 }
 
+// 判断当前是否获胜，持续跟踪，提高效率
+pub struct IsVictory {
+    row: usize,
+    column: usize,
+    pointer_x: usize,
+    pointer_y: usize,
+}
+
+impl IsVictory {
+    pub fn new(row: usize, column: usize) -> IsVictory {
+        IsVictory {
+            row,
+            column,
+            pointer_x: 0,
+            pointer_y: 0,
+        }
+    }
+    fn is_victory(&mut self, game_board: &Vec<Vec<i32>>, board: &Vec<Vec<i32>>) -> bool {
+        for j in self.pointer_y..self.column {
+            if game_board[self.pointer_x][j] < 10 {
+                if game_board[self.pointer_x][j] != board[self.pointer_x][j] {
+                    return false; // 安全性相关（发生作弊）
+                }
+            }
+            if game_board[self.pointer_x][j] >= 10 && board[self.pointer_x][j] != -1 {
+                self.pointer_y = j;
+                return false;
+            }
+        }
+        for i in self.pointer_x + 1..self.row {
+            for j in 0..self.column {
+                if game_board[i][j] < 10 {
+                    if game_board[i][j] != board[i][j] {
+                        return false; // 安全性相关（发生作弊）
+                    }
+                }
+                if game_board[i][j] >= 10 && board[i][j] != -1 {
+                    self.pointer_x = i;
+                    self.pointer_y = j;
+                    return false;
+                }
+            }
+        }
+        true
+    }
+}
+
 /// <span id="is_solvable">从指定位置开始扫，判断局面是否无猜。  
 /// - 注意：周围一圈都是雷，那么若中间是雷不算猜，若中间不是雷算有猜。  
 /// - 注意：不考虑剩余雷数。
 pub fn is_solvable(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
+    if board[x0][y0] == -1 {
+        // 踩雷肯定是非无猜
+        return false;
+    }
     if unsolvable_structure(&board) {
         //若包含不可判雷结构，则不是无猜
         return false;
     }
     let row = board.len();
     let column = board[0].len();
-    let mut board_of_game = vec![vec![10; column]; row];
+    let mut game_board = vec![vec![10; column]; row];
     // 10是未打开，11是标雷
     // 局面大小必须超过6*6
-    refresh_board(board, &mut board_of_game, vec![(x0, y0)]);
-    if isVictory(&board_of_game, &board) {
+    refresh_board(board, &mut game_board, vec![(x0, y0)]);
+    let mut judge = IsVictory::new(row, column);
+    if judge.is_victory(&game_board, &board) {
         return true; // 暂且认为点一下就扫开也是可以的
     }
     loop {
-        let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
-        let ans = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game).unwrap();
+        let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&game_board);
+        let ans = solve_direct(&mut As, &mut xs, &mut bs, &mut game_board).unwrap();
         let not_mine;
         if ans.0.is_empty() && ans.1.is_empty() {
-            let ans = solve_minus(&mut As, &mut xs, &mut bs, &mut board_of_game).unwrap();
+            let ans = solve_minus(&mut As, &mut xs, &mut bs, &mut game_board).unwrap();
             if ans.0.is_empty() && ans.1.is_empty() {
                 let ans = solve_enumerate(&As, &xs, &bs);
                 if ans.0.is_empty() && ans.1.is_empty() {
@@ -665,7 +710,7 @@ pub fn is_solvable(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
                 }
                 if !ans.1.is_empty() {
                     for (o, p) in ans.1 {
-                        board_of_game[o][p] = 11;
+                        game_board[o][p] = 11;
                     }
                 }
             } else {
@@ -674,9 +719,67 @@ pub fn is_solvable(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
         } else {
             not_mine = ans.0
         }
-        refresh_board(board, &mut board_of_game, not_mine);
-        if isVictory(&board_of_game, &board) {
+        refresh_board(board, &mut game_board, not_mine);
+        if judge.is_victory(&game_board, &board) {
             return true;
+        }
+    }
+}
+
+/// <span id="is_solvable">从指定位置开始扫。  
+/// - 注意：周围一圈都是雷，那么若中间是雷不算猜，若中间不是雷算有猜。  
+/// - 注意：不考虑剩余雷数。
+/// - 返回：游戏局面的残局、解决的bbbv数
+pub fn try_solve(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> (Vec<Vec<i32>>, usize) {
+    let row = board.len();
+    let column = board[0].len();
+    let mut game_board = vec![vec![10; column]; row];
+    if board[x0][y0] == -1 {
+        // 踩雷
+        game_board[x0][y0] = 15;
+        return (game_board, 0);
+    }
+    let mut minesweeper_board = MinesweeperBoard::<Vec<Vec<i32>>>::new(board.clone());
+    let _ = minesweeper_board.step("lc", (x0, y0));
+    let _ = minesweeper_board.step("lr", (x0, y0));
+    // let mut judge = IsVictory::new(row, column);
+    if is_victory(&game_board, &board) {
+        return (minesweeper_board.game_board, 1); // 暂且认为点一下就扫开也是可以的
+    }
+    loop {
+        let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&minesweeper_board.game_board);
+        let ans =
+            solve_direct(&mut As, &mut xs, &mut bs, &mut minesweeper_board.game_board).unwrap();
+        let not_mine;
+        if ans.0.is_empty() && ans.1.is_empty() {
+            let ans =
+                solve_minus(&mut As, &mut xs, &mut bs, &mut minesweeper_board.game_board).unwrap();
+            if ans.0.is_empty() && ans.1.is_empty() {
+                let ans = solve_enumerate(&As, &xs, &bs);
+                if ans.0.is_empty() && ans.1.is_empty() {
+                    return (minesweeper_board.game_board, minesweeper_board.bbbv_solved);
+                } else {
+                    not_mine = ans.0
+                }
+                if !ans.1.is_empty() {
+                    for (o, p) in ans.1 {
+                        minesweeper_board.game_board[o][p] = 11;
+                    }
+                }
+            } else {
+                not_mine = ans.0
+            }
+        } else {
+            not_mine = ans.0
+        }
+        let mut operation = vec![];
+        for n in not_mine{
+            operation.push(("lc", n));
+            operation.push(("lr", n));
+        }
+        let _  = minesweeper_board.step_flow(operation);
+        if minesweeper_board.game_board_state == GameBoardState::Win{
+            return (minesweeper_board.game_board, minesweeper_board.bbbv_solved);
         }
     }
 }
@@ -704,7 +807,7 @@ pub fn laymine_solvable_thread(
     let mut handles = vec![];
     let flag_exit = Arc::new(Mutex::new(0));
     let (tx, rx) = mpsc::channel(); // mpsc 是多个发送者，一个接收者
-    // println!("{:?}", thread::available_parallelism().unwrap());
+                                    // println!("{:?}", thread::available_parallelism().unwrap());
     for ii in (1..=8).rev() {
         let tx_ = mpsc::Sender::clone(&tx);
         let max_time = max_times / ii;
@@ -896,8 +999,8 @@ fn adjust_step(
     board: &Vec<Vec<i32>>,            // 当前的board，数字没有计算，只有0，-1，-10
     board_of_game: &Vec<Vec<i32>>,    // 当前的board_of_game，数字没有计算，只有10，1
     plan_click: &Vec<(usize, usize)>, // 当前计划点开的格子，递归部分要保证点开后，局面是有解开的可能的
-    remain_minenum: usize,           // 当前还要埋的雷数
-    remain_not_minenum: usize,       // 当前还要埋的非雷数
+    remain_minenum: usize,            // 当前还要埋的雷数
+    remain_not_minenum: usize,        // 当前还要埋的非雷数
 ) -> (Vec<Vec<i32>>, bool) {
     let mut b = board.clone(); // 克隆一个board的备份
     let mut bg = board_of_game.clone(); // 克隆一个board_of_game的备份
@@ -1307,7 +1410,7 @@ pub fn get_all_not_and_is_mine_on_board(
     let mut not_mine = vec![];
     not_mine.append(&mut ans.0);
     is_mine.append(&mut ans.1);
-    let mut ans = solve_minus(As, xs, bs, board_of_game).unwrap();;
+    let mut ans = solve_minus(As, xs, bs, board_of_game).unwrap();
     not_mine.append(&mut ans.0);
     is_mine.append(&mut ans.1);
     let mut ans = solve_enumerate(As, xs, bs);
@@ -1316,7 +1419,8 @@ pub fn get_all_not_and_is_mine_on_board(
     (not_mine, is_mine)
 }
 
-/// 判断是否为可能可以（区别于必然可以）判雷时的猜雷；对应弱无猜、准无猜规则。  
+/// 判断是否为可能可以（区别于必然可以）判雷时的猜雷；
+/// 对应弱无猜、准无猜规则。也可在可猜规则里初步判断。  
 /// - 前提：点在未知格上，即10。  
 /// - 约定：1 -> 正确的判雷。  
 ///  - 注意：不可以处理14、15等标记（全当成10）。输入为玩家维护的游戏局面，因此会首先清干净玩家标的雷。  
@@ -1354,7 +1458,7 @@ pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, u
             12 => return 1,
             11 => return 4,
             _ => {
-                let (n, _) = solve_minus(As, xs, bs, board_of_game).unwrap();;
+                let (n, _) = solve_minus(As, xs, bs, board_of_game).unwrap();
                 if !flag_border && !n.is_empty() {
                     return 3;
                 }

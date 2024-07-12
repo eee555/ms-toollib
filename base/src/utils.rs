@@ -4,11 +4,10 @@ use rand::seq::SliceRandom;
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::thread_rng;
 use std::cmp::{max, min};
+use std::vec;
 // use std::convert::TryInto;
 #[cfg(feature = "js")]
 use getrandom::getrandom;
-
-
 
 use crate::safe_board;
 use crate::safe_board::BoardSize;
@@ -416,7 +415,7 @@ pub fn refresh_matrixses(
 // 获取0~limit-1范围内的随机整数
 // 用于js平台
 #[cfg(feature = "js")]
-fn get_random_int(limit: usize) -> usize {
+pub fn get_random_int(limit: usize) -> usize {
     if limit == 0 {
         return 0;
     }
@@ -439,64 +438,101 @@ pub trait js_shuffle {
 }
 
 #[cfg(feature = "js")]
-impl js_shuffle for Vec<i32> {
+impl<T> js_shuffle for Vec<T> {
     fn shuffle_(&mut self) {
         // 存疑！！！！！
         let l = self.len();
         for i in 1..l {
             let id = get_random_int(i + 1);
-            let t = self[i];
+            let t = self[i].clone();
             self[i] = self[id];
             self[id] = t;
         }
     }
 }
 
-/// 通用标准埋雷引擎。
-/// - 标准埋雷规则：起手位置非雷，其余位置的雷服从均匀分布。
-/// - 输出：二维的局面，其中0代表空，1~8代表1~8，-1代表雷。
-pub fn laymine(row: usize, column: usize, minenum: usize, X0: usize, Y0: usize) -> Vec<Vec<i32>> {
-    let area: usize = row * column - 1;
-    let mut board1_dim: Vec<i32> = vec![];
-    board1_dim.reserve(area);
-    board1_dim = vec![0; area - minenum];
-    board1_dim.append(&mut vec![-1; minenum]);
-
+/// 一维埋雷，给局部埋雷，完全随机。
+/// - 需要埋雷的区域的面积，雷数。
+/// - 例如，高级标准埋雷时，area = 16*30-1
+pub fn get_board_1d(area: usize, minenum: usize) -> Vec<i32> {
+    let mut board_1d: Vec<i32> = vec![];
+    board_1d.reserve(area);
+    board_1d = vec![0; area - minenum];
+    board_1d.append(&mut vec![-1; minenum]);
     #[cfg(any(feature = "py", feature = "rs"))]
     let mut rng = thread_rng();
 
     #[cfg(any(feature = "py", feature = "rs"))]
-    board1_dim.shuffle(&mut rng);
+    board_1d.shuffle(&mut rng);
 
     #[cfg(feature = "js")]
-    board1_dim.shuffle_();
+    board_1d.shuffle_();
+    board_1d
+}
+
+/// 根据起手不开空的规则，把一维的局面转换成二维的。
+pub fn trans_board_1d_2d_op(
+    board_1d: &Vec<i32>,
+    row: usize,
+    column: usize,
+    x0: usize,
+    y0: usize,
+) -> Vec<Vec<i32>> {
+    let mut board = vec![vec![0; column]; row];
+    let mut i = 0;
+    for x in 0..row {
+        for y in 0..column {
+            if x <= x0 + 1 && x0 <= x + 1 && y <= y0 + 1 && y0 <= y + 1 {
+                continue;
+            }
+            if board_1d[i] < 0 {
+                board[x][y] = -1;
+                for j in max(1, x) - 1..min(row, x + 2) {
+                    for k in max(1, y) - 1..min(column, y + 2) {
+                        if board[j][k] >= 0 {
+                            board[j][k] += 1
+                        }
+                    }
+                }
+            }
+            i += 1;
+        }
+    }
+    board
+}
+
+/// 通用标准埋雷引擎。
+/// - 标准埋雷规则：起手位置非雷，其余位置的雷服从均匀分布。
+/// - 输出：二维的局面，其中0代表空，1~8代表1~8，-1代表雷。
+pub fn laymine(row: usize, column: usize, minenum: usize, x0: usize, y0: usize) -> Vec<Vec<i32>> {
+    let board1_dim = get_board_1d(row * column - 1, minenum);
 
     let mut board1_dim_2: Vec<i32> = vec![];
-    board1_dim_2.reserve(area + 1);
-    let pointer = X0 + Y0 * row;
+    board1_dim_2.reserve(row * column);
+    let pointer = x0 + y0 * row;
     for i in 0..pointer {
         board1_dim_2.push(board1_dim[i]);
     }
     board1_dim_2.push(0);
-    for i in pointer..area {
+    for i in pointer..(row * column - 1) {
         board1_dim_2.push(board1_dim[i]);
     }
-    let mut Board: Vec<Vec<i32>> = vec![vec![0; column]; row];
-    for i in 0..(area + 1) {
+    let mut board: Vec<Vec<i32>> = vec![vec![0; column]; row];
+    for i in 0..(row * column) {
         if board1_dim_2[i] < 0 {
             let x = i % row;
             let y = i / row;
-            Board[x][y] = -1;
+            board[x][y] = -1;
             for j in max(1, x) - 1..min(row, x + 2) {
                 for k in max(1, y) - 1..min(column, y + 2) {
-                    if Board[j][k] >= 0 {
-                        Board[j][k] += 1;
+                    if board[j][k] >= 0 {
+                        board[j][k] += 1;
                     }
                 }
             }
         }
     }
-    Board
+    board
 }
 
 /// 通用win7规则埋雷引擎。
@@ -506,58 +542,27 @@ pub fn laymine_op(
     row: usize,
     column: usize,
     minenum: usize,
-    X0: usize,
-    Y0: usize,
+    x0: usize,
+    y0: usize,
 ) -> Vec<Vec<i32>> {
-    let mut areaOp = 9;
-    if X0 == 0 || Y0 == 0 || X0 == row - 1 || Y0 == column - 1 {
-        if X0 == 0 && Y0 == 0
-            || X0 == 0 && Y0 == column - 1
-            || X0 == row - 1 && Y0 == 0
-            || X0 == row - 1 && Y0 == column - 1
+    let mut area_op = 9;
+    if x0 == 0 || y0 == 0 || x0 == row - 1 || y0 == column - 1 {
+        if x0 == 0 && y0 == 0
+            || x0 == 0 && y0 == column - 1
+            || x0 == row - 1 && y0 == 0
+            || x0 == row - 1 && y0 == column - 1
         {
-            areaOp = 4;
+            area_op = 4;
         } else {
-            areaOp = 6;
+            area_op = 6;
         }
     }
-    let area = row * column - areaOp;
-    let mut board1_dim = vec![0; area - minenum];
-    board1_dim.append(&mut vec![-1; minenum]);
-
-    #[cfg(any(feature = "py", feature = "rs"))]
-    let mut rng = thread_rng();
-
-    #[cfg(any(feature = "py", feature = "rs"))]
-    board1_dim.shuffle(&mut rng);
-
-    #[cfg(feature = "js")]
-    board1_dim.shuffle_();
-
-    let mut Board = vec![vec![0; column]; row];
-    let mut skip = 0;
-    for i in 0..(area + areaOp) {
-        let x = i % row;
-        let y = i / row;
-        if x <= X0 + 1 && X0 <= x + 1 && y <= Y0 + 1 && Y0 <= y + 1 {
-            skip += 1;
-            continue;
-        }
-        if board1_dim[i - skip] < 0 {
-            Board[x][y] = -1;
-            for j in max(1, x) - 1..min(row, x + 2) {
-                for k in max(1, y) - 1..min(column, y + 2) {
-                    if Board[j][k] >= 0 {
-                        Board[j][k] += 1
-                    }
-                }
-            }
-        }
-    }
-    Board
+    let area = row * column - area_op;
+    let board_1d = get_board_1d(area, minenum);
+    trans_board_1d_2d_op(&board_1d, row, column, x0, y0)
 }
 
-pub fn cal3BVonIsland<T>(board: &T) -> usize
+pub fn cal_bbbv_on_island<T>(board: &T) -> usize
 where
     T: std::ops::Index<usize> + safe_board::BoardSize,
     T::Output: std::ops::Index<usize, Output = i32>,
@@ -592,7 +597,7 @@ where
     T: std::ops::Index<usize> + safe_board::BoardSize,
     T::Output: std::ops::Index<usize, Output = i32>,
 {
-    cal3BVonIsland(board) + cal_op(board)
+    cal_bbbv_on_island(board) + cal_op(board)
 }
 
 /// 依据左击位置刷新局面。如踩雷，标上或14、15标记

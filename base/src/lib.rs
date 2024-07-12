@@ -31,31 +31,34 @@
 // cargo yank --vers 0.0.1
 mod utils;
 pub use utils::{
-    cal_bbbv, cal_op, cal_isl, cal_table_minenum_recursion, combine, laymine, laymine_op, refresh_board,
-    refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure, enuOneStep, is_good_chording,
-    cal_cell_nums
+    cal_bbbv, cal_cell_nums, cal_isl, cal_op, cal_table_minenum_recursion, combine, enuOneStep,
+    is_good_chording, laymine, laymine_op, refresh_board, refresh_matrix, refresh_matrixs,
+    refresh_matrixses, unsolvable_structure,
 };
+#[cfg(any(feature = "js"))]
+pub use utils::{get_random_int};
 
 mod miscellaneous;
 
 mod algorithms;
 #[cfg(any(feature = "py", feature = "rs"))]
-pub use algorithms::{laymine_solvable_thread, sample_3BVs_exp, OBR_board, agent_step};
+pub use algorithms::{agent_step, laymine_solvable_thread, sample_3BVs_exp, OBR_board};
 
 pub use algorithms::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard,
-    get_all_not_and_is_mine_on_board, is_solvable, laymine_solvable, laymine_solvable_adjust,
-    is_guess_while_needless, is_able_to_solve, mark_board, solve_direct, solve_enumerate, solve_minus
+    get_all_not_and_is_mine_on_board, is_able_to_solve, is_guess_while_needless, is_solvable,
+    laymine_solvable, laymine_solvable_adjust, mark_board, solve_direct, solve_enumerate,
+    solve_minus, try_solve,
 };
 // #[cfg(any(feature = "rs"))]
 // pub use algorithms::{mark_board, solve_direct, solve_enumerate, solve_minus};
 
 mod board;
-pub use board::{GameBoard, Board};
+pub use board::{Board, GameBoard};
 
 mod videos;
 pub use videos::{
-    AvfVideo, RmvVideo, EvfVideo, MvfVideo, BaseVideo, MinesweeperBoard, GameBoardState, MouseState
+    AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MouseState, MvfVideo, RmvVideo,
 };
 
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -66,12 +69,13 @@ pub use OBR::ImageBoard;
 // #[cfg(any(feature = "py", feature = "rs"))]
 mod safe_board;
 #[cfg(any(feature = "py", feature = "rs"))]
-pub use crate::safe_board::{SafeBoard};
+pub use crate::safe_board::SafeBoard;
 #[cfg(any(feature = "py", feature = "rs"))]
-pub use crate::safe_board::{SafeBoardRow};
+pub use crate::safe_board::SafeBoardRow;
 
 #[cfg(any(feature = "py", feature = "rs"))]
-use crate::safe_board::{BoardSize};
+use crate::safe_board::BoardSize;
 
 // 最大枚举长度限制。超过这个长度，概率计算不准。全雷网的高级没有发现超出此限制的。
 const ENUM_LIMIT: usize = 55;
+

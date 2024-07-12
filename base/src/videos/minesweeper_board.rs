@@ -38,7 +38,7 @@ pub struct MinesweeperBoard<T> {
     pub board: T,
     /// 局面
     pub game_board: Vec<Vec<i32>>,
-    flagedList: Vec<(usize, usize)>, // 记录哪些雷曾经被标过，则再标这些雷不记为ce
+    flaged_list: Vec<(usize, usize)>, // 记录哪些雷曾经被标过，则再标这些雷不记为ce
     /// 左键数
     pub left: usize,
     /// 右键数
@@ -68,7 +68,7 @@ impl Default for MinesweeperBoard<Vec<Vec<i32>>> {
         MinesweeperBoard {
             board: vec![],
             game_board: vec![],
-            flagedList: vec![],
+            flaged_list: vec![],
             left: 0,
             right: 0,
             double: 0,
@@ -93,7 +93,7 @@ impl Default for MinesweeperBoard<SafeBoard> {
         MinesweeperBoard {
             board: SafeBoard::new(vec![]),
             game_board: vec![],
-            flagedList: vec![],
+            flaged_list: vec![],
             left: 0,
             right: 0,
             double: 0,
@@ -121,7 +121,7 @@ impl MinesweeperBoard<Vec<Vec<i32>>> {
             row,
             column,
             game_board: vec![vec![10; column]; row],
-            flagedList: vec![],
+            flaged_list: vec![],
             mouse_state: MouseState::UpUp,
             ..MinesweeperBoard::<Vec<Vec<i32>>>::default()
         }
@@ -137,7 +137,7 @@ impl MinesweeperBoard<Vec<Vec<i32>>> {
         self.flag = 0;
         self.left = 0;
         self.bbbv_solved = 0;
-        self.flagedList = vec![];
+        self.flaged_list = vec![];
         self.mouse_state = MouseState::UpUp;
         self.game_board_state = GameBoardState::Ready;
         self.pointer_x = 0;
@@ -155,7 +155,7 @@ impl MinesweeperBoard<SafeBoard> {
             row,
             column,
             game_board: vec![vec![10; column]; row],
-            flagedList: vec![],
+            flaged_list: vec![],
             mouse_state: MouseState::UpUp,
             ..MinesweeperBoard::<SafeBoard>::default()
         }
@@ -170,7 +170,7 @@ impl<T> MinesweeperBoard<T> {
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         self.left += 1;
-        if self.game_board[x][y] != 10 {
+        if self.game_board[x][y] != 10 && self.game_board[x][y] != 12 {
             return Ok(0);
         }
         // refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
@@ -232,10 +232,10 @@ impl<T> MinesweeperBoard<T> {
                     10 => {
                         self.game_board[x][y] = 11;
                         self.flag += 1;
-                        if !self.flagedList.contains(&(x, y)) {
+                        if !self.flaged_list.contains(&(x, y)) {
                             self.ce += 1;
                         }
-                        self.flagedList.push((x, y));
+                        self.flaged_list.push((x, y));
                     }
                     11 => {
                         self.game_board[x][y] = 10;
@@ -539,7 +539,7 @@ impl<T> MinesweeperBoard<T> {
                                 if self.pre_flag_num == 0 {
                                     self.game_board_state = GameBoardState::Ready;
                                     self.flag = 0;
-                                    self.flagedList.clear();
+                                    self.flaged_list.clear();
                                     self.double = 0;
                                     self.left = 0;
                                     self.right = 0;
@@ -843,7 +843,7 @@ impl<T> MinesweeperBoard<T> {
     // 清空状态机里的点击次数
     fn clear_click_num(&mut self) {
         self.flag = 0;
-        self.flagedList.clear();
+        self.flaged_list.clear();
         self.double = 0;
         self.left = 0;
         self.right = 0;

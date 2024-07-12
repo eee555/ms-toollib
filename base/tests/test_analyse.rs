@@ -149,10 +149,10 @@ fn MvfVideo_works() {
 }
 
 #[test]
-// cargo test --features rs -- --nocapture RmvVideo_works
+// cargo test --features rs -- --nocapture EvfVideo_works
 fn EvfVideo_works() {
     // 录像解析工具测试
-    let mut video = EvfVideo::new("i_0_36.248_3BV=67_3BVs=1.848_胜多负少.evf");
+    let mut video = EvfVideo::new("死猜漏检.evf");
 
     let r = video.parse_video();
     video.data.print_event();

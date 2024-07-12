@@ -1,7 +1,7 @@
 ﻿// 局面相关的类，录像在video
 
 use crate::algorithms::{cal_possibility_onboard, solve_direct, solve_enumerate, solve_minus};
-use crate::utils::{cal3BVonIsland, cal_cell_nums, cal_isl, cal_op, refresh_matrixs};
+use crate::utils::{cal_bbbv_on_island, cal_cell_nums, cal_isl, cal_op, refresh_matrixs};
 
 /// 静态游戏局面的包装类。  
 /// 所有计算过的属性都会保存在这里。缓存计算结果的局面。  
@@ -204,7 +204,7 @@ impl Board {
         if self.has_cal_bbbv {
             return self.bbbv;
         }
-        let a = cal3BVonIsland(&self.board);
+        let a = cal_bbbv_on_island(&self.board);
         if !self.has_cal_openings {
             self.openings = cal_op(&self.board);
             self.has_cal_openings = true;

@@ -275,7 +275,7 @@ pub struct BaseVideo<T> {
     pub video_action_state_recorder: Vec<VideoActionStateRecorder>,
     /// 游戏局面流，从一开始没有打开任何格子（包含玩家游戏前的标雷过程），到最后打开了所有
     pub game_board_stream: Vec<GameBoard>,
-    /// 录像开始的时间，由计时器控制，仅游戏时用
+    /// 录像开始的时间（区别于游戏开始的时间），由计时器控制，仅游戏时用
     #[cfg(any(feature = "py", feature = "rs"))]
     pub video_start_instant: Instant,
     /// 第一次有效的左键抬起的时间，由计时器控制，仅游戏时用, new_before_game方法里用到，真正开始的时间
@@ -809,8 +809,9 @@ impl<T> BaseVideo<T> {
             GameBoardState::PreFlaging => {
                 if old_state != GameBoardState::PreFlaging {
                     self.video_start_instant = step_instant;
-                    time_ms = time_ms_between(step_instant, self.video_start_instant);
-                    time = time_ms as f64 / 1000.0;
+                    // time_ms = time_ms_between(step_instant, self.video_start_instant);
+                    time_ms = 0;
+                    time = 0.0;
                 }
             }
             GameBoardState::Playing => {
@@ -834,13 +835,14 @@ impl<T> BaseVideo<T> {
             // 不可能
             GameBoardState::Display => {}
             GameBoardState::Loss => {
-                let t_ms = time_ms - self.game_start_ms;
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_micros()
                     .to_string()
                     .into_bytes();
+                // 点一下左键可能直接获胜，但不可能直接失败
+                let t_ms = time_ms - self.game_start_ms;
                 self.is_completed = false;
                 // 这是和录像时间成绩有关
                 let t = t_ms as f64 / 1000.0;
@@ -852,13 +854,19 @@ impl<T> BaseVideo<T> {
                 self.gather_params_after_game(t);
             }
             GameBoardState::Win => {
-                let t_ms = time_ms - self.game_start_ms;
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_micros()
                     .to_string()
                     .into_bytes();
+                if old_state == GameBoardState::PreFlaging {
+                    // 点一左键下就直接获胜的情况
+                    self.start_time = self.end_time.clone();
+                    self.game_start_ms = time_ms;
+                    // println!("334")
+                } 
+                let t_ms = time_ms - self.game_start_ms;
                 self.is_completed = true;
                 let t = t_ms as f64 / 1000.0;
                 self.static_params.bbbv = cal_bbbv(&self.board);
@@ -1783,6 +1791,7 @@ impl<T> BaseVideo<T> {
             .push((self.static_params.bbbv >> 8).try_into().unwrap());
         self.raw_data
             .push((self.static_params.bbbv % 256).try_into().unwrap());
+        // println!("fff: {:?}", self.game_dynamic_params.rtime_ms);
         self.raw_data.push(
             (self.game_dynamic_params.rtime_ms >> 16)
                 .try_into()

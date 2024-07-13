@@ -774,3 +774,39 @@ fn BaseVideo_works_4() {
     println!("etime(1.9s): {:?}", video.data.get_etime());
     println!("STNB(1.9s): {:?}", video.data.get_stnb().unwrap());
 }
+
+#[test]
+fn BaseVideo_works_5_1bv() {
+    let board = vec![
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  1,  1],
+        vec![ 0,  0, 0,  0,  0, 0,  1,  -1],
+    ];
+    let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
+    
+    // println!("3BV：{:?}", video.static_params.bbbv);
+    // video.step("lc", (97, 97)).unwrap();
+    // video.step("lr", (97, 97)).unwrap();
+    // thread::sleep_ms(60);
+    video.step("lc", (32, 49)).unwrap();
+    thread::sleep_ms(200);
+    video.step("lr", (32, 49)).unwrap();
+    video.generate_evf_v0_raw_data();
+    video.set_checksum([8; 32]).unwrap();
+    video.save_to_evf_file("test");
+
+    println!("局面：{:?}", video.get_game_board());
+    println!("标识：{:?}", video.player_designator);
+    println!("局面状态：{:?}", video.game_board_state);
+    println!("开始时间戳：{:?}", video.start_time);
+    println!("结束时间戳：{:?}", video.end_time);
+    println!("时间：{:?}", video.get_rtime());
+    println!("时间毫秒：{:?}", video.get_rtime_ms());
+    println!("时间毫秒：{:?}", video.get_bbbv_s());
+
+}

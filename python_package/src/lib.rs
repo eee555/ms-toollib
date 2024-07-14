@@ -54,6 +54,18 @@ fn py_refresh_matrixs(
 }
 
 #[pyfunction]
+#[pyo3(name = "refresh_matrixses")]
+fn py_refresh_matrixses(
+    board_of_game: Vec<Vec<i32>>,
+) -> PyResult<(
+    Vec<Vec<Vec<Vec<i32>>>>,
+    Vec<Vec<Vec<(usize, usize)>>>,
+    Vec<Vec<Vec<i32>>>,
+)> {
+    Ok(refresh_matrixses(&board_of_game))
+}
+
+#[pyfunction]
 #[pyo3(name = "cal_op")]
 fn py_cal_op(board: Vec<Vec<i32>>) -> PyResult<usize> {
     Ok(cal_op(&board))
@@ -321,14 +333,23 @@ fn py_is_able_to_solve(mut board_of_game: Vec<Vec<i32>>, xy: (usize, usize)) -> 
     Ok(is_able_to_solve(&mut board_of_game, &xy))
 }
 
+
 #[pyfunction]
-#[pyo3(name = "enuOneStep")]
-fn py_enuOneStep(
-    AllTable: Vec<Vec<usize>>,
-    TableId: Vec<usize>,
-    b: i32,
-) -> PyResult<Vec<Vec<usize>>> {
-    Ok(enuOneStep(AllTable, TableId, b))
+#[pyo3(name = "cal_all_solution")]
+fn py_cal_all_solution(
+    a: Vec<Vec<i32>>,
+    b: Vec<i32>,
+) -> PyResult<Vec<Vec<u8>>> {
+    Ok(cal_all_solution(&a, &b))
+}
+
+#[pyfunction]
+#[pyo3(name = "cal_board_numbers")]
+fn py_cal_board_numbers(
+    mut board: Vec<Vec<i32>>,
+) -> PyResult<Vec<Vec<i32>>> {
+    cal_board_numbers(&mut board);
+    Ok(board)
 }
 
 // #[pyproto]
@@ -350,6 +371,7 @@ fn py_enuOneStep(
 fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_refresh_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_matrixs, m)?)?;
+    m.add_function(wrap_pyfunction!(py_refresh_matrixses, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_op, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_bbbv, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_board, m)?)?;
@@ -371,7 +393,8 @@ fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_mark_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_guess_while_needless, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_able_to_solve, m)?)?;
-    m.add_function(wrap_pyfunction!(py_enuOneStep, m)?)?;
+    m.add_function(wrap_pyfunction!(py_cal_all_solution, m)?)?;
+    m.add_function(wrap_pyfunction!(py_cal_board_numbers, m)?)?;
     m.add_class::<PyMinesweeperBoard>()?;
     m.add_class::<PySafeMinesweeperBoard>()?;
     m.add_class::<PyAvfVideo>()?;

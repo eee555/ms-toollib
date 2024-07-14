@@ -1,8 +1,9 @@
+use ms_toollib::{cal_bbbv, cal_table_minenum_recursion, combine, refresh_matrix, refresh_matrixs};
 use ms_toollib::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, is_able_to_solve,
     is_guess_while_needless, is_solvable, mark_board, solve_direct, solve_enumerate, try_solve,
+    cal_all_solution
 };
-use ms_toollib::{cal_table_minenum_recursion, combine, refresh_matrix, refresh_matrixs, cal_bbbv};
 
 // 测试各种引擎类的函数
 
@@ -377,7 +378,13 @@ fn cal_table_minenum_recursion_works() {
         &matrix_b,
         &combination_relationship,
     );
+
+    let a = cal_all_solution(&matrix_a, &matrix_b);
     println!("table的结果为：{:?}", table);
+    println!("matrix_a的结果为：{:?}", matrix_a);
+    println!("matrix_x的结果为：{:?}", matrix_x);
+    println!("matrix_b的结果为：{:?}", matrix_b);
+    println!("a的结果为：{:?}", a);
 }
 
 #[test]
@@ -411,19 +418,17 @@ fn is_guess_while_needless_works() {
     // let code = is_guess_while_needless(&mut game_board, &(0, 3));
     // println!("{:?}", code);
 
-
     let mut game_board = vec![
         vec![0, 0, 1, 1, 1, 0],
-        vec![0, 0, 1,10, 2, 1],
-        vec![0, 0, 2, 3,10,10],
-        vec![0, 0, 1,10,10,10],
-        vec![0, 0, 2, 3,10,10],
-        vec![0, 0, 1,10, 2, 1],
+        vec![0, 0, 1, 10, 2, 1],
+        vec![0, 0, 2, 3, 10, 10],
+        vec![0, 0, 1, 10, 10, 10],
+        vec![0, 0, 2, 3, 10, 10],
+        vec![0, 0, 1, 10, 2, 1],
         vec![0, 0, 1, 1, 1, 0],
     ];
     let code = is_guess_while_needless(&mut game_board, &(2, 4));
     println!("{:?}", code);
-
 }
 
 #[test]
@@ -448,11 +453,11 @@ fn try_solve_works() {
         vec![1, 1, 1, 1, 1, 2, 2, 2],
         vec![1, -1, 1, 2, -1, 3, -1, -1],
         vec![1, 1, 1, 3, -1, 5, 3, 3],
-        vec![0, 0, 0, 2, -1, 3,  -1, 1],
-        vec![0, 0, 0, 1,  2,  4,  3, 2],
-        vec![0, 0, 0, 0,  1, -1, -1, 2],
-        vec![0, 1, 1, 1,  1,  3, -1, 2],
-        vec![0, 1, -1, 1, 0,  1,  1, 1],
+        vec![0, 0, 0, 2, -1, 3, -1, 1],
+        vec![0, 0, 0, 1, 2, 4, 3, 2],
+        vec![0, 0, 0, 0, 1, -1, -1, 2],
+        vec![0, 1, 1, 1, 1, 3, -1, 2],
+        vec![0, 1, -1, 1, 0, 1, 1, 1],
     ];
     let a = try_solve(&board, 3, 0);
     println!("{:?}", a);

@@ -797,15 +797,14 @@ pub fn combine(
     (matrixA_squeeze, matrixx_squeeze, pair_cells)
 }
 
-pub fn enum_comb(
-    matrixA_squeeze: &Vec<Vec<i32>>,
-    matrixx_squeeze: &Vec<(usize, usize)>,
+
+/// 枚举法求解矩阵，返回所有的解
+pub fn cal_all_solution(
+    matrixA: &Vec<Vec<i32>>,
     Matrixb: &Vec<i32>,
 ) -> Vec<Vec<u8>> {
-    // 拟弃用，或暂时用不到
-    // 返回一个包含所有情况的表
-    let column = matrixx_squeeze.len();
-    let row = matrixA_squeeze.len();
+    let column = matrixA[0].len();
+    let row = matrixA.len();
     let mut enum_comb_table: Vec<Vec<u8>> = vec![vec![0; column]];
     let mut not_enum_cell: Vec<bool> = vec![true; column]; // 记录每个位置是否被枚举过，true是没有被枚举过
     let mut enum_cell_table: Vec<Vec<usize>> = vec![];
@@ -814,12 +813,12 @@ pub fn enum_comb(
         let mut enum_cell = vec![]; // 当前条件涉及的所有格子
         let mut new_enum_max = vec![];
         for j in 0..column {
-            if matrixA_squeeze[row][j] > 0 {
+            if matrixA[row][j] > 0 {
                 enum_cell.push(j);
                 if not_enum_cell[j] {
                     not_enum_cell[j] = false;
                     new_enum_cell.push(j);
-                    new_enum_max.push(matrixA_squeeze[row][j]);
+                    new_enum_max.push(matrixA[row][j]);
                 }
             }
         }
@@ -862,7 +861,7 @@ pub fn enum_comb(
             let mut equations = vec![];
             for kk in &enum_cell {
                 for rr in 0..row {
-                    if matrixA_squeeze[rr][*kk] > 0 {
+                    if matrixA[rr][*kk] > 0 {
                         equations.push(rr);
                     }
                 }
@@ -890,57 +889,150 @@ pub fn enum_comb(
     enum_comb_table
 }
 
-fn enumerateSub(Col: usize, minenum: usize) -> Vec<Vec<usize>> {
-    let mut Out: Vec<Vec<usize>> = vec![];
-    for i in (0..Col).combinations(minenum) {
-        Out.push(vec![0; Col]);
-        let len = Out.len() - 1;
-        for j in 0..minenum {
-            Out[len][i[j]] = 1;
-        }
-    }
-    Out
-}
+// pub fn enum_comb(
+//     matrixA_squeeze: &Vec<Vec<i32>>,
+//     matrixx_squeeze: &Vec<(usize, usize)>,
+//     Matrixb: &Vec<i32>,
+// ) -> Vec<Vec<u8>> {
+//     // 拟弃用
+//     // 枚举法求解矩阵，返回所有的解
+//     let column = matrixx_squeeze.len();
+//     let row = matrixA_squeeze.len();
+//     let mut enum_comb_table: Vec<Vec<u8>> = vec![vec![0; column]];
+//     let mut not_enum_cell: Vec<bool> = vec![true; column]; // 记录每个位置是否被枚举过，true是没有被枚举过
+//     let mut enum_cell_table: Vec<Vec<usize>> = vec![];
+//     for row in 0..row {
+//         let mut new_enum_cell = vec![]; // 当前条件涉及的新格子
+//         let mut enum_cell = vec![]; // 当前条件涉及的所有格子
+//         let mut new_enum_max = vec![];
+//         for j in 0..column {
+//             if matrixA_squeeze[row][j] > 0 {
+//                 enum_cell.push(j);
+//                 if not_enum_cell[j] {
+//                     not_enum_cell[j] = false;
+//                     new_enum_cell.push(j);
+//                     new_enum_max.push(matrixA_squeeze[row][j]);
+//                 }
+//             }
+//         }
+//         // 第一步，整理出当前条件涉及的所有格子，以及其中哪些是新格子
+//         let mut new_enum_table = (0..new_enum_cell.len())
+//             .map(|i| 0..new_enum_max[i] + 1)
+//             .multi_cartesian_product()
+//             .collect::<Vec<_>>();
+//         new_enum_table.retain(|x| x.iter().sum::<i32>() <= Matrixb[row]);
+//         // 第二步，获取这些新枚举到的格子的所有满足周围雷数约束的情况，即子枚举表
+//         if new_enum_table.is_empty() {
+//             enum_comb_table.retain(|item| {
+//                 enum_cell
+//                     .iter()
+//                     .fold(0, |sum: u8, i: &usize| sum + item[*i])
+//                     == Matrixb[row] as u8
+//             });
+//         // 第三步，若子枚举表为空，不用将子枚举表与主枚举表合并；且只检查主枚举表是否满足当前这条规则，删除一些不满足的
+//         } else {
+//             let mut flag_1 = true; // 代表新枚举的格子是否需要新增情况
+//             let enum_comb_table_len = enum_comb_table.len();
+//             for item in new_enum_table {
+//                 if flag_1 {
+//                     for m in 0..new_enum_cell.len() {
+//                         for n in 0..enum_comb_table_len {
+//                             enum_comb_table[n][new_enum_cell[m]] = item[m] as u8;
+//                         }
+//                     }
+//                     flag_1 = false;
+//                 } else {
+//                     for n in 0..enum_comb_table_len {
+//                         let mut one_row_in_new_table = enum_comb_table[n].clone();
+//                         for m in 0..new_enum_cell.len() {
+//                             one_row_in_new_table[new_enum_cell[m]] = item[m] as u8;
+//                         }
+//                         enum_comb_table.push(one_row_in_new_table);
+//                     }
+//                 }
+//             } // 第四步，若子枚举表非空，先将子枚举表与主枚举表合并
+//             let mut equations = vec![];
+//             for kk in &enum_cell {
+//                 for rr in 0..row {
+//                     if matrixA_squeeze[rr][*kk] > 0 {
+//                         equations.push(rr);
+//                     }
+//                 }
+//             }
+//             equations.dedup();
+//             // 第五步，再找出本条规则涉及的之前所有的规则的id
+//             for equ in equations {
+//                 enum_comb_table.retain(|item| {
+//                     enum_cell_table[equ]
+//                         .iter()
+//                         .fold(0, |sum: u8, i: &usize| sum + item[*i])
+//                         == Matrixb[equ] as u8
+//                 });
+//             }
+//             enum_comb_table.retain(|item| {
+//                 enum_cell
+//                     .iter()
+//                     .fold(0, |sum: u8, i: &usize| sum + item[*i])
+//                     == Matrixb[row] as u8
+//             }); // 这段重复了，不过不影响性能，之后优化
+//                 // 第六步，用本条规则、以及涉及的之前所有规则过滤所有情况
+//         }
+//         enum_cell_table.push(enum_cell);
+//     }
+//     enum_comb_table
+// }
+
+// fn enumerateSub(Col: usize, minenum: usize) -> Vec<Vec<usize>> {
+//     let mut Out: Vec<Vec<usize>> = vec![];
+//     for i in (0..Col).combinations(minenum) {
+//         Out.push(vec![0; Col]);
+//         let len = Out.len() - 1;
+//         for j in 0..minenum {
+//             Out[len][i[j]] = 1;
+//         }
+//     }
+//     Out
+// }
 
 /// 忘了干嘛用的，有待重构。和弱可猜有关。
-pub fn enuOneStep(mut AllTable: Vec<Vec<usize>>, TableId: Vec<usize>, b: i32) -> Vec<Vec<usize>> {
-    // AllTable不能为空
-    let mut NewId: Vec<usize> = vec![];
-    for i in &TableId {
-        if AllTable[0][*i] == 2 {
-            NewId.push(*i);
-        }
-    }
-    let mut DelId = vec![];
-    for i in 0..AllTable.len() {
-        let mut ExtraMine = b;
-        for j in &TableId {
-            if AllTable[i][*j] == 1 {
-                ExtraMine -= 1;
-            }
-        }
-        if ExtraMine < 0 || ExtraMine as usize > NewId.len() {
-            DelId.push(i);
-            continue;
-        }
-        let AddedTable = enumerateSub(NewId.len(), ExtraMine as usize);
-        for t in 0..NewId.len() {
-            AllTable[i][NewId[t]] = AddedTable[0][t];
-        }
-        for m in 1..AddedTable.len() {
-            AllTable.push(AllTable[i].clone());
-            for t in 0..NewId.len() {
-                let len = AllTable.len() - 1;
-                AllTable[len][NewId[t]] = AddedTable[m][t];
-            }
-        }
-    }
-    DelId.sort_by(|a, b| b.cmp(&a));
-    for i in DelId {
-        AllTable.remove(i);
-    }
-    AllTable
-}
+// pub fn enuOneStep(mut AllTable: Vec<Vec<usize>>, TableId: Vec<usize>, b: i32) -> Vec<Vec<usize>> {
+//     // AllTable不能为空
+//     let mut NewId: Vec<usize> = vec![];
+//     for i in &TableId {
+//         if AllTable[0][*i] == 2 {
+//             NewId.push(*i);
+//         }
+//     }
+//     let mut DelId = vec![];
+//     for i in 0..AllTable.len() {
+//         let mut ExtraMine = b;
+//         for j in &TableId {
+//             if AllTable[i][*j] == 1 {
+//                 ExtraMine -= 1;
+//             }
+//         }
+//         if ExtraMine < 0 || ExtraMine as usize > NewId.len() {
+//             DelId.push(i);
+//             continue;
+//         }
+//         let AddedTable = enumerateSub(NewId.len(), ExtraMine as usize);
+//         for t in 0..NewId.len() {
+//             AllTable[i][NewId[t]] = AddedTable[0][t];
+//         }
+//         for m in 1..AddedTable.len() {
+//             AllTable.push(AllTable[i].clone());
+//             for t in 0..NewId.len() {
+//                 let len = AllTable.len() - 1;
+//                 AllTable[len][NewId[t]] = AddedTable[m][t];
+//             }
+//         }
+//     }
+//     DelId.sort_by(|a, b| b.cmp(&a));
+//     for i in DelId {
+//         AllTable.remove(i);
+//     }
+//     AllTable
+// }
 
 fn cal_cell_and_equation_map(matrix_a: &Vec<Vec<i32>>) -> (Vec<Vec<usize>>, Vec<Vec<usize>>) {
     // cell_to_equation_map是方程中未知数的索引到方程的索引的映射
@@ -1117,88 +1209,88 @@ pub fn cal_table_minenum_recursion(
     }
 }
 
-pub fn cal_table_minenum_enum(
-    matrixA_squeeze: &Vec<Vec<i32>>,
-    matrixx_squeeze: &Vec<(usize, usize)>,
-    matrix_b: &Vec<i32>,
-    combination_relationship: &Vec<Vec<usize>>,
-) -> Result<([Vec<usize>; 2], Vec<Vec<usize>>), usize> {
-    // 拟弃用，用cal_table_minenum_recursion代替
-    // 枚举并统计，得到雷数分布表和每格是雷情况数表
-    let mut table_minenum: [Vec<usize>; 2] = [vec![], vec![]];
-    // 雷数分布表表：记录了每块（不包括内部块）每种总雷数下的是雷总情况数
-    // 例如：[[17, 18, 19, 20, 21, 22, 23, 24], [48, 2144, 16872, 49568, 68975, 48960, 16608, 2046]]
-    let mut table_cell_minenum: Vec<Vec<usize>> = vec![];
-    // 每格是雷情况数表：记录了每块每格（或者地位等同的复合格）、每种总雷数下的是雷情况数
-    if matrixx_squeeze.len() > 45 {
-        // 超出枚举极限长度
-        return Err(0);
-    }
-    let enum_comb_table: Vec<Vec<u8>> = enum_comb(&matrixA_squeeze, &matrixx_squeeze, &matrix_b);
-    if enum_comb_table.len() == 0 {
-        // 无解局面
-        return Err(1);
-    }
-    for s in enum_comb_table.clone() {
-        // println!("s: {:?}", s);
-        let s_sum = s.iter().sum::<u8>();
-        let mut si_num = 1; // 由于enum_comb_table中的格子每一个都代表了与其地位等同的所有格子，由此的情况数
-        for s_i in 0..s.len() {
-            si_num *= C_query(combination_relationship[s_i].len(), s[s_i]);
-        }
-        let fs = table_minenum[0]
-            .clone()
-            .iter()
-            .position(|x| *x == s_sum.into());
-        match fs {
-            None => {
-                table_minenum[0].push(s_sum.into());
-                table_minenum[1].push(si_num.into());
-                let mut ss = vec![];
-                for c in 0..s.len() {
-                    if s[c] == 0 {
-                        ss.push(0);
-                    } else {
-                        let mut sss = 1;
-                        for d in 0..s.len() {
-                            if c != d {
-                                sss *= C_query(combination_relationship[d].len(), s[d]);
-                                // println!("comb_relp_s = {:?}", comb_relp_s);
-                                // println!("sss = {:?}", sss);
-                            } else {
-                                sss *= C_query(combination_relationship[d].len() - 1, s[d] - 1);
-                            }
-                        }
-                        ss.push(sss as usize);
-                    }
-                }
-                table_cell_minenum.push(ss);
-            }
-            _ => {
-                table_minenum[1][fs.unwrap()] += si_num as usize;
-                for c in 0..s.len() {
-                    if s[c] == 0 {
-                        continue;
-                    } else {
-                        let mut sss = 1;
-                        for d in 0..s.len() {
-                            if c != d {
-                                sss *= C_query(combination_relationship[d].len(), s[d]);
-                                // println!("comb_relp_s=={:?}", comb_relp_s);
-                                // println!("s=={:?}", s);
-                            } else {
-                                sss *= C_query(combination_relationship[d].len() - 1, s[d] - 1);
-                            }
-                        }
-                        table_cell_minenum[fs.unwrap()][c] += sss as usize;
-                    }
-                }
-            }
-        }
-    }
+// pub fn cal_table_minenum_enum(
+//     matrixA_squeeze: &Vec<Vec<i32>>,
+//     matrixx_squeeze: &Vec<(usize, usize)>,
+//     matrix_b: &Vec<i32>,
+//     combination_relationship: &Vec<Vec<usize>>,
+// ) -> Result<([Vec<usize>; 2], Vec<Vec<usize>>), usize> {
+//     // 拟弃用，用cal_table_minenum_recursion代替
+//     // 枚举并统计，得到雷数分布表和每格是雷情况数表
+//     let mut table_minenum: [Vec<usize>; 2] = [vec![], vec![]];
+//     // 雷数分布表表：记录了每块（不包括内部块）每种总雷数下的是雷总情况数
+//     // 例如：[[17, 18, 19, 20, 21, 22, 23, 24], [48, 2144, 16872, 49568, 68975, 48960, 16608, 2046]]
+//     let mut table_cell_minenum: Vec<Vec<usize>> = vec![];
+//     // 每格是雷情况数表：记录了每块每格（或者地位等同的复合格）、每种总雷数下的是雷情况数
+//     if matrixx_squeeze.len() > 45 {
+//         // 超出枚举极限长度
+//         return Err(0);
+//     }
+//     let enum_comb_table: Vec<Vec<u8>> = enum_comb(&matrixA_squeeze, &matrixx_squeeze, &matrix_b);
+//     if enum_comb_table.len() == 0 {
+//         // 无解局面
+//         return Err(1);
+//     }
+//     for s in enum_comb_table.clone() {
+//         // println!("s: {:?}", s);
+//         let s_sum = s.iter().sum::<u8>();
+//         let mut si_num = 1; // 由于enum_comb_table中的格子每一个都代表了与其地位等同的所有格子，由此的情况数
+//         for s_i in 0..s.len() {
+//             si_num *= C_query(combination_relationship[s_i].len(), s[s_i]);
+//         }
+//         let fs = table_minenum[0]
+//             .clone()
+//             .iter()
+//             .position(|x| *x == s_sum.into());
+//         match fs {
+//             None => {
+//                 table_minenum[0].push(s_sum.into());
+//                 table_minenum[1].push(si_num.into());
+//                 let mut ss = vec![];
+//                 for c in 0..s.len() {
+//                     if s[c] == 0 {
+//                         ss.push(0);
+//                     } else {
+//                         let mut sss = 1;
+//                         for d in 0..s.len() {
+//                             if c != d {
+//                                 sss *= C_query(combination_relationship[d].len(), s[d]);
+//                                 // println!("comb_relp_s = {:?}", comb_relp_s);
+//                                 // println!("sss = {:?}", sss);
+//                             } else {
+//                                 sss *= C_query(combination_relationship[d].len() - 1, s[d] - 1);
+//                             }
+//                         }
+//                         ss.push(sss as usize);
+//                     }
+//                 }
+//                 table_cell_minenum.push(ss);
+//             }
+//             _ => {
+//                 table_minenum[1][fs.unwrap()] += si_num as usize;
+//                 for c in 0..s.len() {
+//                     if s[c] == 0 {
+//                         continue;
+//                     } else {
+//                         let mut sss = 1;
+//                         for d in 0..s.len() {
+//                             if c != d {
+//                                 sss *= C_query(combination_relationship[d].len(), s[d]);
+//                                 // println!("comb_relp_s=={:?}", comb_relp_s);
+//                                 // println!("s=={:?}", s);
+//                             } else {
+//                                 sss *= C_query(combination_relationship[d].len() - 1, s[d] - 1);
+//                             }
+//                         }
+//                         table_cell_minenum[fs.unwrap()][c] += sss as usize;
+//                     }
+//                 }
+//             }
+//         }
+//     }
 
-    Ok((table_minenum, table_cell_minenum))
-}
+//     Ok((table_minenum, table_cell_minenum))
+// }
 
 /// 用几种模板，检测实际局面中是否有明显的死猜的结构。  
 /// - 使用模板包括：工型、回型、器型。  

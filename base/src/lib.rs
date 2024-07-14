@@ -31,9 +31,9 @@
 // cargo yank --vers 0.0.1
 mod utils;
 pub use utils::{
-    cal_bbbv, cal_cell_nums, cal_isl, cal_op, cal_table_minenum_recursion, combine, enuOneStep,
+    cal_bbbv, cal_cell_nums, cal_isl, cal_op, cal_table_minenum_recursion, combine,
     is_good_chording, laymine, laymine_op, refresh_board, refresh_matrix, refresh_matrixs,
-    refresh_matrixses, unsolvable_structure,
+    refresh_matrixses, unsolvable_structure, cal_all_solution, cal_board_numbers
 };
 #[cfg(any(feature = "js"))]
 pub use utils::{get_random_int};

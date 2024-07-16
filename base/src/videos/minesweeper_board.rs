@@ -160,6 +160,12 @@ impl MinesweeperBoard<SafeBoard> {
             ..MinesweeperBoard::<SafeBoard>::default()
         }
     }
+    /// 两种情况调用：游戏开始前、可猜模式（不做检查）
+    pub fn set_board(&mut self, board: SafeBoard) {
+        self.board = board;
+        self.pointer_x = 0;
+        self.pointer_y = 0;
+    }
 }
 
 impl<T> MinesweeperBoard<T> {

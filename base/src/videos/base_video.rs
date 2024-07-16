@@ -650,7 +650,16 @@ impl BaseVideo<SafeBoard> {
     pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()> {
         assert!(!board.is_empty());
         match self.game_board_state {
-            GameBoardState::Playing | GameBoardState::Ready | GameBoardState::PreFlaging => {
+            GameBoardState::Ready | GameBoardState::PreFlaging => {
+                if self.width != board[0].len() || self.height != board.len() {
+                    return Err(());
+                }
+            }
+            GameBoardState::Playing => {
+                if self.mode != 9 && self.mode != 10 {
+                    println!("{:?}", self.mode);
+                    return Err(());
+                }
                 if self.width != board[0].len() || self.height != board.len() {
                     return Err(());
                 }
@@ -674,7 +683,8 @@ impl BaseVideo<SafeBoard> {
             self.level = 6;
         }
         self.board = SafeBoard::new(board);
-        self.minesweeper_board.board = self.board.clone();
+        // self.minesweeper_board.board = self.board.clone();
+        self.minesweeper_board.set_board(self.board.clone());
         Ok(0)
     }
 }
@@ -773,18 +783,7 @@ impl<T> BaseVideo<T> {
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         let step_instant = Instant::now();
-        // match self.game_board_state {
-        //     GameBoardState::Ready | GameBoardState::PreFlaging => {
-        //         let mut time_ms = step_instant
-        //             .duration_since(self.video_start_instant)
-        //             .as_millis() as u32;
-        //         let mut time = time_ms as f64 / 1000.0;
-        //     }
-        // }
-        // 这是和录像时间戳有关
-        // let mut time_ms = step_instant
-        //     .duration_since(self.video_start_instant)
-        //     .as_millis() as u32;
+
         let mut time_ms = time_ms_between(step_instant, self.video_start_instant);
         let mut time = time_ms as f64 / 1000.0;
         let old_state = self.minesweeper_board.game_board_state;
@@ -865,7 +864,7 @@ impl<T> BaseVideo<T> {
                     self.start_time = self.end_time.clone();
                     self.game_start_ms = time_ms;
                     // println!("334")
-                } 
+                }
                 let t_ms = time_ms - self.game_start_ms;
                 self.is_completed = true;
                 let t = t_ms as f64 / 1000.0;
@@ -1278,9 +1277,11 @@ impl<T> BaseVideo<T> {
         self.is_fair = is_fair;
         Ok(0)
     }
+    /// 可猜模式必须在ready时设置模式，其它模式扫完再设置也可以
     pub fn set_mode(&mut self, mode: u16) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
+            && self.game_board_state != GameBoardState::Ready
         {
             return Err(());
         };

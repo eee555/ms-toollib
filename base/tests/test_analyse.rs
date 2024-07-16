@@ -1,5 +1,5 @@
 // 测试录像分析模块
-use ms_toollib::{AvfVideo, BaseVideo, EvfVideo, MinesweeperBoard, MvfVideo, RmvVideo};
+use ms_toollib::{AvfVideo, BaseVideo, EvfVideo, MinesweeperBoard, MvfVideo, RmvVideo, SafeBoard};
 use std::thread;
 
 #[test]
@@ -808,5 +808,47 @@ fn BaseVideo_works_5_1bv() {
     println!("时间：{:?}", video.get_rtime());
     println!("时间毫秒：{:?}", video.get_rtime_ms());
     println!("时间毫秒：{:?}", video.get_bbbv_s());
+
+}
+
+
+#[test]
+fn BaseVideo_works_set_board() {
+    let board = vec![
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  1,  1],
+        vec![ 0,  0, 0,  0,  0, 0,  1,  -1],
+    ];
+    let board2 = vec![
+        vec![ -1,  1, 0,  0,  0, 0,  0,  0],
+        vec![ 1,  1, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
+    ];
+    let mut video = BaseVideo::<SafeBoard>::new_before_game(board, 16);
+    video.set_mode(9).unwrap();
+    video.step("lc", (97, 97)).unwrap();
+    thread::sleep_ms(200);
+    video.step("lr", (97, 97)).unwrap();
+    video.set_board(board2).unwrap();
+    video.step("lc", (77, 77)).unwrap();
+    thread::sleep_ms(200);
+    video.step("lr", (77, 77)).unwrap();
+
+    // video.generate_evf_v0_raw_data();
+    // video.set_checksum([8; 32]).unwrap();
+    // video.save_to_evf_file("test");
+
+    println!("局面：{:?}", video.get_game_board());
+    println!("局面状态：{:?}", video.game_board_state);
 
 }

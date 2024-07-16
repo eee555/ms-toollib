@@ -61,6 +61,8 @@ pub struct MinesweeperBoard<T> {
     pre_flag_num: usize,
     // 中键是否按下，配合“m”、“mc”、“mr”。
     middle_hold: bool,
+    // 是否曾经修改过局面，若修改过，结算时要从头算，因为ce没法增量算
+    pub board_changed: bool,
 }
 
 impl Default for MinesweeperBoard<Vec<Vec<i32>>> {
@@ -83,6 +85,7 @@ impl Default for MinesweeperBoard<Vec<Vec<i32>>> {
             pointer_y: 0,
             pre_flag_num: 0,
             middle_hold: false,
+            board_changed: false,
         }
     }
 }
@@ -108,6 +111,7 @@ impl Default for MinesweeperBoard<SafeBoard> {
             pointer_y: 0,
             pre_flag_num: 0,
             middle_hold: false,
+            board_changed: false,
         }
     }
 }
@@ -126,23 +130,9 @@ impl MinesweeperBoard<Vec<Vec<i32>>> {
             ..MinesweeperBoard::<Vec<Vec<i32>>>::default()
         }
     }
-    /// 初始化。对应强化学习领域gym的api中的reset。
-    pub fn reset(&mut self) {
-        self.game_board = vec![vec![10; self.column]; self.row];
-        self.board = vec![vec![0; self.column]; self.row];
-        self.left = 0;
-        self.right = 0;
-        self.double = 0;
-        self.ce = 0;
-        self.flag = 0;
-        self.left = 0;
-        self.bbbv_solved = 0;
-        self.flaged_list = vec![];
-        self.mouse_state = MouseState::UpUp;
-        self.game_board_state = GameBoardState::Ready;
-        self.pointer_x = 0;
-        self.pointer_y = 0;
-    }
+    // pub fn set_board(&mut self, board: Vec<Vec<i32>>) {
+    //     self.board = board;
+    // }
 }
 
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -160,15 +150,36 @@ impl MinesweeperBoard<SafeBoard> {
             ..MinesweeperBoard::<SafeBoard>::default()
         }
     }
-    /// 两种情况调用：游戏开始前、可猜模式（不做检查）
+    /// 可猜模式改局面
     pub fn set_board(&mut self, board: SafeBoard) {
         self.board = board;
         self.pointer_x = 0;
         self.pointer_y = 0;
+        self.board_changed = true;
     }
 }
 
 impl<T> MinesweeperBoard<T> {
+    // 初始化。对应强化学习领域gym的api中的reset。
+    pub fn reset(&mut self) 
+    {
+        self.game_board = vec![vec![10; self.column]; self.row];
+        // self.board = self.board.new(self.row, self.column);
+        self.left = 0;
+        self.right = 0;
+        self.double = 0;
+        self.ce = 0;
+        self.flag = 0;
+        self.left = 0;
+        self.bbbv_solved = 0;
+        self.flaged_list = vec![];
+        self.mouse_state = MouseState::UpUp;
+        self.game_board_state = GameBoardState::Ready;
+        self.pointer_x = 0;
+        self.pointer_y = 0;
+        self.middle_hold = false;
+        self.board_changed = false;
+    }
     /// Playing状态下的左击，没有按下抬起之分
     fn left_click(&mut self, x: usize, y: usize) -> Result<u8, ()>
     where
@@ -282,11 +293,6 @@ impl<T> MinesweeperBoard<T> {
                                 surround3BV += 1;
                             }
                         }
-                        // else if self.board[i][j] == 0 {
-                        //     flag_ch_op = true;
-                        //     surround_op_x = i;
-                        //     surround_op_y = j;
-                        // }
                     }
                 }
             }
@@ -301,11 +307,7 @@ impl<T> MinesweeperBoard<T> {
             self.bbbv_solved += surround3BV;
             self.bbbv_solved += self.op_num_around_cell(x, y);
             refresh_board(&self.board, &mut self.game_board, chording_cells);
-            // if flag_ch_op {
-            //     if self.cell_is_op_completed(surround_op_x, surround_op_y) {
-            //         self.bbbv_solved += 1;
-            //     }
-            // }
+
             if self.is_win() {
                 self.game_board_state = GameBoardState::Win;
             }

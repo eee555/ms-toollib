@@ -814,35 +814,68 @@ fn BaseVideo_works_5_1bv() {
 
 #[test]
 fn BaseVideo_works_set_board() {
+
+
     let board = vec![
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  1,  1],
-        vec![ 0,  0, 0,  0,  0, 0,  1,  -1],
-    ];
+        vec![ 0,  1,  1,  2, -1,  2,  2, -1], 
+        vec![ 0,  1, -1,  2,  2, -1,  3,  2], 
+        vec![ 0,  2,  2,  2,  1,  2, -1,  1], 
+        vec![ 0,  1, -1,  1,  1,  2,  2,  1], 
+        vec![ 0,  1,  1,  1,  1, -1,  1,  0], 
+        vec![ 0,  0,  0,  0,  1,  1,  1,  0], 
+        vec![ 2,  2,  1,  0,  1,  1,  1,  0], 
+        vec![ -1, -1,  1,  0,  1, -1,  1,  0]];
+
     let board2 = vec![
-        vec![ -1,  1, 0,  0,  0, 0,  0,  0],
-        vec![ 1,  1, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-    ];
-    let mut video = BaseVideo::<SafeBoard>::new_before_game(board, 16);
+        vec![  0,  1,  1,  2, -1,  2,  2,  1], 
+        vec![0,  1, -1,  2,  2, -1,  3, -1], 
+        vec![0,  2,  2,  2,  1,  2, -1,  2], 
+        vec![0,  1, -1,  1,  1,  2,  2,  1], 
+        vec![0,  1,  1,  1,  1, -1,  1,  0], 
+        vec![0,  0,  0,  0,  1,  1,  1,  0], 
+        vec![2,  2,  1,  0,  1,  1,  1,  0], 
+        vec![-1, -1,  1,  0,  1, -1,  1,  0]];
+
+    let mut video = BaseVideo::<SafeBoard>::new_before_game(board, 42);
     video.set_mode(9).unwrap();
-    video.step("lc", (97, 97)).unwrap();
-    thread::sleep_ms(200);
-    video.step("lr", (97, 97)).unwrap();
+
+
+    video.step("lc", (39, 28)).unwrap();
+    video.step("lr", (39, 28)).unwrap();
+    video.step("lc", (68 ,  28)).unwrap();
+    video.step("lr", (119 ,  29)).unwrap();
+    video.step("lc", (100 ,  102)).unwrap();
+    video.step("lr", (101 ,  102)).unwrap();
+    video.step("lc", (17 ,  101)).unwrap();
+    video.step("lr", (13 ,  100)).unwrap();
+    video.step("lc", ( 59 ,  145)).unwrap();
+    video.step("lr", ( 59 ,  145)).unwrap();
+    video.step("lc", ( 87 ,  152)).unwrap();
+    video.step("lr", (  103 ,  152)).unwrap();
+    video.step("lc", ( 124 ,  149)).unwrap();
+    video.step("lr", ( 138 ,  152)).unwrap();
+    video.step("lc", ( 66 ,  172)).unwrap();
+    video.step("lr", ( 69 ,  178)).unwrap();
+    video.step("lc", ( 85 ,  182)).unwrap();
+    video.step("lr", ( 107 ,  182)).unwrap();
+    video.step("lc", ( 128 ,  182)).unwrap();
+    video.step("lr", ( 145 ,  180)).unwrap();
+    video.step("lc", ( 10 ,  225)).unwrap();
+    video.step("lr", ( 10 ,  225)).unwrap();
+    video.step("lc", ( 18 ,  156)).unwrap();
+    video.step("lr", ( 18 ,  156)).unwrap();
+    video.step("lc", ( 84 ,  227)).unwrap();
+    video.step("lr", ( 101 ,  229)).unwrap();
+    video.step("lc", ( 124 ,  228)).unwrap();
+    video.step("lr", ( 132 ,  228)).unwrap();
+    video.step("lc", (  47 ,  273)).unwrap();
+    video.step("lr", ( 46 ,  274)).unwrap();
+    video.step("lc", ( 34 ,  274)).unwrap();
+    video.step("lr", ( 27 ,  274)).unwrap();
+    video.step("lc", (  20 ,  297)).unwrap();
+    
+
     video.set_board(board2).unwrap();
-    video.step("lc", (77, 77)).unwrap();
-    thread::sleep_ms(200);
-    video.step("lr", (77, 77)).unwrap();
 
     // video.generate_evf_v0_raw_data();
     // video.set_checksum([8; 32]).unwrap();

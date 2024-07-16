@@ -271,7 +271,8 @@ pub struct BaseVideo<T> {
     pub minesweeper_board: MinesweeperBoard<T>,
     /// 录像状态。貌似用不到。
     pub game_board_state: GameBoardState,
-    /// 动作、状态记录器
+    /// 动作、状态记录器。用于播放录像时的指标，例如solved_bbbv。
+    /// 假如不改局面，游戏时用不到。假如改局面，最后需要重新推演一遍。
     pub video_action_state_recorder: Vec<VideoActionStateRecorder>,
     /// 游戏局面流，从一开始没有打开任何格子（包含玩家游戏前的标雷过程），到最后打开了所有
     pub game_board_stream: Vec<GameBoard>,
@@ -657,7 +658,6 @@ impl BaseVideo<SafeBoard> {
             }
             GameBoardState::Playing => {
                 if self.mode != 9 && self.mode != 10 {
-                    println!("{:?}", self.mode);
                     return Err(());
                 }
                 if self.width != board[0].len() || self.height != board.len() {
@@ -682,9 +682,14 @@ impl BaseVideo<SafeBoard> {
         } else {
             self.level = 6;
         }
-        self.board = SafeBoard::new(board);
-        // self.minesweeper_board.board = self.board.clone();
-        self.minesweeper_board.set_board(self.board.clone());
+        self.board = SafeBoard::new(board.clone());
+
+        if self.game_board_state == GameBoardState::Playing {
+            self.minesweeper_board.set_board(self.board.clone());
+        } else {
+            self.minesweeper_board.board = self.board.clone();
+        }
+
         Ok(0)
     }
 }
@@ -851,6 +856,19 @@ impl<T> BaseVideo<T> {
                 self.video_dynamic_params.etime =
                     t / self.minesweeper_board.bbbv_solved as f64 * self.static_params.bbbv as f64;
                 self.gather_params_after_game(t);
+
+                if self.minesweeper_board.board_changed {
+                    // 此处是解决可猜模式中由于局面更改，扫完后，ce、bbbv_solved等计算不对，需要重来一遍
+                    self.minesweeper_board.reset();
+                    for action_state in &self.video_action_state_recorder {
+                        let x = action_state.y as usize / self.cell_pixel_size as usize;
+                        let y = action_state.x as usize / self.cell_pixel_size as usize;
+                        self.minesweeper_board.step(&action_state.mouse, (x, y))?;
+                    }
+                    let x = pos.0 / self.cell_pixel_size as usize;
+                    let y = pos.1 / self.cell_pixel_size as usize;
+                    self.minesweeper_board.step(e, (x, y))?;
+                }
             }
             GameBoardState::Win => {
                 self.end_time = SystemTime::now()
@@ -873,11 +891,25 @@ impl<T> BaseVideo<T> {
                 self.game_dynamic_params.rtime_ms = t_ms;
                 self.video_dynamic_params.etime = t;
                 self.gather_params_after_game(t);
+
+                if self.minesweeper_board.board_changed {
+                    // 此处是解决可猜模式中由于局面更改，扫完后，ce、bbbv_solved等计算不对，需要重来一遍
+                    self.minesweeper_board.reset();
+                    for action_state in &self.video_action_state_recorder {
+                        let x = action_state.y as usize / self.cell_pixel_size as usize;
+                        let y = action_state.x as usize / self.cell_pixel_size as usize;
+                        self.minesweeper_board.step(&action_state.mouse, (x, y))?;
+                    }
+                    let x = pos.0 / self.cell_pixel_size as usize;
+                    let y = pos.1 / self.cell_pixel_size as usize;
+                    self.minesweeper_board.step(e, (x, y))?;
+                }
             }
         }
         // 维护path，挺复杂的
         let mut path = 0.0;
         if old_state == GameBoardState::Playing {
+            // 考虑上一个步骤可能是在局面外的，那么就考虑上上个步骤，以此类推
             let mut outside_skip = self.video_action_state_recorder.len() - 1;
             loop {
                 let p = &self.video_action_state_recorder[outside_skip];

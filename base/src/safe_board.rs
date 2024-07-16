@@ -1,9 +1,6 @@
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::Rng;
 
-
-
-
 // pub fn laymine_safely(
 //     row: usize,
 //     column: usize,
@@ -264,3 +261,7 @@ impl BoardSize for &SafeBoard {
         self.value[0].len()
     }
 }
+
+
+
+

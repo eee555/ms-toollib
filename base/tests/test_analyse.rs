@@ -67,7 +67,6 @@ fn AvfVideo_works() {
     println!("thrp: {:?}", video.data.get_thrp());
     println!("level: {:?}", video.data.level);
     println!("is_valid: {:?}", video.data.is_valid());
-    
 }
 
 #[test]
@@ -136,8 +135,14 @@ fn MvfVideo_works() {
     // println!("3BV：{:?}", video.s.s);
     println!("time：{:?}", video.data.get_rtime().unwrap());
     println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
-    println!("video_start_time: {:?}", video.data.get_video_start_time().unwrap());
-    println!("video_end_time: {:?}", video.data.get_video_end_time().unwrap());
+    println!(
+        "video_start_time: {:?}",
+        video.data.get_video_start_time().unwrap()
+    );
+    println!(
+        "video_end_time: {:?}",
+        video.data.get_video_end_time().unwrap()
+    );
     println!("is win: {:?}", video.data.is_completed);
     video.data.set_current_time(12.0);
     println!("STNB: {:?}", video.data.get_stnb().unwrap());
@@ -181,8 +186,14 @@ fn EvfVideo_works() {
     // println!("3BV：{:?}", video.s.s);
     println!("rtime：{:?}", video.data.get_rtime().unwrap());
     println!("rtime_ms：{:?}", video.data.get_rtime_ms().unwrap());
-    println!("video_start_time: {:?}", video.data.get_video_start_time().unwrap());
-    println!("video_end_time: {:?}", video.data.get_video_end_time().unwrap());
+    println!(
+        "video_start_time: {:?}",
+        video.data.get_video_start_time().unwrap()
+    );
+    println!(
+        "video_end_time: {:?}",
+        video.data.get_video_end_time().unwrap()
+    );
     println!("is win: {:?}", video.data.is_completed);
     println!("is_offical: {:?}", video.data.is_offical);
     println!("is_fair: {:?}", video.data.is_fair);
@@ -332,7 +343,7 @@ fn BaseVideo_works_2() {
         vec![-1, 3, 3, -1, 1, 0, 1, 1],
         vec![1, 1, 1, 1, 1, 0, 1, -1],
     ];
-// println!("{:?}", ms_toollib::cal_bbbv(&board));
+    // println!("{:?}", ms_toollib::cal_bbbv(&board));
     let mut my_board = MinesweeperBoard::<Vec<Vec<i32>>>::new(board);
     my_board.step_flow(vec![("lc", (2, 3))]).unwrap();
     my_board.step_flow(vec![("lr", (2, 3))]).unwrap();
@@ -674,14 +685,14 @@ fn BaseVideo_works_3() {
 #[test]
 fn BaseVideo_works_4() {
     let board = vec![
-        vec![ 0,  0, 2, -1, 2, 0,  0,  0],
-        vec![ 0,  0, 3, -1, 3, 0,  0,  0],
-        vec![ 0,  0, 2, -1, 2, 0,  0,  0],
-        vec![ 0,  0, 1,  1, 1, 1,  1,  1],
-        vec![ 0,  0, 0,  0, 0, 1, -1, -1],
-        vec![ 1,  1, 0,  0, 0, 1,  2, -1],
-        vec![-1,  3, 1,  0, 0, 0,  2, -1],
-        vec![-1, -1, 1,  0, 0, 0,  2, -1],
+        vec![0, 0, 2, -1, 2, 0, 0, 0],
+        vec![0, 0, 3, -1, 3, 0, 0, 0],
+        vec![0, 0, 2, -1, 2, 0, 0, 0],
+        vec![0, 0, 1, 1, 1, 1, 1, 1],
+        vec![0, 0, 0, 0, 0, 1, -1, -1],
+        vec![1, 1, 0, 0, 0, 1, 2, -1],
+        vec![-1, 3, 1, 0, 0, 0, 2, -1],
+        vec![-1, -1, 1, 0, 0, 0, 2, -1],
     ];
     let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
     thread::sleep_ms(600);
@@ -778,17 +789,17 @@ fn BaseVideo_works_4() {
 #[test]
 fn BaseVideo_works_5_1bv() {
     let board = vec![
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  0,  0],
-        vec![ 0,  0, 0,  0,  0, 0,  1,  1],
-        vec![ 0,  0, 0,  0,  0, 0,  1,  -1],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 1, 1],
+        vec![0, 0, 0, 0, 0, 0, 1, -1],
     ];
     let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
-    
+
     // println!("3BV：{:?}", video.static_params.bbbv);
     // video.step("lc", (97, 97)).unwrap();
     // video.step("lr", (97, 97)).unwrap();
@@ -808,72 +819,55 @@ fn BaseVideo_works_5_1bv() {
     println!("时间：{:?}", video.get_rtime());
     println!("时间毫秒：{:?}", video.get_rtime_ms());
     println!("时间毫秒：{:?}", video.get_bbbv_s());
-
 }
-
 
 #[test]
 fn BaseVideo_works_set_board() {
-
-
     let board = vec![
-        vec![ 0,  1,  1,  2, -1,  2,  2, -1], 
-        vec![ 0,  1, -1,  2,  2, -1,  3,  2], 
-        vec![ 0,  2,  2,  2,  1,  2, -1,  1], 
-        vec![ 0,  1, -1,  1,  1,  2,  2,  1], 
-        vec![ 0,  1,  1,  1,  1, -1,  1,  0], 
-        vec![ 0,  0,  0,  0,  1,  1,  1,  0], 
-        vec![ 2,  2,  1,  0,  1,  1,  1,  0], 
-        vec![ -1, -1,  1,  0,  1, -1,  1,  0]];
+        vec![1, -1, 3, -1, 1, 0, 1, -1],
+        vec![2, 3, -1, 2, 1, 1, 2, 2],
+        vec![-1, 3, 2, 1, 0, 1, -1, 1],
+        vec![2, -1, 1, 0, 0, 1, 1, 1],
+        vec![2, 3, 3, 1, 0, 0, 0, 0],
+        vec![1, -1, -1, 1, 0, 0, 0, 0],
+        vec![1, 2, 3, 2, 1, 0, 0, 0],
+        vec![0, 0, 1, -1, 1, 0, 0, 0],
+    ];
 
     let board2 = vec![
-        vec![  0,  1,  1,  2, -1,  2,  2,  1], 
-        vec![0,  1, -1,  2,  2, -1,  3, -1], 
-        vec![0,  2,  2,  2,  1,  2, -1,  2], 
-        vec![0,  1, -1,  1,  1,  2,  2,  1], 
-        vec![0,  1,  1,  1,  1, -1,  1,  0], 
-        vec![0,  0,  0,  0,  1,  1,  1,  0], 
-        vec![2,  2,  1,  0,  1,  1,  1,  0], 
-        vec![-1, -1,  1,  0,  1, -1,  1,  0]];
+        vec![1, -1, 3, -1, 1, 0, 1, -1],
+        vec![2, 3, -1, 2, 1, 1, 2, 2],
+        vec![-1, 3, 2, 1, 0, 1, -1, 1],
+        vec![2, -1, 1, 0, 0, 1, 1, 1],
+        vec![2, 3, 3, 1, 0, 0, 0, 0],
+        vec![1, -1, -1, 1, 0, 0, 0, 0],
+        vec![1, 2, 3, 2, 1, 0, 0, 0],
+        vec![0, 0, 1, -1, 1, 0, 0, 0],
+    ];
 
     let mut video = BaseVideo::<SafeBoard>::new_before_game(board, 42);
     video.set_mode(9).unwrap();
-
-
-    video.step("lc", (39, 28)).unwrap();
-    video.step("lr", (39, 28)).unwrap();
-    video.step("lc", (68 ,  28)).unwrap();
-    video.step("lr", (119 ,  29)).unwrap();
-    video.step("lc", (100 ,  102)).unwrap();
-    video.step("lr", (101 ,  102)).unwrap();
-    video.step("lc", (17 ,  101)).unwrap();
-    video.step("lr", (13 ,  100)).unwrap();
-    video.step("lc", ( 59 ,  145)).unwrap();
-    video.step("lr", ( 59 ,  145)).unwrap();
-    video.step("lc", ( 87 ,  152)).unwrap();
-    video.step("lr", (  103 ,  152)).unwrap();
-    video.step("lc", ( 124 ,  149)).unwrap();
-    video.step("lr", ( 138 ,  152)).unwrap();
-    video.step("lc", ( 66 ,  172)).unwrap();
-    video.step("lr", ( 69 ,  178)).unwrap();
-    video.step("lc", ( 85 ,  182)).unwrap();
-    video.step("lr", ( 107 ,  182)).unwrap();
-    video.step("lc", ( 128 ,  182)).unwrap();
-    video.step("lr", ( 145 ,  180)).unwrap();
-    video.step("lc", ( 10 ,  225)).unwrap();
-    video.step("lr", ( 10 ,  225)).unwrap();
-    video.step("lc", ( 18 ,  156)).unwrap();
-    video.step("lr", ( 18 ,  156)).unwrap();
-    video.step("lc", ( 84 ,  227)).unwrap();
-    video.step("lr", ( 101 ,  229)).unwrap();
-    video.step("lc", ( 124 ,  228)).unwrap();
-    video.step("lr", ( 132 ,  228)).unwrap();
-    video.step("lc", (  47 ,  273)).unwrap();
-    video.step("lr", ( 46 ,  274)).unwrap();
-    video.step("lc", ( 34 ,  274)).unwrap();
-    video.step("lr", ( 27 ,  274)).unwrap();
-    video.step("lc", (  20 ,  297)).unwrap();
-    
+    video.step("lc", (163, 210)).unwrap();
+    video.step("lr", (163, 210)).unwrap();
+    video.step("rc", (113, 99)).unwrap();
+    video.step("rr", (115, 86)).unwrap();
+    video.step("rc", (321, 133)).unwrap();
+    video.step("rr", (310, 159)).unwrap();
+    video.step("rc", (281, 229)).unwrap();
+    video.step("rr", (273, 239)).unwrap();
+    video.step("rc", (185, 266)).unwrap();
+    video.step("rr", (126, 255)).unwrap();
+    video.step("rc", (58, 88)).unwrap();
+    video.step("rr", (58, 82)).unwrap();
+    video.step("rc", (84, 43)).unwrap();
+    video.step("rr", (133, 37)).unwrap();
+    video.step("lc", (164, 149)).unwrap();
+    video.step("lr", (163, 151)).unwrap();
+    video.step("lc", (187, 180)).unwrap();
+    video.step("lr", (201, 180)).unwrap();
+    video.step("lc", (190, 98)).unwrap();
+    video.step("lr", (182, 84)).unwrap();
+    video.step("lc", (232, 54)).unwrap();
 
     video.set_board(board2).unwrap();
 
@@ -883,5 +877,38 @@ fn BaseVideo_works_set_board() {
 
     println!("局面：{:?}", video.get_game_board());
     println!("局面状态：{:?}", video.game_board_state);
+}
 
+
+#[test]
+fn BaseVideo_works_err() {
+    let board = vec![
+        vec![1,  1,  1,  1,  2,  2, -1,  1,  1,  1,  1,  0,  0,  1, -1,  1,  2, -1,  2,  0,  0,  0,  0,  1,  1,  1,  1, -1,  1,  0], 
+        vec![-1,  1,  1, -1,  3, -1,  2,  2,  2, -1,  2,  1,  0,  1,  1,  1,  2, -1,  2,  0,  0,  0,  0,  1, -1,  2,  2,  3,  2,  1], 
+        vec![ 2,  2,  2,  2, -1,  3,  3,  3, -1,  4, -1,  1,  0,  1,  2,  2,  3,  3,  3,  1,  1,  1,  1,  2,  2,  3, -1,  2, -1,  1], 
+        vec![ 1, -1,  1,  1,  1,  2, -1, -1,  3, -1,  2,  1,  1,  2, -1, -1,  2, -1, -1,  1,  2, -1,  2,  1, -1,  2,  1,  3,  2,  2], 
+        vec![ 1,  1,  1,  0,  0,  1,  2,  2,  2,  1,  1,  1,  2, -1,  3,  2,  2,  2,  3,  2,  3, -1,  2,  2,  2,  2,  1,  2, -1,  1], 
+        vec![ 0,  1,  1,  2,  1,  1,  0,  0,  0,  0,  0,  1, -1,  2,  1,  1,  1,  2,  2, -1,  2,  1,  2,  2, -1,  1,  1, -1,  2,  1], 
+        vec![ 2,  3, -1,  3, -1,  2,  1,  2,  2,  2,  1,  2,  1,  2,  1,  2, -1,  2, -1,  2,  2,  1,  2, -1,  2,  1,  1,  2,  2,  1], 
+        vec![-1, -1,  2,  3, -1,  2,  1, -1, -1,  3, -1,  2,  1,  2, -1,  2,  1,  3,  2,  2,  2, -1,  4,  2,  3,  2,  2,  2, -1,  1], 
+        vec![ 2,  2,  1,  1,  1,  1,  1,  2,  3, -1,  3,  3, -1,  4,  3,  2,  0,  2, -1,  2,  2, -1,  3, -1,  2, -1, -1,  2,  1,  1], 
+        vec![ 0,  1,  2,  3,  2,  2,  1,  1,  2,  3,  4, -1,  3, -1, -1,  1,  0,  2, -1,  3,  2,  2,  3,  2,  3,  2,  2,  1,  1,  1], 
+        vec![ 1,  3, -1, -1, -1,  3, -1,  1,  1, -1, -1,  3,  3,  3,  3,  2,  0,  1,  1,  2, -1,  1,  1, -1,  1,  0,  0,  0,  1, -1], 
+        vec![ 3, -1, -1,  8, -1,  4,  1,  1,  1,  2,  3, -1,  1,  1, -1,  1,  0,  0,  0,  1,  1,  1,  1,  2,  3,  2,  2,  1,  2,  1], 
+        vec![-1, -1, -1, -1, -1,  3,  1,  0,  1,  2,  3,  2,  2,  2,  2,  1,  0,  0,  0,  1,  1,  2,  1,  2, -1, -1,  2, -1,  2,  1], 
+        vec![ 3,  4,  4,  3,  4, -1,  2,  0,  2, -1, -1,  1,  2, -1,  2,  0,  0,  0,  0,  1, -1,  2, -1,  3,  3,  3,  3,  3, -1,  1], 
+        vec![ 1, -1,  1,  0,  3, -1,  3,  0,  2, -1,  4,  2,  4, -1,  5,  2,  2,  1,  1,  1,  1,  2,  1,  2, -1,  2,  2, -1,  2,  1], 
+        vec![ 1,  1,  1,  0,  2, -1,  2,  0,  1,  1,  2, -1,  3, -1, -1, -1,  2, -1,  1,  0,  0,  0,  0,  1,  1,  2, -1,  2,  1,  0], 
+        ];
+    let mut video = BaseVideo::<SafeBoard>::new_before_game(board, 24);
+    video.set_mode(9).unwrap();
+    
+    video.step("rr", (157 ,  139)).unwrap();
+
+    // video.generate_evf_v0_raw_data();
+    // video.set_checksum([8; 32]).unwrap();
+    // video.save_to_evf_file("test");
+
+    println!("局面：{:?}", video.get_game_board());
+    println!("局面状态：{:?}", video.game_board_state);
 }

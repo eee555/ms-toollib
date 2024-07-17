@@ -463,6 +463,6 @@ impl PyBaseVideo {
     }
     #[setter]
     pub fn set_pix_size(&mut self, pix_size: u8) {
-        self.core.set_pix_size(pix_size);
+        self.core.set_pix_size(pix_size).unwrap();
     }
 }

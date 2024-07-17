@@ -486,6 +486,10 @@ impl<T> MinesweeperBoard<T> {
                         self.mouse_state = MouseState::DownUpAfterChording;
                         return Ok(0);
                     }
+                    MouseState::UpUp => {
+                        // 双键按下时按快捷键重开
+                        return Ok(0);
+                    }
                     _ => return Err(()),
                 },
                 "cc" => {
@@ -494,6 +498,11 @@ impl<T> MinesweeperBoard<T> {
                         MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,
                         MouseState::UpDown => self.mouse_state = MouseState::Chording,
                         MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
+                        MouseState::UpUp => {
+                            // 单键按下时按快捷键重开，再双键
+                            self.mouse_state = MouseState::Chording;
+                            return Ok(0);
+                        }
                         _ => return Err(()),
                     }
                     return Ok(0);

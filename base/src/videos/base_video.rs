@@ -34,6 +34,7 @@ pub enum ErrReadVideoReason {
     InvalidParams,
     InvalidVideoEvent,
     InvalidMinePosition,
+    VersionBackward,
 }
 
 /// 局面活动（点击或移动）
@@ -257,6 +258,12 @@ pub struct BaseVideo<T> {
     /// 公平完成和正式的区别是，只有标准游戏模式可以是正式的，而upk、无猜等模式不正式，但可以是公平完成的。  
     /// 如果是正式的，则一定是公平完成的。
     pub is_fair: bool,
+    /// 是否使用了问号，true为使用。
+    pub use_question: bool,
+    /// 是否限制了光标的位置，true为限制（只要开启，无论如何限制）。
+    pub use_cursor_pos_lim: bool,
+    /// 是否使用了触雷重开，true为使用（只要开启，无论完成度条件是什么）。
+    pub use_auto_replay: bool,
     /// 是不是盲扫，初始是false，不是盲扫的话，分析完还是false
     pub nf: bool,
     /// 游戏模式。0->标准、1->upk；2->cheat；3->Density（来自Viennasweeper、clone软件）、4->win7、5->竞速无猜、6->强无猜、7->弱无猜、8->准无猜、9->强可猜、10->弱可猜
@@ -343,6 +350,9 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             is_completed: false,
             is_offical: false,
             is_fair: false,
+            use_question: false,
+            use_cursor_pos_lim: false,
+            use_auto_replay: false,
             nf: false,
             mode: 0,
             level: 0,
@@ -392,6 +402,9 @@ impl Default for BaseVideo<SafeBoard> {
             is_completed: false,
             is_offical: false,
             is_fair: false,
+            use_question: false,
+            use_cursor_pos_lim: false,
+            use_auto_replay: false,
             nf: false,
             mode: 0,
             level: 0,
@@ -1291,6 +1304,33 @@ impl<T> BaseVideo<T> {
         self.current_time = self.video_action_state_recorder[id].time - self.delta_time;
         Ok(0)
     }
+    pub fn set_use_question(&mut self, use_question: bool) -> Result<u8, ()> {
+        if self.game_board_state != GameBoardState::Loss
+            && self.game_board_state != GameBoardState::Win
+        {
+            return Err(());
+        };
+        self.use_question = use_question;
+        Ok(0)
+    }
+    pub fn set_use_cursor_pos_lim(&mut self, use_cursor_pos_lim: bool) -> Result<u8, ()> {
+        if self.game_board_state != GameBoardState::Loss
+            && self.game_board_state != GameBoardState::Win
+        {
+            return Err(());
+        };
+        self.use_cursor_pos_lim = use_cursor_pos_lim;
+        Ok(0)
+    }
+    pub fn set_use_auto_replay(&mut self, use_auto_replay: bool) -> Result<u8, ()> {
+        if self.game_board_state != GameBoardState::Loss
+            && self.game_board_state != GameBoardState::Win
+        {
+            return Err(());
+        };
+        self.use_auto_replay = use_auto_replay;
+        Ok(0)
+    }
     pub fn set_is_offical(&mut self, is_offical: bool) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
@@ -1796,7 +1836,7 @@ impl<T> BaseVideo<T> {
 // 和文件操作相关的一些方法
 #[cfg(any(feature = "py", feature = "rs"))]
 impl<T> BaseVideo<T> {
-    /// 按evf标准，编码出原始二进制数据
+    /// 按evf v0.0-0.1标准，编码出原始二进制数据
     pub fn generate_evf_v0_raw_data(&mut self)
     where
         T: std::ops::Index<usize> + BoardSize,
@@ -1811,6 +1851,253 @@ impl<T> BaseVideo<T> {
         }
         if self.is_fair {
             self.raw_data[1] |= 0b0010_0000;
+        }
+        self.raw_data.push(self.height as u8);
+        self.raw_data.push(self.width as u8);
+        self.raw_data.push((self.mine_num >> 8).try_into().unwrap());
+        self.raw_data
+            .push((self.mine_num % 256).try_into().unwrap());
+        self.raw_data.push(self.cell_pixel_size);
+        self.raw_data.push((self.mode >> 8).try_into().unwrap());
+        self.raw_data.push((self.mode % 256).try_into().unwrap());
+        self.raw_data
+            .push((self.static_params.bbbv >> 8).try_into().unwrap());
+        self.raw_data
+            .push((self.static_params.bbbv % 256).try_into().unwrap());
+        // println!("fff: {:?}", self.game_dynamic_params.rtime_ms);
+        self.raw_data.push(
+            (self.game_dynamic_params.rtime_ms >> 16)
+                .try_into()
+                .unwrap(),
+        );
+        self.raw_data.push(
+            ((self.game_dynamic_params.rtime_ms >> 8) % 256)
+                .try_into()
+                .unwrap(),
+        );
+        self.raw_data.push(
+            (self.game_dynamic_params.rtime_ms % 256)
+                .try_into()
+                .unwrap(),
+        );
+        self.raw_data.append(&mut self.software.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data
+            .append(&mut self.player_designator.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data
+            .append(&mut self.race_designator.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data
+            .append(&mut self.uniqueness_designator.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data
+            .append(&mut self.start_time.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data.append(&mut self.end_time.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data.append(&mut self.country.clone().to_owned());
+        self.raw_data.push(0);
+
+        let mut byte = 0;
+        let mut ptr = 0;
+        for i in 0..self.height {
+            for j in 0..self.width {
+                byte <<= 1;
+                if self.board[i][j] == -1 {
+                    byte |= 1;
+                }
+                ptr += 1;
+                if ptr == 8 {
+                    self.raw_data.push(byte);
+                    ptr = 0;
+                    byte = 0;
+                }
+            }
+        }
+        if ptr > 0 {
+            byte <<= 8 - ptr;
+            self.raw_data.push(byte);
+        }
+
+        for event in &self.video_action_state_recorder {
+            // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
+            match event.mouse.as_str() {
+                "mv" => self.raw_data.push(1),
+                "lc" => self.raw_data.push(2),
+                "lr" => self.raw_data.push(3),
+                "rc" => self.raw_data.push(4),
+                "rr" => self.raw_data.push(5),
+                "mc" => self.raw_data.push(6),
+                "mr" => self.raw_data.push(7),
+                "pf" => self.raw_data.push(8),
+                "cc" => self.raw_data.push(9),
+                // 不可能出现，出现再说
+                _ => self.raw_data.push(99),
+            }
+            let t_ms = s_to_ms(event.time);
+            self.raw_data.push((t_ms >> 16).try_into().unwrap());
+            self.raw_data.push(((t_ms >> 8) % 256).try_into().unwrap());
+            self.raw_data.push((t_ms % 256).try_into().unwrap());
+            self.raw_data.push((event.x >> 8).try_into().unwrap());
+            self.raw_data.push((event.x % 256).try_into().unwrap());
+            self.raw_data.push((event.y >> 8).try_into().unwrap());
+            self.raw_data.push((event.y % 256).try_into().unwrap());
+        }
+        if self.has_checksum {
+            self.raw_data.push(0);
+            self.raw_data
+                .append(&mut self.checksum.clone().to_vec().to_owned());
+        } else {
+            self.raw_data.push(255);
+        }
+    }
+    /// 按evf v0.2标准，编码出原始二进制数据
+    pub fn generate_evf_v2_raw_data(&mut self)
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        self.raw_data = vec![0, 0];
+        if self.is_completed {
+            self.raw_data[1] |= 0b1000_0000;
+        }
+        if self.is_offical {
+            self.raw_data[1] |= 0b0100_0000;
+        }
+        if self.is_fair {
+            self.raw_data[1] |= 0b0010_0000;
+        }
+        self.raw_data.push(self.height as u8);
+        self.raw_data.push(self.width as u8);
+        self.raw_data.push((self.mine_num >> 8).try_into().unwrap());
+        self.raw_data
+            .push((self.mine_num % 256).try_into().unwrap());
+        self.raw_data.push(self.cell_pixel_size);
+        self.raw_data.push((self.mode >> 8).try_into().unwrap());
+        self.raw_data.push((self.mode % 256).try_into().unwrap());
+        self.raw_data
+            .push((self.static_params.bbbv >> 8).try_into().unwrap());
+        self.raw_data
+            .push((self.static_params.bbbv % 256).try_into().unwrap());
+        // println!("fff: {:?}", self.game_dynamic_params.rtime_ms);
+        self.raw_data.push(
+            (self.game_dynamic_params.rtime_ms >> 16)
+                .try_into()
+                .unwrap(),
+        );
+        self.raw_data.push(
+            ((self.game_dynamic_params.rtime_ms >> 8) % 256)
+                .try_into()
+                .unwrap(),
+        );
+        self.raw_data.push(
+            (self.game_dynamic_params.rtime_ms % 256)
+                .try_into()
+                .unwrap(),
+        );
+        self.raw_data.append(&mut self.software.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data
+            .append(&mut self.player_designator.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data
+            .append(&mut self.race_designator.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data
+            .append(&mut self.uniqueness_designator.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data
+            .append(&mut self.start_time.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data.append(&mut self.end_time.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data.append(&mut self.country.clone().to_owned());
+        self.raw_data.push(0);
+        self.raw_data
+            .append(&mut self.device_uuid.clone().to_owned());
+        self.raw_data.push(0);
+
+        let mut byte = 0;
+        let mut ptr = 0;
+        for i in 0..self.height {
+            for j in 0..self.width {
+                byte <<= 1;
+                if self.board[i][j] == -1 {
+                    byte |= 1;
+                }
+                ptr += 1;
+                if ptr == 8 {
+                    self.raw_data.push(byte);
+                    ptr = 0;
+                    byte = 0;
+                }
+            }
+        }
+        if ptr > 0 {
+            byte <<= 8 - ptr;
+            self.raw_data.push(byte);
+        }
+
+        for event in &self.video_action_state_recorder {
+            // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
+            match event.mouse.as_str() {
+                "mv" => self.raw_data.push(1),
+                "lc" => self.raw_data.push(2),
+                "lr" => self.raw_data.push(3),
+                "rc" => self.raw_data.push(4),
+                "rr" => self.raw_data.push(5),
+                "mc" => self.raw_data.push(6),
+                "mr" => self.raw_data.push(7),
+                "pf" => self.raw_data.push(8),
+                "cc" => self.raw_data.push(9),
+                // 不可能出现，出现再说
+                _ => self.raw_data.push(99),
+            }
+            let t_ms = s_to_ms(event.time);
+            self.raw_data.push((t_ms >> 16).try_into().unwrap());
+            self.raw_data.push(((t_ms >> 8) % 256).try_into().unwrap());
+            self.raw_data.push((t_ms % 256).try_into().unwrap());
+            self.raw_data.push((event.x >> 8).try_into().unwrap());
+            self.raw_data.push((event.x % 256).try_into().unwrap());
+            self.raw_data.push((event.y >> 8).try_into().unwrap());
+            self.raw_data.push((event.y % 256).try_into().unwrap());
+        }
+        if self.has_checksum {
+            self.raw_data.push(0);
+            self.raw_data
+                .append(&mut self.checksum.clone().to_vec().to_owned());
+        } else {
+            self.raw_data.push(255);
+        }
+    }
+    /// 按evf v0.3标准，编码出原始二进制数据
+    pub fn generate_evf_v3_raw_data(&mut self)
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        self.raw_data = vec![3, 0, 0];
+        if self.is_completed {
+            self.raw_data[1] |= 0b1000_0000;
+        }
+        if self.is_offical {
+            self.raw_data[1] |= 0b0100_0000;
+        }
+        if self.is_fair {
+            self.raw_data[1] |= 0b0010_0000;
+        }
+        if self.get_right() == 0 {
+            self.raw_data[1] |= 0b0001_0000;
+        }
+        if self.use_question {
+            self.raw_data[2] |= 0b1000_0000;
+        }
+        if self.use_cursor_pos_lim {
+            self.raw_data[2] |= 0b0100_0000;
+        }
+        if self.use_auto_replay {
+            self.raw_data[2] |= 0b0010_0000;
         }
         self.raw_data.push(self.height as u8);
         self.raw_data.push(self.width as u8);

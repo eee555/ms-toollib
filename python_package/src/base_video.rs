@@ -80,6 +80,12 @@ impl PyBaseVideo {
     pub fn generate_evf_v0_raw_data(&mut self) {
         self.core.generate_evf_v0_raw_data();
     }
+    pub fn generate_evf_v2_raw_data(&mut self) {
+        self.core.generate_evf_v2_raw_data();
+    }
+    pub fn generate_evf_v3_raw_data(&mut self) {
+        self.core.generate_evf_v3_raw_data();
+    }
     pub fn save_to_evf_file(&self, file_name: &str) {
         self.core.save_to_evf_file(file_name);
     }
@@ -418,6 +424,18 @@ impl PyBaseVideo {
     #[setter]
     pub fn set_current_time(&mut self, time: f64) {
         self.core.set_current_time(time);
+    }
+    #[setter]
+    pub fn set_use_question(&mut self, use_question: bool) {
+        self.core.set_use_question(use_question).unwrap();
+    }
+    #[setter]
+    pub fn set_use_cursor_pos_lim(&mut self, use_cursor_pos_lim: bool) {
+        self.core.set_use_cursor_pos_lim(use_cursor_pos_lim).unwrap();
+    }
+    #[setter]
+    pub fn set_use_auto_replay(&mut self, use_auto_replay: bool) {
+        self.core.set_use_auto_replay(use_auto_replay).unwrap();
     }
     #[setter]
     pub fn set_is_offical(&mut self, is_offical: bool) {

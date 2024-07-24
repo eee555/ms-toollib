@@ -1,6 +1,6 @@
 [package]
 name = "ms_toollib"
-version = "1.4.8-alpha"
+version = "1.4.9-alpha"
 description = "Algorithms  for Minesweeper"
 documentation = "https://docs.rs/ms_toollib/"
 license = "MIT"
@@ -15,7 +15,6 @@ authors = ["Wang Jianing <wangjianing@88.com>"]
 pyo3 = { version ="0.20.2", features = ["abi3-py37", "extension-module"] }
 ms_toollib_original = { path = "../base", features = ["py"], package="ms_toollib" }
 itertools = { version ="0.6.0" }
-# ms_toollib_original = { version ="1.3.11", features = ["py"], package="ms_toollib" }
 
 [lib]
 name = "ms_toollib"

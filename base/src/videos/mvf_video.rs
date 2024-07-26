@@ -304,7 +304,7 @@ impl MvfVideo {
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
         self.data.can_analyse = true;
         // self.data.is_completed; // 该格式解析前不能确定是否扫完
-        self.data.is_offical = true;
+        self.data.is_official = true;
         self.data.is_fair = true;
         let mut c = self.data.get_u8()?;
         let d = self.data.get_u8()?;

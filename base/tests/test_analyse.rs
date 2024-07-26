@@ -195,7 +195,7 @@ fn EvfVideo_works() {
         video.data.get_video_end_time().unwrap()
     );
     println!("is win: {:?}", video.data.is_completed);
-    println!("is_offical: {:?}", video.data.is_offical);
+    println!("is_official: {:?}", video.data.is_official);
     println!("is_fair: {:?}", video.data.is_fair);
     println!("is_valid: {:?}", video.data.is_valid());
     video.data.set_current_time(0.001);

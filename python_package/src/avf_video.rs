@@ -64,8 +64,8 @@ impl PyAvfVideo {
         Ok(self.core.data.is_completed)
     }
     #[getter]
-    fn get_is_offical(&self) -> PyResult<bool> {
-        Ok(self.core.data.is_offical)
+    fn get_is_official(&self) -> PyResult<bool> {
+        Ok(self.core.data.is_official)
     }
     #[getter]
     fn get_is_fair(&self) -> PyResult<bool> {

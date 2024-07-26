@@ -53,7 +53,7 @@ impl EvfVideo {
     fn parse_v1(&mut self) -> Result<(), ErrReadVideoReason> {
         let the_byte = self.data.get_u8()?;
         self.data.is_completed = the_byte & 0b1000_0000 != 0;
-        self.data.is_offical = the_byte & 0b0100_0000 != 0;
+        self.data.is_official = the_byte & 0b0100_0000 != 0;
         self.data.is_fair = the_byte & 0b0010_0000 != 0;
         self.data.nf = the_byte & 0b0001_0000 != 0;
         self.data.height = self.data.get_u8()? as usize;
@@ -194,7 +194,7 @@ impl EvfVideo {
     fn parse_v2(&mut self) -> Result<(), ErrReadVideoReason> {
         let the_byte = self.data.get_u8()?;
         self.data.is_completed = the_byte & 0b1000_0000 != 0;
-        self.data.is_offical = the_byte & 0b0100_0000 != 0;
+        self.data.is_official = the_byte & 0b0100_0000 != 0;
         self.data.is_fair = the_byte & 0b0010_0000 != 0;
         self.data.nf = the_byte & 0b0001_0000 != 0;
         self.data.height = self.data.get_u8()? as usize;
@@ -342,7 +342,7 @@ impl EvfVideo {
     fn parse_v3(&mut self) -> Result<(), ErrReadVideoReason> {
         let the_byte = self.data.get_u8()?;
         self.data.is_completed = the_byte & 0b1000_0000 != 0;
-        self.data.is_offical = the_byte & 0b0100_0000 != 0;
+        self.data.is_official = the_byte & 0b0100_0000 != 0;
         self.data.is_fair = the_byte & 0b0010_0000 != 0;
         self.data.nf = the_byte & 0b0001_0000 != 0;
         let the_byte = self.data.get_u8()?;

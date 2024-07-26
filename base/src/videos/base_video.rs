@@ -253,7 +253,7 @@ pub struct BaseVideo<T> {
     pub is_completed: bool,
     /// 是否正式: 软件证明这局是正式的，一定扫完，包括没有用软件筛选3BV、没有看概率、是标准模式、时间等所有数值没有溢出。  
     /// 不一定包括是否满足排名网站对于3BV的额外限制。例如，没有人能证明avf录像是否正式。
-    pub is_offical: bool,
+    pub is_official: bool,
     /// 是否公平完成。软件证明这局是公平完成的，一定扫完，比如没有用软件筛选3BV、没有看概率、时间等所有数值没有溢出。  
     /// 公平完成和正式的区别是，只有标准游戏模式可以是正式的，而upk、无猜等模式不正式，但可以是公平完成的。  
     /// 如果是正式的，则一定是公平完成的。
@@ -348,7 +348,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             height: 0,
             mine_num: 0,
             is_completed: false,
-            is_offical: false,
+            is_official: false,
             is_fair: false,
             use_question: false,
             use_cursor_pos_lim: false,
@@ -400,7 +400,7 @@ impl Default for BaseVideo<SafeBoard> {
             height: 0,
             mine_num: 0,
             is_completed: false,
-            is_offical: false,
+            is_official: false,
             is_fair: false,
             use_question: false,
             use_cursor_pos_lim: false,
@@ -1332,13 +1332,13 @@ impl<T> BaseVideo<T> {
         self.use_auto_replay = use_auto_replay;
         Ok(0)
     }
-    pub fn set_is_offical(&mut self, is_offical: bool) -> Result<u8, ()> {
+    pub fn set_is_official(&mut self, is_official: bool) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
             return Err(());
         };
-        self.is_offical = is_offical;
+        self.is_official = is_official;
         Ok(0)
     }
     pub fn set_is_fair(&mut self, is_fair: bool) -> Result<u8, ()> {
@@ -1847,7 +1847,7 @@ impl<T> BaseVideo<T> {
         if self.is_completed {
             self.raw_data[1] |= 0b1000_0000;
         }
-        if self.is_offical {
+        if self.is_official {
             self.raw_data[1] |= 0b0100_0000;
         }
         if self.is_fair {
@@ -1963,7 +1963,7 @@ impl<T> BaseVideo<T> {
         if self.is_completed {
             self.raw_data[1] |= 0b1000_0000;
         }
-        if self.is_offical {
+        if self.is_official {
             self.raw_data[1] |= 0b0100_0000;
         }
         if self.is_fair {
@@ -2082,7 +2082,7 @@ impl<T> BaseVideo<T> {
         if self.is_completed {
             self.raw_data[1] |= 0b1000_0000;
         }
-        if self.is_offical {
+        if self.is_official {
             self.raw_data[1] |= 0b0100_0000;
         }
         if self.is_fair {

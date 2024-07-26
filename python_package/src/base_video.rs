@@ -135,8 +135,8 @@ impl PyBaseVideo {
         Ok(self.core.is_completed)
     }
     #[getter]
-    fn get_is_offical(&self) -> PyResult<bool> {
-        Ok(self.core.is_offical)
+    fn get_is_official(&self) -> PyResult<bool> {
+        Ok(self.core.is_official)
     }
     #[getter]
     fn get_is_fair(&self) -> PyResult<bool> {
@@ -438,8 +438,8 @@ impl PyBaseVideo {
         self.core.set_use_auto_replay(use_auto_replay).unwrap();
     }
     #[setter]
-    pub fn set_is_offical(&mut self, is_offical: bool) {
-        self.core.set_is_offical(is_offical).unwrap();
+    pub fn set_is_official(&mut self, is_official: bool) {
+        self.core.set_is_official(is_official).unwrap();
     }
     #[setter]
     pub fn set_is_fair(&mut self, is_fair: bool) {

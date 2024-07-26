@@ -55,6 +55,7 @@ impl EvfVideo {
         self.data.is_completed = the_byte & 0b1000_0000 != 0;
         self.data.is_offical = the_byte & 0b0100_0000 != 0;
         self.data.is_fair = the_byte & 0b0010_0000 != 0;
+        self.data.nf = the_byte & 0b0001_0000 != 0;
         self.data.height = self.data.get_u8()? as usize;
         self.data.width = self.data.get_u8()? as usize;
         self.data.mine_num = self.data.get_u16()? as usize;
@@ -195,6 +196,7 @@ impl EvfVideo {
         self.data.is_completed = the_byte & 0b1000_0000 != 0;
         self.data.is_offical = the_byte & 0b0100_0000 != 0;
         self.data.is_fair = the_byte & 0b0010_0000 != 0;
+        self.data.nf = the_byte & 0b0001_0000 != 0;
         self.data.height = self.data.get_u8()? as usize;
         self.data.width = self.data.get_u8()? as usize;
         self.data.mine_num = self.data.get_u16()? as usize;
@@ -339,13 +341,14 @@ impl EvfVideo {
     /// 0.3版本
     fn parse_v3(&mut self) -> Result<(), ErrReadVideoReason> {
         let the_byte = self.data.get_u8()?;
-        self.data.use_question = the_byte & 0b1000_0000 != 0;
-        self.data.use_cursor_pos_lim = the_byte & 0b0100_0000 != 0;
-        self.data.use_auto_replay = the_byte & 0b0010_0000 != 0;
-        let the_byte = self.data.get_u8()?;
         self.data.is_completed = the_byte & 0b1000_0000 != 0;
         self.data.is_offical = the_byte & 0b0100_0000 != 0;
         self.data.is_fair = the_byte & 0b0010_0000 != 0;
+        self.data.nf = the_byte & 0b0001_0000 != 0;
+        let the_byte = self.data.get_u8()?;
+        self.data.use_question = the_byte & 0b1000_0000 != 0;
+        self.data.use_cursor_pos_lim = the_byte & 0b0100_0000 != 0;
+        self.data.use_auto_replay = the_byte & 0b0010_0000 != 0;
         self.data.height = self.data.get_u8()? as usize;
         self.data.width = self.data.get_u8()? as usize;
         self.data.mine_num = self.data.get_u16()? as usize;

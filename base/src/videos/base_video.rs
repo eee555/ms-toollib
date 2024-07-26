@@ -550,6 +550,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
             }
         }
         self.is_completed = b.game_board_state == GameBoardState::Win;
+        self.nf = b.right == 0;
         self.game_dynamic_params.left = b.left;
         self.game_dynamic_params.left_s = b.left as f64 / self.game_dynamic_params.rtime;
         self.game_dynamic_params.right = b.right;

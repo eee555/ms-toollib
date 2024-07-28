@@ -165,8 +165,8 @@ macro_rules! generate_video {
                     self.core.data.is_completed
                 }
                 #[wasm_bindgen(getter)]
-                pub fn get_is_offical(&self) -> bool {
-                    self.core.data.is_offical
+                pub fn get_is_official(&self) -> bool {
+                    self.core.data.is_official
                 }
                 #[wasm_bindgen(getter)]
                 pub fn get_is_fair(&self) -> bool {

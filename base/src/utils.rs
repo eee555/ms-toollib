@@ -438,13 +438,13 @@ pub trait js_shuffle {
 }
 
 #[cfg(feature = "js")]
-impl<T> js_shuffle for Vec<T> {
+impl js_shuffle for Vec<i32> {
     fn shuffle_(&mut self) {
         // 存疑！！！！！
         let l = self.len();
         for i in 1..l {
             let id = get_random_int(i + 1);
-            let t = self[i].clone();
+            let t = self[i];
             self[i] = self[id];
             self[id] = t;
         }

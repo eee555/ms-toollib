@@ -671,9 +671,10 @@ impl BaseVideo<SafeBoard> {
                 }
             }
             GameBoardState::Playing => {
-                if self.mode != 9 && self.mode != 10 {
-                    return Err(());
-                }
+                // 不再限制模式，以防过于严格。
+                // if self.mode != 6 && self.mode != 7 && self.mode != 8 && self.mode != 9 && self.mode != 10 {
+                //     return Err(());
+                // }
                 if self.width != board[0].len() || self.height != board.len() {
                     return Err(());
                 }
@@ -2262,7 +2263,7 @@ impl<T> BaseVideo<T> {
                 return 1;
             }
         } else if self.software == "元3.2".as_bytes().to_vec()
-            || self.software == "元3.1.7".as_bytes().to_vec()
+            || self.software == "元3.1.9".as_bytes().to_vec()
         {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和

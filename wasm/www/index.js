@@ -42,7 +42,7 @@ request.onload = () => {
         console.log(video.events_x(i), video.events_y(i), video.events_mouse(i));
     }
     console.log(video.get_is_fair);
-    console.log(video.get_is_offical);
+    console.log(video.get_is_official);
     console.log(video.get_is_completed);
     console.log(video.is_valid());
 } 

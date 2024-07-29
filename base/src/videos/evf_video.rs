@@ -87,21 +87,21 @@ impl EvfVideo {
             if the_byte == '\0' {
                 break;
             }
-            self.data.player_designator.push(the_byte as u8);
+            self.data.player_identifier.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.race_designator.push(the_byte as u8);
+            self.data.race_identifier.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.uniqueness_designator.push(the_byte as u8);
+            self.data.uniqueness_identifier.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
@@ -228,21 +228,21 @@ impl EvfVideo {
             if the_byte == '\0' {
                 break;
             }
-            self.data.player_designator.push(the_byte as u8);
+            self.data.player_identifier.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.race_designator.push(the_byte as u8);
+            self.data.race_identifier.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.uniqueness_designator.push(the_byte as u8);
+            self.data.uniqueness_identifier.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
@@ -380,21 +380,21 @@ impl EvfVideo {
             if the_byte == '\0' {
                 break;
             }
-            self.data.player_designator.push(the_byte as u8);
+            self.data.player_identifier.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.race_designator.push(the_byte as u8);
+            self.data.race_identifier.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.uniqueness_designator.push(the_byte as u8);
+            self.data.uniqueness_identifier.push(the_byte as u8);
         }
         loop {
             let the_byte = self.data.get_char()?;
@@ -460,6 +460,9 @@ impl EvfVideo {
                 7 => mouse = "mr",
                 8 => mouse = "pf",
                 9 => mouse = "cc",
+                10 => mouse = "l",
+                11 => mouse = "r",
+                12 => mouse = "m",
                 255 => {
                     have_checksum = false;
                     break;

@@ -147,7 +147,7 @@ impl MvfVideo {
         let byte_len = self.data.get_u8()?;
         for _ in 0..byte_len {
             let t = self.data.get_u8()?;
-            self.data.player_designator.push(t);
+            self.data.player_identifier.push(t);
         }
 
         // First 2 bytes determine the file permutation

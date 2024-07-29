@@ -773,42 +773,42 @@ impl<T> MinesweeperBoard<T> {
                 MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
                 _ => return Err(()),
             },
-            "crl" => match self.mouse_state {
-                MouseState::Chording => {
-                    self.mouse_state = MouseState::UpDown;
-                    if pos.0 == self.row && pos.1 == self.column {
-                        return Ok(0);
-                    }
-                    return self.chording_click(pos.0, pos.1);
-                }
-                MouseState::ChordingNotFlag => {
-                    self.mouse_state = MouseState::UpDown;
-                    self.right -= 1;
-                    if pos.0 == self.row && pos.1 == self.column {
-                        return Ok(0);
-                    }
-                    return self.chording_click(pos.0, pos.1);
-                }
-                _ => return Err(()),
-            },
-            "crr" => match self.mouse_state {
-                MouseState::Chording => {
-                    self.mouse_state = MouseState::DownUpAfterChording;
-                    if pos.0 == self.row && pos.1 == self.column {
-                        return Ok(0);
-                    }
-                    return self.chording_click(pos.0, pos.1);
-                }
-                MouseState::ChordingNotFlag => {
-                    self.mouse_state = MouseState::DownUpAfterChording;
-                    self.right -= 1;
-                    if pos.0 == self.row && pos.1 == self.column {
-                        return Ok(0);
-                    }
-                    return self.chording_click(pos.0, pos.1);
-                }
-                _ => return Err(()),
-            },
+            // "crl" => match self.mouse_state {
+            //     MouseState::Chording => {
+            //         self.mouse_state = MouseState::UpDown;
+            //         if pos.0 == self.row && pos.1 == self.column {
+            //             return Ok(0);
+            //         }
+            //         return self.chording_click(pos.0, pos.1);
+            //     }
+            //     MouseState::ChordingNotFlag => {
+            //         self.mouse_state = MouseState::UpDown;
+            //         self.right -= 1;
+            //         if pos.0 == self.row && pos.1 == self.column {
+            //             return Ok(0);
+            //         }
+            //         return self.chording_click(pos.0, pos.1);
+            //     }
+            //     _ => return Err(()),
+            // },
+            // "crr" => match self.mouse_state {
+            //     MouseState::Chording => {
+            //         self.mouse_state = MouseState::DownUpAfterChording;
+            //         if pos.0 == self.row && pos.1 == self.column {
+            //             return Ok(0);
+            //         }
+            //         return self.chording_click(pos.0, pos.1);
+            //     }
+            //     MouseState::ChordingNotFlag => {
+            //         self.mouse_state = MouseState::DownUpAfterChording;
+            //         self.right -= 1;
+            //         if pos.0 == self.row && pos.1 == self.column {
+            //             return Ok(0);
+            //         }
+            //         return self.chording_click(pos.0, pos.1);
+            //     }
+            //     _ => return Err(()),
+            // },
             _ => return Err(()),
         }
         Ok(0)

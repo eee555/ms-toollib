@@ -138,7 +138,7 @@ impl RmvVideo {
                 self.data.get_char()?;
             }
         }
-        self.data.player_designator = player;
+        self.data.player_identifier = player;
         self.data.country = country;
 
         self.data.offset += 4;
@@ -228,8 +228,8 @@ impl RmvVideo {
                                 7 => "mr".to_string(),
                                 _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
                             },
-                            x: x,
-                            y: y,
+                            x,
+                            y,
                             ..VideoActionStateRecorder::default()
                         });
                 }

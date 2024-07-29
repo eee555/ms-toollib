@@ -41,7 +41,7 @@ fn AvfVideo_works() {
     println!("结果：{:?}", r);
     video.data.print_event();
     video.data.analyse();
-    println!("标识：{:?}", video.data.player_designator);
+    println!("标识：{:?}", video.data.player_identifier);
     println!("局面：{:?}", video.data.board);
     video.data.set_current_time(0.0);
     // println!("game_board_stream：{:?}", video.data.game_board_stream[0]);
@@ -80,7 +80,7 @@ fn RmvVideo_works() {
     video.data.analyse();
     video.data.set_pix_size(60);
     println!("结果：{:?}", r);
-    println!("标识：{:?}", video.data.player_designator);
+    println!("标识：{:?}", video.data.player_identifier);
     println!("3BV：{:?}", video.data.static_params.bbbv);
     println!("宽度：{:?}", video.data.width);
     println!("高度：{:?}", video.data.height);
@@ -123,10 +123,10 @@ fn MvfVideo_works() {
     println!("结果：{:?}", r);
     println!(
         "标识：{:?}",
-        String::from_utf8(video.data.player_designator.clone()).unwrap()
+        String::from_utf8(video.data.player_identifier.clone()).unwrap()
     );
     println!("软件：{:?}", video.data.software);
-    println!("race_designator：{:?}", video.data.race_designator);
+    println!("race_identifier：{:?}", video.data.race_identifier);
     println!("3BV：{:?}", video.data.static_params.bbbv);
     println!("宽度：{:?}", video.data.width);
     println!("高度：{:?}", video.data.height);
@@ -175,10 +175,10 @@ fn EvfVideo_works() {
     println!("board: {:?}", video.data.board);
     println!("cell_pixel_size：{:?}", video.data.cell_pixel_size);
     println!("结果：{:?}", r);
-    println!("标识：{:?}", video.data.player_designator);
+    println!("标识：{:?}", video.data.player_identifier);
     println!("软件：{:?}", video.data.software);
     println!("比较：{:?}", "元3.1.7".as_bytes().to_vec());
-    println!("race_designator：{:?}", video.data.race_designator);
+    println!("race_identifier：{:?}", video.data.race_identifier);
     println!("3BV：{:?}", video.data.static_params.bbbv);
     println!("宽度：{:?}", video.data.width);
     println!("高度：{:?}", video.data.height);
@@ -259,17 +259,17 @@ fn BaseVideo_works() {
     video.step("lc", (97, 112)).unwrap();
     video.step("lr", (97, 112)).unwrap();
     video
-        .set_player_designator("eee".as_bytes().to_vec())
+        .set_player_identifier("eee".as_bytes().to_vec())
         .unwrap();
     video
-        .set_race_designator("555".as_bytes().to_vec())
+        .set_race_identifier("555".as_bytes().to_vec())
         .unwrap();
     video.set_software("888".as_bytes().to_vec()).unwrap();
     video.set_country("666".as_bytes().to_vec()).unwrap();
     video.print_event();
 
     println!("局面：{:?}", video.get_game_board());
-    println!("标识：{:?}", video.player_designator);
+    println!("标识：{:?}", video.player_identifier);
     println!("局面状态：{:?}", video.game_board_state);
     println!(
         "3BV：{:?}/{:?}",
@@ -304,11 +304,11 @@ fn BaseVideo_works() {
     println!("board：{:?}", video.data.board);
     println!("game_board: {:?}", video.data.get_game_board());
     println!("game_board_state: {:?}", video.data.game_board_state);
-    println!("标识：{:?}", video.data.player_designator);
+    println!("标识：{:?}", video.data.player_identifier);
     println!("局面状态：{:?}", video.data.game_board_state);
     println!("软件：{:?}", video.data.software);
     println!("国家：{:?}", video.data.country);
-    println!("race_designator：{:?}", video.data.race_designator);
+    println!("race_identifier：{:?}", video.data.race_identifier);
     println!("3BV：{:?}", video.data.static_params.bbbv);
     println!("宽度：{:?}", video.data.width);
     println!("高度：{:?}", video.data.height);
@@ -713,14 +713,14 @@ fn BaseVideo_works_4() {
     video.step("rr", (48, 64)).unwrap();
 
     println!("局面：{:?}", video.get_game_board());
-    println!("标识：{:?}", video.player_designator);
+    println!("标识：{:?}", video.player_identifier);
     println!("局面状态：{:?}", video.game_board_state);
 
     video
-        .set_player_designator("eee".as_bytes().to_vec())
+        .set_player_identifier("eee".as_bytes().to_vec())
         .unwrap();
     video
-        .set_race_designator("555".as_bytes().to_vec())
+        .set_race_identifier("555".as_bytes().to_vec())
         .unwrap();
     video.set_software("888".as_bytes().to_vec()).unwrap();
     video.set_country("666".as_bytes().to_vec()).unwrap();
@@ -759,11 +759,11 @@ fn BaseVideo_works_4() {
     println!("board：{:?}", video.data.board);
     println!("game_board: {:?}", video.data.get_game_board());
     println!("game_board_state: {:?}", video.data.game_board_state);
-    println!("标识：{:?}", video.data.player_designator);
+    println!("标识：{:?}", video.data.player_identifier);
     println!("局面状态：{:?}", video.data.game_board_state);
     println!("软件：{:?}", video.data.software);
     println!("国家：{:?}", video.data.country);
-    println!("race_designator：{:?}", video.data.race_designator);
+    println!("race_identifier：{:?}", video.data.race_identifier);
     println!("3BV：{:?}", video.data.static_params.bbbv);
     println!("宽度：{:?}", video.data.width);
     println!("高度：{:?}", video.data.height);
@@ -812,7 +812,7 @@ fn BaseVideo_works_5_1bv() {
     video.save_to_evf_file("test");
 
     println!("局面：{:?}", video.get_game_board());
-    println!("标识：{:?}", video.player_designator);
+    println!("标识：{:?}", video.player_identifier);
     println!("局面状态：{:?}", video.game_board_state);
     println!("开始时间戳：{:?}", video.start_time);
     println!("结束时间戳：{:?}", video.end_time);

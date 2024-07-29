@@ -219,7 +219,7 @@ impl AvfVideo {
                     65 => "mr".to_string(),
                     145 => "rr".to_string(),
                     193 => "mr".to_string(),
-                    11 => "sc".to_string(),
+                    11 => "sc".to_string(), // left_click_with_shift没见过，不清楚用途
                     21 => "lr".to_string(),
                     _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
                 },
@@ -248,7 +248,7 @@ impl AvfVideo {
             let v = self.data.get_char()?;
             match v {
                 '\r' => break,
-                _ => self.data.player_designator.push(v as u8),
+                _ => self.data.player_identifier.push(v as u8),
             }
         }
         self.data.software = "Arbiter".as_bytes().to_vec();

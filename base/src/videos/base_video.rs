@@ -297,11 +297,11 @@ pub struct BaseVideo<T> {
     /// 当前指针指向
     pub current_event_id: usize,
     /// 录像用户标识
-    pub player_designator: Vec<u8>,
+    pub player_identifier: Vec<u8>,
     /// 比赛标识
-    pub race_designator: Vec<u8>,
+    pub race_identifier: Vec<u8>,
     /// 唯一性标识
-    pub uniqueness_designator: Vec<u8>,
+    pub uniqueness_identifier: Vec<u8>,
     /// 游戏起始时间和终止时间。不整理格式，读成字符串。
     /// 举例：在阿比特中，‘16.10.2021.22.24.23.9906’，意味2021年10月16日，下午10点24分23秒9906。
     /// 维也纳扫雷中，‘1382834716’，代表以秒为单位的时间戳
@@ -369,9 +369,9 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             delta_time: 0.0,
             current_time: 0.0,
             current_event_id: 0,
-            player_designator: vec![],
-            race_designator: vec![],
-            uniqueness_designator: vec![],
+            player_identifier: vec![],
+            race_identifier: vec![],
+            uniqueness_identifier: vec![],
             start_time: vec![],
             end_time: vec![],
             country: vec![],
@@ -419,9 +419,9 @@ impl Default for BaseVideo<SafeBoard> {
             delta_time: 0.0,
             current_time: 0.0,
             current_event_id: 0,
-            player_designator: vec![],
-            race_designator: vec![],
-            uniqueness_designator: vec![],
+            player_identifier: vec![],
+            race_identifier: vec![],
+            uniqueness_identifier: vec![],
             start_time: vec![],
             end_time: vec![],
             country: vec![],
@@ -1373,31 +1373,31 @@ impl<T> BaseVideo<T> {
         Ok(0)
     }
 
-    pub fn set_player_designator(&mut self, player_designator: Vec<u8>) -> Result<u8, ()> {
+    pub fn set_player_identifier(&mut self, player_identifier: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
             return Err(());
         };
-        self.player_designator = player_designator;
+        self.player_identifier = player_identifier;
         Ok(0)
     }
-    pub fn set_race_designator(&mut self, race_designator: Vec<u8>) -> Result<u8, ()> {
+    pub fn set_race_identifier(&mut self, race_identifier: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
             return Err(());
         };
-        self.race_designator = race_designator;
+        self.race_identifier = race_identifier;
         Ok(0)
     }
-    pub fn set_uniqueness_designator(&mut self, uniqueness_designator: Vec<u8>) -> Result<u8, ()> {
+    pub fn set_uniqueness_identifier(&mut self, uniqueness_identifier: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
             return Err(());
         };
-        self.uniqueness_designator = uniqueness_designator;
+        self.uniqueness_identifier = uniqueness_identifier;
         Ok(0)
     }
     /// 拟弃用，会自动记录
@@ -1885,13 +1885,13 @@ impl<T> BaseVideo<T> {
         self.raw_data.append(&mut self.software.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.player_designator.clone().to_owned());
+            .append(&mut self.player_identifier.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.race_designator.clone().to_owned());
+            .append(&mut self.race_identifier.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.uniqueness_designator.clone().to_owned());
+            .append(&mut self.uniqueness_identifier.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
             .append(&mut self.start_time.clone().to_owned());
@@ -2001,13 +2001,13 @@ impl<T> BaseVideo<T> {
         self.raw_data.append(&mut self.software.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.player_designator.clone().to_owned());
+            .append(&mut self.player_identifier.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.race_designator.clone().to_owned());
+            .append(&mut self.race_identifier.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.uniqueness_designator.clone().to_owned());
+            .append(&mut self.uniqueness_identifier.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
             .append(&mut self.start_time.clone().to_owned());
@@ -2132,13 +2132,13 @@ impl<T> BaseVideo<T> {
         self.raw_data.append(&mut self.software.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.player_designator.clone().to_owned());
+            .append(&mut self.player_identifier.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.race_designator.clone().to_owned());
+            .append(&mut self.race_identifier.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.uniqueness_designator.clone().to_owned());
+            .append(&mut self.uniqueness_identifier.clone().to_owned());
         self.raw_data.push(0);
         self.raw_data
             .append(&mut self.start_time.clone().to_owned());

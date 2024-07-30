@@ -3,7 +3,7 @@
 * The full specification and historical versions are open-sourced at: https://github.com/eee555/ms_toollib/blob/main/evf%E6%A0%87%E5%87%86.md
 * In case of any conflict between different language versions, the Chinese version shall prevail.
 
-Both AVF and RMV formats for Minesweeper videos have become technically stable, allowing specialized clones like Arbiter and Viennasweeper to easily record and play their own generated videos. However, this software-centric model is closed, preventing new software from generating these formats. According to [thefinerminer](https://minesweepergame.com/forum/viewtopic.php?f=26&t=1330), many clone versions appear and then disappear suddenly. Currently, due to developers leaving, parsing these files relies on reverse engineering, making it unsafe and restrictive for developers to convert between different formats. To overcome this issue, on one hand, Freesweeper achieved the playback of multiple video formats on a single software for the first time. On the other hand, Freesweeper can convert other video formats to the [rawvf](https://github.com/thefinerminer/minesweeper-rawvf) format (the first open-source Minesweeper video format). The ability to play multiple formats and convert them into a unified format is undoubtedly the direction for future development. However, rawvf mainly addresses human readability issues, similar to a parser's debug information, which not only makes it hard to satisfy everyone's preferences but also unnecessarily occupies disk space, contrary to general engineering practices.
+Both AVF and RMV formats for Minesweeper videos have become technically stable, allowing specialized clones like Arbiter and Viennasweeper to easily record and play their own generated videos. However, this software-centric model is closed, preventing new software from generating these formats. According to [thefinerminer](https://minesweepergame.com/forum/viewtopic.php?f=26&t=1330), currently, due to developers leaving, parsing these files relies on reverse engineering, making it unsafe and restrictive for developers to convert between different formats. To overcome this issue, on one hand, Freesweeper is able to replay multiple video formats on a single software for the first time. On the other hand, Freesweeper can convert other video formats to the [rawvf](https://github.com/thefinerminer/minesweeper-rawvf) format (the first open-source Minesweeper video format). The ability to replay multiple formats and convert them into a unified format is undoubtedly the direction for future development. However, rawvf mainly addresses human readability issues, similar to a parser's debug information, which not only makes it hard to satisfy everyone's preferences but also unnecessarily occupies disk space, contrary to general engineering practices.
 
 Furthermore, existing formats have the following shortcomings: 
 1. Insufficient precision. With hardware advancements, timing precision can now reach millisecond levels.
@@ -75,6 +75,7 @@ Format Description:
 
 1. Fixed length 1 byte: version number. The version described in this specification is '\3'.
 2. Fixed length 1 byte: summary. In high-trust scenarios, it reduces parsing complexity.
+
     > Fixed length 1 bit (2e7): Whether the game is completed, 1 means completed. The software proves that the game is completed, i.e., no mines were hit, and no values overflowed. No other conditions are guaranteed.
 
     > Fixed length 1 bit (2e6): Whether it is official, 1 means official. The software proves that the game is official, definitely completed, including no 3BV filter used, no auxiliary functions used, standard mode, and no values overflowed. Not necessarily meeting extra 3BV constraints for ranking sites. (This flag is convenient for ranking sites supporting only standard mode minesweeper)
@@ -85,6 +86,7 @@ Format Description:
     
     > Remaining bits reserved and set to 0; added based on ranking sites, score statistics application developers' requirements.
 3. Fixed length 1 byte: game settings. These settings aim to provide convenience (or inconvenience) to players while being widely recognized as not affecting the formality or fairness of the score.
+
     > Fixed length 1 bit (2e7): Whether to disable question marks, 1 means disabled.
 
     > Fixed length 1 bit (2e6): The mouse pointer cannot move out of the board, 1 means cannot move out.
@@ -98,24 +100,23 @@ Format Description:
 6. Fixed length 2 bytes: number of mines, big-endian.
 7. Fixed length 1 byte: cell size.
 8. Fixed length 2 bytes: game mode (symbols and meanings: 0->standard, 1->upk; 2->cheat; 3->Density (from Viennasweeper software), 4->win7, 5->Competitive Solvable, 6->Strong Solvable, 7->Weak Solvable, 8->To Be Solvable, 9->Strong Guessable, 10->Weak Guessable, 11->Chording Recursive (standard recursive), 12->Flag Recursive, 13->Chording Flag Recursive, remaining reserved, added based on new clones developers' requirements), big-endian.
-9. Fixed length 2 bytes: 3BV value, big-endian.
+9.  Fixed length 2 bytes: 3BV value, big-endian.
 10. Fixed length 3 bytes: time (rtime), in milliseconds, big-endian.
 11. A string ending with '\0': source of the recording. For example, if it comes from Meta Minesweeper 3.1, it is "Meta 3.1". Ranking sites need to check the source of the recording.
-12. A string ending with '\0': user identifier (the user wants the ranking site/software to prominently display this identifier)
-13. A string ending with '\0': competition identifier (the user wants to use this recording as a credential to participate in a competition but does not want the ranking site/software to display this identifier)
-14. A string ending with '\0': unique identifier (the user wants to distinguish from other users with the same name, such as nickname, Minesweeper network ID, province, email, online
-
- name, motto, but does not want the ranking site or software to display this identifier)
-1.  A string ending with '\0': start timestamp, recommended to use the total microseconds since January 1, 1970, in Greenwich Mean Time. The time of the first left-click released on a non-flagged cell.
-2.  A string ending with '\0': end timestamp, recommended to use the total microseconds since January 1, 1970, in Greenwich Mean Time.
-3.  A string ending with '\0': country or region name or code. It is recommended to use the two-letter uppercase code of the ISO 3166-1:2020 standard country or region code so that the player can correctly display the national flag.
-4.  A string ending with '\0': device information-related UUID, preferably 32 bits. Note that developers need to protect users' privacy.
-5.  Variable length ⌈number of rows × number of columns / 8⌉ bytes: 1 represents a mine, 0 represents a not mine. The ***i × number of columns + j***th bit represents whether the *i*th (starting from 0) row, *j*th (starting from 0) column is a mine. For example, the following 3 rows, 4 columns board (with * representing mines):
+12. A string ending with '\0': user identifier (the user wants the ranking site or software to prominently display this identifier)
+13. A string ending with '\0': competition identifier (the user wants to use this identifier as a credential to participate in a competition but does not want the ranking site or software to display this identifier)
+14. A string ending with '\0': unique identifier (the user wants to distinguish from other users with the same name, such as nickname, saolei.wang ID, province, email, online name, motto, but does not want the ranking site or software to display this identifier)
+15. A string ending with '\0': start timestamp, recommended to use the total microseconds since January 1, 1970, in Greenwich Mean Time. The time of the first left-click released on a non-flagged cell.
+16. A string ending with '\0': end timestamp, recommended to use the total microseconds since January 1, 1970, in Greenwich Mean Time.
+17. A string ending with '\0': country or region name or code. It is recommended to use the two-letter uppercase code of the ISO 3166-1:2020 standard country or region code so that the player can correctly display the national flag.
+18. A string ending with '\0': device information-related UUID, preferably 32 bits. Note that developers need to protect users' privacy.
+19. Variable length ⌈number of rows × number of columns / 8⌉ bytes: 1 represents a mine, 0 represents a not mine. The ***i × number of columns + j***th bit represents whether the *i*th (starting from 0) row, *j*th (starting from 0) column is a mine. For example, the following 3 rows, 4 columns board (with * representing mines):  
     [[1, 3, *, *],  
      [3, *, *, *],  
-     [*, *, *, *]] 
+     [*, *, *, *]]  
    is recorded as 00110111 11110000.  
-6.   Mouse event format (loop structure):
+20. Mouse event format (loop structure):
+
     > Fixed length 1 byte: operation type. 1: "mv"; 2: "lc"; 3: "lr"; 4: "rc"; 5: "rr"; 6: "mc"; 7: "mr"; 8: "pf"; 9: "cc"; 10: "l"; 11: "r"; 12: "m"; remaining reserved (except '\0', '\255').
 
     > Fixed length 3 bytes: timestamp, in milliseconds. Recorded from the first left or right click that affects the game board as 0, then incremented. The timestamp of the first left-click release on a non-flagged cell may not be 0, and the timestamp of the last operation is greater than or equal to the actual time used. Big-endian.
@@ -124,6 +125,6 @@ Format Description:
 
     > Fixed length 2 bytes: distance from the top border, in pixels. The distance of operations outside the board is recorded as "number of rows × cell size". Big-endian.
 
-7.   Fixed length 1 byte: '\0' indicates a checksum (recording directly generated by software); '\255' indicates no checksum (e.g., translated from avf files).
+21. Fixed length 1 byte: '\0' indicates a checksum (recording directly generated by software); '\255' indicates no checksum (e.g., translated from avf files).
 
-8.   Fixed length 32 bytes: checksum, optional.
+22. Fixed length 32 bytes: checksum, optional.

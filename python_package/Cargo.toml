@@ -12,7 +12,7 @@ authors = ["Wang Jianing <wangjianing@88.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pyo3 = { version ="0.20.2", features = ["abi3-py37", "extension-module"] }
+pyo3 = { version ="0.22.2", features = ["abi3-py37", "extension-module"] }
 ms_toollib_original = { path = "../base", features = ["py"], package="ms_toollib" }
 itertools = { version ="0.6.0" }
 

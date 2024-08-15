@@ -206,7 +206,7 @@ impl<T> MinesweeperBoard<T> {
             -1 => {
                 refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
                 self.game_board_state = GameBoardState::Loss;
-                Ok(0)
+                Ok(4)
             }
             _ => {
                 refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);

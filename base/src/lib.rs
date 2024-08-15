@@ -56,7 +56,7 @@ pub use algorithms::{
 mod board;
 pub use board::{Board, GameBoard};
 
-mod videos;
+pub mod videos;
 pub use videos::{
     AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MouseState, MvfVideo, RmvVideo,
 };

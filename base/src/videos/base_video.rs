@@ -62,6 +62,7 @@ pub struct VideoActionStateRecorder {
     /// 1代表能仅推进局面但不改变对局面的后验判断，例如标雷和取消标雷
     /// 2代表改变对局面的后验判断的操作，例如左键点开一个或一片格子，不包括双击
     /// 3代表有效、至少打开了一个格子的双击
+    /// 4代表踩雷并失败
     /// 和ce没有关系，仅用于控制计算
     pub useful_level: u8,
     /// 操作前的局面（先验局面）的索引。
@@ -743,23 +744,41 @@ impl<T> BaseVideo<T> {
     }
 }
 
-impl<T> BaseVideo<T> {
-    /// 通过文件名构造。
-    #[cfg(any(feature = "py", feature = "rs"))]
-    pub fn new_with_file(file_name: &str) -> BaseVideo<Vec<Vec<i32>>> {
-        let raw_data: Vec<u8> = fs::read(file_name).unwrap();
-        // for i in 0..500 {
-        //     print!("{:?}", raw_data[i] as char);
-        // }
+pub trait NewBaseVideo<T> {
+    fn new(file_name: T) -> Self;
+}
+
+pub trait NewBaseVideo2<T, U> {
+    fn new(board: T, cell_pixel_size: U) -> Self;
+}
+
+impl NewBaseVideo<Vec<u8>> for BaseVideo<Vec<Vec<i32>>> {
+    fn new(raw_data: Vec<u8>) -> Self {
         BaseVideo {
             raw_data,
             allow_set_rtime: true,
             ..BaseVideo::default()
         }
     }
-    /// 游戏前实例化，游戏中不断调用step方法来维护。
-    #[cfg(any(feature = "py", feature = "rs"))]
-    pub fn new_before_game(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> BaseVideo<SafeBoard> {
+}
+
+/// 通过文件名构造。
+#[cfg(any(feature = "py", feature = "rs"))]
+impl NewBaseVideo<&str> for BaseVideo<Vec<Vec<i32>>> {
+    fn new(file_name: &str) -> Self {
+        let raw_data: Vec<u8> = fs::read(file_name).unwrap();
+        BaseVideo {
+            raw_data,
+            allow_set_rtime: true,
+            ..BaseVideo::default()
+        }
+    }
+}
+
+/// 游戏前实例化，游戏中不断调用step方法来维护。
+#[cfg(any(feature = "py", feature = "rs"))]
+impl NewBaseVideo2<Vec<Vec<i32>>, u8> for BaseVideo<SafeBoard> {
+    fn new(board: Vec<Vec<i32>>, cell_pixel_size:u8) -> BaseVideo<SafeBoard> {
         let bbbv = cal_bbbv(&board);
         // 这里算出来的雷数不一定准
         let mine_num = board.iter().fold(0, |y, row| {
@@ -784,15 +803,58 @@ impl<T> BaseVideo<T> {
             ..BaseVideo::<SafeBoard>::default()
         }
     }
-    #[cfg(feature = "js")]
-    pub fn new(raw_data: Vec<u8>) -> BaseVideo<Vec<Vec<i32>>> {
-        // video_data = video_data.into_vec();
-        BaseVideo {
-            raw_data,
-            allow_set_rtime: true,
-            ..BaseVideo::default()
-        }
-    }
+}
+
+impl<T> BaseVideo<T> {
+    /// 通过文件名构造。
+    // #[cfg(any(feature = "py", feature = "rs"))]
+    // pub fn new_with_file(file_name: &str) -> BaseVideo<Vec<Vec<i32>>> {
+    //     let raw_data: Vec<u8> = fs::read(file_name).unwrap();
+    //     // for i in 0..500 {
+    //     //     print!("{:?}", raw_data[i] as char);
+    //     // }
+    //     BaseVideo {
+    //         raw_data,
+    //         allow_set_rtime: true,
+    //         ..BaseVideo::default()
+    //     }
+    // }
+    // /// 游戏前实例化，游戏中不断调用step方法来维护。
+    // #[cfg(any(feature = "py", feature = "rs"))]
+    // pub fn new_before_game(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> BaseVideo<SafeBoard> {
+    //     let bbbv = cal_bbbv(&board);
+    //     // 这里算出来的雷数不一定准
+    //     let mine_num = board.iter().fold(0, |y, row| {
+    //         y + row
+    //             .iter()
+    //             .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
+    //     });
+    //     let board = SafeBoard::new(board);
+    //     let board_clone = board.clone();
+    //     BaseVideo {
+    //         width: board.get_column(),
+    //         height: board.get_row(),
+    //         mine_num,
+    //         cell_pixel_size,
+    //         board,
+    //         minesweeper_board: MinesweeperBoard::<SafeBoard>::new(board_clone),
+    //         game_board_state: GameBoardState::Ready,
+    //         static_params: StaticParams {
+    //             bbbv,
+    //             ..StaticParams::default()
+    //         },
+    //         ..BaseVideo::<SafeBoard>::default()
+    //     }
+    // }
+    // #[cfg(feature = "js")]
+    // pub fn new(raw_data: Vec<u8>) -> BaseVideo<Vec<Vec<i32>>> {
+    //     // video_data = video_data.into_vec();
+    //     BaseVideo {
+    //         raw_data,
+    //         allow_set_rtime: true,
+    //         ..BaseVideo::default()
+    //     }
+    // }
     /// 步进
     /// - pos的单位是像素，(距离上方，距离左侧)
     /// - 如果操作发生在界外，要求转换成pos=(row*pixsize, column*pixsize)

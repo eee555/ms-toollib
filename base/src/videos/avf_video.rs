@@ -3,6 +3,9 @@
 // use crate::utils::{cal_board_numbers};
 use std::cmp::{max, min};
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
+use crate::videos::{NewSomeVideo, NewSomeVideo2};
+use crate::videos::base_video::NewBaseVideo;
+
 #[cfg(feature = "js")]
 use web_sys::console;
 
@@ -53,21 +56,40 @@ pub struct AvfVideo {
     pub data: BaseVideo<Vec<Vec<i32>>>,
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
+impl NewSomeVideo<&str> for AvfVideo {
+    fn new(file_name: &str) -> Self {
+        AvfVideo {
+            file_name: file_name.to_string(),
+            data: BaseVideo::<Vec<Vec<i32>>>::new(file_name),
+        }
+    }
+}
+
+impl NewSomeVideo2<Vec<u8>, &str> for AvfVideo {
+    fn new(raw_data: Vec<u8>, file_name: &str) -> Self {
+        AvfVideo {
+            file_name: file_name.to_string(),
+            data: BaseVideo::<Vec<Vec<i32>>>::new(raw_data),
+        }
+    }
+}
+
 impl AvfVideo {
-    #[cfg(any(feature = "py", feature = "rs"))]
-    pub fn new(file_name: &str) -> AvfVideo {
-        AvfVideo {
-            file_name: file_name.to_string(),
-            data: BaseVideo::<Vec<Vec<i32>>>::new_with_file(file_name),
-        }
-    }
-    #[cfg(feature = "js")]
-    pub fn new(video_data: Vec<u8>, file_name: &str) -> AvfVideo {
-        AvfVideo {
-            file_name: file_name.to_string(),
-            data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
-        }
-    }
+    // #[cfg(any(feature = "py", feature = "rs"))]
+    // pub fn new(file_name: &str) -> AvfVideo {
+    //     AvfVideo {
+    //         file_name: file_name.to_string(),
+    //         data: BaseVideo::<Vec<Vec<i32>>>::new(file_name),
+    //     }
+    // }
+    // #[cfg(feature = "js")]
+    // pub fn new(video_data: Vec<u8>, file_name: &str) -> AvfVideo {
+    //     AvfVideo {
+    //         file_name: file_name.to_string(),
+    //         data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
+    //     }
+    // }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
         match self.data.get_u8() {
             Ok(_) => {}

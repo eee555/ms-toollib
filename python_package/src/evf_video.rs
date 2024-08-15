@@ -1,7 +1,8 @@
+use crate::PyGameBoard;
 use itertools::Itertools;
+use ms_toollib_original::videos::{NewSomeVideo, NewSomeVideo2};
 use ms_toollib_original::*;
 use pyo3::prelude::*;
-use crate::PyGameBoard;
 
 #[pyclass]
 #[pyo3(name = "EvfVideo", subclass)]
@@ -12,9 +13,15 @@ pub struct PyEvfVideo {
 #[pymethods]
 impl PyEvfVideo {
     #[new]
-    pub fn new(file_name: &str) -> PyEvfVideo {
-        let c = EvfVideo::new(file_name);
-        PyEvfVideo { core: c }
+    #[pyo3(signature = (file_name="", raw_data=vec![]))]
+    pub fn new(file_name: &str, raw_data: Vec<u8>) -> PyEvfVideo {
+        if raw_data.is_empty() {
+            let c = <EvfVideo as NewSomeVideo<&str>>::new(file_name);
+            return PyEvfVideo { core: c };
+        } else {
+            let c = <EvfVideo as NewSomeVideo2<Vec<u8>, &str>>::new(raw_data, file_name);
+            return PyEvfVideo { core: c };
+        }
     }
     pub fn parse_video(&mut self) {
         self.core.parse_video().unwrap();
@@ -22,11 +29,19 @@ impl PyEvfVideo {
     pub fn analyse(&mut self) {
         self.core.data.analyse();
     }
-    pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
-        self.core.data.analyse_for_features(controller);
+    pub fn analyse_for_features(&mut self, controller: Vec<String>) {
+        self.core
+            .data
+            .analyse_for_features(controller.iter().map(|s| s.as_str()).collect());
     }
     pub fn generate_evf_v0_raw_data(&mut self) {
         self.core.data.generate_evf_v0_raw_data();
+    }
+    pub fn generate_evf_v2_raw_data(&mut self) {
+        self.core.data.generate_evf_v2_raw_data();
+    }
+    pub fn generate_evf_v3_raw_data(&mut self) {
+        self.core.data.generate_evf_v3_raw_data();
     }
     pub fn save_to_evf_file(&self, file_name: &str) {
         self.core.data.save_to_evf_file(file_name);
@@ -76,16 +91,16 @@ impl PyEvfVideo {
         Ok(self.core.data.mine_num)
     }
     #[getter]
-    fn get_player_designator(&self) -> PyResult<Vec<u8>> {
-        Ok(self.core.data.player_designator.clone())
+    fn get_player_identifier(&self) -> PyResult<Vec<u8>> {
+        Ok(self.core.data.player_identifier.clone())
     }
     #[getter]
-    fn get_race_designator(&self) -> PyResult<Vec<u8>> {
-        Ok(self.core.data.race_designator.clone())
+    fn get_race_identifier(&self) -> PyResult<Vec<u8>> {
+        Ok(self.core.data.race_identifier.clone())
     }
     #[getter]
-    fn get_uniqueness_designator(&self) -> PyResult<Vec<u8>> {
-        Ok(self.core.data.uniqueness_designator.clone())
+    fn get_uniqueness_identifier(&self) -> PyResult<Vec<u8>> {
+        Ok(self.core.data.uniqueness_identifier.clone())
     }
     #[getter]
     fn get_country(&self) -> PyResult<Vec<u8>> {
@@ -352,6 +367,3 @@ impl PyEvfVideo {
         self.core.data.set_current_time(time);
     }
 }
-
-
-

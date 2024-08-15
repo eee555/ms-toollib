@@ -3,6 +3,7 @@ use itertools::Itertools;
 use ms_toollib_original::*;
 use pyo3::prelude::*;
 use pyo3::*;
+use ms_toollib_original::videos::base_video::NewBaseVideo2;
 
 #[pyclass(name = "SafeBoardRow")]
 pub struct PySafeBoardRow {
@@ -68,7 +69,7 @@ pub struct PyBaseVideo {
 impl PyBaseVideo {
     #[new]
     pub fn new(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> PyBaseVideo {
-        let c = BaseVideo::<SafeBoard>::new_before_game(board, cell_pixel_size);
+        let c = BaseVideo::<SafeBoard>::new(board, cell_pixel_size);
         PyBaseVideo { core: c }
     }
     // pub fn analyse(&mut self) {
@@ -147,16 +148,16 @@ impl PyBaseVideo {
         Ok(self.core.mine_num)
     }
     #[getter]
-    fn get_player_designator(&self) -> PyResult<Vec<u8>> {
-        Ok(self.core.player_designator.clone())
+    fn get_player_identifier(&self) -> PyResult<Vec<u8>> {
+        Ok(self.core.player_identifier.clone())
     }
     #[getter]
-    fn get_race_designator(&self) -> PyResult<Vec<u8>> {
-        Ok(self.core.race_designator.clone())
+    fn get_race_identifier(&self) -> PyResult<Vec<u8>> {
+        Ok(self.core.race_identifier.clone())
     }
     #[getter]
-    fn get_uniqueness_designator(&self) -> PyResult<Vec<u8>> {
-        Ok(self.core.uniqueness_designator.clone())
+    fn get_uniqueness_identifier(&self) -> PyResult<Vec<u8>> {
+        Ok(self.core.uniqueness_identifier.clone())
     }
     #[getter]
     fn get_country(&self) -> PyResult<Vec<u8>> {
@@ -454,17 +455,17 @@ impl PyBaseVideo {
         self.core.set_software(software).unwrap();
     }
     #[setter]
-    pub fn set_player_designator(&mut self, player_designator: Vec<u8>) {
-        self.core.set_player_designator(player_designator).unwrap();
+    pub fn set_player_identifier(&mut self, player_identifier: Vec<u8>) {
+        self.core.set_player_identifier(player_identifier).unwrap();
     }
     #[setter]
-    pub fn set_race_designator(&mut self, race_designator: Vec<u8>) {
-        self.core.set_race_designator(race_designator).unwrap();
+    pub fn set_race_identifier(&mut self, race_identifier: Vec<u8>) {
+        self.core.set_race_identifier(race_identifier).unwrap();
     }
     #[setter]
-    pub fn set_uniqueness_designator(&mut self, uniqueness_designator: Vec<u8>) {
+    pub fn set_uniqueness_identifier(&mut self, uniqueness_identifier: Vec<u8>) {
         self.core
-            .set_uniqueness_designator(uniqueness_designator)
+            .set_uniqueness_identifier(uniqueness_identifier)
             .unwrap();
     }
     #[setter]

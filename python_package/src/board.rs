@@ -25,8 +25,10 @@ impl PyMinesweeperBoard {
     pub fn reset(&mut self) {
         self.core.reset();
     }
-    pub fn step_flow(&mut self, operation: Vec<(&str, (usize, usize))>) {
-        self.core.step_flow(operation).unwrap();
+    pub fn step_flow(&mut self, operation: Vec<(String, (usize, usize))>) {
+        self.core
+            .step_flow(operation.iter().map(|s| (s.0.as_str(), s.1)).collect())
+            .unwrap();
     }
     // 这个方法与强可猜、弱可猜、埋雷有关
     #[setter]
@@ -149,8 +151,10 @@ impl PySafeMinesweeperBoard {
     // pub fn reset(&mut self) {
     //     self.core.reset();
     // }
-    pub fn step_flow(&mut self, operation: Vec<(&str, (usize, usize))>) {
-        self.core.step_flow(operation).unwrap();
+    pub fn step_flow(&mut self, operation: Vec<(String, (usize, usize))>) {
+        self.core
+            .step_flow(operation.iter().map(|s| (s.0.as_str(), s.1)).collect())
+            .unwrap();
     }
     // 这个方法与强可猜、弱可猜、埋雷有关
     #[setter]
@@ -259,5 +263,3 @@ impl PySafeMinesweeperBoard {
         }
     }
 }
-
-

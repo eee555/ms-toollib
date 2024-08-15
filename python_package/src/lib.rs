@@ -368,7 +368,7 @@ fn py_cal_board_numbers(
 // }
 
 #[pymodule]
-fn ms_toollib(_py: Python, m: &PyModule) -> PyResult<()> {
+fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_refresh_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_matrixs, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_matrixses, m)?)?;

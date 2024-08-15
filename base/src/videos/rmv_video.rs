@@ -1,5 +1,7 @@
 use crate::utils::cal_board_numbers;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
+use crate::videos::{NewSomeVideo, NewSomeVideo2};
+use crate::videos::base_video::NewBaseVideo;
 
 /// rmv录像解析器。  
 /// - 功能：解析rmv格式的录像(Vienna MineSweeper产生的)，有详细分析录像的方法。  
@@ -24,21 +26,40 @@ pub struct RmvVideo {
     pub data: BaseVideo<Vec<Vec<i32>>>,
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
+impl NewSomeVideo<&str> for RmvVideo {
+    fn new(file_name: &str) -> Self {
+        RmvVideo {
+            file_name: file_name.to_string(),
+            data: BaseVideo::<Vec<Vec<i32>>>::new(file_name),
+        }
+    }
+}
+
+impl NewSomeVideo2<Vec<u8>, &str> for RmvVideo {
+    fn new(raw_data: Vec<u8>, file_name: &str) -> Self {
+        RmvVideo {
+            file_name: file_name.to_string(),
+            data: BaseVideo::<Vec<Vec<i32>>>::new(raw_data),
+        }
+    }
+}
+
 impl RmvVideo {
-    #[cfg(any(feature = "py", feature = "rs"))]
-    pub fn new(file_name: &str) -> RmvVideo {
-        RmvVideo {
-            file_name: file_name.to_string(),
-            data: BaseVideo::<Vec<Vec<i32>>>::new_with_file(file_name),
-        }
-    }
-    #[cfg(feature = "js")]
-    pub fn new(video_data: Vec<u8>, file_name: &str) -> RmvVideo {
-        RmvVideo {
-            file_name: file_name.to_string(),
-            data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
-        }
-    }
+    // #[cfg(any(feature = "py", feature = "rs"))]
+    // pub fn new(file_name: &str) -> RmvVideo {
+    //     RmvVideo {
+    //         file_name: file_name.to_string(),
+    //         data: BaseVideo::<Vec<Vec<i32>>>::new(file_name),
+    //     }
+    // }
+    // #[cfg(feature = "js")]
+    // pub fn new(video_data: Vec<u8>, file_name: &str) -> RmvVideo {
+    //     RmvVideo {
+    //         file_name: file_name.to_string(),
+    //         data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
+    //     }
+    // }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
         // self.data.is_completed; // 该格式解析前不能确定是否扫完
         self.data.is_official = true;

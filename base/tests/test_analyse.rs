@@ -1,4 +1,6 @@
 // 测试录像分析模块
+use ms_toollib::videos::base_video::{NewBaseVideo, NewBaseVideo2};
+use ms_toollib::videos::{NewSomeVideo};
 use ms_toollib::{AvfVideo, BaseVideo, EvfVideo, MinesweeperBoard, MvfVideo, RmvVideo, SafeBoard};
 use std::thread;
 
@@ -157,7 +159,7 @@ fn MvfVideo_works() {
 // cargo test --features rs -- --nocapture EvfVideo_works
 fn EvfVideo_works() {
     // 录像解析工具测试
-    let mut video = EvfVideo::new("死猜漏检.evf");
+    let mut video = EvfVideo::new("b_0_1.754_23_1.140_匿名玩家(anonymous player).evf");
 
     let r = video.parse_video();
     video.data.print_event();
@@ -177,7 +179,7 @@ fn EvfVideo_works() {
     println!("结果：{:?}", r);
     println!("标识：{:?}", video.data.player_identifier);
     println!("软件：{:?}", video.data.software);
-    println!("比较：{:?}", "元3.1.7".as_bytes().to_vec());
+    println!("比较：{:?}", "元3.1.9".as_bytes().to_vec());
     println!("race_identifier：{:?}", video.data.race_identifier);
     println!("3BV：{:?}", video.data.static_params.bbbv);
     println!("宽度：{:?}", video.data.width);
@@ -202,11 +204,12 @@ fn EvfVideo_works() {
     println!("time：{:?}", video.data.get_time());
     println!("STNB: {:?}", video.data.get_stnb().unwrap());
     println!("bbbv_solved: {:?}", video.data.get_bbbv_solved().unwrap());
+    video.data.set_current_time(999.999);
     println!("game_board: {:?}", video.data.get_game_board());
     // println!("game_board_poss: {:?}", video.data.get_game_board_poss());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
     // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
-    video.data.print_comments();
+    // video.data.print_comments();
 }
 
 #[test]
@@ -221,7 +224,7 @@ fn BaseVideo_works() {
         vec![-1, -1, 3, 0, 0, 2, -1, 2],
         vec![-1, -1, 2, 0, 0, 2, -1, 2],
     ];
-    let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
+    let mut video = BaseVideo::<SafeBoard>::new(board, 16);
     thread::sleep_ms(600);
     // println!("3BV：{:?}", video.static_params.bbbv);
     video.step("rc", (17, 16)).unwrap();
@@ -667,7 +670,7 @@ fn BaseVideo_works_3() {
         vec![-1, -1, 3, 0, 0, 2, -1, 2],
         vec![-1, -1, 2, 0, 0, 2, -1, 2],
     ];
-    let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
+    let mut video = BaseVideo::<SafeBoard>::new(board, 16);
     video.step("rc", (128, 128)).unwrap();
     println!("{:?}", video.minesweeper_board.mouse_state);
     println!("{:?}", video.game_board_state);
@@ -694,7 +697,7 @@ fn BaseVideo_works_4() {
         vec![-1, 3, 1, 0, 0, 0, 2, -1],
         vec![-1, -1, 1, 0, 0, 0, 2, -1],
     ];
-    let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
+    let mut video = BaseVideo::<SafeBoard>::new(board, 16);
     thread::sleep_ms(600);
     // println!("3BV：{:?}", video.static_params.bbbv);
     video.step("rc", (32, 49)).unwrap();
@@ -798,7 +801,7 @@ fn BaseVideo_works_5_1bv() {
         vec![0, 0, 0, 0, 0, 0, 1, 1],
         vec![0, 0, 0, 0, 0, 0, 1, -1],
     ];
-    let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 16);
+    let mut video = BaseVideo::<SafeBoard>::new(board, 16);
 
     // println!("3BV：{:?}", video.static_params.bbbv);
     // video.step("lc", (97, 97)).unwrap();
@@ -845,7 +848,7 @@ fn BaseVideo_works_set_board() {
         vec![0, 0, 1, -1, 1, 0, 0, 0],
     ];
 
-    let mut video = BaseVideo::<SafeBoard>::new_before_game(board, 42);
+    let mut video = BaseVideo::<SafeBoard>::new(board, 42);
     video.set_mode(9).unwrap();
     video.step("lc", (163, 210)).unwrap();
     video.step("lr", (163, 210)).unwrap();
@@ -879,31 +882,78 @@ fn BaseVideo_works_set_board() {
     println!("局面状态：{:?}", video.game_board_state);
 }
 
-
 #[test]
 fn BaseVideo_works_err() {
     let board = vec![
-        vec![1,  1,  1,  1,  2,  2, -1,  1,  1,  1,  1,  0,  0,  1, -1,  1,  2, -1,  2,  0,  0,  0,  0,  1,  1,  1,  1, -1,  1,  0], 
-        vec![-1,  1,  1, -1,  3, -1,  2,  2,  2, -1,  2,  1,  0,  1,  1,  1,  2, -1,  2,  0,  0,  0,  0,  1, -1,  2,  2,  3,  2,  1], 
-        vec![ 2,  2,  2,  2, -1,  3,  3,  3, -1,  4, -1,  1,  0,  1,  2,  2,  3,  3,  3,  1,  1,  1,  1,  2,  2,  3, -1,  2, -1,  1], 
-        vec![ 1, -1,  1,  1,  1,  2, -1, -1,  3, -1,  2,  1,  1,  2, -1, -1,  2, -1, -1,  1,  2, -1,  2,  1, -1,  2,  1,  3,  2,  2], 
-        vec![ 1,  1,  1,  0,  0,  1,  2,  2,  2,  1,  1,  1,  2, -1,  3,  2,  2,  2,  3,  2,  3, -1,  2,  2,  2,  2,  1,  2, -1,  1], 
-        vec![ 0,  1,  1,  2,  1,  1,  0,  0,  0,  0,  0,  1, -1,  2,  1,  1,  1,  2,  2, -1,  2,  1,  2,  2, -1,  1,  1, -1,  2,  1], 
-        vec![ 2,  3, -1,  3, -1,  2,  1,  2,  2,  2,  1,  2,  1,  2,  1,  2, -1,  2, -1,  2,  2,  1,  2, -1,  2,  1,  1,  2,  2,  1], 
-        vec![-1, -1,  2,  3, -1,  2,  1, -1, -1,  3, -1,  2,  1,  2, -1,  2,  1,  3,  2,  2,  2, -1,  4,  2,  3,  2,  2,  2, -1,  1], 
-        vec![ 2,  2,  1,  1,  1,  1,  1,  2,  3, -1,  3,  3, -1,  4,  3,  2,  0,  2, -1,  2,  2, -1,  3, -1,  2, -1, -1,  2,  1,  1], 
-        vec![ 0,  1,  2,  3,  2,  2,  1,  1,  2,  3,  4, -1,  3, -1, -1,  1,  0,  2, -1,  3,  2,  2,  3,  2,  3,  2,  2,  1,  1,  1], 
-        vec![ 1,  3, -1, -1, -1,  3, -1,  1,  1, -1, -1,  3,  3,  3,  3,  2,  0,  1,  1,  2, -1,  1,  1, -1,  1,  0,  0,  0,  1, -1], 
-        vec![ 3, -1, -1,  8, -1,  4,  1,  1,  1,  2,  3, -1,  1,  1, -1,  1,  0,  0,  0,  1,  1,  1,  1,  2,  3,  2,  2,  1,  2,  1], 
-        vec![-1, -1, -1, -1, -1,  3,  1,  0,  1,  2,  3,  2,  2,  2,  2,  1,  0,  0,  0,  1,  1,  2,  1,  2, -1, -1,  2, -1,  2,  1], 
-        vec![ 3,  4,  4,  3,  4, -1,  2,  0,  2, -1, -1,  1,  2, -1,  2,  0,  0,  0,  0,  1, -1,  2, -1,  3,  3,  3,  3,  3, -1,  1], 
-        vec![ 1, -1,  1,  0,  3, -1,  3,  0,  2, -1,  4,  2,  4, -1,  5,  2,  2,  1,  1,  1,  1,  2,  1,  2, -1,  2,  2, -1,  2,  1], 
-        vec![ 1,  1,  1,  0,  2, -1,  2,  0,  1,  1,  2, -1,  3, -1, -1, -1,  2, -1,  1,  0,  0,  0,  0,  1,  1,  2, -1,  2,  1,  0], 
-        ];
-    let mut video = BaseVideo::<SafeBoard>::new_before_game(board, 24);
+        vec![
+            1, 1, 1, 1, 2, 2, -1, 1, 1, 1, 1, 0, 0, 1, -1, 1, 2, -1, 2, 0, 0, 0, 0, 1, 1, 1, 1, -1,
+            1, 0,
+        ],
+        vec![
+            -1, 1, 1, -1, 3, -1, 2, 2, 2, -1, 2, 1, 0, 1, 1, 1, 2, -1, 2, 0, 0, 0, 0, 1, -1, 2, 2,
+            3, 2, 1,
+        ],
+        vec![
+            2, 2, 2, 2, -1, 3, 3, 3, -1, 4, -1, 1, 0, 1, 2, 2, 3, 3, 3, 1, 1, 1, 1, 2, 2, 3, -1, 2,
+            -1, 1,
+        ],
+        vec![
+            1, -1, 1, 1, 1, 2, -1, -1, 3, -1, 2, 1, 1, 2, -1, -1, 2, -1, -1, 1, 2, -1, 2, 1, -1, 2,
+            1, 3, 2, 2,
+        ],
+        vec![
+            1, 1, 1, 0, 0, 1, 2, 2, 2, 1, 1, 1, 2, -1, 3, 2, 2, 2, 3, 2, 3, -1, 2, 2, 2, 2, 1, 2,
+            -1, 1,
+        ],
+        vec![
+            0, 1, 1, 2, 1, 1, 0, 0, 0, 0, 0, 1, -1, 2, 1, 1, 1, 2, 2, -1, 2, 1, 2, 2, -1, 1, 1, -1,
+            2, 1,
+        ],
+        vec![
+            2, 3, -1, 3, -1, 2, 1, 2, 2, 2, 1, 2, 1, 2, 1, 2, -1, 2, -1, 2, 2, 1, 2, -1, 2, 1, 1,
+            2, 2, 1,
+        ],
+        vec![
+            -1, -1, 2, 3, -1, 2, 1, -1, -1, 3, -1, 2, 1, 2, -1, 2, 1, 3, 2, 2, 2, -1, 4, 2, 3, 2,
+            2, 2, -1, 1,
+        ],
+        vec![
+            2, 2, 1, 1, 1, 1, 1, 2, 3, -1, 3, 3, -1, 4, 3, 2, 0, 2, -1, 2, 2, -1, 3, -1, 2, -1, -1,
+            2, 1, 1,
+        ],
+        vec![
+            0, 1, 2, 3, 2, 2, 1, 1, 2, 3, 4, -1, 3, -1, -1, 1, 0, 2, -1, 3, 2, 2, 3, 2, 3, 2, 2, 1,
+            1, 1,
+        ],
+        vec![
+            1, 3, -1, -1, -1, 3, -1, 1, 1, -1, -1, 3, 3, 3, 3, 2, 0, 1, 1, 2, -1, 1, 1, -1, 1, 0,
+            0, 0, 1, -1,
+        ],
+        vec![
+            3, -1, -1, 8, -1, 4, 1, 1, 1, 2, 3, -1, 1, 1, -1, 1, 0, 0, 0, 1, 1, 1, 1, 2, 3, 2, 2,
+            1, 2, 1,
+        ],
+        vec![
+            -1, -1, -1, -1, -1, 3, 1, 0, 1, 2, 3, 2, 2, 2, 2, 1, 0, 0, 0, 1, 1, 2, 1, 2, -1, -1, 2,
+            -1, 2, 1,
+        ],
+        vec![
+            3, 4, 4, 3, 4, -1, 2, 0, 2, -1, -1, 1, 2, -1, 2, 0, 0, 0, 0, 1, -1, 2, -1, 3, 3, 3, 3,
+            3, -1, 1,
+        ],
+        vec![
+            1, -1, 1, 0, 3, -1, 3, 0, 2, -1, 4, 2, 4, -1, 5, 2, 2, 1, 1, 1, 1, 2, 1, 2, -1, 2, 2,
+            -1, 2, 1,
+        ],
+        vec![
+            1, 1, 1, 0, 2, -1, 2, 0, 1, 1, 2, -1, 3, -1, -1, -1, 2, -1, 1, 0, 0, 0, 0, 1, 1, 2, -1,
+            2, 1, 0,
+        ],
+    ];
+    let mut video = BaseVideo::<SafeBoard>::new(board, 24);
     video.set_mode(9).unwrap();
-    
-    video.step("rr", (157 ,  139)).unwrap();
+
+    video.step("rr", (157, 139)).unwrap();
 
     // video.generate_evf_v0_raw_data();
     // video.set_checksum([8; 32]).unwrap();

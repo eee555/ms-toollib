@@ -1,5 +1,7 @@
 use crate::utils::cal_board_numbers;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
+use crate::videos::{NewSomeVideo, NewSomeVideo2};
+use crate::videos::base_video::NewBaseVideo;
 
 /// evf录像解析器。  
 /// - 功能：解析evf格式的录像(唯一的计算机易读、开源的录像格式)，有详细分析录像的方法。  
@@ -24,21 +26,39 @@ pub struct EvfVideo {
     pub data: BaseVideo<Vec<Vec<i32>>>,
 }
 
+#[cfg(any(feature = "py", feature = "rs"))]
+impl NewSomeVideo<&str> for EvfVideo {
+    fn new(file_name: &str) -> Self {
+        EvfVideo {
+            file_name: file_name.to_string(),
+            data: BaseVideo::<Vec<Vec<i32>>>::new(file_name),
+        }
+    }
+}
+
+impl NewSomeVideo2<Vec<u8>, &str> for EvfVideo {
+    fn new(raw_data: Vec<u8>, file_name: &str) -> Self {
+        EvfVideo {
+            file_name: file_name.to_string(),
+            data: BaseVideo::<Vec<Vec<i32>>>::new(raw_data),
+        }
+    }
+}
+
 impl EvfVideo {
-    #[cfg(any(feature = "py", feature = "rs"))]
-    pub fn new(file_name: &str) -> EvfVideo {
-        EvfVideo {
-            file_name: file_name.to_string(),
-            data: BaseVideo::<Vec<Vec<i32>>>::new_with_file(file_name),
-        }
-    }
-    #[cfg(feature = "js")]
-    pub fn new(video_data: Vec<u8>, file_name: &str) -> EvfVideo {
-        EvfVideo {
-            file_name: file_name.to_string(),
-            data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
-        }
-    }
+    // #[cfg(any(feature = "py", feature = "rs"))]
+    // pub fn new_with_file(file_name: &str) -> EvfVideo {
+    //     EvfVideo {
+    //         file_name: file_name.to_string(),
+    //         data: BaseVideo::<Vec<Vec<i32>>>::new(file_name),
+    //     }
+    // }
+    // pub fn new(video_data: Vec<u8>, file_name: &str) -> EvfVideo {
+    //     EvfVideo {
+    //         file_name: file_name.to_string(),
+    //         data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
+    //     }
+    // }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
         let version = self.data.get_u8()?;
         match version {

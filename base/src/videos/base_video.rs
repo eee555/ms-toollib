@@ -267,7 +267,7 @@ pub struct BaseVideo<T> {
     pub use_auto_replay: bool,
     /// 是不是盲扫，初始是false，不是盲扫的话，分析完还是false
     pub nf: bool,
-    /// 游戏模式。0->标准、1->upk；2->cheat；3->Density（来自Viennasweeper、clone软件）、4->win7、5->竞速无猜、6->强无猜、7->弱无猜、8->准无猜、9->强可猜、10->弱可猜
+    /// 游戏模式。0->标准、1->upk；2->cheat；3->Density（来自Viennasweeper、clone软件）、4->win7、5->经典无猜、6->强无猜、7->弱无猜、8->准无猜、9->强可猜、10->弱可猜
     pub mode: u16,
     /// 游戏难度（级别）。3是初级；4是中级；5是高级；6是自定义。
     pub level: u8,
@@ -778,7 +778,7 @@ impl NewBaseVideo<&str> for BaseVideo<Vec<Vec<i32>>> {
 /// 游戏前实例化，游戏中不断调用step方法来维护。
 #[cfg(any(feature = "py", feature = "rs"))]
 impl NewBaseVideo2<Vec<Vec<i32>>, u8> for BaseVideo<SafeBoard> {
-    fn new(board: Vec<Vec<i32>>, cell_pixel_size:u8) -> BaseVideo<SafeBoard> {
+    fn new(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> BaseVideo<SafeBoard> {
         let bbbv = cal_bbbv(&board);
         // 这里算出来的雷数不一定准
         let mine_num = board.iter().fold(0, |y, row| {
@@ -1058,21 +1058,7 @@ impl<T> BaseVideo<T> {
         // println!("push: {:?}, {:?}, ({:?}, {:?})", time, e, pos.0, pos.1);
         Ok(0)
     }
-    // /// 重置游戏状态等，不重置标识等很多局都不会变的数据。点脸等，重开。
-    // pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
-    //     self.game_board_stream.clear();
-    //     self.minesweeper_board = MinesweeperBoard::new(vec![vec![0; column]; row]);
-    //     self.width = column;
-    //     self.height = row;
-    //     self.cell_pixel_size = pix_size;
-    //     self.video_action_state_recorder.clear();
-    //     self.game_board_stream.clear();
-    //     self.raw_data.clear();
-    //     self.static_params = StaticParams::default();
-    //     self.game_dynamic_params = GameDynamicParams::default();
-    //     self.video_dynamic_params = VideoDynamicParams::default();
-    //     self.game_board_state = GameBoardState::Ready;
-    // }
+    
     /// 获胜后标上所有的雷，没获胜则返回
     #[cfg(any(feature = "py", feature = "rs"))]
     pub fn win_then_flag_all_mine(&mut self) {
@@ -2324,8 +2310,7 @@ impl<T> BaseVideo<T> {
                 // 2023-04-24 00:00:00后被禁
                 return 1;
             }
-        } else if self.software == "元3.2".as_bytes().to_vec()
-            || self.software == "元3.1.9".as_bytes().to_vec()
+        } else if self.software == "元3.1.9".as_bytes().to_vec()
         {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和
@@ -2334,6 +2319,24 @@ impl<T> BaseVideo<T> {
             if !self.is_fair {
                 // 被软件判定使用了辅助手段
                 return 1;
+            }
+            if self.mode != 0 && self.mode != 5 {
+                // 只允许标准、经典无猜
+                return 3;
+            }
+        } else if self.software == "元3.1.10".as_bytes().to_vec()
+        {
+            if self.checksum.iter().all(|&e| e == self.checksum[0]) {
+                // 大概率是使用了测试用的校验和
+                return 1;
+            }
+            if !self.is_fair {
+                // 被软件判定使用了辅助手段
+                return 1;
+            }
+            if self.mode != 0  && self.mode != 5 && self.mode != 6 && self.mode != 10 {
+                // 只允许标准、经典无猜、强无猜、弱可猜
+                return 3;
             }
         } else {
             // 仅限如上三种软件

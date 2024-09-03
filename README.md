@@ -1,6 +1,6 @@
 # ms_toollib、EVF Format
 
-[![ms_toollib](https://img.shields.io/badge/ms_toollib-v1.4.7-brightgreen.svg)](https://github.com/eee555/ms_toollib)
+[![ms_toollib](https://img.shields.io/badge/ms_toollib-v1.4.11-brightgreen.svg)](https://github.com/eee555/ms_toollib)
 
 史上唯一专门的、跨平台、跨语言的扫雷算法工具箱。已发布到：
 
@@ -16,13 +16,13 @@ Algorithms for minesweeper, published on various platforms.
 最新版本号统计：  
 版本号越大，代表越新、功能越完善、bug越少（可以催）。
 
-python>=3.7, <=3.10 (适用于以下架构windows: x86, x64; linux: aarch64, armv7, ppc64le, s390x, x86, x86_64; macos: aarch64, x86_64): 1.4.10
+python>=3.7, <=3.10 (适用于以下架构windows: x86, x64; linux: aarch64, armv7, ppc64le, s390x, x86, x86_64; macos: aarch64, x86_64): 1.4.11
 
 javascript/typescript (webpack等bundler): 1.4.7
 
 javascript/typescript (nodejs): 1.4.0-alpha
 
-crate: 1.4.7
+crate: 1.4.11
 
 C(仅windows): 1.0.0 （没有类，即没有录像解析工具、局面状态机等。调试环境为MSVC。Linux未经测试，但估计可用。没有包管理平台，需要用户用源码自行编译，目前需要安装rust工具链，自行编译得到.lib文件）
 

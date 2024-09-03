@@ -104,7 +104,7 @@ Format Description:
 10. Fixed length 3 bytes: time (rtime), in milliseconds, big-endian.
 11. A string ending with '\0': source of the recording. For example, if it comes from Meta Minesweeper 3.1, it is "Meta 3.1". Ranking sites need to check the source of the recording.
 12. A string ending with '\0': user identifier (the user wants the ranking site or software to prominently display this identifier)
-13. A string ending with '\0': competition identifier (the user wants to use this identifier as a credential to participate in a competition but does not want the ranking site or software to display this identifier)
+13. A string ending with '\0': championship identifier (the user wants to use this identifier as a credential to participate in a championship but does not want the ranking site or software to display this identifier)
 14. A string ending with '\0': unique identifier (the user wants to distinguish from other users with the same name, such as nickname, saolei.wang ID, province, email, online name, motto, but does not want the ranking site or software to display this identifier)
 15. A string ending with '\0': start timestamp, recommended to use the total microseconds since January 1, 1970, in Greenwich Mean Time. The time of the first left-click released on a non-flagged cell.
 16. A string ending with '\0': end timestamp, recommended to use the total microseconds since January 1, 1970, in Greenwich Mean Time.

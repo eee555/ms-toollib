@@ -157,10 +157,9 @@ impl AvfVideo {
             }
         }
         loop {
-            let v = self.data.get_char()?;
-            match v {
+            match self.data.get_char()? {
                 '|' => break,
-                _ => self.data.start_time.push(v as u8),
+                other => self.data.start_time.push(other as u8),
             }
         }
         // println!("666");
@@ -169,15 +168,13 @@ impl AvfVideo {
         //     print!("{:?}", v as char);
         // }
         loop {
-            let v = self.data.get_char()?;
-            match v {
+            match self.data.get_char()? {
                 '|' => break,
-                _ => self.data.end_time.push(v as u8),
+                other => self.data.end_time.push(other as u8),
             }
         }
-        let v = self.data.get_char()?;
         let mut buffer: [char; 2];
-        match v {
+        match self.data.get_char()? {
             '|' => buffer = ['\0', '|'],
             'B' => buffer = ['|', 'B'],
             _ => buffer = ['\0', '\0'],
@@ -192,10 +189,9 @@ impl AvfVideo {
         }
         let mut s: String = "".to_string();
         loop {
-            let v = self.data.get_char()?;
-            match v {
+            match self.data.get_char()? {
                 'T' => break,
-                _ => s.push(v),
+                other => s.push(other),
             }
         }
         self.data.static_params.bbbv = match s.parse() {

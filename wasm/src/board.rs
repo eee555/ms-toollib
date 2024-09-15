@@ -2,6 +2,7 @@ use crate::transfor::{json2vec, trans_opt, vec2json};
 // use crate::web_sys;
 use ms_toollib as ms;
 use wasm_bindgen::prelude::*;
+use ms_toollib::videos::NewSomeVideo2;
 
 pub fn set_panic_hook() {
     // https://github.com/rustwasm/console_error_panic_hook#readme
@@ -177,16 +178,16 @@ macro_rules! generate_video {
                     self.core.data.mine_num
                 }
                 #[wasm_bindgen(getter)]
-                pub fn get_player_designator(&self) -> Vec<u8> {
-                    self.core.data.player_designator.clone()
+                pub fn get_player_identifier(&self) -> Vec<u8> {
+                    self.core.data.player_identifier.clone()
                 }
                 #[wasm_bindgen(getter)]
-                pub fn get_race_designator(&self) -> Vec<u8> {
-                    self.core.data.race_designator.clone()
+                pub fn get_race_identifier(&self) -> Vec<u8> {
+                    self.core.data.race_identifier.clone()
                 }
                 #[wasm_bindgen(getter)]
-                pub fn get_uniqueness_designator(&self) -> Vec<u8> {
-                    self.core.data.uniqueness_designator.clone()
+                pub fn get_uniqueness_identifier(&self) -> Vec<u8> {
+                    self.core.data.uniqueness_identifier.clone()
                 }
                 #[wasm_bindgen(getter)]
                 pub fn get_country(&self) -> Vec<u8> {

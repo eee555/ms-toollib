@@ -10,9 +10,36 @@ use crate::videos::base_video::NewBaseVideo;
 /// v = ms.EvfVideo("video_name.evf") # 第一步，读取文件的二进制内容
 /// v.parse_video() # 第二步，解析文件的二进制内容
 /// v.analyse() # 第三步，根据解析到的内容，推衍整个局面
-/// print(v.bbbv)
-/// print(v.clicks)
-/// print(v.clicks_s)
+/// video.current_time = 999.999 # set time to the end of the video
+/// print(video.left)
+/// print(video.right)
+/// print(video.double)
+/// print(video.left_s)
+/// print(video.right_s)
+/// print(video.double_s)
+/// print(video.level)
+/// print(video.cl)
+/// print(video.cl_s)
+/// print(video.ce)
+/// print(video.ce_s)
+/// print(video.bbbv)
+/// print(video.bbbv_solved)
+/// print(video.bbbv_s)
+/// print(video.flag)
+/// print(video.path)
+/// print(video.time)  # the time shown on the counter currently
+/// print(video.rtime) # game time, shown on leaderboard
+/// print(video.etime) # the estimated time shown on the counter currently
+/// print(video.video_start_time)
+/// print(video.video_end_time)
+/// print(video.mode)
+/// print(video.software)
+/// print(video.stnb)
+/// print(video.corr)
+/// print(video.thrp)
+/// print(video.ioe)
+/// print(video.is_official)
+/// print(video.is_fair)
 /// print("对象上的所有属性和方法：" + dir(v))
 /// v.analyse_for_features(["high_risk_guess"]) # 用哪些分析方法。分析结果会记录到events.comments里
 /// for i in range(v.events_len):

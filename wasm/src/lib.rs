@@ -156,6 +156,17 @@ pub fn laymine_solvable(
     .unwrap()
 }
 
+#[wasm_bindgen(getter_with_clone)]
+pub struct TimePeriod {
+    pub start_time: String,
+    pub end_time: String,
+}
 
-
-
+#[wasm_bindgen]
+pub fn valid_time_period(software: &str) -> TimePeriod {
+    let (start_time, end_time) = ms::valid_time_period(software).unwrap();
+    TimePeriod {
+        start_time,
+        end_time,
+    }
+}

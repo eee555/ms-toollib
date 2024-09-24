@@ -1,8 +1,8 @@
 use crate::transfor::{json2vec, trans_opt, vec2json};
 // use crate::web_sys;
 use ms_toollib as ms;
-use wasm_bindgen::prelude::*;
 use ms_toollib::videos::NewSomeVideo2;
+use wasm_bindgen::prelude::*;
 
 pub fn set_panic_hook() {
     // https://github.com/rustwasm/console_error_panic_hook#readme
@@ -17,7 +17,10 @@ pub struct MinesweeperBoard {
 }
 
 #[wasm_bindgen]
-pub struct CursorPos(pub u16, pub u16);
+pub struct CursorPos {
+    pub x: u16,
+    pub y: u16,
+}
 
 #[wasm_bindgen]
 impl MinesweeperBoard {
@@ -446,7 +449,7 @@ macro_rules! generate_video {
                 #[wasm_bindgen(getter)]
                 pub fn get_x_y(&self) -> CursorPos {
                     let (x, y) = self.core.data.get_x_y().unwrap();
-                    CursorPos(x, y)
+                    CursorPos{x, y}
                 }
                 #[wasm_bindgen(getter)]
                 pub fn get_checksum(&self) -> Vec<u8> {

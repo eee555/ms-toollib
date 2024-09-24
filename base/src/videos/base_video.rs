@@ -10,6 +10,7 @@ use crate::videos::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
     analyse_super_fl_local, analyse_survive_poss, analyse_vision_transfer,
 };
+use core::panic;
 use std::fs;
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
@@ -1058,7 +1059,7 @@ impl<T> BaseVideo<T> {
         // println!("push: {:?}, {:?}, ({:?}, {:?})", time, e, pos.0, pos.1);
         Ok(0)
     }
-    
+
     /// 获胜后标上所有的雷，没获胜则返回
     #[cfg(any(feature = "py", feature = "rs"))]
     pub fn win_then_flag_all_mine(&mut self) {
@@ -2286,32 +2287,78 @@ impl<T> BaseVideo<T> {
     }
 }
 
+/// 软件的合法时间范围。单位为秒。
+pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
+    match software {
+        // 永久
+        "Arbiter" => Ok(("0".to_string(), "4102415999".to_string())),
+        // 未确定
+        "0.97 beta" => Ok(("0".to_string(), "0".to_string())),
+        // 2023-04-24 00:00:00 前
+        "Viennasweeper" => Ok(("0".to_string(), "1682265600".to_string())),
+        // 2024-07-26 00:00:00 发布，有效期将有至少一年
+        "元3.1.9" => Ok(("1721836800".to_string(), "1753459200".to_string())),
+        // 2024-09-10 00:00:00 发布，有效期将有至少一年
+        "元3.1.11" => Ok(("1725811200".to_string(), "1757433600".to_string())),
+        _ => Err(String::from("Unknown software: ") + software),
+    }
+}
+
 // 录像审核相关的方法
 impl<T> BaseVideo<T> {
     /// 录像是否合法。排名网站的自动审核录像策略。检查是否扫完、是否有标识、是否用合法的软件。不检查校验码。
     /// 必须在分析完后调用
     /// - 返回：0合法，1不合法，3不确定
-    /// - 若步数很少，例如使用平板，返回3
+    /// - 返回3的原因有：（1）步数很少，例如使用触摸屏
+    /// - （2）使用了该软件的不合法的模式，例如元扫雷中的强可猜
     pub fn is_valid(&self) -> u8 {
-        if self.software == "Arbiter".as_bytes().to_vec() {
-            // 对于arbiter，开源界没有鉴定的能力，只能追溯
-        } else if self.software == "Viennasweeper".as_bytes().to_vec() {
-            let start_time = ((self.start_time[0] - 48) as u64) * 1000000000
-                + ((self.start_time[1] - 48) as u64) * 100000000
-                + ((self.start_time[2] - 48) as u64) * 10000000
-                + ((self.start_time[3] - 48) as u64) * 1000000
-                + ((self.start_time[4] - 48) as u64) * 100000
-                + ((self.start_time[5] - 48) as u64) * 10000
-                + ((self.start_time[6] - 48) as u64) * 1000
-                + ((self.start_time[7] - 48) as u64) * 100
-                + ((self.start_time[8] - 48) as u64) * 10
-                + (self.start_time[9] - 48) as u64;
-            if start_time > 1682265600 {
-                // 2023-04-24 00:00:00后被禁
+        let software = match String::from_utf8(self.software.clone()) {
+            Ok(software) => software,
+            Err(_) => {
+                // 软件名称不是合法的utf-8
                 return 1;
             }
-        } else if self.software == "元3.1.9".as_bytes().to_vec()
-        {
+        };
+        let (start_t, end_t) = match valid_time_period(&software) {
+            Ok(t) => t,
+            Err(_) => {
+                // 软件名称错误、未注册，例如“元3.1.10”
+                return 1;
+            }
+        };
+        let start_t = start_t.parse::<u64>().unwrap();
+        let end_t = end_t.parse::<u64>().unwrap();
+        if &software == "Arbiter" {
+            // 对于arbiter，开源界没有鉴定的能力，只能追溯
+        } else if &software == "Viennasweeper" {
+            let start_time = match String::from_utf8(self.start_time.clone()) {
+                Ok(t) => t,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            let start_time = match start_time.parse::<u64>() {
+                Ok(t) => t,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            let end_time = match String::from_utf8(self.end_time.clone()) {
+                Ok(t) => t,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            let end_time = match end_time.parse::<u64>() {
+                Ok(t) => t,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            if start_time < start_t || end_time > end_t {
+                return 1;
+            }
+        } else if &software == "元3.1.9" {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和
                 return 1;
@@ -2324,8 +2371,34 @@ impl<T> BaseVideo<T> {
                 // 只允许标准、经典无猜
                 return 3;
             }
-        } else if self.software == "元3.1.11".as_bytes().to_vec()
-        {
+            let start_time = match String::from_utf8(self.start_time.clone()) {
+                Ok(t) => t,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            let start_time = match start_time.parse::<u64>() {
+                Ok(t) => t / 1000,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            let end_time = match String::from_utf8(self.end_time.clone()) {
+                Ok(t) => t,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            let end_time = match end_time.parse::<u64>() {
+                Ok(t) => t / 1000,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            if start_time < start_t || end_time > end_t {
+                return 1;
+            }
+        } else if &software == "元3.1.11" {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和
                 return 1;
@@ -2334,13 +2407,40 @@ impl<T> BaseVideo<T> {
                 // 被软件判定使用了辅助手段
                 return 1;
             }
-            if self.mode != 0  && self.mode != 5 && self.mode != 6 && self.mode != 10 {
+            if self.mode != 0 && self.mode != 5 && self.mode != 6 && self.mode != 10 {
                 // 只允许标准、经典无猜、强无猜、弱可猜
                 return 3;
             }
+            let start_time = match String::from_utf8(self.start_time.clone()) {
+                Ok(t) => t,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            let start_time = match start_time.parse::<u64>() {
+                Ok(t) => t / 1000,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            let end_time = match String::from_utf8(self.end_time.clone()) {
+                Ok(t) => t,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            let end_time = match end_time.parse::<u64>() {
+                Ok(t) => t / 1000,
+                Err(_) => {
+                    return 1;
+                }
+            };
+            if start_time < start_t || end_time > end_t {
+                return 1;
+            }
         } else {
-            // 仅限如上三种软件
-            return 1;
+            // 仅限如上三种软件。不可能执行到此。
+            panic!("");
         }
 
         if self.video_action_state_recorder.len() as f64 / (self.static_params.bbbv as f64) < 10.0 {

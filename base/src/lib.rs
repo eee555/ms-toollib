@@ -30,13 +30,13 @@
 // 需要换成官方的源，不能用镜像
 // cargo yank --vers 0.0.1
 mod utils;
-pub use utils::{
-    cal_bbbv, cal_cell_nums, cal_isl, cal_op, cal_table_minenum_recursion, combine,
-    is_good_chording, laymine, laymine_op, refresh_board, refresh_matrix, refresh_matrixs,
-    refresh_matrixses, unsolvable_structure, cal_all_solution, cal_board_numbers
-};
 #[cfg(any(feature = "js"))]
-pub use utils::{get_random_int};
+pub use utils::get_random_int;
+pub use utils::{
+    cal_all_solution, cal_bbbv, cal_board_numbers, cal_cell_nums, cal_isl, cal_op,
+    cal_table_minenum_recursion, combine, is_good_chording, laymine, laymine_op, refresh_board,
+    refresh_matrix, refresh_matrixs, refresh_matrixses, unsolvable_structure,
+};
 
 mod miscellaneous;
 
@@ -58,7 +58,8 @@ pub use board::{Board, GameBoard};
 
 pub mod videos;
 pub use videos::{
-    AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MouseState, MvfVideo, RmvVideo,
+    valid_time_period, AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MouseState,
+    MvfVideo, RmvVideo,
 };
 
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -78,4 +79,3 @@ use crate::safe_board::BoardSize;
 
 // 最大枚举长度限制。超过这个长度，概率计算不准。全雷网的高级没有发现超出此限制的。
 const ENUM_LIMIT: usize = 55;
-

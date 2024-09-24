@@ -7,7 +7,7 @@ pub use evf_video::{EvfVideo};
 pub mod mvf_video; 
 pub use mvf_video::{MvfVideo};
 pub mod base_video; 
-pub use base_video::{BaseVideo};
+pub use base_video::{BaseVideo, valid_time_period};
 pub mod minesweeper_board; 
 pub use minesweeper_board::{MinesweeperBoard, GameBoardState, MouseState};
 mod analyse_methods;

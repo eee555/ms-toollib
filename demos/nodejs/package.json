@@ -12,6 +12,6 @@
   "author": "eee555",
   "license": "MIT",
   "dependencies": {
-    "ms-toollib": "^1.2.7-node"
+    "ms-toollib": "file:../../wasm/pkg"
   }
 }

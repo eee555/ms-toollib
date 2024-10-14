@@ -524,13 +524,21 @@ impl<T> MinesweeperBoard<T> {
                             if self.pre_flag_num == 0 {
                                 self.game_board_state = GameBoardState::Ready;
                                 self.clear_click_num();
+                            } else {
+                                // 预标雷阶段，在局面外左键弹起
+                                self.left += 1;
                             }
                             return Ok(0);
                         }
                         if self.game_board[pos.0][pos.1] == 10 {
+                            // 预标雷阶段，在10上左键弹起
                             self.game_board_state = GameBoardState::Playing;
-                        } else {
                             self.mouse_state = MouseState::UpUp;
+                            return self.left_click(pos.0, pos.1);
+                        } else {
+                            // 预标雷阶段，在旗上左键弹起
+                            self.left += 1;
+                            return Ok(0);
                             // 往下走，左键数可能后面还需要+1
                         }
                     }
@@ -622,6 +630,8 @@ impl<T> MinesweeperBoard<T> {
                 MouseState::DownUp => {
                     self.mouse_state = MouseState::UpUp;
                     if pos.0 == self.row && pos.1 == self.column {
+                        // 局面外的左键也+1
+                        self.left += 1;
                         return Ok(0);
                     }
                     // println!("x={:?}, y={:?}", pos.0, pos.1);

@@ -478,7 +478,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
             svi.prior_game_board_id = self.game_board_stream.len() - 1;
             if svi.mouse != "mv" {
                 let old_state = b.game_board_state;
-                // println!("{:?}, {:?}", svi.mouse, svi.y);
+                // println!(">>>  {:?}, {:?}", svi.mouse, b.mouse_state);
                 let u_level = b
                     .step(
                         &svi.mouse,
@@ -488,7 +488,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
                         ),
                     )
                     .unwrap();
-                // println!("{:?}, {:?}", svi.mouse, b.game_board);
+                // println!("     {:?}, {:?}", svi.mouse, b.mouse_state);
                 svi.useful_level = u_level;
                 if u_level >= 1 {
                     let mut g_b = GameBoard::new(self.mine_num);

@@ -37,7 +37,7 @@ fn minesweeper_board_works() {
 // cargo test --features rs -- --nocapture AvfVideo_works
 fn AvfVideo_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("zsw.avf");
+    let mut video = AvfVideo::new("wjn.avf");
 
     let r = video.parse_video();
     println!("结果：{:?}", r);
@@ -69,6 +69,10 @@ fn AvfVideo_works() {
     println!("thrp: {:?}", video.data.get_thrp());
     println!("level: {:?}", video.data.level);
     println!("is_valid: {:?}", video.data.is_valid());
+    println!("get_right: {:?}", video.data.get_right());
+    println!("get_flag: {:?}", video.data.get_flag());
+    println!("get_left: {:?}", video.data.get_left());
+    println!("get_double: {:?}", video.data.get_double());
 }
 
 #[test]
@@ -159,9 +163,11 @@ fn MvfVideo_works() {
 // cargo test --features rs -- --nocapture EvfVideo_works
 fn EvfVideo_works() {
     // 录像解析工具测试
-    let mut video = EvfVideo::new("b_0_1.754_23_1.140_匿名玩家(anonymous player).evf");
+    let mut video = EvfVideo::new("b_0_2.452_12_4.894_Mao Dun (China).evf");
 
     let r = video.parse_video();
+    println!("board: {:?}", video.data.board);
+    println!("cell_pixel_size：{:?}", video.data.cell_pixel_size);
     video.data.print_event();
     video.data.analyse();
     video.data.analyse_for_features(vec![
@@ -174,8 +180,6 @@ fn EvfVideo_works() {
     ]);
 
     // video.data.print_raw_data(400);
-    println!("board: {:?}", video.data.board);
-    println!("cell_pixel_size：{:?}", video.data.cell_pixel_size);
     println!("结果：{:?}", r);
     println!("标识：{:?}", video.data.player_identifier);
     println!("软件：{:?}", video.data.software);
@@ -205,6 +209,10 @@ fn EvfVideo_works() {
     println!("STNB: {:?}", video.data.get_stnb().unwrap());
     println!("bbbv_solved: {:?}", video.data.get_bbbv_solved().unwrap());
     video.data.set_current_time(999.999);
+    println!("get_right: {:?}", video.data.get_right());
+    println!("get_flag: {:?}", video.data.get_flag());
+    println!("get_left: {:?}", video.data.get_left());
+    println!("get_double: {:?}", video.data.get_double());
     println!("game_board: {:?}", video.data.get_game_board());
     // println!("game_board_poss: {:?}", video.data.get_game_board_poss());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);

@@ -161,8 +161,7 @@ impl MinesweeperBoard<SafeBoard> {
 
 impl<T> MinesweeperBoard<T> {
     // 初始化。对应强化学习领域gym的api中的reset。
-    pub fn reset(&mut self) 
-    {
+    pub fn reset(&mut self) {
         self.game_board = vec![vec![10; self.column]; self.row];
         // self.board = self.board.new(self.row, self.column);
         self.left = 0;
@@ -430,7 +429,10 @@ impl<T> MinesweeperBoard<T> {
                         }
                         MouseState::UpDown => self.mouse_state = MouseState::Chording,
                         MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
-                        _ => return Err(()),
+
+                        // lc(pf)->rc->失焦->lc
+                        // lc(pf)->失焦->rc(pf,Chording)->rr(rdy,DownUpAfterChording)->lc
+                        _ => {}
                     }
                     return Ok(0);
                 }
@@ -458,7 +460,8 @@ impl<T> MinesweeperBoard<T> {
                         self.mouse_state = MouseState::Chording;
                         return Ok(0);
                     }
-                    _ => return Err(()),
+                    // _ => return Err(()),
+                    _ => {}
                 },
                 "lr" => match self.mouse_state {
                     MouseState::Chording | MouseState::ChordingNotFlag => {
@@ -475,7 +478,8 @@ impl<T> MinesweeperBoard<T> {
                         self.mouse_state = MouseState::UpUp;
                         return Ok(0);
                     }
-                    _ => return Err(()),
+                    // _ => return Err(()),
+                    _ => {}
                 },
                 "rr" => match self.mouse_state {
                     MouseState::UpDown => {
@@ -490,7 +494,8 @@ impl<T> MinesweeperBoard<T> {
                         // 双键按下时按快捷键重开
                         return Ok(0);
                     }
-                    _ => return Err(()),
+                    // _ => return Err(()),
+                    _ => {}
                 },
                 "cc" => {
                     match self.mouse_state {
@@ -503,7 +508,8 @@ impl<T> MinesweeperBoard<T> {
                             self.mouse_state = MouseState::Chording;
                             return Ok(0);
                         }
-                        _ => return Err(()),
+                        // _ => return Err(()),
+                        _ => {}
                     }
                     return Ok(0);
                 }
@@ -528,12 +534,8 @@ impl<T> MinesweeperBoard<T> {
                             // 往下走，左键数可能后面还需要+1
                         }
                     }
-                    MouseState::Chording
-                    | MouseState::DownUpAfterChording
-                    | MouseState::ChordingNotFlag
-                    | MouseState::UpUp
-                    | MouseState::Undefined => {}
-                    _ => return Err(()),
+                    // _ => return Err(()),
+                    _ => {}
                 },
                 "pf" => {
                     assert!(
@@ -545,12 +547,12 @@ impl<T> MinesweeperBoard<T> {
                 }
                 "rc" => match self.mouse_state {
                     MouseState::UpUp => {
-                        self.mouse_state = MouseState::UpDown;
                         if pos.0 < self.row && pos.1 < self.column {
+                            self.mouse_state = MouseState::UpDown;
+                            // 预标雷阶段，要么10，要么11，不可能出现<10
                             if self.game_board[pos.0][pos.1] == 10 {
                                 self.pre_flag_num += 1;
                                 self.game_board_state = GameBoardState::PreFlaging;
-                                return self.right_click(pos.0, pos.1);
                             } else {
                                 self.pre_flag_num -= 1;
                                 if self.pre_flag_num == 0 {
@@ -562,10 +564,12 @@ impl<T> MinesweeperBoard<T> {
                                     self.right = 0;
                                     self.game_board[pos.0][pos.1] = 10;
                                     return Ok(0);
-                                } else {
-                                    return self.right_click(pos.0, pos.1);
                                 }
                             }
+                            return self.right_click(pos.0, pos.1);
+                        } else {
+                            self.mouse_state = MouseState::UpDownNotFlag;
+                            self.right += 1;
                         }
                     }
                     MouseState::DownUp => {
@@ -608,7 +612,7 @@ impl<T> MinesweeperBoard<T> {
                 MouseState::UpDown => self.mouse_state = MouseState::Chording,
                 MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
                 // 以下情况其实是不可能的
-                MouseState::DownUp => {}
+                MouseState::DownUp => {} // 左键按下后、窗口失焦、左键按下
                 MouseState::DownUpAfterChording => {}
                 MouseState::Chording => {}
                 MouseState::ChordingNotFlag => {}
@@ -677,7 +681,10 @@ impl<T> MinesweeperBoard<T> {
             },
             "rc" => match self.mouse_state {
                 MouseState::UpUp => {
+                    // println!("{:?}", pos);
+                    // 无论局面内外，playing时，右键按下，right都会+1
                     if pos.0 < self.row && pos.1 < self.column {
+                        // println!("{:?}", self.game_board[pos.0][pos.1]);
                         if self.game_board[pos.0][pos.1] < 10 {
                             self.mouse_state = MouseState::UpDownNotFlag;
                         } else {
@@ -686,6 +693,7 @@ impl<T> MinesweeperBoard<T> {
                         return self.right_click(pos.0, pos.1);
                     } else {
                         self.mouse_state = MouseState::UpDownNotFlag;
+                        self.right += 1;
                     }
                 }
                 MouseState::DownUp => self.mouse_state = MouseState::Chording,

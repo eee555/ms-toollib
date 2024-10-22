@@ -340,6 +340,10 @@ pub struct BaseVideo<T> {
     has_checksum: bool,
     // 播放录像文件时用，按几倍放大来播放，涉及回报的鼠标位置
     video_playing_pix_size_k: f64,
+    // 最后一次局面内的光标位置，用于计算path
+    last_in_board_pos: (u16, u16),
+    // 在last_in_board_pos位置，path的值，用于计算path
+    last_in_board_pos_path: f64,
 }
 
 impl Default for BaseVideo<Vec<Vec<i32>>> {
@@ -389,6 +393,8 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             has_checksum: false,
             allow_set_rtime: false,
             video_playing_pix_size_k: 1.0,
+            last_in_board_pos: (u16::MAX, u16::MAX),
+            last_in_board_pos_path: 0.0,
         }
     }
 }
@@ -439,6 +445,8 @@ impl Default for BaseVideo<SafeBoard> {
             has_checksum: false,
             allow_set_rtime: false,
             video_playing_pix_size_k: 1.0,
+            last_in_board_pos: (u16::MAX, u16::MAX),
+            last_in_board_pos_path: 0.0,
         }
     }
 }
@@ -458,6 +466,8 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.game_dynamic_params = GameDynamicParams::default();
         self.video_dynamic_params = VideoDynamicParams::default();
         self.game_board_state = GameBoardState::Ready;
+        self.last_in_board_pos = (u16::MAX, u16::MAX);
+        self.last_in_board_pos_path = 0.0;
     }
     /// 进行局面的推衍，计算基本的局面参数，记录所有中间过程。不包含概率计算。
     /// - 对于avf录像，必须analyse以后才能正确获取是否扫完。
@@ -512,42 +522,32 @@ impl BaseVideo<Vec<Vec<i32>>> {
             svi.key_dynamic_params.op_solved = 0;
             svi.key_dynamic_params.isl_solved = 0;
             let svi = &self.video_action_state_recorder[ide];
-            // 第一下操作不可能是在局面外的
+            // 在下述状态中计算path
             if b.game_board_state == GameBoardState::Playing
                 || b.game_board_state == GameBoardState::Win
                 || b.game_board_state == GameBoardState::Loss
             {
+                if self.last_in_board_pos == (u16::MAX, u16::MAX) {
+                    // 第一下操作不可能是在局面外的
+                    // 初始化只执行一次
+                    self.last_in_board_pos = (svi.y, svi.x);
+                    self.last_in_board_pos_path = 0.0;
+                }
                 if svi.y >= self.height as u16 * self.cell_pixel_size as u16
                     && svi.x >= self.width as u16 * self.cell_pixel_size as u16
                 {
-                    self.video_action_state_recorder[ide].path =
-                        self.video_action_state_recorder[ide - 1].path;
+                    self.video_action_state_recorder[ide].path = self.last_in_board_pos_path;
+                    // 也等于self.video_action_state_recorder[ide - 1].path
                 } else {
-                    let mut svi_1_y: u16;
-                    let mut svi_1_x: u16;
-                    let mut svi_1_path: f64;
-                    let mut skip = 1;
-                    loop {
-                        let svis = &self.video_action_state_recorder[ide - skip];
-                        svi_1_y = svis.y; // 距离上端
-                        svi_1_x = svis.x;
-                        svi_1_path = svis.path;
-                        if svi_1_y >= self.height as u16 * self.cell_pixel_size as u16
-                            && svi_1_x >= self.width as u16 * self.cell_pixel_size as u16
-                        {
-                            skip += 1;
-                            continue;
-                        } else {
-                            break;
-                        };
-                    }
                     let svi = &mut self.video_action_state_recorder[ide];
-                    svi.path = svi_1_path
-                        + ((svi.y as f64 - svi_1_y as f64).powf(2.0)
-                            + (svi.x as f64 - svi_1_x as f64).powf(2.0))
+                    svi.path = self.last_in_board_pos_path
+                        + ((svi.y as f64 - self.last_in_board_pos.0 as f64).powf(2.0)
+                            + (svi.x as f64 - self.last_in_board_pos.1 as f64).powf(2.0))
                         .powf(0.5)
                             * 16.0
                             / (self.cell_pixel_size as f64);
+                    self.last_in_board_pos = (svi.y, svi.x);
+                    self.last_in_board_pos_path = svi.path;
                 }
             }
         }
@@ -662,6 +662,8 @@ impl BaseVideo<SafeBoard> {
         self.game_dynamic_params = GameDynamicParams::default();
         self.video_dynamic_params = VideoDynamicParams::default();
         self.game_board_state = GameBoardState::Ready;
+        self.last_in_board_pos = (u16::MAX, u16::MAX);
+        self.last_in_board_pos_path = 0.0;
     }
     /// 两种情况调用：游戏开始前、可猜模式（尺寸相等，雷数不检查）
     pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()> {
@@ -865,10 +867,11 @@ impl<T> BaseVideo<T> {
         T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
+        // 第一时间获取时间戳
         let step_instant = Instant::now();
-
         let mut time_ms = time_ms_between(step_instant, self.video_start_instant);
         let mut time = time_ms as f64 / 1000.0;
+        // 获胜、失败、播放模式下，直接返回
         let old_state = self.minesweeper_board.game_board_state;
         if old_state == GameBoardState::Loss
             || old_state == GameBoardState::Win
@@ -876,11 +879,11 @@ impl<T> BaseVideo<T> {
         {
             return Ok(0);
         }
-        // self.minesweeper_board.step(e, (pos.0 / self.cell_pixel_size as usize, pos.1 / self.cell_pixel_size as usize));
+        // 运行局面状态机
         let x = pos.0 / self.cell_pixel_size as usize;
         let y = pos.1 / self.cell_pixel_size as usize;
-
         let a = self.minesweeper_board.step(e, (x, y))?;
+        // 获取新的状态
         self.game_board_state = self.minesweeper_board.game_board_state;
         match self.game_board_state {
             GameBoardState::Ready => {
@@ -986,35 +989,36 @@ impl<T> BaseVideo<T> {
         }
         // 维护path，挺复杂的
         let mut path = 0.0;
-        if old_state == GameBoardState::Playing {
-            // 考虑上一个步骤可能是在局面外的，那么就考虑上上个步骤，以此类推
-            let mut outside_skip = self.video_action_state_recorder.len() - 1;
-            loop {
-                let p = &self.video_action_state_recorder[outside_skip];
-                if !(p.y as usize >= self.height * self.cell_pixel_size as usize
-                    || p.x as usize >= self.width * self.cell_pixel_size as usize)
-                {
-                    path = p.path;
-                    path += ((pos.0 as f64 - p.y as f64).powf(2.0)
-                        + (pos.1 as f64 - p.x as f64).powf(2.0))
+        if self.game_board_state == GameBoardState::Playing
+            || self.game_board_state == GameBoardState::Win
+            || self.game_board_state == GameBoardState::Loss
+        {
+            if self.last_in_board_pos == (u16::MAX, u16::MAX) {
+                self.last_in_board_pos = (pos.0 as u16, pos.1 as u16);
+                self.last_in_board_pos_path = 0.0;
+            }
+            if pos.0 >= self.height * self.cell_pixel_size as usize
+                && pos.1 >= self.width * self.cell_pixel_size as usize
+            {
+                path = self.last_in_board_pos_path;
+            } else {
+                path = self.last_in_board_pos_path
+                    + ((pos.0 as f64 - self.last_in_board_pos.0 as f64).powf(2.0)
+                        + (pos.1 as f64 - self.last_in_board_pos.1 as f64).powf(2.0))
                     .powf(0.5)
                         * 16.0
                         / (self.cell_pixel_size as f64);
-                    // println!("path, {:?}", path);
-                    // self.current_event_id += 1;
-                    // println!("pos.0:{:?}; p.y:{:?}; {:?}; {:?}", pos.0,p.y,pos.1,p.x);
-                    break;
-                } else {
-                    outside_skip -= 1;
-                }
+                self.last_in_board_pos = (pos.0 as u16, pos.1 as u16);
+                self.last_in_board_pos_path = path;
             }
-            // 开始维护第一个先验局面
-        } else if self.game_board_stream.is_empty()
-            && (self.minesweeper_board.game_board_state == GameBoardState::PreFlaging
-                || self.minesweeper_board.game_board_state == GameBoardState::Playing
-                || self.minesweeper_board.game_board_state == GameBoardState::Win
-                || self.minesweeper_board.game_board_state == GameBoardState::Loss)
+        }
+        if self.game_board_stream.is_empty()
+            && (self.game_board_state == GameBoardState::PreFlaging
+                || self.game_board_state == GameBoardState::Playing
+                || self.game_board_state == GameBoardState::Win
+                || self.game_board_state == GameBoardState::Loss)
         {
+            // 维护第一个先验局面（和path无关）
             let mut g_b = GameBoard::new(self.mine_num);
             g_b.set_game_board(&vec![vec![10; self.width]; self.height]);
             self.game_board_stream.push(g_b);

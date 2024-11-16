@@ -2325,6 +2325,7 @@ impl<T> BaseVideo<T> {
         };
         if &software == "Arbiter" {
             // 对于arbiter，开源界没有鉴定的能力，只能追溯
+        } else if &software == "Viennasweeper" {
         } else if &software == "元3.1.9" {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和

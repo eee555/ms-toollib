@@ -94,10 +94,17 @@ impl RmvVideo {
             Ok('v') => {}
             _ => return Err(ErrReadVideoReason::FileIsNotRmv),
         };
-        match self.data.get_u16() {
-            Ok(1u16) => {}
+        let format_version = match self.data.get_u16() {
+            Ok(format_version) => format_version,
             _ => return Err(ErrReadVideoReason::FileIsNotRmv),
         };
+
+        if format_version == 0 || format_version > 2 {
+            // TODO: maybe add a better reason here?
+            // this is compatible with how it used to work, tho
+            // Perhaps VersionBackward is a better fit?
+            return Err(ErrReadVideoReason::FileIsNotRmv);
+        }
         self.data.offset += 4;
         let result_string_size = self.data.get_u16()?;
         let version_info_size = self.data.get_u16()?;

@@ -218,8 +218,8 @@ impl RmvVideo {
             let token_length = self.data.get_u8()?;
             token = self.data.get_buffer(token_length as usize)?;
         }
-        self.data.player_identifier = player;
-        self.data.country = country;
+        self.data.player_identifier = player.clone();
+        self.data.country = country.clone();
 
         self.data.offset += 4;
 
@@ -298,6 +298,15 @@ impl RmvVideo {
                 let value_size = self.data.get_u8()?;
                 let _value = self.data.get_buffer(value_size as usize)?;
             }
+        }
+
+        if utf8 {
+            // verify that text fields that we read are valid utf-8 as specified by the RMV spec
+            let utf8_errfunc = |_e| ErrReadVideoReason::InvalidParams;
+            let _ = String::from_utf8(player).map_err(utf8_errfunc)?;
+            let _ = String::from_utf8(nick).map_err(utf8_errfunc)?;
+            let _ = String::from_utf8(country).map_err(utf8_errfunc)?;
+            let _ = String::from_utf8(token).map_err(utf8_errfunc)?;
         }
 
         // 是不是第一个操作。录像里省略了第一个左键按下。

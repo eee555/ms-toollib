@@ -311,14 +311,28 @@ impl RmvVideo {
         let mut first_op_flag = true;
         let xoffset = if format_version == 1 {12} else {0};
         let yoffset = if format_version == 1 {56} else {0};
+        let (mut x, mut y, mut time) = (0u16, 0u16, 0u32);
         loop {
             let c = self.data.get_u8()?;
             if c == 0 {
                 self.data.offset += 4;
-            } else if c <= 7 {
-                let time = self.data.get_u32()? >> 8;
-                let mut x = (self.data.get_u16()?).wrapping_sub(xoffset);
-                let mut y = (self.data.get_u16()?).wrapping_sub(yoffset);
+            } else if c <= 7 || (format_version >= 2 && c == 28 && !first_op_flag) {
+                if c == 28 {
+                    time += self.data.get_u8()? as u32;
+                    let mv = self.data.get_u8()?;
+                    // mv is two 4bit two's complement signed integers packed into a single byte
+                    // n & 8 = leading digit, the one that has negative weight in two's complement
+                    // n & 7 = remaining three digits
+                    // for x, we shift into position first
+                    x = x.wrapping_add(((mv >> 4) & 7u8) as u16);
+                    x = x.wrapping_sub(((mv >> 4) & 8u8) as u16);
+                    y = y.wrapping_add((mv & 7u8) as u16);
+                    y = y.wrapping_sub((mv & 8u8) as u16);
+                } else {
+                    time = self.data.get_u32()? >> 8;
+                    x = (self.data.get_u16()?).wrapping_sub(xoffset);
+                    y = (self.data.get_u16()?).wrapping_sub(yoffset);
+                }
                 if c >= 1 {
                     if x >= self.data.width as u16 * 16 || y >= self.data.height as u16 * 16 {
                         x = self.data.width as u16 * 16;
@@ -351,6 +365,7 @@ impl RmvVideo {
                                     5 => "rr".to_string(),
                                     6 => "mc".to_string(),
                                     7 => "mr".to_string(),
+                                    28 => "mv".to_string(),
                                     _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
                                 },
                                 x,

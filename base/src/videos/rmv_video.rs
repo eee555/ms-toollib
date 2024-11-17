@@ -178,8 +178,10 @@ impl RmvVideo {
                     self.data.get_u8()?;
                 }
             }
+            self.data.offset += 2;
         }
-        self.data.offset += version_info_size as usize + 2;
+        // skip version_info
+        self.data.offset += version_info_size as usize;
 
         // 这里是uint16，不合理
         let num_player_info = self.data.get_u16()?;

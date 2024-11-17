@@ -1707,3 +1707,15 @@ fn custom_video_works() {
     // video.data.print_comments();
     // video.data.is_valid();
 }
+
+#[test]
+fn rmv1_utf8() {
+    // a rmv1 video with the utf-8 property set
+    let mut replay = RmvVideo::new("tests/assets/test_rmv1_utf8.rmv");
+    replay.parse().expect("parsing should succeed");
+    assert_eq!(replay.data.player_identifier, "Thomas Kolar");
+    assert_eq!(replay.data.static_params.bbbv, 128);
+    replay.data.analyse();
+    assert_eq!(replay.data.get_rtime_ms().unwrap(), 34884);
+    assert!(replay.data.is_completed);
+}

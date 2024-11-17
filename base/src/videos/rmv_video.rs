@@ -159,32 +159,26 @@ impl RmvVideo {
         let num_player_info = self.data.get_u16()?;
 
         let mut player = vec![];
+        let mut nick = vec![];
         let mut country = vec![];
+        let mut token = vec![];
         if num_player_info > 0 {
             let name_length = self.data.get_u8()?;
-            for _ in 0..name_length {
-                player.push(self.data.get_u8()?);
-            }
+            player = self.data.get_buffer(name_length as usize)?;
         }
         // 昵称不解析
         if num_player_info > 1 {
             let nick_length = self.data.get_u8()?;
-            for _ in 0..nick_length {
-                self.data.get_char()?;
-            }
+            nick = self.data.get_buffer(nick_length as usize)?;
         }
         if num_player_info > 2 {
             let country_length = self.data.get_u8()?;
-            for _ in 0..country_length {
-                country.push(self.data.get_u8()?);
-            }
+            country = self.data.get_buffer(country_length as usize)?;
         }
         // 令牌不解析
         if num_player_info > 3 {
             let token_length = self.data.get_u8()?;
-            for _ in 0..token_length {
-                self.data.get_char()?;
-            }
+            token = self.data.get_buffer(token_length as usize)?;
         }
         self.data.player_identifier = player;
         self.data.country = country;

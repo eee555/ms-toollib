@@ -133,7 +133,13 @@ impl RmvVideo {
         let _extension_properties_size = if format_version >= 2 {
             self.data.get_u16()?
         } else { 0 };
-        self.data.offset += 7;
+
+        // skip vid_size
+        // skip checksum_size
+        self.data.offset += 6;
+        // ignore first byte of result string?
+        // TODO: clarify
+        self.data.offset += 1;
 
         if result_string_size > 35 {
             self.data.offset += (result_string_size - 32) as usize;

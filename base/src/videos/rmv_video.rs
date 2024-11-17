@@ -137,44 +137,46 @@ impl RmvVideo {
         // skip vid_size
         // skip checksum_size
         self.data.offset += 6;
-        // ignore first byte of result string?
-        // TODO: clarify
-        self.data.offset += 1;
 
-        if result_string_size > 35 {
-            self.data.offset += (result_string_size - 32) as usize;
-            // 这种录像格式，3BV最多只支持3位数，宽和高支持最大256，雷数最多65536
-            // 注意，3BV如果解析得到0，说明局面没有完成（我认为这种设计并不合理）
-            let mut bbbv: String = "".to_string();
+        if format_version == 1 {
+            // ignore first byte of result string?
+            // TODO: clarify
+            self.data.offset += 1;
+            if result_string_size > 35 {
+                self.data.offset += (result_string_size - 32) as usize;
+                // 这种录像格式，3BV最多只支持3位数，宽和高支持最大256，雷数最多65536
+                // 注意，3BV如果解析得到0，说明局面没有完成（我认为这种设计并不合理）
+                let mut bbbv: String = "".to_string();
 
-            for _ in 0..3 {
-                let v = self.data.get_char()?;
-                if v as u8 >= 48 && v as u8 <= 57 {
-                    bbbv.push(v);
+                for _ in 0..3 {
+                    let v = self.data.get_char()?;
+                    if v as u8 >= 48 && v as u8 <= 57 {
+                        bbbv.push(v);
+                    }
                 }
-            }
-            self.data.static_params.bbbv = match bbbv.parse() {
-                Ok(v) => v,
-                Err(_) => return Err(ErrReadVideoReason::InvalidParams),
-            };
-            self.data.is_completed = self.data.static_params.bbbv > 0;
-            // 没有判断是否公正的方法，只能根据是否扫完
-            self.data.is_official = self.data.is_completed;
-            self.data.is_fair = self.data.is_completed;
+                self.data.static_params.bbbv = match bbbv.parse() {
+                    Ok(v) => v,
+                    Err(_) => return Err(ErrReadVideoReason::InvalidParams),
+                };
+                self.data.is_completed = self.data.static_params.bbbv > 0;
+                // 没有判断是否公正的方法，只能根据是否扫完
+                self.data.is_official = self.data.is_completed;
+                self.data.is_fair = self.data.is_completed;
 
-            self.data.offset += 16;
+                self.data.offset += 16;
 
-            // 2286-11-21以后，会遇到时间戳溢出
-            let timestamp = self.data.get_utf8_string(10usize)?;
-            self.data.start_time = timestamp
-                .parse::<u64>()
-                .map_err(|_| ErrReadVideoReason::InvalidParams)?;
-            self.data.start_time *= 1000000;
-            // 2 beta和更早的版本里没有3bv和时间戳
-        } else {
-            self.data.static_params.bbbv = 0;
-            for _ in 0..result_string_size - 3 {
-                self.data.get_u8()?;
+                // 2286-11-21以后，会遇到时间戳溢出
+                let timestamp = self.data.get_utf8_string(10usize)?;
+                self.data.start_time = timestamp
+                    .parse::<u64>()
+                    .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+                self.data.start_time *= 1000000;
+                // 2 beta和更早的版本里没有3bv和时间戳
+            } else {
+                self.data.static_params.bbbv = 0;
+                for _ in 0..result_string_size - 3 {
+                    self.data.get_u8()?;
+                }
             }
         }
         self.data.offset += version_info_size as usize + 2;

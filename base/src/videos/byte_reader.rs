@@ -87,7 +87,9 @@ pub trait ByteReader {
     where
         U: Into<usize>,
     {
-        let code = self.get_buffer(length)?;
+        Self::get_unknown_encoding_string_from_buf(self.get_buffer(length)?)
+    }
+    fn get_unknown_encoding_string_from_buf(code: Vec<u8>) -> Result<String, ErrReadVideoReason> {
         if let Ok(s) = String::from_utf8(code.clone()) {
             return Ok(s);
         }

@@ -188,18 +188,23 @@ impl RmvVideo {
 
         let mut token = vec![];
 
+        // we need to store these in a buffer first, as how we parse them needs
+        // to depend on the utf8 property
+        let mut player_identifier_buffer = vec![];
+        let mut uniqueness_identifier_buffer = vec![];
+        let mut country_buffer = vec![];
         if num_player_info > 0 {
             let name_length = self.data.get_u8()?;
-            self.data.player_identifier = self.data.get_unknown_encoding_string(name_length)?;
+            player_identifier_buffer = self.data.get_buffer(name_length)?;
         }
         // 昵称不解析
         if num_player_info > 1 {
             let nick_length = self.data.get_u8()?;
-            self.data.uniqueness_identifier = self.data.get_unknown_encoding_string(nick_length)?;
+            uniqueness_identifier_buffer = self.data.get_buffer(nick_length)?;
         }
         if num_player_info > 2 {
             let country_length = self.data.get_u8()?;
-            self.data.country = self.data.get_unknown_encoding_string(country_length)?;
+            country_buffer = self.data.get_buffer(country_length)?;
         }
         // 令牌不解析
         if num_player_info > 3 {
@@ -286,6 +291,20 @@ impl RmvVideo {
                 let value_size = self.data.get_u8()?;
                 let _value = self.data.get_buffer(value_size as usize)?;
             }
+        }
+
+        if utf8 {
+            // verify that text fields that we read are valid utf-8 as specified by the RMV spec
+            let utf8_errfunc = |_e| ErrReadVideoReason::Utf8Error;
+            self.data.player_identifier = String::from_utf8(player_identifier_buffer).map_err(utf8_errfunc)?;
+            self.data.uniqueness_identifier = String::from_utf8(uniqueness_identifier_buffer).map_err(utf8_errfunc)?;
+            self.data.country = String::from_utf8(country_buffer).map_err(utf8_errfunc)?;
+            let _ = String::from_utf8(token.clone()).map_err(utf8_errfunc)?;
+        }
+        else {
+            self.data.player_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_encoding_string_from_buf(player_identifier_buffer)?;
+            self.data.uniqueness_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_encoding_string_from_buf(uniqueness_identifier_buffer)?;
+            self.data.country = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_encoding_string_from_buf(country_buffer)?;
         }
 
         // 是不是第一个操作。录像里省略了第一个左键按下。

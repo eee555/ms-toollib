@@ -309,14 +309,16 @@ impl RmvVideo {
 
         // 是不是第一个操作。录像里省略了第一个左键按下。
         let mut first_op_flag = true;
+        let xoffset = if format_version == 1 {12} else {0};
+        let yoffset = if format_version == 1 {56} else {0};
         loop {
             let c = self.data.get_u8()?;
             if c == 0 {
                 self.data.offset += 4;
             } else if c <= 7 {
                 let time = self.data.get_u32()? >> 8;
-                let mut x = (self.data.get_u16()?).wrapping_sub(12);
-                let mut y = (self.data.get_u16()?).wrapping_sub(56);
+                let mut x = (self.data.get_u16()?).wrapping_sub(xoffset);
+                let mut y = (self.data.get_u16()?).wrapping_sub(yoffset);
                 if c >= 1 {
                     if x >= self.data.width as u16 * 16 || y >= self.data.height as u16 * 16 {
                         x = self.data.width as u16 * 16;

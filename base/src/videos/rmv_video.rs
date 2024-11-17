@@ -278,6 +278,16 @@ impl RmvVideo {
         // ignore remaining properties
         self.data.offset += (properties_size - properties_read) as usize;
 
+        if format_version >= 2 {
+            let num_extension_properties = self.data.get_u16()?;
+            for _ii in 0..num_extension_properties {
+                let key_size = self.data.get_u8()?;
+                let _key = self.data.get_utf8_string(key_size as usize)?;
+                let value_size = self.data.get_u8()?;
+                let _value = self.data.get_buffer(value_size as usize)?;
+            }
+        }
+
         // 是不是第一个操作。录像里省略了第一个左键按下。
         let mut first_op_flag = true;
         loop {

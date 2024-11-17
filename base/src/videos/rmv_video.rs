@@ -148,6 +148,8 @@ impl RmvVideo {
         // 这里是uint16，不合理
         let num_player_info = self.data.get_u16()?;
 
+        let mut token = vec![];
+
         if num_player_info > 0 {
             let name_length = self.data.get_u8()?;
             self.data.player_identifier = self.data.get_unknown_encoding_string(name_length)?;
@@ -164,9 +166,7 @@ impl RmvVideo {
         // 令牌不解析
         if num_player_info > 3 {
             let token_length = self.data.get_u8()?;
-            for _ in 0..token_length {
-                self.data.get_char()?;
-            }
+            token = self.data.get_buffer(token_length as usize)?;
         }
 
         self.data.offset += 4;

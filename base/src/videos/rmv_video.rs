@@ -113,14 +113,21 @@ impl RmvVideo {
         let _major_version_of_clone = if format_version >= 2 {
             self.data.get_u8()?
         } else { 0 };
+
+        // skip file_size
         self.data.offset += 4;
 
         let result_string_size = if format_version == 1 {
             self.data.get_u16()?
         } else { 0 };
         let version_info_size = self.data.get_u16()?;
+
+        // skip player_info_size
+        // skip board_size
         self.data.offset += 4;
         // self.data.get_unsized_int4()?;
+        // TODO: these byte offsets are no longer universal in RMV2
+        // probably remove the comments?
         let preflags_size = self.data.get_u16()?; // Gets bytes 18-19
         let properties_size = self.data.get_u16()?; // Gets bytes 20-21
         self.data.offset += 7;

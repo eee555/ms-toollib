@@ -114,7 +114,10 @@ impl RmvVideo {
             self.data.get_u8()?
         } else { 0 };
         self.data.offset += 4;
-        let result_string_size = self.data.get_u16()?;
+
+        let result_string_size = if format_version == 1 {
+            self.data.get_u16()?
+        } else { 0 };
         let version_info_size = self.data.get_u16()?;
         self.data.offset += 4;
         // self.data.get_unsized_int4()?;

@@ -745,6 +745,19 @@ impl<T> BaseVideo<T> {
         let a = self.get_u8()?;
         Ok(a as char)
     }
+
+    pub fn get_buffer(&mut self, length: usize) -> Result<Vec<u8>, ErrReadVideoReason> {
+        self.offset += length;
+        self.raw_data.get(
+            (self.offset-length)..self.offset,
+        ).map(
+            |vv| vv.to_vec(),
+        ).ok_or(ErrReadVideoReason::FileIsTooShort)
+    }
+
+    pub fn get_utf8_string(&mut self, length: usize) -> Result<String, ErrReadVideoReason> {
+        String::from_utf8(self.get_buffer(length)?).map_err(|_e| ErrReadVideoReason::InvalidParams)
+    }
 }
 
 pub trait NewBaseVideo<T> {

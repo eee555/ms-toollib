@@ -283,6 +283,15 @@ impl RmvVideo {
             }
         }
 
+        if utf8 {
+            // verify that text fields that we read are valid utf-8 as specified by the RMV spec
+            let utf8_errfunc = |_e| ErrReadVideoReason::InvalidParams;
+            let _ = String::from_utf8(self.replay.player_identifier.clone()).map_err(utf8_errfunc)?;
+            let _ = String::from_utf8(self.replay.uniqueness_identifier.clone()).map_err(utf8_errfunc)?;
+            let _ = String::from_utf8(self.replay.country.clone()).map_err(utf8_errfunc)?;
+            let _ = String::from_utf8(token.clone()).map_err(utf8_errfunc)?;
+        }
+
         // 是不是第一个操作。录像里省略了第一个左键按下。
         let mut first_op_flag = true;
         loop {

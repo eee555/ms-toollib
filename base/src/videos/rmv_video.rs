@@ -105,6 +105,14 @@ impl RmvVideo {
             // Perhaps VersionBackward is a better fit?
             return Err(ErrReadVideoReason::FileIsNotRmv);
         }
+
+        let _clone_id = if format_version >= 2 {
+            self.data.get_u8()?
+        } else { 0 };
+
+        let _major_version_of_clone = if format_version >= 2 {
+            self.data.get_u8()?
+        } else { 0 };
         self.data.offset += 4;
         let result_string_size = self.data.get_u16()?;
         let version_info_size = self.data.get_u16()?;

@@ -130,6 +130,9 @@ impl RmvVideo {
         // probably remove the comments?
         let preflags_size = self.data.get_u16()?; // Gets bytes 18-19
         let properties_size = self.data.get_u16()?; // Gets bytes 20-21
+        let _extension_properties_size = if format_version >= 2 {
+            self.data.get_u16()?
+        } else { 0 };
         self.data.offset += 7;
 
         if result_string_size > 35 {

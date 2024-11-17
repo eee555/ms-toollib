@@ -244,6 +244,9 @@ impl RmvVideo {
             }
         }
 
+        let mut square_size = 16u8; // v1 default
+        let mut utf8 = true; // v2 default
+        // skip questionmarks property
         self.data.offset += 1;
         self.data.nf = if self.data.get_u8()? == 1 {
             true
@@ -252,8 +255,28 @@ impl RmvVideo {
         };
         self.data.mode = self.data.get_u8()? as u16;
         self.data.level = self.data.get_u8()? + 3;
+        let mut properties_read = 4;
 
-        self.data.offset += (properties_size - 4) as usize;
+        if format_version >= 2 {
+            let bbbv_low = self.data.get_u8()? as usize;
+            let bbbv_high = self.data.get_u8()? as usize;
+            self.data.static_params.bbbv = bbbv_low + bbbv_high << 8;
+            square_size = self.data.get_u8()?;
+            properties_read += 3;
+        } else if properties_size > 4 {
+            utf8 = if self.data.get_u8()? == 1 {
+                true
+            } else {
+                false
+            };
+            properties_read += 1;
+        }
+        let square_size = square_size;
+        let utf8 = utf8;
+        self.data.cell_pixel_size = square_size;
+
+        // ignore remaining properties
+        self.data.offset += (properties_size - properties_read) as usize;
 
         // 是不是第一个操作。录像里省略了第一个左键按下。
         let mut first_op_flag = true;

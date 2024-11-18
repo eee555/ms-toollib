@@ -2389,45 +2389,9 @@ impl<T> BaseVideo<T> {
                 return 1;
             }
         };
-        let (start_t, end_t) = match valid_time_period(&software) {
-            Ok(t) => t,
-            Err(_) => {
-                // 软件名称错误、未注册，例如“元3.1.10”
-                return 1;
-            }
-        };
-        let start_t = start_t.parse::<u64>().unwrap();
-        let end_t = end_t.parse::<u64>().unwrap();
         if &software == "Arbiter" {
             // 对于arbiter，开源界没有鉴定的能力，只能追溯
         } else if &software == "Viennasweeper" {
-            let start_time = match String::from_utf8(self.start_time.clone()) {
-                Ok(t) => t,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            let start_time = match start_time.parse::<u64>() {
-                Ok(t) => t,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            let end_time = match String::from_utf8(self.end_time.clone()) {
-                Ok(t) => t,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            let end_time = match end_time.parse::<u64>() {
-                Ok(t) => t,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            if start_time < start_t || end_time > end_t {
-                return 1;
-            }
         } else if &software == "元3.1.9" {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和
@@ -2441,33 +2405,6 @@ impl<T> BaseVideo<T> {
                 // 只允许标准、经典无猜
                 return 3;
             }
-            let start_time = match String::from_utf8(self.start_time.clone()) {
-                Ok(t) => t,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            let start_time = match start_time.parse::<u64>() {
-                Ok(t) => t / 1000,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            let end_time = match String::from_utf8(self.end_time.clone()) {
-                Ok(t) => t,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            let end_time = match end_time.parse::<u64>() {
-                Ok(t) => t / 1000,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            if start_time < start_t || end_time > end_t {
-                return 1;
-            }
         } else if &software == "元3.1.11" {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和
@@ -2480,33 +2417,6 @@ impl<T> BaseVideo<T> {
             if self.mode != 0 && self.mode != 5 && self.mode != 6 && self.mode != 10 {
                 // 只允许标准、经典无猜、强无猜、弱可猜
                 return 3;
-            }
-            let start_time = match String::from_utf8(self.start_time.clone()) {
-                Ok(t) => t,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            let start_time = match start_time.parse::<u64>() {
-                Ok(t) => t / 1000,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            let end_time = match String::from_utf8(self.end_time.clone()) {
-                Ok(t) => t,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            let end_time = match end_time.parse::<u64>() {
-                Ok(t) => t / 1000,
-                Err(_) => {
-                    return 1;
-                }
-            };
-            if start_time < start_t || end_time > end_t {
-                return 1;
             }
         } else {
             // 仅限如上三种软件。不可能执行到此。

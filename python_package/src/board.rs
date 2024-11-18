@@ -93,8 +93,20 @@ impl PyMinesweeperBoard {
         Ok(self.core.double)
     }
     #[getter]
+    fn get_lce(&self) -> PyResult<usize> {
+        Ok(self.core.lce)
+    }
+    #[getter]
+    fn get_rce(&self) -> PyResult<usize> {
+        Ok(self.core.rce)
+    }
+    #[getter]
+    fn get_dce(&self) -> PyResult<usize> {
+        Ok(self.core.dce)
+    }
+    #[getter]
     fn get_ce(&self) -> PyResult<usize> {
-        Ok(self.core.ce)
+        Ok(self.core.lce + self.core.rce + self.core.dce)
     }
     #[getter]
     fn get_flag(&self) -> PyResult<usize> {
@@ -219,8 +231,20 @@ impl PySafeMinesweeperBoard {
         Ok(self.core.double)
     }
     #[getter]
+    fn get_lce(&self) -> PyResult<usize> {
+        Ok(self.core.lce)
+    }
+    #[getter]
+    fn get_rce(&self) -> PyResult<usize> {
+        Ok(self.core.rce)
+    }
+    #[getter]
+    fn get_dce(&self) -> PyResult<usize> {
+        Ok(self.core.dce)
+    }
+    #[getter]
     fn get_ce(&self) -> PyResult<usize> {
-        Ok(self.core.ce)
+        Ok(self.core.lce + self.core.rce + self.core.dce)
     }
     #[getter]
     fn get_flag(&self) -> PyResult<usize> {

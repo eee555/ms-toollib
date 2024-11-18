@@ -222,6 +222,18 @@ impl PyAvfVideo {
         Ok(self.core.data.get_bbbv_solved().unwrap())
     }
     #[getter]
+    fn get_lce(&self) -> PyResult<usize> {
+        Ok(self.core.data.get_lce().unwrap())
+    }
+    #[getter]
+    fn get_rce(&self) -> PyResult<usize> {
+        Ok(self.core.data.get_rce().unwrap())
+    }
+    #[getter]
+    fn get_dce(&self) -> PyResult<usize> {
+        Ok(self.core.data.get_dce().unwrap())
+    }
+    #[getter]
     fn get_ce(&self) -> PyResult<usize> {
         Ok(self.core.data.get_ce().unwrap())
     }

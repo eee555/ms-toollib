@@ -73,7 +73,19 @@ impl MinesweeperBoard {
     }
     #[wasm_bindgen(getter)]
     pub fn get_ce(&self) -> u32 {
-        self.core.ce as u32
+        (self.core.lce + self.core.rce + self.core.dce) as u32
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_lce(&self) -> u32 {
+        self.core.lce as u32
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_rce(&self) -> u32 {
+        self.core.rce as u32
+    }
+    #[wasm_bindgen(getter)]
+    pub fn get_dce(&self) -> u32 {
+        self.core.dce as u32
     }
     #[wasm_bindgen(getter)]
     pub fn get_flag(&self) -> u32 {
@@ -315,6 +327,18 @@ macro_rules! generate_video {
                 #[wasm_bindgen(getter)]
                 pub fn get_bbbv_solved(&self) -> usize {
                     self.core.data.get_bbbv_solved().unwrap()
+                }
+                #[wasm_bindgen(getter)]
+                pub fn get_lce(&self) -> usize {
+                    self.core.data.get_lce().unwrap()
+                }
+                #[wasm_bindgen(getter)]
+                pub fn get_rce(&self) -> usize {
+                    self.core.data.get_rce().unwrap()
+                }
+                #[wasm_bindgen(getter)]
+                pub fn get_dce(&self) -> usize {
+                    self.core.data.get_dce().unwrap()
                 }
                 #[wasm_bindgen(getter)]
                 pub fn get_ce(&self) -> usize {

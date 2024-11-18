@@ -45,8 +45,12 @@ pub struct MinesweeperBoard<T> {
     pub right: usize,
     /// 双击数
     pub double: usize,
-    /// ce数
-    pub ce: usize,
+    /// 左键ce数，ce = lce + rce + dce
+    pub lce: usize,
+    /// 右键ce数，ce = lce + rce + dce
+    pub rce: usize,
+    /// 双键ce数，ce = lce + rce + dce
+    pub dce: usize,
     /// 标雷数
     pub flag: usize,
     /// 已解决的3BV数
@@ -74,7 +78,9 @@ impl Default for MinesweeperBoard<Vec<Vec<i32>>> {
             left: 0,
             right: 0,
             double: 0,
-            ce: 0,
+            lce: 0,
+            rce: 0,
+            dce: 0,
             flag: 0,
             bbbv_solved: 0,
             row: 0,
@@ -100,7 +106,9 @@ impl Default for MinesweeperBoard<SafeBoard> {
             left: 0,
             right: 0,
             double: 0,
-            ce: 0,
+            lce: 0,
+            rce: 0,
+            dce: 0,
             flag: 0,
             bbbv_solved: 0,
             row: 0,
@@ -167,7 +175,9 @@ impl<T> MinesweeperBoard<T> {
         self.left = 0;
         self.right = 0;
         self.double = 0;
-        self.ce = 0;
+        self.lce = 0;
+        self.rce = 0;
+        self.dce = 0;
         self.flag = 0;
         self.left = 0;
         self.bbbv_solved = 0;
@@ -195,7 +205,7 @@ impl<T> MinesweeperBoard<T> {
                 if self.cell_is_op_completed(x, y, &mut vec![vec![false; self.column]; self.row]) {
                     self.bbbv_solved += 1;
                 }
-                self.ce += 1;
+                self.lce += 1;
                 refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
                 if self.is_win() {
                     self.game_board_state = GameBoardState::Win;
@@ -212,7 +222,7 @@ impl<T> MinesweeperBoard<T> {
                 if self.cell_is_bbbv(x, y) {
                     self.bbbv_solved += 1;
                 }
-                self.ce += 1;
+                self.lce += 1;
                 if self.is_win() {
                     self.game_board_state = GameBoardState::Win;
                 }
@@ -249,7 +259,7 @@ impl<T> MinesweeperBoard<T> {
                         self.game_board[x][y] = 11;
                         self.flag += 1;
                         if !self.flaged_list.contains(&(x, y)) {
-                            self.ce += 1;
+                            self.rce += 1;
                         }
                         self.flaged_list.push((x, y));
                     }
@@ -302,7 +312,7 @@ impl<T> MinesweeperBoard<T> {
                     self.game_board_state = GameBoardState::Loss;
                 }
             }
-            self.ce += 1;
+            self.dce += 1;
             self.bbbv_solved += surround3BV;
             self.bbbv_solved += self.op_num_around_cell(x, y);
             refresh_board(&self.board, &mut self.game_board, chording_cells);

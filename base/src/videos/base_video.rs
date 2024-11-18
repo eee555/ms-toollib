@@ -138,11 +138,15 @@ impl Default for StaticParams {
 }
 
 /// 侧重实时记录中间过程、中间状态
+/// 每个鼠标事件都会存一个，mv也存，存在浪费
 pub struct KeyDynamicParams {
     pub left: usize,
     pub right: usize,
     pub double: usize,
-    pub ce: usize,
+    // ce = lce + rce + dce
+    pub lce: usize,
+    pub rce: usize,
+    pub dce: usize,
     pub flag: usize,
     pub bbbv_solved: usize,
     pub op_solved: usize,
@@ -155,7 +159,9 @@ impl Default for KeyDynamicParams {
             left: 0,
             right: 0,
             double: 0,
-            ce: 0,
+            lce: 0,
+            rce: 0,
+            dce: 0,
             flag: 0,
             bbbv_solved: 0,
             op_solved: 0,
@@ -212,6 +218,9 @@ pub struct VideoDynamicParams {
     pub stnb: f64,
     pub rqp: f64,
     pub qg: f64,
+    pub lce: usize,
+    pub rce: usize,
+    pub dce: usize,
     pub ce: usize,
     pub ce_s: f64,
     pub ioe: f64,
@@ -230,6 +239,9 @@ impl Default for VideoDynamicParams {
             stnb: 0.0,
             rqp: 0.0,
             qg: 0.0,
+            lce: 0,
+            rce: 0,
+            dce: 0,
             ce: 0,
             ce_s: 0.0,
             ioe: 0.0,
@@ -516,7 +528,9 @@ impl BaseVideo<Vec<Vec<i32>>> {
             svi.key_dynamic_params.right = b.right;
             svi.key_dynamic_params.bbbv_solved = b.bbbv_solved;
             svi.key_dynamic_params.double = b.double;
-            svi.key_dynamic_params.ce = b.ce;
+            svi.key_dynamic_params.lce = b.lce;
+            svi.key_dynamic_params.rce = b.rce;
+            svi.key_dynamic_params.dce = b.dce;
             svi.key_dynamic_params.flag = b.flag;
             // 这两个很难搞
             svi.key_dynamic_params.op_solved = 0;
@@ -559,8 +573,12 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.game_dynamic_params.right_s = b.right as f64 / self.game_dynamic_params.rtime;
         // println!("---{:?}", b.bbbv_solved);
         self.video_dynamic_params.bbbv_solved = b.bbbv_solved;
-        self.video_dynamic_params.ce = b.ce;
-        self.video_dynamic_params.ce_s = b.ce as f64 / self.game_dynamic_params.rtime;
+        self.video_dynamic_params.lce = b.lce;
+        self.video_dynamic_params.rce = b.rce;
+        self.video_dynamic_params.dce = b.dce;
+        self.video_dynamic_params.ce = b.lce + b.rce + b.dce;
+        self.video_dynamic_params.ce_s =
+            (b.lce + b.rce + b.dce) as f64 / self.game_dynamic_params.rtime;
         self.game_dynamic_params.double = b.double;
         self.game_dynamic_params.cl = b.left + b.right + b.double;
         self.game_dynamic_params.cl_s =
@@ -585,8 +603,9 @@ impl BaseVideo<Vec<Vec<i32>>> {
                 * (b.bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5);
         } // 凡自定义的stnb都等于0
         self.video_dynamic_params.ioe = b.bbbv_solved as f64 / self.game_dynamic_params.cl as f64;
-        self.video_dynamic_params.corr = b.ce as f64 / self.game_dynamic_params.cl as f64;
-        self.video_dynamic_params.thrp = b.bbbv_solved as f64 / b.ce as f64;
+        self.video_dynamic_params.corr =
+            (b.lce + b.rce + b.dce) as f64 / self.game_dynamic_params.cl as f64;
+        self.video_dynamic_params.thrp = b.bbbv_solved as f64 / (b.lce + b.rce + b.dce) as f64;
         // 最后，计算静态指标
         self.cal_static_params();
     }
@@ -1052,7 +1071,9 @@ impl<T> BaseVideo<T> {
                     left: self.minesweeper_board.left,
                     right: self.minesweeper_board.right,
                     double: self.minesweeper_board.double,
-                    ce: self.minesweeper_board.ce,
+                    lce: self.minesweeper_board.lce,
+                    rce: self.minesweeper_board.rce,
+                    dce: self.minesweeper_board.dce,
                     flag: self.minesweeper_board.flag,
                     bbbv_solved: self.minesweeper_board.bbbv_solved,
                     op_solved: 0,
@@ -1757,17 +1778,62 @@ impl<T> BaseVideo<T> {
         }
         Ok(self.current_time.powf(1.7) / bbbv_solved as f64)
     }
-    pub fn get_ce(&self) -> Result<usize, ()> {
+    pub fn get_lce(&self) -> Result<usize, ()> {
         match self.game_board_state {
             GameBoardState::Display => Ok(self.video_action_state_recorder[self.current_event_id]
                 .key_dynamic_params
-                .ce),
+                .lce),
             GameBoardState::Win | GameBoardState::Loss => Ok(self
                 .video_action_state_recorder
                 .last()
                 .unwrap()
                 .key_dynamic_params
-                .ce),
+                .lce),
+            _ => Err(()),
+        }
+    }
+    pub fn get_rce(&self) -> Result<usize, ()> {
+        match self.game_board_state {
+            GameBoardState::Display => Ok(self.video_action_state_recorder[self.current_event_id]
+                .key_dynamic_params
+                .rce),
+            GameBoardState::Win | GameBoardState::Loss => Ok(self
+                .video_action_state_recorder
+                .last()
+                .unwrap()
+                .key_dynamic_params
+                .rce),
+            _ => Err(()),
+        }
+    }
+    pub fn get_dce(&self) -> Result<usize, ()> {
+        match self.game_board_state {
+            GameBoardState::Display => Ok(self.video_action_state_recorder[self.current_event_id]
+                .key_dynamic_params
+                .dce),
+            GameBoardState::Win | GameBoardState::Loss => Ok(self
+                .video_action_state_recorder
+                .last()
+                .unwrap()
+                .key_dynamic_params
+                .dce),
+            _ => Err(()),
+        }
+    }
+    pub fn get_ce(&self) -> Result<usize, ()> {
+        match self.game_board_state {
+            GameBoardState::Display => {
+                let p = &self.video_action_state_recorder[self.current_event_id].key_dynamic_params;
+                Ok(p.lce + p.rce + p.dce)
+            }
+            GameBoardState::Win | GameBoardState::Loss => {
+                let p = &self
+                    .video_action_state_recorder
+                    .last()
+                    .unwrap()
+                    .key_dynamic_params;
+                Ok(p.lce + p.rce + p.dce)
+            }
             _ => Err(()),
         }
     }

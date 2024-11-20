@@ -27,7 +27,7 @@
   },
   "homepage": "https://docs.rs/ms_toollib/latest/ms_toollib/",
   "dependencies": {
-    "wasm-main": "file:../pkg"
+    "ms_toollib": "file:../pkg"
   },
   "devDependencies": {
     "hello-wasm-pack": "^0.1.0",

@@ -6,6 +6,8 @@ use pyo3::wrap_pyfunction;
 // use pyo3::class::basic::PyObjectProtocol;
 // use std::cmp::{max, min};
 
+// 发布pypi：打tag，工作流直接发布
+
 use ms_toollib_original::*;
 mod board;
 pub use board::{PyMinesweeperBoard, PySafeMinesweeperBoard};

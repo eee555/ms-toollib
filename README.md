@@ -18,9 +18,9 @@ Algorithms for minesweeper, published on various platforms.
 
 python>=3.7, <=3.10 (适用于以下架构windows: x86, x64; linux: aarch64, armv7, ppc64le, s390x, x86, x86_64; macos: aarch64, x86_64): 1.4.13
 
-javascript/typescript (webpack等bundler): 1.4.10
+javascript/typescript (webpack等bundler): 1.4.11
 
-javascript/typescript (nodejs): 1.4.0-alpha
+javascript/typescript (nodejs): 1.4.11-alpha
 
 crate: 1.4.11
 

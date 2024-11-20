@@ -333,23 +333,26 @@ fn py_is_able_to_solve(mut board_of_game: Vec<Vec<i32>>, xy: (usize, usize)) -> 
     Ok(is_able_to_solve(&mut board_of_game, &xy))
 }
 
-
 #[pyfunction]
 #[pyo3(name = "cal_all_solution")]
-fn py_cal_all_solution(
-    a: Vec<Vec<i32>>,
-    b: Vec<i32>,
-) -> PyResult<Vec<Vec<u8>>> {
+fn py_cal_all_solution(a: Vec<Vec<i32>>, b: Vec<i32>) -> PyResult<Vec<Vec<u8>>> {
     Ok(cal_all_solution(&a, &b))
 }
 
 #[pyfunction]
 #[pyo3(name = "cal_board_numbers")]
-fn py_cal_board_numbers(
-    mut board: Vec<Vec<i32>>,
-) -> PyResult<Vec<Vec<i32>>> {
+fn py_cal_board_numbers(mut board: Vec<Vec<i32>>) -> PyResult<Vec<Vec<i32>>> {
     cal_board_numbers(&mut board);
     Ok(board)
+}
+
+#[pyfunction]
+#[pyo3(name = "cal_board_numbers")]
+fn py_valid_time_period(software: &str) -> PyResult<(String, String)> {
+    match valid_time_period(software) {
+        Ok(a)=> Ok(a),
+        Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e)),
+    }
 }
 
 // #[pyproto]
@@ -395,6 +398,7 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_is_able_to_solve, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_all_solution, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_board_numbers, m)?)?;
+    m.add_function(wrap_pyfunction!(py_valid_time_period, m)?)?;
     m.add_class::<PyMinesweeperBoard>()?;
     m.add_class::<PySafeMinesweeperBoard>()?;
     m.add_class::<PyAvfVideo>()?;

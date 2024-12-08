@@ -1,8 +1,9 @@
 // 测试录像分析模块
 use ms_toollib::videos::base_video::{NewBaseVideo, NewBaseVideo2};
-use ms_toollib::videos::{NewSomeVideo};
+use ms_toollib::videos::NewSomeVideo;
 use ms_toollib::{AvfVideo, BaseVideo, EvfVideo, MinesweeperBoard, MvfVideo, RmvVideo, SafeBoard};
 use std::thread;
+use tract_onnx::tract_core::anyhow::Ok;
 
 #[test]
 fn minesweeper_board_works() {
@@ -37,42 +38,187 @@ fn minesweeper_board_works() {
 // cargo test --features rs -- --nocapture AvfVideo_works
 fn AvfVideo_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("wjn.avf");
+    let mut video =
+        AvfVideo::new("../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jianing G01825.avf");
 
     let r = video.parse_video();
-    println!("结果：{:?}", r);
-    video.data.print_event();
+    assert_eq!(r.unwrap(), ());
+    // video.data.print_event();
     video.data.analyse();
-    println!("标识：{:?}", video.data.player_identifier);
-    println!("局面：{:?}", video.data.board);
+    assert!(
+        video.data.player_identifier
+            == vec![
+                87, 97, 110, 103, 32, 74, 105, 97, 110, 105, 110, 103, 32, 71, 48, 49, 56, 50, 53
+            ]
+    );
+    assert!(std::str::from_utf8(&video.data.player_identifier).unwrap() == "Wang Jianing G01825");
+    assert_eq!(
+        video.data.board,
+        vec![
+            [
+                0, 0, 0, 0, 0, 0, 0, 0, 1, 2, -1, -1, 1, 0, 0, 0, 0, 0, 1, -1, 3, -1, 4, -1, 2, 1,
+                1, 1, 2, 1
+            ],
+            [
+                1, 1, 0, 0, 0, 1, 2, 2, 2, -1, 4, 3, 2, 0, 0, 0, 1, 1, 3, 2, 4, -1, -1, 3, -1, 2,
+                2, -1, 2, -1
+            ],
+            [
+                -1, 1, 0, 1, 2, 3, -1, -1, 4, 2, 2, -1, 1, 0, 0, 0, 2, -1, 3, -1, 2, 2, 3, 4, 4,
+                -1, 2, 1, 2, 1
+            ],
+            [
+                1, 1, 0, 1, -1, -1, 4, -1, -1, 1, 1, 1, 2, 2, 3, 2, 4, -1, 4, 2, 2, 1, 1, -1, -1,
+                2, 2, 1, 1, 0
+            ],
+            [
+                1, 1, 0, 1, 2, 2, 2, 2, 2, 1, 1, 1, 2, -1, -1, -1, 4, -1, 3, 2, -1, 1, 1, 2, 2, 2,
+                2, -1, 1, 0
+            ],
+            [
+                -1, 2, 0, 0, 1, 1, 1, 0, 0, 0, 1, -1, 2, 2, 3, 3, -1, 3, -1, 3, 2, 2, 0, 0, 0, 1,
+                -1, 2, 1, 0
+            ],
+            [
+                -1, 2, 0, 0, 2, -1, 3, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 2, 1, 3, -1, 2, 0, 0, 0, 2, 2,
+                2, 0, 0
+            ],
+            [
+                1, 1, 1, 1, 3, -1, 4, -1, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, -1, 3, 1, 0, 1, 2,
+                -1, 2, 1, 0
+            ],
+            [
+                0, 0, 2, -1, 4, 2, 4, -1, -1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 2, -1, 1, 1, 3, -1,
+                4, -1, 1, 0
+            ],
+            [
+                1, 1, 3, -1, 3, -1, 3, 3, 2, 1, 1, -1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 2, -1, -1,
+                4, 3, 2, 1
+            ],
+            [
+                2, -1, 2, 1, 3, 3, -1, 2, 1, 0, 1, 1, 1, 0, 1, -1, 1, 0, 0, 0, 1, 1, 2, 4, -1, 6,
+                -1, 3, -1, 2
+            ],
+            [
+                -1, 4, 2, 0, 1, -1, 3, -1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 3, -1, 4, -1, -1,
+                -1, 3, 4, -1, 2
+            ],
+            [
+                -1, -1, 1, 0, 2, 3, 4, 3, 2, 1, 0, 1, -1, 1, 0, 0, 0, 0, 0, 1, -1, -1, -1, 4, 3, 2,
+                2, -1, 2, 1
+            ],
+            [
+                2, 2, 1, 0, 1, -1, -1, 4, -1, 4, 2, 2, 2, 2, 2, 2, 3, 2, 1, 1, 2, 5, -1, 3, 0, 0,
+                1, 1, 2, 1
+            ],
+            [
+                1, 2, 1, 1, 1, 2, 3, -1, -1, -1, -1, 3, 3, -1, 2, -1, -1, -1, 1, 1, 1, 3, -1, 4, 3,
+                2, 1, 0, 1, -1
+            ],
+            [
+                -1, 2, -1, 1, 0, 0, 1, 2, 4, -1, 4, -1, -1, 2, 2, 3, -1, 3, 1, 1, -1, 2, 2, -1, -1,
+                -1, 1, 0, 1, 1
+            ]
+        ]
+    );
     video.data.set_current_time(0.0);
-    // println!("game_board_stream：{:?}", video.data.game_board_stream[0]);
-    // println!("局面：{:?}", video.data.get_game_board());
-    println!("3BV：{:?}", video.data.static_params.bbbv);
-    // println!("3BV：{:?}", video.s.s);
-    println!("time：{:?}", video.data.get_rtime().unwrap());
-    println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
-    println!("is win: {:?}", video.data.is_completed);
-    println!("STNB: {:?}", video.data.get_stnb().unwrap());
-    // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
+    assert_eq!(video.data.static_params.bbbv, 127);
+    assert_eq!(video.data.get_rtime().unwrap(), 49.25);
+    assert_eq!(video.data.get_rtime_ms().unwrap(), 49250);
+    assert!(video.data.is_completed);
+    assert_eq!(video.data.get_stnb().unwrap(), 0.0);
     video.data.analyse_for_features(vec![
         "needless_guess",
         "high_risk_guess",
         "jump_judge",
         "survive_poss",
     ]);
-    video.data.print_comments();
+    // video.data.print_comments();
     video.data.set_current_time(1000.0);
-    println!("局面: {:?}", video.data.get_game_board());
-    println!("solved_3BV：{:?}", video.data.get_bbbv_solved());
-    println!("3BV/s：{:?}", video.data.get_bbbv_s());
-    println!("thrp: {:?}", video.data.get_thrp());
-    println!("level: {:?}", video.data.level);
-    println!("is_valid: {:?}", video.data.is_valid());
-    println!("get_right: {:?}", video.data.get_right());
-    println!("get_flag: {:?}", video.data.get_flag());
-    println!("get_left: {:?}", video.data.get_left());
-    println!("get_double: {:?}", video.data.get_double());
+    assert_eq!(
+        video.data.get_game_board(),
+        vec![
+            [
+                0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 10, 10, 1, 0, 0, 0, 0, 0, 1, 10, 3, 10, 4, 10, 2, 1,
+                1, 1, 2, 1
+            ],
+            [
+                1, 1, 0, 0, 0, 1, 2, 2, 2, 10, 4, 3, 2, 0, 0, 0, 1, 1, 3, 2, 4, 10, 10, 3, 10, 2,
+                2, 10, 2, 10
+            ],
+            [
+                10, 1, 0, 1, 2, 3, 10, 10, 4, 2, 2, 10, 1, 0, 0, 0, 2, 10, 3, 10, 2, 2, 3, 4, 4,
+                10, 2, 1, 2, 1
+            ],
+            [
+                1, 1, 0, 1, 10, 10, 4, 10, 10, 1, 1, 1, 2, 2, 3, 2, 4, 10, 4, 2, 2, 1, 1, 10, 10,
+                2, 2, 1, 1, 0
+            ],
+            [
+                1, 1, 0, 1, 2, 2, 2, 2, 2, 1, 1, 1, 2, 10, 10, 10, 4, 10, 3, 2, 11, 1, 1, 2, 2, 2,
+                2, 10, 1, 0
+            ],
+            [
+                10, 2, 0, 0, 1, 1, 1, 0, 0, 0, 1, 10, 2, 2, 3, 3, 10, 3, 10, 3, 2, 2, 0, 0, 0, 1,
+                10, 2, 1, 0
+            ],
+            [
+                11, 2, 0, 0, 2, 11, 3, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 2, 1, 3, 10, 2, 0, 0, 0, 2, 2,
+                2, 0, 0
+            ],
+            [
+                1, 1, 1, 1, 3, 10, 4, 10, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 10, 3, 1, 0, 1, 2,
+                11, 2, 1, 0
+            ],
+            [
+                0, 0, 2, 10, 4, 2, 4, 10, 10, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 2, 11, 1, 1, 3, 11,
+                4, 10, 1, 0
+            ],
+            [
+                1, 1, 3, 10, 3, 10, 3, 3, 2, 1, 1, 10, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 2, 10, 10,
+                4, 3, 2, 1
+            ],
+            [
+                2, 10, 2, 1, 3, 3, 10, 2, 1, 0, 1, 1, 1, 0, 1, 10, 1, 0, 0, 0, 1, 1, 2, 4, 10, 6,
+                10, 3, 10, 2
+            ],
+            [
+                10, 4, 2, 0, 1, 10, 3, 10, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 3, 10, 4, 10, 10,
+                10, 3, 4, 10, 2
+            ],
+            [
+                10, 10, 1, 0, 2, 3, 4, 3, 2, 1, 0, 1, 11, 1, 0, 0, 0, 0, 0, 1, 11, 10, 10, 4, 3, 2,
+                2, 10, 2, 1
+            ],
+            [
+                2, 2, 1, 0, 1, 10, 10, 4, 10, 4, 2, 2, 2, 2, 2, 2, 3, 2, 1, 1, 2, 5, 10, 3, 0, 0,
+                1, 1, 2, 1
+            ],
+            [
+                1, 2, 1, 1, 1, 2, 3, 10, 10, 10, 10, 3, 3, 10, 2, 10, 10, 11, 1, 1, 1, 3, 10, 4, 3,
+                2, 1, 0, 1, 10
+            ],
+            [
+                10, 2, 11, 1, 0, 0, 1, 2, 4, 10, 4, 10, 10, 2, 2, 3, 10, 3, 1, 1, 10, 2, 2, 10, 10,
+                11, 1, 0, 1, 1
+            ]
+        ]
+    );
+    assert_eq!(video.data.get_bbbv_solved().unwrap(), 127);
+    assert_eq!(video.data.get_bbbv_s().unwrap(), 2.5786802030456855);
+    assert_eq!(video.data.get_thrp().unwrap(), 0.8819444444444444);
+    assert_eq!(video.data.level, 5);
+    assert_eq!(video.data.is_valid(), 0);
+    assert_eq!(video.data.get_right(), 11);
+    assert_eq!(video.data.get_flag(), 11);
+    assert_eq!(video.data.get_left(), 126);
+    assert_eq!(video.data.get_double(), 14);
+    assert_eq!(video.data.get_lce().unwrap(), 119);
+    assert_eq!(video.data.get_rce().unwrap(), 11);
+    assert_eq!(video.data.get_dce().unwrap(), 14);
+    assert_eq!(video.data.get_left_s(), 2.5583756345177666);
+    assert_eq!(video.data.get_right_s(), 0.2233502538071066);
+    assert_eq!(video.data.get_double_s(), 0.28426395939086296);
 }
 
 #[test]

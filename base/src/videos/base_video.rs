@@ -2405,7 +2405,7 @@ impl<T> BaseVideo<T> {
                 // 只允许标准、经典无猜
                 return 3;
             }
-        } else if &software == "元3.1.11" {
+        } else if &software == "元3.1.11" || &software == "元3.2.0" {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和
                 return 1;

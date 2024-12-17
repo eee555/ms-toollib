@@ -68,6 +68,9 @@ pub struct PyBaseVideo {
 #[pymethods]
 impl PyBaseVideo {
     #[new]
+    #[pyo3(
+        signature = (board, cell_pixel_size = 16)
+    )]
     pub fn new(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> PyBaseVideo {
         let c = BaseVideo::<SafeBoard>::new(board, cell_pixel_size);
         PyBaseVideo { core: c }

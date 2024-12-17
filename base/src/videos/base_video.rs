@@ -253,6 +253,82 @@ impl Default for VideoDynamicParams {
     }
 }
 
+/// 扫雷游戏状态机
+/// 功能：整局游戏的全部信息。自动推导局面、计算数据、计时、保存文件等功能。
+/// 以下是在python中调用的示例。
+/// ``` python
+/// import ms_toollib as ms
+/// import time
+/// pixsize = 16
+/// board = [[ 0, 0, 0, 0, 0, 0, 0, 0],
+///          [ 0, 1, 2, 3, 3, 3, 3, 2],
+///          [ 0, 1,-1,-1,-1,-1,-1,-1],
+///          [ 1, 2, 2, 3, 3, 3, 3, 2],
+///          [-1, 2, 0, 0, 0, 0, 0, 0],
+///          [-1, 2, 0, 0, 0, 0, 0, 0],
+///          [ 1, 1, 0, 0, 0, 1, 2, 2],
+///          [ 0, 0, 0, 0, 0, 1,-1,-1],]
+/// game = ms.BaseVideo(board, pixsize)
+/// # 左键按下
+/// game.step("lc", (8, 8))
+/// # 左键抬起
+/// game.step("lr", (8, 8))
+/// assert game.game_board_state == 2
+/// # Ready => 1
+/// # Playing => 2
+/// # Win => 3
+/// # Loss => 4
+/// # PreFlaging => 5
+/// # Display => 6
+/// assert game.mouse_state == 1
+/// # UpUp => 1
+/// # UpDown => 2
+/// # UpDownNotFlag => 3
+/// # DownUp => 4
+/// # Chording => 5
+/// # ChordingNotFlag => 6
+/// # DownUpAfterChording => 7
+/// # Undefined => 8
+/// print(game.game_board)
+/// # 右键按下
+/// game.step("rc", (4 * pixsize + 3, 0))
+/// # 人类操作的延时
+/// time.sleep(0.01)
+/// # 右键抬起
+/// game.step("rr", (4 * pixsize + 3, 0))
+/// game.step("rc", (5 * pixsize + 3, 0))
+/// game.step("rr", (5 * pixsize + 3, 0))
+/// game.step("lc", (4 * pixsize + 3, pixsize + 1))
+/// game.step("lr", (4 * pixsize + 3, pixsize + 1))
+/// game.step("lc", (4 * pixsize + 3, pixsize + 1))
+/// # 第二个键按下，但分不清具体哪个键
+/// game.step("cc", (4 * pixsize + 3, pixsize + 1))
+/// game.step("rr", (4 * pixsize + 3, pixsize + 1))
+/// game.step("lr", (4 * pixsize + 3, pixsize + 1))
+/// # 检查已经获胜
+/// assert game.game_board_state == 3
+/// print("本局用时：", game.rtime)
+/// assert game.left == 2
+/// assert game.lce == 2
+/// game.use_question = False # 禁用问号是共识
+/// game.use_cursor_pos_lim = False
+/// game.use_auto_replay = False
+/// game.is_fair = False
+/// game.is_official = False
+/// game.software = b"Demo"
+/// game.mode = 0
+/// game.player_identifier = "程序".encode( "UTF-8" )
+/// game.race_identifier = b""
+/// game.uniqueness_identifier = b"contact us with QQ 2234208506"
+/// game.country = "中国".encode( "UTF-8" )
+/// game.device_uuid = b"2ds2ge6rg5165g1r32ererrrtgrefd6we54"
+/// game.generate_evf_v3_raw_data()
+/// # 补上校验值
+/// checksum = b"0" * 32
+/// game.checksum = checksum
+/// # 保存为test.evf
+/// game.save_to_evf_file("test")
+/// ```
 pub struct BaseVideo<T> {
     /// 软件名
     pub software: Vec<u8>,

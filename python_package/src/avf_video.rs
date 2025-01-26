@@ -369,12 +369,19 @@ impl PyAvfVideo {
     pub fn get_checksum(&self) -> PyResult<[u8; 32]> {
         Ok(self.core.data.get_checksum().unwrap())
     }
-    #[setter]
-    pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {
-        self.core.data.set_video_playing_pix_size(pix_size);
+    #[getter]
+    pub fn get_pix_size(&self) -> PyResult<u8> {
+        Ok(self.core.data.get_pix_size().unwrap())
     }
     #[setter]
     pub fn set_current_time(&mut self, time: f64) {
         self.core.data.set_current_time(time);
+    }
+    pub fn is_valid(&self) -> PyResult<u8> {
+        Ok(self.core.data.is_valid())
+    }
+    #[setter]
+    pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {
+        self.core.data.set_video_playing_pix_size(pix_size);
     }
 }

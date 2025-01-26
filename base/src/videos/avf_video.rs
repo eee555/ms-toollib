@@ -14,6 +14,7 @@ use web_sys::console;
 /// - 功能：解析avf格式的录像，有详细分析录像的方法。  
 /// - 以下是在python中调用的示例。  
 /// ```python
+/// import ms_toollib as ms
 /// v = ms.AvfVideo("video_name.avf") # 第一步，读取文件的二进制内容
 /// v.parse_video() # 第二步，解析文件的二进制内容
 /// v.analyse() # 第三步，根据解析到的内容，推衍整个局面
@@ -59,9 +60,9 @@ use web_sys::console;
 /// - 在python中被继承的示例。  
 /// ```python
 /// class MyVideo(ms.AvfVideo):
-///     def __new__(cls, f):
-///         return ms.AvfVideo.__new__(cls, f)
-///     def __init__(self, f):
+///     def __new__(cls, *args, **kargs):
+///         return ms.AvfVideo.__new__(cls, *args, **kargs):
+///     def __init__(self, *args, **kargs):
 ///         super(MyVideo, self).__init__()
 ///     def print_something(self):
 ///         self.parse_video()
@@ -74,8 +75,24 @@ use web_sys::console;
 ///         print(f"cl:{self.cl}")
 ///         print(f"ce: {self.ce}")
 ///         print(f"flag: {self.flag}")
-/// m_v = MyVideo("jze.avf")
-/// m_v.print_something()
+/// my_video = MyVideo("jze.avf")
+/// my_video.print_something()
+/// print(my_video.bbbv_solved)
+/// ```
+/// - 其他实例化方法  
+/// 
+/// ```python
+/// import ms_toollib as ms
+/// # 使用绝对路径实例化
+/// v_1 = ms.AvfVideo(r"F:\SomePath\Beg_NF_3.90_3BV=12_3BVs=3.07_Wang Jianing.avf")
+/// 
+/// # 使用二进制列表实例化
+/// with open(r"F:\SomePath\Beg_NF_3.90_3BV=12_3BVs=3.07_Wang Jianing.avf", 'rb') as file:
+///     video_data_list = list(file.read())
+///     # 自定义另一个文件名
+///     v_2 = ms.AvfVideo(r"my_file.avf", video_data_list)
+///     # 也可以缺省第一个参数`file_name`，则file_name为空字符串
+///     v_3 = ms.AvfVideo(raw_data=video_data_list)
 /// ```
 pub struct AvfVideo {
     pub file_name: String,

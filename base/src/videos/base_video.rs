@@ -330,7 +330,7 @@ impl Default for VideoDynamicParams {
 /// game.save_to_evf_file("test")
 /// ```
 pub struct BaseVideo<T> {
-    /// 软件名
+    /// 软件名，包括："Viennasweeper"、"0.97 beta"、"Arbiter"、"元3.1.9"、"元3.1.11"、"元3.2.0"等
     pub software: Vec<u8>,
     /// 宽度，等同于column
     pub width: usize,

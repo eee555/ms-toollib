@@ -1,6 +1,6 @@
 [project]
 name = "ms_toollib"
-version = "1.4.13"
+version = "1.4.14"
 description = "Algorithms for minesweeper."
 readme = "readme.md"
 requires-python = ">=3.7"

@@ -1755,14 +1755,14 @@ pub fn chunk_matrix(
 
 #[test]
 fn chunk_matrix_works() {
-    let mut a = vec![
+    let a = vec![
         vec![1, 1, 0, 0],
         vec![0, 0, 1, 1],
         vec![0, 1, 0, 0],
         vec![0, 0, 0, 1],
     ];
-    let mut x = vec![(1, 2), (3, 4), (5, 6), (7, 8)];
-    let mut b = vec![1, 2, 3, 4];
+    let x = vec![(1, 2), (3, 4), (5, 6), (7, 8)];
+    let b = vec![1, 2, 3, 4];
     let (aa, xx, bb) = chunk_matrix(a, x, b);
     println!("{:?}", xx);
 }

@@ -106,7 +106,7 @@ fn solve_direct_works() {
 #[test]
 fn solve_enumerate_works() {
     // 测试枚举判雷引擎
-    let mut game_board = vec![
+    let game_board = vec![
         vec![0, 0, 1, 10, 10, 10, 10, 10],
         vec![0, 0, 2, 10, 10, 10, 10, 10],
         vec![1, 1, 3, 11, 10, 10, 10, 10],

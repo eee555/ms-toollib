@@ -13,7 +13,7 @@ fn safe_board_works() {
         vec![0, 1, 1, 1, 0, 2, -1, 2],
         vec![0, 1, -1, 1, 0, 1, 1, 1],
     ];
-    let mut my_board = SafeBoard::new(board);
+    let my_board = SafeBoard::new(board);
     println!("{:?}", my_board.into_vec_vec());
 }
 

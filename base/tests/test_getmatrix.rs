@@ -11,7 +11,7 @@ use ms_toollib::{
 #[test]
 fn refresh_matrixses_works() {
     // 测试获取局面矩阵引擎
-    let mut game_board = vec![
+    let game_board = vec![
         vec![
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0,

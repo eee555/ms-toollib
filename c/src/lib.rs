@@ -149,7 +149,8 @@ pub extern "C" fn laymine(
     X0: usize,
     Y0: usize,
 ) -> Board {
-    let mut b = rs_laymine(row, column, MineNum, X0, Y0);
+    let b = rs_laymine(row, column, MineNum, X0, Y0);
+    // let mut b = rs_laymine(row, column, MineNum, X0, Y0);
     // let mut board: Vec<Row> = vec![];
     // for i in 0..b.len() {
     //     board.push(Row {

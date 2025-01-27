@@ -1238,7 +1238,7 @@ impl<T> BaseVideo<T> {
     }
 
     pub fn print_event(&self) {
-        let mut num = 0;
+        let num = 0;
         for e in &self.video_action_state_recorder {
             if num < 800 {
                 if e.mouse != "mv" {

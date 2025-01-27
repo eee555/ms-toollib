@@ -1230,7 +1230,7 @@ fn laymine_study_exp(x0: usize, y0: usize, n: usize) -> [usize; 382] {
 }
 
 #[cfg(any(feature = "py", feature = "rs"))]
-fn OBR_cell(
+fn obr_cell(
     cell_image: &Vec<f32>,
     model: &tract_onnx::prelude::SimplePlan<
         tract_onnx::prelude::TypedFact,
@@ -1325,7 +1325,7 @@ pub fn OBR_board(
     .unwrap();
     for i in 0..image_board.r {
         for j in 0..image_board.c {
-            let cell = OBR_cell(&image_board.extra_save_cell(i, j, 16), &model).unwrap();
+            let cell = obr_cell(&image_board.extra_save_cell(i, j, 16), &model).unwrap();
             board[i][j] = cell;
         }
     }

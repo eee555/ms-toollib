@@ -1,7 +1,7 @@
 use crate::utils::{
     cal_bbbv_exp, cal_table_minenum_recursion, chunk_matrixes, combine, find_a_border_cell,
     laymine, laymine_op, legalize_board, refresh_board, refresh_matrixs, refresh_matrixses,
-    unsolvable_structure, BigNumber, C,
+    unsolvable_structure, BigNumber, c,
 };
 
 use crate::videos::{MinesweeperBoard, GameBoardState};
@@ -310,7 +310,7 @@ pub fn cal_possibility(
     // 这里的写法存在极小的风险，例如边缘格雷数分布是0，1，3，而我们直接认为了可能有2
     let mut unknow_mine_s_num = vec![];
     for i in &unknow_minenum {
-        unknow_mine_s_num.push(C(unknow_block, *i));
+        unknow_mine_s_num.push(c(unknow_block, *i));
     }
     // 第二步，整理内部未知段雷数分布表，并筛选。这样内部未知雷段和边缘雷段的地位视为几乎等同，但数据结构不同
     table_minenum_s.push([unknow_minenum.clone(), vec![]]);

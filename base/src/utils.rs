@@ -709,23 +709,23 @@ impl BigNumber {
     }
 }
 
-pub fn C(n: usize, k: usize) -> BigNumber {
+pub fn c(n: usize, k: usize) -> BigNumber {
     // n不超过1e10
     if n < k + k {
-        return C(n, n - k);
+        return c(n, n - k);
     };
     let maximum_limit: f64 = 1e208;
-    let mut c = BigNumber { a: 1.0, b: 0 };
+    let mut cc = BigNumber { a: 1.0, b: 0 };
     for i in 0..k {
-        c.a *= (n - i) as f64;
-        c.a /= (i + 1) as f64;
-        c.a_become_smaller_than(maximum_limit);
+        cc.a *= (n - i) as f64;
+        cc.a /= (i + 1) as f64;
+        cc.a_become_smaller_than(maximum_limit);
     }
-    c.a_become_smaller_than(10.0);
-    c
+    cc.a_become_smaller_than(10.0);
+    cc
 }
 
-pub fn C_query<T, U>(n: T, k: U) -> usize
+pub fn c_query<T, U>(n: T, k: U) -> usize
 where
     T: Into<usize>,
     U: Into<usize>,
@@ -1108,7 +1108,7 @@ fn cal_table_minenum_recursion_step(
         }
         let _ = cal_table_minenum_recursion_step(
             idx + 1,
-            current_amount * C_query(combination_relationship[idx].len(), u),
+            current_amount * c_query(combination_relationship[idx].len(), u),
             table_minenum,
             table_cell_minenum,
             &matrix_a_squeeze,
@@ -1224,7 +1224,7 @@ pub fn cal_table_minenum_recursion(
 //         let s_sum = s.iter().sum::<u8>();
 //         let mut si_num = 1; // 由于enum_comb_table中的格子每一个都代表了与其地位等同的所有格子，由此的情况数
 //         for s_i in 0..s.len() {
-//             si_num *= C_query(combination_relationship[s_i].len(), s[s_i]);
+//             si_num *= c_query(combination_relationship[s_i].len(), s[s_i]);
 //         }
 //         let fs = table_minenum[0]
 //             .clone()
@@ -1242,11 +1242,11 @@ pub fn cal_table_minenum_recursion(
 //                         let mut sss = 1;
 //                         for d in 0..s.len() {
 //                             if c != d {
-//                                 sss *= C_query(combination_relationship[d].len(), s[d]);
+//                                 sss *= c_query(combination_relationship[d].len(), s[d]);
 //                                 // println!("comb_relp_s = {:?}", comb_relp_s);
 //                                 // println!("sss = {:?}", sss);
 //                             } else {
-//                                 sss *= C_query(combination_relationship[d].len() - 1, s[d] - 1);
+//                                 sss *= c_query(combination_relationship[d].len() - 1, s[d] - 1);
 //                             }
 //                         }
 //                         ss.push(sss as usize);
@@ -1263,11 +1263,11 @@ pub fn cal_table_minenum_recursion(
 //                         let mut sss = 1;
 //                         for d in 0..s.len() {
 //                             if c != d {
-//                                 sss *= C_query(combination_relationship[d].len(), s[d]);
+//                                 sss *= c_query(combination_relationship[d].len(), s[d]);
 //                                 // println!("comb_relp_s=={:?}", comb_relp_s);
 //                                 // println!("s=={:?}", s);
 //                             } else {
-//                                 sss *= C_query(combination_relationship[d].len() - 1, s[d] - 1);
+//                                 sss *= c_query(combination_relationship[d].len() - 1, s[d] - 1);
 //                             }
 //                         }
 //                         table_cell_minenum[fs.unwrap()][c] += sss as usize;

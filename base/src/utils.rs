@@ -433,12 +433,12 @@ pub fn get_random_int(limit: usize) -> usize {
 }
 
 #[cfg(feature = "js")]
-pub trait js_shuffle {
+pub trait JsShuffle {
     fn shuffle_(&mut self);
 }
 
 #[cfg(feature = "js")]
-impl js_shuffle for Vec<i32> {
+impl JsShuffle for Vec<i32> {
     fn shuffle_(&mut self) {
         // 存疑！！！！！
         let l = self.len();

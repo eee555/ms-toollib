@@ -7,7 +7,7 @@ use crate::utils::{
 use crate::videos::{MinesweeperBoard, GameBoardState};
 
 #[cfg(feature = "js")]
-use crate::utils::js_shuffle;
+use crate::utils::JsShuffle;
 
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::OBR::ImageBoard;

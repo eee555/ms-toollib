@@ -1558,7 +1558,6 @@ pub fn cal_bbbv_exp(board_in: &Vec<Vec<i32>>) -> usize {
                             } else {
                                 flag_op = true;
                             }
-                            min_op_id = board[x][y - 1];
                         }
                     }
                 }

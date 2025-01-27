@@ -988,7 +988,6 @@ impl<T> BaseVideo<T> {
                 if old_state != GameBoardState::PreFlaging {
                     self.video_start_instant = step_instant;
                     // time_ms = time_ms_between(step_instant, self.video_start_instant);
-                    time_ms = 0;
                     time = 0.0;
                 }
             }

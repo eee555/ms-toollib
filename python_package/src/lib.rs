@@ -314,9 +314,25 @@ fn py_sample_bbbvs_exp(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
 
 #[pyfunction]
 #[pyo3(name = "OBR_board", signature = (data_vec, height, width))]
-fn py_OBR_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
-    // Ok(OBR_board(data_vec, height, width).unwrap())
-    match OBR_board(data_vec, height, width) {
+fn py_obr_board_old(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
+    let _ = Python::with_gil(|py| {
+        let deprecation_warning = py.get_type_bound::<pyo3::exceptions::PyDeprecationWarning>();
+        PyErr::warn_bound(py, &deprecation_warning, "Renamed to obr_board", 0)?;
+        Ok::<(), PyErr>(())
+    });
+    // Ok(obr_board(data_vec, height, width).unwrap())
+    match obr_board(data_vec, height, width) {
+        //判断方法结果
+        Ok(ans) => Ok(ans),
+        Err(_e) => Ok(vec![vec![200]]),
+    }
+}
+
+#[pyfunction]
+#[pyo3(name = "obr_board", signature = (data_vec, height, width))]
+fn py_obr_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
+    // Ok(obr_board(data_vec, height, width).unwrap())
+    match obr_board(data_vec, height, width) {
         //判断方法结果
         Ok(ans) => Ok(ans),
         Err(_e) => Ok(vec![vec![200]]),
@@ -404,7 +420,8 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_cal_possibility, m)?)?;
     m.add_function(wrap_pyfunction!(py_sample_bbbvs_exp, m)?)?;
     m.add_function(wrap_pyfunction!(py_sample_bbbvs_exp_old, m)?)?;
-    m.add_function(wrap_pyfunction!(py_OBR_board, m)?)?;
+    m.add_function(wrap_pyfunction!(py_obr_board, m)?)?;
+    m.add_function(wrap_pyfunction!(py_obr_board_old, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
     m.add_function(wrap_pyfunction!(py_mark_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_guess_while_needless, m)?)?;

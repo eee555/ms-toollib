@@ -707,18 +707,6 @@ impl BigNumber {
         }
         ans
     }
-    pub fn div_usize(&mut self, k: usize) {
-        // 计算大数除以正整数。这里被除数大于等于0；除数大于等于1
-        if self.a < 1e-8 && self.b == 1 {
-            return;
-        } else {
-            self.a /= k as f64;
-            while self.a < 1.0 {
-                self.a *= 10.0;
-                self.b -= 1;
-            }
-        }
-    }
 }
 
 pub fn C(n: usize, k: usize) -> BigNumber {

@@ -1763,7 +1763,7 @@ fn chunk_matrix_works() {
     ];
     let x = vec![(1, 2), (3, 4), (5, 6), (7, 8)];
     let b = vec![1, 2, 3, 4];
-    let (aa, xx, bb) = chunk_matrix(a, x, b);
+    let (_aa, xx, _bb) = chunk_matrix(a, x, b);
     println!("{:?}", xx);
 }
 

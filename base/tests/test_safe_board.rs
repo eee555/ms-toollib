@@ -40,8 +40,8 @@ fn base_video_safe_board_works() {
         vec![2, 3, -1, 2, -1, 1, 0, 0],
         vec![-1, 2, 1, 2, 1, 1, 0, 0],
     ];
-    my_board.set_board(board);
-    my_board.step("lc", (18,18));
-    my_board.step("lr", (18,18));
+    let _ = my_board.set_board(board);
+    let _ = my_board.step("lc", (18,18));
+    let _ = my_board.step("lr", (18,18));
     println!("{:?}", my_board.minesweeper_board.board.into_vec_vec());
 }

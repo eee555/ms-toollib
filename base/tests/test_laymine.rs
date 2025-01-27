@@ -14,7 +14,7 @@ fn laymine_solvable_thread_works() {
     // 测试多线程筛选法无猜埋雷
     let start = Instant::now();
     for _ in 0..10 {
-        let game_board = laymine_solvable_thread(16, 30, 99, 0, 0, 100000);
+        let _game_board = laymine_solvable_thread(16, 30, 99, 0, 0, 100000);
         // game_board.0.iter().for_each(|i| println!("{:?}", i));
     }
     println!("time cost: {:?} us", start.elapsed().as_micros()); // us

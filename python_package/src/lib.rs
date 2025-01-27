@@ -308,7 +308,7 @@ fn py_OBR_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<V
     match OBR_board(data_vec, height, width) {
         //判断方法结果
         Ok(ans) => Ok(ans),
-        Err(e) => Ok(vec![vec![200]]),
+        Err(_e) => Ok(vec![vec![200]]),
     }
 }
 

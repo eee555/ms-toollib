@@ -67,9 +67,9 @@ pub use videos::{
 };
 
 #[cfg(any(feature = "py", feature = "rs"))]
-mod OBR;
+mod obr;
 #[cfg(any(feature = "py", feature = "rs"))]
-pub use OBR::ImageBoard;
+pub use obr::ImageBoard;
 
 // #[cfg(any(feature = "py", feature = "rs"))]
 mod safe_board;

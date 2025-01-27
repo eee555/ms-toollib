@@ -10,7 +10,7 @@ use crate::videos::{MinesweeperBoard, GameBoardState};
 use crate::utils::JsShuffle;
 
 #[cfg(any(feature = "py", feature = "rs"))]
-use crate::OBR::ImageBoard;
+use crate::obr::ImageBoard;
 
 use itertools::Itertools;
 

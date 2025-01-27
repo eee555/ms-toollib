@@ -1,7 +1,21 @@
 use crate::utils::{
-    cal_bbbv_exp, cal_table_minenum_recursion, chunk_matrixes, combine, find_a_border_cell,
-    laymine, laymine_op, legalize_board, refresh_board, refresh_matrixs, refresh_matrixses,
-    unsolvable_structure, BigNumber, c,
+    cal_table_minenum_recursion,
+    chunk_matrixes,
+    combine,
+    find_a_border_cell,
+    laymine,
+    laymine_op,
+    refresh_board,
+    refresh_matrixs,
+    refresh_matrixses,
+    unsolvable_structure,
+    BigNumber,
+    c,
+};
+#[cfg(any(feature = "py", feature = "rs"))]
+use crate::utils::{
+    cal_bbbv_exp,
+    legalize_board,
 };
 
 use crate::videos::{MinesweeperBoard, GameBoardState};
@@ -20,8 +34,11 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 
 use std::cmp::{max, min};
+#[cfg(any(feature = "py", feature = "rs"))]
 use std::sync::mpsc;
+#[cfg(any(feature = "py", feature = "rs"))]
 use std::sync::{Arc, Mutex};
+#[cfg(any(feature = "py", feature = "rs"))]
 use std::thread;
 
 #[cfg(any(feature = "py", feature = "rs"))]

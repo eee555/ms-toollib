@@ -5,12 +5,15 @@ use crate::cal_cell_nums;
 use crate::miscellaneous::s_to_ms;
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::miscellaneous::time_ms_between;
-use crate::utils::{cal_bbbv, cal_isl, cal_op};
+use crate::utils::{cal_isl, cal_op};
+#[cfg(any(feature = "py", feature = "rs"))]
+use crate::utils::cal_bbbv;
 use crate::videos::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
     analyse_super_fl_local, analyse_survive_poss, analyse_vision_transfer,
 };
 use core::panic;
+#[cfg(any(feature = "py", feature = "rs"))]
 use std::fs;
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::time::{Instant, SystemTime, UNIX_EPOCH};

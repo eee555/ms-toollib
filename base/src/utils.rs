@@ -1505,6 +1505,7 @@ pub fn unsolvable_structure(board_check: &Vec<Vec<i32>>) -> bool {
 }
 
 // 专用于高级局面的3BV快速计算
+#[cfg(any(feature = "py", feature = "rs"))]
 pub fn cal_bbbv_exp(board_in: &Vec<Vec<i32>>) -> usize {
     let mut board = board_in.clone();
     let mut op_id = 0;
@@ -1597,6 +1598,7 @@ pub fn cal_bbbv_exp(board_in: &Vec<Vec<i32>>) -> usize {
 // 把局面合法化：只能合法化简单的情况，不能应付所有的情况！因为检查一个局面是否合法也是NP难的
 // 配合局面光学识别算法
 // 局面中标记的标准是10为待判的雷，1到8，没有11、12
+#[cfg(any(feature = "py", feature = "rs"))]
 pub fn legalize_board(board: &mut Vec<Vec<i32>>) {
     let row = board.len();
     let column = board[0].len();

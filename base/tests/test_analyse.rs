@@ -5,6 +5,11 @@ use ms_toollib::{
     AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MvfVideo, RmvVideo, SafeBoard,
 };
 use std::thread;
+use std::time::Duration;
+
+fn _sleep_ms(ms: u32) {
+    thread::sleep(Duration::from_millis(ms as u64));
+}
 
 #[test]
 fn minesweeper_board_works() {
@@ -396,36 +401,36 @@ fn base_video_works() {
         vec![-1, -1, 2, 0, 0, 2, -1, 2],
     ];
     let mut video = BaseVideo::<SafeBoard>::new(board, 16);
-    thread::sleep_ms(600);
+    _sleep_ms(600);
     // println!("3BV：{:?}", video.static_params.bbbv);
     video.step("rc", (17, 16)).unwrap();
     video.step("rr", (17, 16)).unwrap();
     video.step("rc", (16, 49)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("rr", (16, 50)).unwrap();
     video.step("mv", (48, 51)).unwrap();
     video.step("mv", (42, 48)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lc", (16, 32)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lr", (16, 32)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lc", (52, 0)).unwrap();
     video.step("lr", (53, 0)).unwrap();
     video.step("lc", (16, 32)).unwrap();
     video.step("rc", (16, 32)).unwrap();
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("rr", (16, 32)).unwrap();
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("lr", (16, 32)).unwrap();
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("lc", (0, 16)).unwrap();
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("rc", (0, 16)).unwrap();
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("rr", (0, 16)).unwrap();
     println!("left_s：{:?}", video.get_left_s());
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("lr", (0, 16)).unwrap();
     video.step("mv", (4800, 51)).unwrap();
     video.step("lc", (112, 112)).unwrap();
@@ -869,21 +874,21 @@ fn base_video_works_4() {
         vec![-1, -1, 1, 0, 0, 0, 2, -1],
     ];
     let mut video = BaseVideo::<SafeBoard>::new(board, 16);
-    thread::sleep_ms(600);
+    _sleep_ms(600);
     // println!("3BV：{:?}", video.static_params.bbbv);
     video.step("rc", (32, 49)).unwrap();
     video.step("rr", (32, 49)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lc", (48, 64)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lr", (48, 64)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lc", (48, 64)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("rc", (48, 64)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lr", (48, 64)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("rr", (48, 64)).unwrap();
 
     println!("局面：{:?}", video.get_game_board());
@@ -979,7 +984,7 @@ fn base_video_works_5_1bv() {
     // video.step("lr", (97, 97)).unwrap();
     // thread::sleep_ms(60);
     video.step("lc", (32, 49)).unwrap();
-    thread::sleep_ms(200);
+    _sleep_ms(200);
     video.step("lr", (32, 49)).unwrap();
     video.generate_evf_v0_raw_data();
     video.set_checksum([8; 32]).unwrap();

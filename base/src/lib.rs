@@ -42,7 +42,11 @@ mod miscellaneous;
 
 mod algorithms;
 #[cfg(any(feature = "py", feature = "rs"))]
-pub use algorithms::{agent_step, laymine_solvable_thread, sample_3BVs_exp, OBR_board};
+pub use algorithms::{agent_step, laymine_solvable_thread, sample_bbbvs_exp, OBR_board};
+
+#[cfg(any(feature = "py", feature = "rs"))]
+#[deprecated]
+pub use algorithms::sample_bbbvs_exp as sample_3BVs_exp;
 
 pub use algorithms::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard,

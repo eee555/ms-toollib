@@ -5,7 +5,7 @@ use bencher::Bencher;
 
 // 测试计算矩阵性能
 // cargo bench --bench refresh_matrix
-fn bench_sample_3BVs_exp(bencher: &mut Bencher) {
+fn bench_sample_bbbvs_exp(bencher: &mut Bencher) {
     let game_board = vec![
         vec![10, 10, 10,  1,  1,  0,  0,  1, 11,  1,  0,  0,  0,  0,  1, 10, 10, 10,  2, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 11,  2,  0,  0,  1,  1,  1,  1,  2,  2,  1,  1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
@@ -27,5 +27,5 @@ fn bench_sample_3BVs_exp(bencher: &mut Bencher) {
     bencher.iter(|| refresh_matrixs(&game_board));
 } // 15,048 ns/iter
 
-benchmark_group!(refresh_matrix, bench_sample_3BVs_exp);
+benchmark_group!(refresh_matrix, bench_sample_bbbvs_exp);
 benchmark_main!(refresh_matrix);

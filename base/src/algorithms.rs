@@ -1168,7 +1168,7 @@ fn adjust_the_area_on_board(
 
 /// 埋雷并计算高级局面3BV的引擎，用于研究高级3BV的分布。16线程。传入局数，例如1000 000。试一下你的电脑算的有多块吧。  
 #[cfg(any(feature = "py", feature = "rs"))]
-pub fn sample_3BVs_exp(x0: usize, y0: usize, n: usize) -> [usize; 382] {
+pub fn sample_bbbvs_exp(x0: usize, y0: usize, n: usize) -> [usize; 382] {
     // 从标准高级中采样计算3BV
     // 16线程计算
     let n0 = n / 16;

@@ -297,8 +297,19 @@ fn py_cal_possibility_onboard(
 
 #[pyfunction]
 #[pyo3(name = "sample_3BVs_exp")]
-fn py_sample_3BVs_exp(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
-    Ok((&sample_3BVs_exp(x0, y0, n)).to_vec())
+fn py_sample_bbbvs_exp_old(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
+    let _ = Python::with_gil(|py| {
+        let deprecation_warning = py.get_type_bound::<pyo3::exceptions::PyDeprecationWarning>();
+        PyErr::warn_bound(py, &deprecation_warning, "Renamed to sample_bbbvs_exp", 0)?;
+        Ok::<(), PyErr>(())
+    });
+    Ok((&sample_bbbvs_exp(x0, y0, n)).to_vec())
+}
+
+#[pyfunction]
+#[pyo3(name = "sample_bbbvs_exp")]
+fn py_sample_bbbvs_exp(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
+    Ok((&sample_bbbvs_exp(x0, y0, n)).to_vec())
 }
 
 #[pyfunction]
@@ -391,7 +402,8 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_laymine_solvable_thread, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine_solvable_adjust, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility, m)?)?;
-    m.add_function(wrap_pyfunction!(py_sample_3BVs_exp, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sample_bbbvs_exp, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sample_bbbvs_exp_old, m)?)?;
     m.add_function(wrap_pyfunction!(py_OBR_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
     m.add_function(wrap_pyfunction!(py_mark_board, m)?)?;

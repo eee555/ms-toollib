@@ -335,29 +335,29 @@ impl ImageBoard {
         xx
     }
 
-    fn narrow(&mut self, K: usize) {
+    fn narrow(&mut self, k_in: usize) {
         // 用中值滤波，按比例缩小self.data（因为过高的分辨率影响识别）,K为2、3等
-        let row = self.data[0].len() / K;
-        let column = self.data[0][0].len() / K;
+        let row = self.data[0].len() / k_in;
+        let column = self.data[0][0].len() / k_in;
         let mut x_bw: [Vec<Vec<f32>>; 3] = [
             vec![vec![0.0; column]; row],
             vec![vec![0.0; column]; row],
             vec![vec![0.0; column]; row],
         ];
-        let mut KK = vec![0.0; K * K];
-        let MID = (K * K) / 2;
+        let mut kk = vec![0.0; k_in * k_in];
+        let mid = (k_in * k_in) / 2;
         for k in 0..3 {
             for i in 0..row {
                 for j in 0..column {
                     let mut pos = 0;
-                    for ii in i * K..(i + 1) * K {
-                        for jj in j * K..(j + 1) * K {
-                            KK[pos] = self.data[k][ii][jj];
+                    for ii in i * k_in..(i + 1) * k_in {
+                        for jj in j * k_in..(j + 1) * k_in {
+                            kk[pos] = self.data[k][ii][jj];
                             pos += 1;
                         }
                     }
-                    KK.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                    x_bw[k][i][j] = KK[MID];
+                    kk.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                    x_bw[k][i][j] = kk[mid];
                 }
             }
         }

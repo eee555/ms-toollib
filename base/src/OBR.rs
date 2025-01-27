@@ -518,19 +518,19 @@ impl ImageBoard {
         let max_x = lines[0] + 7; // 最大的空的格子像素数
         let mut hough = vec![vec![0; max_size * 4 + 1]; max_x + 1];
         // 方格边长精度为像素的1/4
-        for L in &lines {
+        for line in &lines {
             for y in min_size * 4..max_size * 4 + 1 {
-                for n in L / max_size..L / min_size + 1 {
-                    // let x_ = L - n * y / 4;
-                    if n * y / 4 <= *L  && *L <= max_x + n * y / 4 {
-                        // let x_ = L - n * y / 4;
-                        hough[L - n * y / 4][y] += 1;
+                for n in line / max_size..line / min_size + 1 {
+                    // let x_ = line - n * y / 4;
+                    if n * y / 4 <= *line  && *line <= max_x + n * y / 4 {
+                        // let x_ = line - n * y / 4;
+                        hough[line - n * y / 4][y] += 1;
                     }
-                    if n * y / 4 <= *L + 1 && *L + 1 <= max_x + n * y / 4 {
-                        // let x_ = L - n * y / 4;
-                        // println!("{:?}", *L);
+                    if n * y / 4 <= *line + 1 && *line + 1 <= max_x + n * y / 4 {
+                        // let x_ = line - n * y / 4;
+                        // println!("{:?}", *line);
                         // println!("{:?}", n * y / 4);
-                        hough[*L + 1 - n * y / 4][y] += 1;
+                        hough[*line + 1 - n * y / 4][y] += 1;
                     }
                 }
             }
@@ -547,8 +547,8 @@ impl ImageBoard {
                 }
             }
         }
-        let N = ((lines[lineslen - 1] - lines[0] + 2) as f32 / (max_j as f32 / 4.0)) as usize;
-        (max_j as f32 / 4.0, max_i, N)
+        let nn = ((lines[lineslen - 1] - lines[0] + 2) as f32 / (max_j as f32 / 4.0)) as usize;
+        (max_j as f32 / 4.0, max_i, nn)
     }
 
     pub fn get_pos_pixel(&mut self) {

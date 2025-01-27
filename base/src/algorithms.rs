@@ -39,7 +39,7 @@ use crate::ENUM_LIMIT;
 /// - 返回：是雷、非雷的格子，在传入的局面上标是雷（11）和非雷（12）。  
 /// - 注意：会维护系数矩阵、格子矩阵和数字矩阵，删、改、分段。
 pub fn solve_minus(
-    As: &mut Vec<Vec<Vec<i32>>>,
+    a_mats: &mut Vec<Vec<Vec<i32>>>,
     xs: &mut Vec<Vec<(usize, usize)>>,
     bs: &mut Vec<Vec<i32>>,
     board_of_game: &mut Vec<Vec<i32>>,
@@ -59,28 +59,28 @@ pub fn solve_minus(
         }
         for i in 1..matrix_row {
             for j in 0..i {
-                let mut ADval1 = vec![];
-                let mut ADvaln1 = vec![];
-                let mut FlagAdj = false;
+                let mut adval1 = vec![];
+                let mut advaln1 = vec![];
+                let mut flag_adj = false;
                 for k in 0..matrix_column {
-                    if As[b][i][k] >= 1 && As[b][j][k] >= 1 {
-                        FlagAdj = true;
+                    if a_mats[b][i][k] >= 1 && a_mats[b][j][k] >= 1 {
+                        flag_adj = true;
                         continue;
                     }
-                    if As[b][i][k] - As[b][j][k] == 1 {
-                        ADval1.push(k)
-                    } else if As[b][i][k] - As[b][j][k] == -1 {
-                        ADvaln1.push(k)
+                    if a_mats[b][i][k] - a_mats[b][j][k] == 1 {
+                        adval1.push(k)
+                    } else if a_mats[b][i][k] - a_mats[b][j][k] == -1 {
+                        advaln1.push(k)
                     }
                 }
-                if FlagAdj {
-                    let bDval = bs[b][i] - bs[b][j];
-                    if ADval1.len() as i32 == bDval {
-                        is_mine_rel.append(&mut ADval1);
-                        not_mine_rel.append(&mut ADvaln1);
-                    } else if ADvaln1.len() as i32 == -bDval {
-                        is_mine_rel.append(&mut ADvaln1);
-                        not_mine_rel.append(&mut ADval1);
+                if flag_adj {
+                    let bdval = bs[b][i] - bs[b][j];
+                    if adval1.len() as i32 == bdval {
+                        is_mine_rel.append(&mut adval1);
+                        not_mine_rel.append(&mut advaln1);
+                    } else if advaln1.len() as i32 == -bdval {
+                        is_mine_rel.append(&mut advaln1);
+                        not_mine_rel.append(&mut adval1);
                     }
                 }
             }
@@ -96,8 +96,8 @@ pub fn solve_minus(
         for i in &is_mine_rel {
             is_mine.push(xs[b][*i]);
             board_of_game[xs[b][*i].0][xs[b][*i].1] = 11;
-            for j in 0..As[b].len() {
-                bs[b][j] -= As[b][j][*i];
+            for j in 0..a_mats[b].len() {
+                bs[b][j] -= a_mats[b][j][*i];
             }
         }
         let mut del_id = not_mine_rel;
@@ -106,8 +106,8 @@ pub fn solve_minus(
         del_id.dedup();
         for i in del_id {
             xs[b].remove(i);
-            for jj in 0..As[b].len() {
-                As[b][jj].remove(i);
+            for jj in 0..a_mats[b].len() {
+                a_mats[b][jj].remove(i);
             }
         }
         if xs[b].is_empty() {
@@ -116,14 +116,14 @@ pub fn solve_minus(
     }
 
     for b in remove_blocks_id {
-        As.remove(b);
+        a_mats.remove(b);
         bs.remove(b);
         xs.remove(b);
     }
-    let (mut not, mut is) = solve_direct(As, xs, bs, board_of_game)?; // 没错，双集合判雷的最后一步是用单集合再过一轮。理由：（1）这样才不会报错（2）单集合复杂度很低，不费事
+    let (mut not, mut is) = solve_direct(a_mats, xs, bs, board_of_game)?; // 没错，双集合判雷的最后一步是用单集合再过一轮。理由：（1）这样才不会报错（2）单集合复杂度很低，不费事
     not_mine.append(&mut not);
     is_mine.append(&mut is);
-    chunk_matrixes(As, xs, bs);
+    chunk_matrixes(a_mats, xs, bs);
     Ok((not_mine, is_mine))
 }
 
@@ -133,7 +133,7 @@ pub fn solve_minus(
 /// - 返回Err(6)表示：比如数字2的周围只有1个格子没打开  
 /// - 注意：会维护系数矩阵、格子矩阵和数字矩阵，删、改、分段。
 pub fn solve_direct(
-    As: &mut Vec<Vec<Vec<i32>>>,
+    a_mats: &mut Vec<Vec<Vec<i32>>>,
     xs: &mut Vec<Vec<(usize, usize)>>,
     bs: &mut Vec<Vec<i32>>,
     board_of_game: &mut Vec<Vec<i32>>,
@@ -146,20 +146,20 @@ pub fn solve_direct(
         let mut matrix_column = xs[b].len();
         let mut matrix_row = bs[b].len();
         for i in (0..matrix_row).rev() {
-            if As[b][i].iter().sum::<i32>() == bs[b][i] {
+            if a_mats[b][i].iter().sum::<i32>() == bs[b][i] {
                 for k in (0..matrix_column).rev() {
-                    if As[b][i][k] >= 1 {
+                    if a_mats[b][i][k] >= 1 {
                         is_mine.push((xs[b][k].0, xs[b][k].1));
                         board_of_game[xs[b][k].0][xs[b][k].1] = 11;
                         xs[b].remove(k);
                         for t in 0..matrix_row {
-                            bs[b][t] -= As[b][t][k];
-                            As[b][t].remove(k);
+                            bs[b][t] -= a_mats[b][t][k];
+                            a_mats[b][t].remove(k);
                         }
                         matrix_column -= 1;
                     }
                 }
-                As[b].remove(i);
+                a_mats[b].remove(i);
                 bs[b].remove(i);
                 matrix_row -= 1;
             }
@@ -167,23 +167,23 @@ pub fn solve_direct(
         for i in (0..matrix_row).rev() {
             if bs[b][i] == 0 {
                 for k in (0..matrix_column).rev() {
-                    if As[b][i][k] >= 1 {
+                    if a_mats[b][i][k] >= 1 {
                         not_mine.push(xs[b][k]);
                         board_of_game[xs[b][k].0][xs[b][k].1] = 12;
                         xs[b].remove(k);
                         for t in 0..matrix_row {
-                            As[b][t].remove(k);
+                            a_mats[b][t].remove(k);
                         }
                         matrix_column -= 1;
                     }
                 }
-                As[b].remove(i);
+                a_mats[b].remove(i);
                 bs[b].remove(i);
                 matrix_row -= 1;
             }
         }
         if bs[b].is_empty() {
-            As.remove(b);
+            a_mats.remove(b);
             bs.remove(b);
             xs.remove(b);
         }
@@ -196,7 +196,7 @@ pub fn solve_direct(
         Some(_) => return Err(6),
         None => {}
     }
-    chunk_matrixes(As, xs, bs);
+    chunk_matrixes(a_mats, xs, bs);
     Ok((not_mine, is_mine))
 }
 
@@ -239,14 +239,14 @@ pub fn cal_possibility(
     let block_num = matrix_a_s.len(); // 整个局面被分成的段数
                                       // let mut block_num_calable = 0;
 
-    let mut matrixA_squeeze_s: Vec<Vec<Vec<i32>>> = vec![];
+    let mut matrix_a_squeeze_s: Vec<Vec<Vec<i32>>> = vec![];
     let mut matrixx_squeeze_s: Vec<Vec<(usize, usize)>> = vec![];
     // let mut min_max_minenum = [0, 0];
     for i in 0..block_num {
-        let (matrixA_squeeze, matrixx_squeeze, combination_relationship) =
+        let (matrix_a_squeeze, matrixx_squeeze, combination_relationship) =
             combine(&matrix_a_s[i], &matrix_x_s[i]);
         comb_relp_s.push(combination_relationship);
-        matrixA_squeeze_s.push(matrixA_squeeze);
+        matrix_a_squeeze_s.push(matrix_a_squeeze);
         matrixx_squeeze_s.push(matrixx_squeeze);
     }
     // 分段枚举后，根据雷数限制，删除某些情况
@@ -254,7 +254,7 @@ pub fn cal_possibility(
         let table_minenum_i;
         let table_cell_minenum_i;
         match cal_table_minenum_recursion(
-            &matrixA_squeeze_s[i],
+            &matrix_a_squeeze_s[i],
             &matrixx_squeeze_s[i],
             &matrix_b_s[i],
             &comb_relp_s[i],
@@ -362,11 +362,11 @@ pub fn cal_possibility(
         table_minenum_other[block_num][ps].add_big_number(&s_num);
     }
     // 第四步，计算每段其他雷数情况表
-    let mut T = BigNumber { a: 0.0, b: 0 };
+    let mut tt = BigNumber { a: 0.0, b: 0 };
     for i in 0..unknow_mine_s_num.len() {
         let mut t = table_minenum_other[block_num][i].clone();
         t.mul_big_number(&unknow_mine_s_num[i]);
-        T.add_big_number(&t);
+        tt.add_big_number(&t);
     }
     // 第五步，计算局面总情况数
 
@@ -380,7 +380,7 @@ pub fn cal_possibility(
                     o.mul_usize(table_cell_minenum_s[i][s][cells_id]);
                     s_cell.add_big_number(&o);
                 }
-                let p_cell = s_cell.div_big_num(&T);
+                let p_cell = s_cell.div_big_num(&tt);
                 let id = comb_relp_s[i][cells_id][cell_id];
                 p.push((matrix_x_s[i][id], p_cell));
             }
@@ -394,7 +394,7 @@ pub fn cal_possibility(
         u.mul_usize(unknow_minenum[i]);
         u_s.add_big_number(&u);
     }
-    let p_unknow = u_s.div_big_num(&T) / unknow_block as f64;
+    let p_unknow = u_s.div_big_num(&tt) / unknow_block as f64;
     // 第七步，计算内部未知区域是雷的概率
 
     Ok((
@@ -551,14 +551,14 @@ pub fn cal_is_op_possibility_cells(
 ///     vec![10, 10, 10, 10, 10, 10, 10, 10],
 ///     vec![10, 10, 10, 10, 10, 10, 10, 10],
 /// ];
-/// let (As, xs, bs, _, _) = refresh_matrixs(&game_board);
-/// let ans = solve_enumerate(&As, &xs, &bs, 40);
+/// let (a_mats, xs, bs, _, _) = refresh_matrixs(&game_board);
+/// let ans = solve_enumerate(&a_mats, &xs, &bs, 40);
 /// print!("{:?}", ans);
 /// ```
 /// - 注意：不修改输入进来的局面，即不帮助标雷（这个设计后续可能修改）；也不维护3个矩阵。因为枚举引擎是最后使用的  
 /// - 注意：超出枚举长度限制是未定义的行为，算法不一定会得到足够多的结果  
 pub fn solve_enumerate(
-    As: &Vec<Vec<Vec<i32>>>,
+    a_mats: &Vec<Vec<Vec<i32>>>,
     xs: &Vec<Vec<(usize, usize)>>,
     bs: &Vec<Vec<i32>>,
 ) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
@@ -570,20 +570,20 @@ pub fn solve_enumerate(
     let block_num = xs.len();
 
     let mut comb_relp_s = vec![];
-    let mut matrixA_squeeze_s: Vec<Vec<Vec<i32>>> = vec![];
+    let mut matrix_a_squeeze_s: Vec<Vec<Vec<i32>>> = vec![];
     let mut matrixx_squeeze_s: Vec<Vec<(usize, usize)>> = vec![];
     for i in 0..block_num {
         if xs[i].len() > ENUM_LIMIT {
             return (not_mine, is_mine);
         }
-        let (matrixA_squeeze, matrixx_squeeze, combination_relationship) = combine(&As[i], &xs[i]);
+        let (matrix_a_squeeze, matrixx_squeeze, combination_relationship) = combine(&a_mats[i], &xs[i]);
         comb_relp_s.push(combination_relationship);
-        matrixA_squeeze_s.push(matrixA_squeeze);
+        matrix_a_squeeze_s.push(matrix_a_squeeze);
         matrixx_squeeze_s.push(matrixx_squeeze);
     }
     for i in 0..block_num {
         let (table_minenum_i, table_cell_minenum_i) = cal_table_minenum_recursion(
-            &matrixA_squeeze_s[i],
+            &matrix_a_squeeze_s[i],
             &matrixx_squeeze_s[i],
             &bs[i],
             &comb_relp_s[i],
@@ -693,13 +693,13 @@ pub fn is_solvable(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> bool {
         return true; // 暂且认为点一下就扫开也是可以的
     }
     loop {
-        let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&game_board);
-        let ans = solve_direct(&mut As, &mut xs, &mut bs, &mut game_board).unwrap();
+        let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&game_board);
+        let ans = solve_direct(&mut a_mats, &mut xs, &mut bs, &mut game_board).unwrap();
         let not_mine;
         if ans.0.is_empty() && ans.1.is_empty() {
-            let ans = solve_minus(&mut As, &mut xs, &mut bs, &mut game_board).unwrap();
+            let ans = solve_minus(&mut a_mats, &mut xs, &mut bs, &mut game_board).unwrap();
             if ans.0.is_empty() && ans.1.is_empty() {
-                let ans = solve_enumerate(&As, &xs, &bs);
+                let ans = solve_enumerate(&a_mats, &xs, &bs);
                 if ans.0.is_empty() && ans.1.is_empty() {
                     return false;
                 } else {
@@ -744,15 +744,15 @@ pub fn try_solve(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> (Vec<Vec<i32>>,
         return (minesweeper_board.game_board, 1); // 暂且认为点一下就扫开也是可以的
     }
     loop {
-        let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&minesweeper_board.game_board);
+        let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&minesweeper_board.game_board);
         let ans =
-            solve_direct(&mut As, &mut xs, &mut bs, &mut minesweeper_board.game_board).unwrap();
+            solve_direct(&mut a_mats, &mut xs, &mut bs, &mut minesweeper_board.game_board).unwrap();
         let not_mine;
         if ans.0.is_empty() && ans.1.is_empty() {
             let ans =
-                solve_minus(&mut As, &mut xs, &mut bs, &mut minesweeper_board.game_board).unwrap();
+                solve_minus(&mut a_mats, &mut xs, &mut bs, &mut minesweeper_board.game_board).unwrap();
             if ans.0.is_empty() && ans.1.is_empty() {
-                let ans = solve_enumerate(&As, &xs, &bs);
+                let ans = solve_enumerate(&a_mats, &xs, &bs);
                 if ans.0.is_empty() && ans.1.is_empty() {
                     return (minesweeper_board.game_board, minesweeper_board.bbbv_solved);
                 } else {
@@ -813,7 +813,7 @@ pub fn laymine_solvable_thread(
         let handle = thread::spawn(move || {
             // let Num3BV;
             let mut counter = 0;
-            let mut Board = vec![vec![0; column]; row];
+            let mut board = vec![vec![0; column]; row];
             // let mut para = [0, 0, 0];
             while counter < max_time {
                 {
@@ -822,23 +822,23 @@ pub fn laymine_solvable_thread(
                         break;
                     }
                 } // 这段用花括号控制生命周期
-                let Board_ = laymine_op(row, column, minenum, x0, y0);
+                let board_ = laymine_op(row, column, minenum, x0, y0);
                 counter += 1;
-                if is_solvable(&Board_, x0, y0) {
+                if is_solvable(&board_, x0, y0) {
                     for i in 0..row {
                         for j in 0..column {
-                            Board[i][j] = Board_[i][j];
+                            board[i][j] = board_[i][j];
                         }
                     }
                     let mut f = flag_exit.lock().unwrap();
                     *f = 1;
-                    tx_.send((Board, true)).unwrap();
+                    tx_.send((board, true)).unwrap();
                     break;
                 }
             }
-            let Board_ = laymine_op(row, column, minenum, x0, y0);
-            // Num3BV = cal_bbbv(&Board_);
-            tx_.send((Board_, false)).unwrap();
+            let board_ = laymine_op(row, column, minenum, x0, y0);
+            // Num3BV = cal_bbbv(&board_);
+            tx_.send((board_, false)).unwrap();
         });
         handles.push(handle);
     }
@@ -1010,15 +1010,15 @@ fn adjust_step(
       // let b_backup = b.clone(); // 克隆一个board的备份
       // let bg_backup = bg.clone(); // 克隆一个board_of_game的备份
 
-    let (Ases, xses, mut bses) = refresh_matrixses(&bg);
+    let (a_matses, xses, mut bses) = refresh_matrixses(&bg);
     // 所有分支的前沿都已遍历完成。
 
     // 前沿全部被雷堵塞，无法继续
     // 只对第一块处理。缺点是内存复杂度上升
-    let temp = Ases.get(0);
-    let As_0;
+    let temp = a_matses.get(0);
+    let a_mats_0;
     match temp {
-        Some(val) => As_0 = val,
+        Some(val) => a_mats_0 = val,
         None => return (vec![], false),
     };
     let xs_0 = xses.get(0).unwrap();
@@ -1086,9 +1086,9 @@ fn adjust_step(
                 for ss in 0..bs_0[bb].len() {
                     // ss是第几个方程
                     bs_0[bb][ss] = 0;
-                    for aa in 0..As_0[bb][0].len() {
+                    for aa in 0..a_mats_0[bb][0].len() {
                         // aa是第几个格子
-                        if As_0[bb][ss][aa] == 1 {
+                        if a_mats_0[bb][ss][aa] == 1 {
                             if b[xs_0[bb][aa].0][xs_0[bb][aa].1] == -1
                                 && bg[xs_0[bb][aa].0][xs_0[bb][aa].1] != 11
                             {
@@ -1099,7 +1099,7 @@ fn adjust_step(
                 }
             }
             let (n, i) = get_all_not_and_is_mine_on_board(
-                &mut As_0.clone(),
+                &mut a_mats_0.clone(),
                 &mut xs_0.clone(),
                 &mut bs_0.clone(),
                 &mut bg,
@@ -1374,19 +1374,19 @@ pub fn agent_step(board_of_game: Vec<Vec<i32>>, _pos: (usize, usize)) -> Result<
 /// 若不合法，直接中断，不继续标记。  
 /// - 注意：在rust中，cal_possibility往往需要和mark_board搭配使用，而在其他语言（python）中可能不需要如此！这是由于其ffi不支持原地操作。
 pub fn mark_board(board_of_game: &mut Vec<Vec<i32>>) -> Result<(), usize> {
-    let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
-    solve_direct(&mut As, &mut xs, &mut bs, board_of_game)?;
-    for i in 0..As.len() {
-        for j in 0..As[i].len() {
-            if As[i][j].iter().sum::<i32>() < bs[i][j] || bs[i][j] < 0 {
+    let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+    solve_direct(&mut a_mats, &mut xs, &mut bs, board_of_game)?;
+    for i in 0..a_mats.len() {
+        for j in 0..a_mats[i].len() {
+            if a_mats[i][j].iter().sum::<i32>() < bs[i][j] || bs[i][j] < 0 {
                 return Err(7);
             }
         }
     }
-    let _ = solve_minus(&mut As, &mut xs, &mut bs, board_of_game);
-    for i in 0..As.len() {
-        for j in 0..As[i].len() {
-            if As[i][j].iter().sum::<i32>() < bs[i][j] || bs[i][j] < 0 {
+    let _ = solve_minus(&mut a_mats, &mut xs, &mut bs, board_of_game);
+    for i in 0..a_mats.len() {
+        for j in 0..a_mats[i].len() {
+            if a_mats[i][j].iter().sum::<i32>() < bs[i][j] || bs[i][j] < 0 {
                 return Err(8);
             }
         }
@@ -1397,20 +1397,20 @@ pub fn mark_board(board_of_game: &mut Vec<Vec<i32>>) -> Result<(), usize> {
 /// 求出游戏局面中所有非雷、是雷的位置。  
 /// - 注意：局面中可以有标雷，但不能有错误！
 pub fn get_all_not_and_is_mine_on_board(
-    As: &mut Vec<Vec<Vec<i32>>>,
+    a_mats: &mut Vec<Vec<Vec<i32>>>,
     xs: &mut Vec<Vec<(usize, usize)>>,
     bs: &mut Vec<Vec<i32>>,
     board_of_game: &mut Vec<Vec<i32>>,
 ) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
-    let mut ans = solve_direct(As, xs, bs, board_of_game).unwrap();
+    let mut ans = solve_direct(a_mats, xs, bs, board_of_game).unwrap();
     let mut is_mine = vec![];
     let mut not_mine = vec![];
     not_mine.append(&mut ans.0);
     is_mine.append(&mut ans.1);
-    let mut ans = solve_minus(As, xs, bs, board_of_game).unwrap();
+    let mut ans = solve_minus(a_mats, xs, bs, board_of_game).unwrap();
     not_mine.append(&mut ans.0);
     is_mine.append(&mut ans.1);
-    let mut ans = solve_enumerate(As, xs, bs);
+    let mut ans = solve_enumerate(a_mats, xs, bs);
     not_mine.append(&mut ans.0);
     is_mine.append(&mut ans.1);
     (not_mine, is_mine)
@@ -1437,16 +1437,16 @@ pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, u
         return 5;
     }
     let mut flag_need;
-    let (mut Ases, mut xses, mut bses) = refresh_matrixses(&board_of_game);
+    let (mut a_matses, mut xses, mut bses) = refresh_matrixses(&board_of_game);
     if let (Some(xy), flag_border) = find_a_border_cell(board_of_game, xy) {
         let t = xses
             .iter()
             .position(|r| r.iter().any(|x| x.contains(&xy)))
             .unwrap();
-        let As = &mut Ases[t];
+        let a_mats = &mut a_matses[t];
         let xs = &mut xses[t];
         let bs = &mut bses[t];
-        let (n, _) = solve_direct(As, xs, bs, board_of_game).unwrap();
+        let (n, _) = solve_direct(a_mats, xs, bs, board_of_game).unwrap();
         if !flag_border && !n.is_empty() {
             return 3;
         }
@@ -1455,7 +1455,7 @@ pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, u
             12 => return 1,
             11 => return 4,
             _ => {
-                let (n, _) = solve_minus(As, xs, bs, board_of_game).unwrap();
+                let (n, _) = solve_minus(a_mats, xs, bs, board_of_game).unwrap();
                 if !flag_border && !n.is_empty() {
                     return 3;
                 }
@@ -1464,7 +1464,7 @@ pub fn is_guess_while_needless(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, u
                     12 => return 1,
                     11 => return 4,
                     _ => {
-                        let (n, i) = solve_enumerate(As, xs, bs);
+                        let (n, i) = solve_enumerate(a_mats, xs, bs);
                         if !flag_border && !n.is_empty() {
                             return 3;
                         }
@@ -1499,16 +1499,16 @@ pub fn is_able_to_solve(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) 
             }
         })
     });
-    let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
-    let _ = solve_direct(&mut As, &mut xs, &mut bs, board_of_game);
+    let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+    let _ = solve_direct(&mut a_mats, &mut xs, &mut bs, board_of_game);
     if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {
         return true;
     }
-    let _ = solve_minus(&mut As, &mut xs, &mut bs, board_of_game);
+    let _ = solve_minus(&mut a_mats, &mut xs, &mut bs, board_of_game);
     if board_of_game[xy.0][xy.1] == 11 || board_of_game[xy.0][xy.1] == 12 {
         return true;
     }
-    let (n, i) = solve_enumerate(&As, &xs, &bs);
+    let (n, i) = solve_enumerate(&a_mats, &xs, &bs);
     if i.contains(xy) || n.contains(xy) {
         return true;
     }

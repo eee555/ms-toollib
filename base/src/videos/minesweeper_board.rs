@@ -286,7 +286,7 @@ impl<T> MinesweeperBoard<T> {
         let mut flag_chording_useful = false; // 双击有效的基础上，周围是否有未打开的格子
         let mut chording_cells = vec![]; // 未打开的格子的集合
         let mut flaged_num = 0; // 双击点周围的标雷数
-        let mut surround3BV = 0; // 周围的3BV
+        let mut surround_bbbv = 0; // 周围的3BV
         for i in max(1, x) - 1..min(self.row, x + 2) {
             for j in max(1, y) - 1..min(self.column, y + 2) {
                 if i != x || j != y {
@@ -299,7 +299,7 @@ impl<T> MinesweeperBoard<T> {
                         if self.board[i][j] > 0 {
                             // 通过双击打开岛上的3BV
                             if self.cell_is_bbbv(i, j) {
-                                surround3BV += 1;
+                                surround_bbbv += 1;
                             }
                         }
                     }
@@ -313,7 +313,7 @@ impl<T> MinesweeperBoard<T> {
                 }
             }
             self.dce += 1;
-            self.bbbv_solved += surround3BV;
+            self.bbbv_solved += surround_bbbv;
             self.bbbv_solved += self.op_num_around_cell(x, y);
             refresh_board(&self.board, &mut self.game_board, chording_cells);
 

@@ -95,7 +95,7 @@ fn py_cal_bbbv(board: Vec<Vec<i32>>) -> PyResult<usize> {
 #[pyfunction]
 #[pyo3(name = "solve_minus")]
 fn py_solve_minus(
-    mut As: Vec<Vec<Vec<i32>>>,
+    mut a_mats: Vec<Vec<Vec<i32>>>,
     mut xs: Vec<Vec<(usize, usize)>>,
     mut bs: Vec<Vec<i32>>,
     mut board_of_game: Vec<Vec<i32>>,
@@ -109,7 +109,7 @@ fn py_solve_minus(
 )> {
     let not;
     let is;
-    let t = solve_minus(&mut As, &mut xs, &mut bs, &mut board_of_game);
+    let t = solve_minus(&mut a_mats, &mut xs, &mut bs, &mut board_of_game);
     match t {
         Ok(aa) => {
             not = aa.0;
@@ -117,7 +117,7 @@ fn py_solve_minus(
         }
         Err(code) => return Err(PyErr::new::<PyRuntimeError, _>(format!("code: {}.", code))),
     };
-    Ok((As, xs, bs, board_of_game, not, is))
+    Ok((a_mats, xs, bs, board_of_game, not, is))
 }
 
 #[pyfunction]
@@ -125,9 +125,9 @@ fn py_solve_minus(
 fn py_refresh_board(
     board: Vec<Vec<i32>>,
     mut board_of_game: Vec<Vec<i32>>,
-    ClickedPoses: Vec<(usize, usize)>,
+    clicked_poses: Vec<(usize, usize)>,
 ) -> PyResult<Vec<Vec<i32>>> {
-    refresh_board(&board, &mut board_of_game, ClickedPoses);
+    refresh_board(&board, &mut board_of_game, clicked_poses);
     Ok(board_of_game)
 }
 
@@ -136,15 +136,15 @@ fn py_refresh_board(
 fn py_get_all_not_and_is_mine_on_board(
     mut board_of_game: Vec<Vec<i32>>,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<(usize, usize)>)> {
-    let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
-    let (not, is) = get_all_not_and_is_mine_on_board(&mut As, &mut xs, &mut bs, &mut board_of_game);
+    let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+    let (not, is) = get_all_not_and_is_mine_on_board(&mut a_mats, &mut xs, &mut bs, &mut board_of_game);
     Ok((board_of_game, not, is))
 }
 
 #[pyfunction]
 #[pyo3(name = "solve_direct")]
 fn py_solve_direct(
-    mut As: Vec<Vec<Vec<i32>>>,
+    mut a_mats: Vec<Vec<Vec<i32>>>,
     mut xs: Vec<Vec<(usize, usize)>>,
     mut bs: Vec<Vec<i32>>,
     mut board_of_game: Vec<Vec<i32>>,
@@ -158,7 +158,7 @@ fn py_solve_direct(
 )> {
     let not;
     let is;
-    let t = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game);
+    let t = solve_direct(&mut a_mats, &mut xs, &mut bs, &mut board_of_game);
     match t {
         Ok(aa) => {
             not = aa.0;
@@ -166,8 +166,8 @@ fn py_solve_direct(
         }
         Err(code) => return Err(PyErr::new::<PyRuntimeError, _>(format!("code: {}.", code))),
     };
-    // let (not, is) = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game);
-    Ok((As, xs, bs, board_of_game, not, is))
+    // let (not, is) = solve_direct(&mut a_mats, &mut xs, &mut bs, &mut board_of_game);
+    Ok((a_mats, xs, bs, board_of_game, not, is))
 }
 
 #[pyfunction]
@@ -190,15 +190,15 @@ fn py_laymine_op(
 fn py_solve_enumerate(
     board_of_game: Vec<Vec<i32>>,
 ) -> PyResult<(Vec<(usize, usize)>, Vec<(usize, usize)>)> {
-    let (As, xs, bs, _, _) = refresh_matrixs(&board_of_game);
-    let (not, is) = solve_enumerate(&As, &xs, &bs);
+    let (a_mats, xs, bs, _, _) = refresh_matrixs(&board_of_game);
+    let (not, is) = solve_enumerate(&a_mats, &xs, &bs);
     Ok((not, is))
 }
 
 #[pyfunction]
 #[pyo3(name = "unsolvable_structure")]
-fn py_unsolvable_structure(boardCheck: Vec<Vec<i32>>) -> PyResult<bool> {
-    Ok(unsolvable_structure(&boardCheck))
+fn py_unsolvable_structure(board_check: Vec<Vec<i32>>) -> PyResult<bool> {
+    Ok(unsolvable_structure(&board_check))
 }
 
 #[pyfunction]

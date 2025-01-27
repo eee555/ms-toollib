@@ -1676,6 +1676,7 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_left() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
+            #[allow(unreachable_patterns)]
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
         }
@@ -1696,6 +1697,7 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_right() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
+            #[allow(unreachable_patterns)]
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
         }
@@ -1716,6 +1718,7 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_double() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
+            #[allow(unreachable_patterns)]
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
         }
@@ -1736,6 +1739,7 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_cl() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
+            #[allow(unreachable_patterns)]
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
         }
@@ -1756,6 +1760,7 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_flag() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
+            #[allow(unreachable_patterns)]
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
         }

@@ -14,8 +14,6 @@ use core::panic;
 use std::fs;
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
-#[cfg(feature = "js")]
-use web_sys::console;
 
 use crate::safe_board::BoardSize;
 #[cfg(any(feature = "py", feature = "rs"))]

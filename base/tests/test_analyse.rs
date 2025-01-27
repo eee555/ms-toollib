@@ -1,11 +1,10 @@
 // 测试录像分析模块
-use ms_toollib::videos::base_video::{NewBaseVideo, NewBaseVideo2};
+use ms_toollib::videos::base_video::NewBaseVideo2;
 use ms_toollib::videos::NewSomeVideo;
 use ms_toollib::{
     AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MvfVideo, RmvVideo, SafeBoard,
 };
 use std::thread;
-use tract_onnx::tract_core::anyhow::Ok;
 
 #[test]
 fn minesweeper_board_works() {

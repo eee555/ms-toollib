@@ -19,9 +19,6 @@ use rand::seq::SliceRandom;
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::thread_rng;
 
-#[cfg(any(feature = "py", feature = "rs"))]
-use rand::prelude::*;
-
 use std::cmp::{max, min};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};

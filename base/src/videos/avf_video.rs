@@ -6,8 +6,6 @@ use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateR
 use crate::videos::{NewSomeVideo, NewSomeVideo2};
 use crate::videos::base_video::NewBaseVideo;
 
-#[cfg(feature = "js")]
-use web_sys::console;
 
 
 /// avf录像解析器。  

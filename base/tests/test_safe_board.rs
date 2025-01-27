@@ -1,5 +1,5 @@
 use ms_toollib::{BaseVideo, SafeBoard};
-use ms_toollib::videos::base_video::{NewBaseVideo, NewBaseVideo2};
+use ms_toollib::videos::base_video::NewBaseVideo2;
 
 #[test]
 fn safe_board_works() {

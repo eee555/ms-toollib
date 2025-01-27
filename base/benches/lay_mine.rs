@@ -1,4 +1,4 @@
-use ms_toollib::{laymine_solvable_thread, laymine_solvable, laymine, laymine_op, cal_bbbv};
+use ms_toollib::{laymine, laymine_op, cal_bbbv};
 #[macro_use]
 extern crate bencher;
 use bencher::Bencher;

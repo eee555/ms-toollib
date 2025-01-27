@@ -74,8 +74,6 @@ pub use crate::safe_board::SafeBoard;
 #[cfg(any(feature = "py", feature = "rs"))]
 pub use crate::safe_board::SafeBoardRow;
 
-#[cfg(any(feature = "py", feature = "rs"))]
-use crate::safe_board::BoardSize;
 
 // 最大枚举长度限制。超过这个长度，概率计算不准。全雷网的高级没有发现超出此限制的。
 const ENUM_LIMIT: usize = 55;

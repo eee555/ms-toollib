@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json;
 // use wasm_bindgen::prelude::*;
 

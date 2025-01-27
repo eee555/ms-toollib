@@ -1040,7 +1040,7 @@ fn adjust_step(
     let minenum_except = (xs_cell_num as f64 * r as f64 / (rn + r) as f64) as usize;
     // let mut success_flag = false;
     // 对不同雷数循环
-    'inner: for i in 0..xs_cell_num + 1 {
+    for i in 0..xs_cell_num + 1 {
         // 根据算法的映射，计算出minenum，计划的埋雷量
         let minenum;
         if minenum_except == 0 || xs_cell_num == 0 {

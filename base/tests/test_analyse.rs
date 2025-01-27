@@ -51,7 +51,7 @@ fn minesweeper_board_works() {
 
 #[test]
 // cargo test --features rs -- --nocapture AvfVideo_works
-fn AvfVideo_works() {
+fn avf_video_works() {
     // 录像解析工具测试
     let mut video =
         AvfVideo::new("../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jianing G01825.avf");
@@ -240,7 +240,7 @@ fn AvfVideo_works() {
 
 #[test]
 // cargo test --features rs -- --nocapture RmvVideo_works
-fn RmvVideo_works() {
+fn rmv_video_works() {
     // 录像解析工具测试
     let mut video = RmvVideo::new("../test_files/exp_98763_FL_1738209872.rmv");
 
@@ -271,7 +271,7 @@ fn RmvVideo_works() {
 }
 
 #[test]
-fn MvfVideo_works() {
+fn mvf_video_works() {
     // 录像解析工具测试
     let mut video = MvfVideo::new("Zhang Shen Jia_Exp_38.82(3bv122).mvf");
 
@@ -324,7 +324,7 @@ fn MvfVideo_works() {
 
 #[test]
 // cargo test --features rs -- --nocapture EvfVideo_works
-fn EvfVideo_works() {
+fn evf_video_works() {
     // 录像解析工具测试
     let mut video = EvfVideo::new("b_0_2.452_12_4.894_Mao Dun (China).evf");
 
@@ -384,7 +384,7 @@ fn EvfVideo_works() {
 }
 
 #[test]
-fn BaseVideo_works() {
+fn base_video_works() {
     let board = vec![
         vec![1, 1, 2, 1, 1, 0, 0, 0],
         vec![1, -1, 2, -1, 1, 0, 0, 0],
@@ -506,7 +506,7 @@ fn BaseVideo_works() {
 }
 
 #[test]
-fn BaseVideo_works_2() {
+fn base_video_works_2() {
     let board = vec![
         vec![0, 0, 0, 0, 1, 1, 1, 0],
         vec![0, 0, 0, 0, 1, -1, 2, 1],
@@ -830,7 +830,7 @@ fn BaseVideo_works_2() {
 }
 
 #[test]
-fn BaseVideo_works_3() {
+fn base_video_works_3() {
     let board = vec![
         vec![1, 1, 2, 1, 1, 0, 0, 0],
         vec![1, -1, 2, -1, 1, 0, 0, 0],
@@ -857,7 +857,7 @@ fn BaseVideo_works_3() {
 }
 
 #[test]
-fn BaseVideo_works_4() {
+fn base_video_works_4() {
     let board = vec![
         vec![0, 0, 2, -1, 2, 0, 0, 0],
         vec![0, 0, 3, -1, 3, 0, 0, 0],
@@ -961,7 +961,7 @@ fn BaseVideo_works_4() {
 }
 
 #[test]
-fn BaseVideo_works_5_1bv() {
+fn base_video_works_5_1bv() {
     let board = vec![
         vec![0, 0, 0, 0, 0, 0, 0, 0],
         vec![0, 0, 0, 0, 0, 0, 0, 0],
@@ -996,7 +996,7 @@ fn BaseVideo_works_5_1bv() {
 }
 
 #[test]
-fn BaseVideo_works_set_board() {
+fn base_video_works_set_board() {
     let board = vec![
         vec![1, -1, 3, -1, 1, 0, 1, -1],
         vec![2, 3, -1, 2, 1, 1, 2, 2],
@@ -1054,7 +1054,7 @@ fn BaseVideo_works_set_board() {
 }
 
 #[test]
-fn BaseVideo_works_err() {
+fn base_video_works_err() {
     let board = vec![
         vec![
             1, 1, 1, 1, 2, 2, -1, 1, 1, 1, 1, 0, 0, 1, -1, 1, 2, -1, 2, 0, 0, 0, 0, 1, 1, 1, 1, -1,

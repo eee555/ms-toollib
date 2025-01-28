@@ -1,7 +1,7 @@
 use crate::transfor::{json2vec, trans_opt, vec2json};
 // use crate::web_sys;
-use ms_toollib as ms;
-use ms_toollib::videos::NewSomeVideo2;
+use ms_toollib_original as ms;
+use ms_toollib_original::videos::NewSomeVideo2;
 use wasm_bindgen::prelude::*;
 
 pub fn set_panic_hook() {

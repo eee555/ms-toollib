@@ -1,4 +1,4 @@
-﻿use ms_toollib as ms;
+﻿use ms_toollib_original as ms;
 
 // cargo install wasm-pack
 // cargo install wasm-bindgen-cli

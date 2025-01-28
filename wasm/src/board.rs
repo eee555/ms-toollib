@@ -134,7 +134,7 @@ macro_rules! generate_video {
     ($($some_video:ident),*) => {
         $(
             #[wasm_bindgen(inspectable)]
-            struct $some_video {
+            pub struct $some_video {
                 core: ms::$some_video,
             }
             #[wasm_bindgen]

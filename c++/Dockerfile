@@ -3,7 +3,7 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC
 
 RUN apt update \
-	&& apt install -y \
+    && apt install -y \
   build-essential curl cmake git wget vim lsb-release software-properties-common 
 
 # Install Rust

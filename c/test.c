@@ -10,12 +10,13 @@
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "userenv.lib")
 #pragma comment(lib, "bcrypt.lib")
+#pragma comment(lib, "ntdll.lib")
 
 #pragma comment(lib, "./target/release/ms_toollib.lib")
 
 // 编译命令
 // cargo build --release
-// cl /EHsc test.cpp
+// cl /EHsc test.c
 // ./test
 
 
@@ -40,7 +41,7 @@ int main(void) {
             a_test_beg_board.rows[i].cells[j] = test_beg_board[i][j];
         };
     };
-    size_t bbbv = cal3BV(a_test_beg_board);
+    size_t bbbv = cal_bbbv(a_test_beg_board);
     printf("3BV of the beg board is: %zu", bbbv);
     for(int i = 0; i < 8; i++) {
         free((int32_t *)a_test_beg_board.rows[i].cells);

@@ -113,7 +113,7 @@ pub fn cal_possibility_onboard(board_json: &str, mine_num: i32) -> String {
 }
 
 #[wasm_bindgen]
-pub fn laymine_number(row: i32, column: i32, mine_num: i32, x0: i32, y0: i32) -> String {
+pub fn laymine(row: i32, column: i32, mine_num: i32, x0: i32, y0: i32) -> String {
     serde_json::to_string(&ms::laymine(
         row as usize,
         column as usize,
@@ -125,7 +125,7 @@ pub fn laymine_number(row: i32, column: i32, mine_num: i32, x0: i32, y0: i32) ->
 }
 
 #[wasm_bindgen]
-pub fn laymine_op_number(row: i32, column: i32, mine_num: i32, x0: i32, y0: i32) -> String {
+pub fn laymine_op(row: i32, column: i32, mine_num: i32, x0: i32, y0: i32) -> String {
     serde_json::to_string(&ms::laymine_op(
         row as usize,
         column as usize,
@@ -154,6 +154,25 @@ pub fn laymine_solvable(
         max_times as usize,
     ))
     .unwrap()
+}
+
+#[wasm_bindgen]
+pub fn is_solvable(board_json: &str, x0: i32, y0: i32) -> bool {
+    let board_: serde_json::Value = serde_json::from_str(&board_json).unwrap();
+    let board__ = board_.as_array().unwrap();
+    let len_ = board__.len();
+    let mut board: Vec<_> = vec![];
+    for i in 0..len_ {
+        board.push(
+            board__[i]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|x| x.as_i64().unwrap() as i32)
+                .collect::<Vec<_>>(),
+        );
+    }
+    ms::is_solvable(&board, x0 as usize, y0 as usize)
 }
 
 #[wasm_bindgen(getter_with_clone)]

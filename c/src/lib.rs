@@ -1,5 +1,5 @@
 extern crate libc;
-use ms_toollib::cal3BV as rs_cal3BV;
+use ms_toollib::cal_bbbv as rs_cal_bbbv;
 use ms_toollib::cal_possibility_onboard as rs_cal_possibility_onboard;
 use ms_toollib::laymine as rs_laymine;
 use ms_toollib::MinesweeperBoard as RustMinesweeperBoard;
@@ -127,7 +127,7 @@ fn vec_board_to_struct_board(mut b: Vec<Vec<i32>>) -> Board {
 }
 
 #[no_mangle]
-pub extern "C" fn cal3BV(board: Board) -> usize {
+pub extern "C" fn cal_bbbv(board: Board) -> usize {
     // assert!(!board.rows.is_null());
     // let rows_ptr = unsafe { slice::from_raw_parts(board.rows, board.n_row) };
     // let mut b: Vec<Vec<i32>> = vec![];
@@ -138,7 +138,7 @@ pub extern "C" fn cal3BV(board: Board) -> usize {
     //         b[i].push(array[j]);
     //     }
     // }
-    rs_cal3BV(&struct_board_to_vec_board(board))
+    rs_cal_bbbv(&struct_board_to_vec_board(board))
 }
 
 #[no_mangle]

@@ -1,7 +1,7 @@
 use ms_toollib::{cal_bbbv, cal_table_minenum_recursion, combine, refresh_matrix, refresh_matrixs};
 use ms_toollib::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, is_able_to_solve,
-    is_guess_while_needless, is_solvable, mark_board, solve_direct, solve_enumerate, try_solve,
+    is_guess_while_needless, mark_board, solve_direct, solve_enumerate, try_solve,
     cal_all_solution
 };
 

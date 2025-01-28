@@ -3,7 +3,7 @@
 * The full specification and historical versions are open-sourced at: https://github.com/eee555/ms_toollib/blob/main/evf%E6%A0%87%E5%87%86.md
 * In case of any conflict between different language versions, the Chinese version shall prevail.
 
-Both AVF and RMV formats for Minesweeper videos have become technically stable, allowing specialized clones like Arbiter and Viennasweeper to easily record and play their own generated videos. However, this software-centric model is closed, preventing new software from generating these formats. According to [thefinerminer](https://minesweepergame.com/forum/viewtopic.php?f=26&t=1330), currently, due to developers leaving, parsing these files relies on reverse engineering, making it unsafe and restrictive for developers to convert between different formats. To overcome this issue, on one hand, Freesweeper is able to replay multiple video formats on a single software for the first time. On the other hand, Freesweeper can convert other video formats to the [rawvf](https://github.com/thefinerminer/minesweeper-rawvf) format (the first open-source Minesweeper video format). The ability to replay multiple formats and convert them into a unified format is undoubtedly the direction for future development. However, rawvf mainly addresses human readability issues, similar to a parser's debug information, which not only makes it hard to satisfy everyone's preferences but also unnecessarily occupies disk space, contrary to general engineering practices.
+Both AVF and RMV formats for Minesweeper replays have become technically stable, allowing specialized clones like Arbiter and Viennasweeper to easily record and play their own generated replays. However, this software-centric model is closed, preventing new software from generating these formats. According to [thefinerminer](https://minesweepergame.com/forum/viewtopic.php?f=26&t=1330), currently, due to developers leaving, parsing these files relies on reverse engineering, making it unsafe and restrictive for developers to convert between different formats. To overcome this issue, on one hand, Freesweeper is able to replay multiple video formats on a single software for the first time. On the other hand, Freesweeper can convert other video formats to the [rawvf](https://github.com/thefinerminer/minesweeper-rawvf) format (the first open-source Minesweeper video format). The ability to replay multiple formats and convert them into a unified format is undoubtedly the direction for future development. However, rawvf mainly addresses human readability issues, similar to a parser's debug information, which not only makes it hard to satisfy everyone's preferences but also unnecessarily occupies disk space, contrary to general engineering practices.
 
 Furthermore, existing formats have the following shortcomings: 
 1. Insufficient precision. With hardware advancements, timing precision can now reach millisecond levels.
@@ -26,19 +26,19 @@ To address these issues, this specification proposes the evf (eee555's Minesweep
 
 However, it has the following limitations:
 - Applicable to only one video.
-- Not suitable for videos where game settings or modes switch mid-game, such as switching question marks, changing from standard to recursive, modifying cell sizes, etc.
-- Not suitable for videos lacking operation details. For example, in this format, "l" indicates the pressing or releasing of the left button, not both; the latter is an instantaneous press or release, which cannot be recorded in this format.
-- Only applicable to Minesweeper game videos with 2D square layouts and classic mines, not suitable for quantum Minesweeper, Minesweeper with positive and negative mines, multiple mines in one cell, polygonal cell Minesweeper, 3D Minesweeper, etc.
-- Only applicable to single-player Minesweeper game videos, not suitable for multiplayer variations.
-- Cell side length ranges from 0-255, row range from 0-255, and column range from 0-255. Suitable for videos up to 16777 seconds long.
+- Not suitable for replays where game settings or modes switch mid-game, such as switching question marks, changing from standard to recursive, modifying cell sizes, etc.
+- Not suitable for replays lacking operation details. For example, in this format, "l" indicates the pressing or releasing of the left button, not both; the latter is an instantaneous press or release, which cannot be recorded in this format.
+- Only applicable to Minesweeper game replays with 2D square layouts and classic mines, not suitable for quantum Minesweeper, Minesweeper with positive and negative mines, multiple mines in one cell, polygonal cell Minesweeper, 3D Minesweeper, etc.
+- Only applicable to single-player Minesweeper game replays, not suitable for multiplayer variations.
+- Cell side length ranges from 0-255, row range from 0-255, and column range from 0-255. Suitable for replays up to 16777 seconds long.
 
 The evf format is not a disruptive innovation but a necessary, appropriate supplement based on traditional rules. Besides the obvious benefits of increased security, more mode types, transparency, and improved precision, the profound significance of using evf includes:
 1. Enhancing users' ownership of their data. Traditional video file formats only contain identifiers, AVF further includes country, but whether it contains other information ensuring users' ownership of data is unknown. However, evf's user identifiers and unique identifiers can help users ensure the uniqueness of their identifiers. evf further records the user's device UUID, maximizing the difficulty of identity forgery.
 2. Decentralization. evf format video files are independent of websites, software, and players. Unlike centralized platforms like WOM, even if the website closes, the legality of evf files remains unaffected. Users can upload to other websites once new ones are established.
 
-Toolchain: The design of the evf format is backed by a solid project background and a complete toolchain for support. [Meta Minesweeper](https://github.com/eee555/Solvable-Minesweeper) is one of the clones for obtaining evf videos; [ms-toollib](https://github.com/eee555/ms_toollib) helps developers read and parse evf videos and convert other formats to evf (though this is unnecessary); [Flop New Player](https://github.com/eee555/flop-player) assists ranking websites in playing evf videos; additionally, [Open Minesweeper](https://fff666.top) accepts user-uploaded evf videos for global rankings.
+Toolchain: The design of the evf format is backed by a solid project background and a complete toolchain for support. [Meta Minesweeper](https://github.com/eee555/Solvable-Minesweeper) is one of the clones for obtaining evf replays; [ms-toollib](https://github.com/eee555/ms_toollib) helps developers read and parse evf replays and convert other formats to evf; [Flop New Player](https://github.com/eee555/flop-player) assists ranking websites in playing evf replays; additionally, [Open Minesweeper](https://openms.top) accepts user-uploaded evf replays for global rankings.
 
-Acknowledgments: 13688 (testing), 36 (suggestions)
+Acknowledgments: 13688 (testing), ralokt（suggestions）, 36 (suggestions)
 
 ### Operation Type Symbols Defined in This Specification:
 - "mv": mouse move
@@ -68,6 +68,56 @@ Acknowledgments: 13688 (testing), 36 (suggestions)
 The various modes and their names can be further summarized as shown in the following diagram.
 
 ![](md_pic/mode_en.svg)
+
+### v0.4 (Proposal)
+
+Format Description:
+
+1. Fixed length 1 byte: Version number. This version is '\4'.
+2. Fixed length 1 byte: Summary. In high-trust scenarios, it reduces the complexity of parsing.
+    - Fixed length 1 bit (2e7): Whether the game is completed. 1 means completed. The software proves that the game is finished, i.e., no mines were hit and no values (such as time) overflowed. No other conditions are guaranteed.
+    - Fixed length 1 bit (2e6): Whether it is official. 1 means official. The software proves that the game is official and definitely completed, including no 3BV filtering by software, no auxiliary functions used, in standard mode, and no values overflowed. It does not necessarily meet the additional 3BV constraints of ranking sites. (This flag is convenient for minesweeper ranking sites that only support the standard mode.)
+    - Fixed length 1 bit (2e5): Whether it is fairly completed. 1 means fairly completed. The software proves that the game is fairly finished, definitely completed, for example, no 3BV filtering by software, no auxiliary functions used, and no values overflowed. The difference between a fairly completed game and an official one is that only the standard game mode can be official, while modes like upk and guess - free can be fairly completed but not official. If it is official, it must be fairly completed. (This flag is convenient for minesweeper ranking sites that support multiple modes.)
+    - Fixed length 1 bit (2e4): Whether it is no - flag (NF) sweeping. 1 is NF, equivalent to right_eff == 0; 0 for others.
+    - Fixed length 1 bit (2e3): translated video flag. 0 means this video is not translated; 1 means this video is translated, for example, an evf video obtained by transcoding an avf or evf video using Meta Minesweeper.
+    - The remaining bits are reserved and set to 0; they can be added according to the requirements of ranking sites and score statistics application developers.
+3. Fixed length 1 byte: Game settings. These settings aim to provide appropriate convenience (or inconvenience) to players while being generally considered not to affect the formality and fairness of the score.
+    - Fixed length 1 bit (2e7): Whether to disable question marks. 1 means disabled.
+    - Fixed length 1 bit (2e6): The mouse pointer cannot move beyond the border. 1 means it cannot move beyond.
+    - Fixed length 1 bit (2e5): Whether automatic restart on mine - hitting is enabled. 1 means enabled.
+    - The remaining bits are reserved and set to 0; they can be added according to the requirements of clone developers.
+4. Fixed length 1 byte: Number of rows.
+5. Fixed length 1 byte: Number of columns.
+6. Fixed length 2 bytes, uint16: Number of mines.
+7. Fixed length 1 byte: Cell size.
+8. Fixed length 2 bytes, uint16: Game mode (symbols and meanings: 0->standard, 1->upk; 2->cheat; 3->Density (from Viennasweeper software), 4->win7, 5->Classic Guess - Free, 6->Strong Guess - Free, 7->Weak Guess - Free, 8->Quasi - Guess - Free, 9->Strong Guessable, 10->Weak Guessable, 11->Chording Recursive (standard recursive), 12->Flag Recursive, 13->Chording Flag Recursive. The remaining values are reserved and can be added according to the requirements of new clone version developers).
+9. Fixed length 2 bytes, uint16: 3BV value.
+10. Fixed length 3 bytes, uint24: Elapsed time (rtime), in milliseconds.
+11. Fixed length 2 bytes: Name or code of the country or region. Use the two - letter uppercase code of the ISO 3166 - 1:2020 standard country or region code so that the player can correctly display the national flag.
+12. Fixed length 8 bytes, uint64: Start timestamp, using the total number of microseconds from January 1, 1970, in Greenwich Mean Time to the moment of the first left - click release on a non - flagged cell.
+13. Fixed length 8 bytes, uint64: End timestamp, using the total number of microseconds from January 1, 1970, in Greenwich Mean Time to the moment when all non - mine cells are cleared.
+14. String ending with '\0', 'utf-8' encoding: The original source of the recording, including the software name and version number. Possible values include "Arbiter", "0.97 beta", "Viennasweeper", "Meta 3.1.9", etc. Ranking sites need to check the source of the recording.
+15. String ending with '\0', 'utf-8' encoding, only available for translated replays: Name of the transformer software, including the software name and version number. Possible values include "Meta 3.1.9", "Meta 3.1.11", "Meta 3.2", etc. If it is empty, it means the video is directly generated by the software rather than translated.
+16. String ending with '\0', 'utf-8' encoding, only available for translated replays: Possible encoding methods for the user identifier, championship identifier, and unique identifier of the video. Possible values include 'utf-8', 'utf-16', 'utf-16-be', 'utf-16-le', 'gbk', 'gb2312', 'big5', 'shift-jis', 'cp932', 'latin-1', 'ascii', 'iso-8859-1', etc. An empty value means unknown.
+17. Fixed length 2 bytes, uint16: Number of bytes occupied by the user identifier.
+18. String: User identifier (the user wants the ranking site/software to prominently display this identifier).
+19. Fixed length 2 bytes, uint16: Number of bytes occupied by the championship identifier.
+20. String: Championship identifier (the user wants to use this identifier as a credential to participate in a championship but does not want the ranking site/software to display this identifier).
+21. Fixed length 2 bytes, uint16: Number of bytes occupied by the unique identifier.
+22. String: Unique identifier (the user wants to distinguish from other users with the same name, such as nickname, Minesweeper website ID, province, email, online name, motto, but does not want the ranking site or software to display this identifier).
+23. String ending with '\0', 'utf-8' encoding: UUID related to device information, preferably 32 bits. Note that developers need to protect users' privacy.
+24. Variable length ⌈number of rows × number of columns / 8⌉ bytes: 1 represents a mine, 0 represents a non - mine. The ***i × number of columns + j***th bit represents whether the *i*th (starting from 0) row, *j*th (starting from 0) column is a mine. For example, the following 3 - row, 4 - column board (with * representing mines):  
+        [[1, 3, &ast;, &ast;],
+         [3, &ast;, &ast;, &ast;],
+         [&ast;, &ast;, &ast;, &ast;]]
+    is recorded as `00110111 11110000`.
+25. Mouse event format (loop structure):
+    - Fixed length 1 byte: Operation type. 1: "mv"; 2: "lc"; 3: "lr"; 4: "rc"; 5: "rr"; 6: "mc"; 7: "mr"; 8: "pf"; 9: "cc"; 10: "l"; 11: "r"; 12: "m". The remaining values are reserved (except '\0', '\255').
+    - Fixed length 3 bytes: Timestamp, in milliseconds. Recorded from the first left - or right - click that affects the game board as 0, then incremented. That is, the timestamp of the first left - click release on a non - flagged cell may not be 0, and the timestamp of the last operation is greater than or equal to the actual time used. Big - endian.
+    - Fixed length 2 bytes: Distance from the left border, in pixels. The distance of operations outside the board is recorded as "number of columns × cell size". Big - endian.
+    - Fixed length 2 bytes: Distance from the top border, in pixels. The distance of operations outside the board is recorded as "number of rows × cell size". Big - endian.
+26. Fixed length 1 byte: '\0' indicates a checksum (recording directly generated by software); '\255' indicates no checksum (e.g., translated from avf files).
+27. Fixed length 32 bytes: Checksum, optional. 
 
 ### v0.3
 
@@ -111,10 +161,10 @@ Format Description:
 17. A string ending with '\0': country or region name or code. It is recommended to use the two-letter uppercase code of the ISO 3166-1:2020 standard country or region code so that the player can correctly display the national flag.
 18. A string ending with '\0': device information-related UUID, preferably 32 bits. Note that developers need to protect users' privacy.
 19. Variable length ⌈number of rows × number of columns / 8⌉ bytes: 1 represents a mine, 0 represents a not mine. The ***i × number of columns + j***th bit represents whether the *i*th (starting from 0) row, *j*th (starting from 0) column is a mine. For example, the following 3 rows, 4 columns board (with * representing mines):  
-    [[1, 3, *, *],  
-     [3, *, *, *],  
-     [*, *, *, *]]  
-   is recorded as 00110111 11110000.  
+        [[1, 3, &ast;, &ast;],
+         [3, &ast;, &ast;, &ast;],
+         [&ast;, &ast;, &ast;, &ast;]]
+    is recorded as `00110111 11110000`.
 20. Mouse event format (loop structure):
 
     > Fixed length 1 byte: operation type. 1: "mv"; 2: "lc"; 3: "lr"; 4: "rc"; 5: "rr"; 6: "mc"; 7: "mr"; 8: "pf"; 9: "cc"; 10: "l"; 11: "r"; 12: "m"; remaining reserved (except '\0', '\255').

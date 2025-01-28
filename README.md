@@ -20,7 +20,7 @@ python>=3.7, <=3.10 (适用于以下架构windows: x86, x64; linux: aarch64, arm
 
 javascript/typescript (webpack等bundler): 1.4.12
 
-javascript/typescript (nodejs): 1.4.11-alpha
+javascript/typescript (nodejs): 1.4.12-alpha
 
 crate: 1.4.11
 

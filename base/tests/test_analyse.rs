@@ -219,6 +219,8 @@ fn AvfVideo_works() {
     assert_eq!(video.data.get_left_s(), 2.5583756345177666);
     assert_eq!(video.data.get_right_s(), 0.2233502538071066);
     assert_eq!(video.data.get_double_s(), 0.28426395939086296);
+    video.data.set_current_time(10.0);
+    assert_eq!(video.data.get_stnb().unwrap(), 79.47351397906152);
 }
 
 #[test]

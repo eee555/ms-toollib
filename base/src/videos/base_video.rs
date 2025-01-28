@@ -1830,13 +1830,13 @@ impl<T> BaseVideo<T> {
             // let t = self.current_time - self.delta_time;
             // println!("t:{:?}", t);
             Ok(
-                c * self.static_params.bbbv as f64 / self.current_time.powf(1.7)
+                c * bbbv_solved as f64 / self.current_time.powf(1.7)
                     * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5),
             )
         } else {
             Ok(
-                c * self.static_params.bbbv as f64 / self.game_dynamic_params.rtime.powf(1.7)
-                    * ((bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5)),
+                c * bbbv_solved as f64 / self.game_dynamic_params.rtime.powf(1.7)
+                    * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5),
             )
         }
     }

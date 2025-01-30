@@ -1,7 +1,9 @@
 // 测试录像分析模块
 use ms_toollib::videos::base_video::{NewBaseVideo, NewBaseVideo2};
 use ms_toollib::videos::NewSomeVideo;
-use ms_toollib::{AvfVideo, BaseVideo, EvfVideo, MinesweeperBoard, MvfVideo, RmvVideo, SafeBoard};
+use ms_toollib::{
+    AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MvfVideo, RmvVideo, SafeBoard,
+};
 use std::thread;
 use tract_onnx::tract_core::anyhow::Ok;
 
@@ -19,7 +21,7 @@ fn minesweeper_board_works() {
         vec![0, 1, 1, 1, 0, 2, -1, 2],
         vec![0, 1, -1, 1, 0, 1, 1, 1],
     ];
-    let mut my_board = MinesweeperBoard::<Vec<Vec<i32>>>::new(board);
+    let mut my_board = MinesweeperBoard::<Vec<Vec<i32>>>::new(board.clone());
     my_board.step_flow(vec![("rc", (4, 1))]).unwrap();
     my_board.step_flow(vec![("rr", (4, 1))]).unwrap();
     my_board.step_flow(vec![("lc", (5, 1))]).unwrap();
@@ -28,10 +30,24 @@ fn minesweeper_board_works() {
     my_board.step_flow(vec![("rr", (4, 1))]).unwrap();
     my_board.step_flow(vec![("lc", (4, 1))]).unwrap();
     my_board.step_flow(vec![("lr", (4, 1))]).unwrap();
-    my_board.board.iter().for_each(|x| println!("{:?}", x));
+    // my_board.board.iter().for_each(|x| println!("{:?}", x));
     my_board.game_board.iter().for_each(|x| println!("{:?}", x));
-    println!("{:?}", my_board.game_board_state);
-    println!("bbbv_solved:{:?}", my_board.bbbv_solved);
+    assert_eq!(my_board.board, board);
+    assert_eq!(
+        my_board.game_board,
+        vec![
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![1, 1, 1, 3, 10, 10, 10, 10],
+            vec![0, 0, 0, 2, 10, 10, 10, 10],
+            vec![0, 0, 0, 1, 1, 3, 10, 10],
+            vec![0, 0, 0, 0, 0, 2, 10, 10],
+            vec![0, 1, 1, 1, 0, 2, 10, 10],
+            vec![0, 1, 10, 1, 0, 1, 10, 10]
+        ]
+    );
+    assert_eq!(my_board.game_board_state, GameBoardState::Playing);
+    assert_eq!(my_board.bbbv_solved, 1);
 }
 
 #[test]
@@ -227,13 +243,13 @@ fn AvfVideo_works() {
 // cargo test --features rs -- --nocapture RmvVideo_works
 fn RmvVideo_works() {
     // 录像解析工具测试
-    let mut video = RmvVideo::new("large_path.rmv");
+    let mut video = RmvVideo::new("../test_files/exp_98763_FL_1738209872.rmv");
 
     let r = video.parse_video();
-    video.data.print_event();
+    // video.data.print_event();
     video.data.analyse();
-    video.data.set_pix_size(60);
-    println!("结果：{:?}", r);
+    let _ = video.data.set_pix_size(60);
+    assert_eq!(r.unwrap(), ());
     println!("标识：{:?}", video.data.player_identifier);
     println!("3BV：{:?}", video.data.static_params.bbbv);
     println!("宽度：{:?}", video.data.width);

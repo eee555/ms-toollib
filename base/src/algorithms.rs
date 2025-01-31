@@ -1269,7 +1269,7 @@ fn obr_cell(
     }
 }
 
-/// <span id="OBR_board">光学局面识别引擎。  
+/// <span id="obr_board">光学局面识别引擎。
 /// - 输入：依次为列向量形式的三通道的像素数据、图像的高度、宽度。  
 /// - 性能：识别的成功率不是百分之百。识别失败时，甚至可能出现不可恢复的错误。想提高成功率，需要满足：图片清晰、格子的宽度在8到300像素之间、图片中没有鼠标遮挡。  
 /// - 以下提供一段用python调用时的示例：  
@@ -1283,7 +1283,7 @@ fn obr_cell(
 /// (height, width) = lena.shape[:2]
 /// lena = np.concatenate((lena, 255.0 * np.ones((height, width, 1))), 2)
 /// lena = (np.reshape(lena, -1) * 255).astype(np.uint32)
-/// board = ms_toollib.OBR_board(lena, height, width)
+/// board = ms_toollib.obr_board(lena, height, width)
 /// print(np.array(board))# 打印识别出的局面
 /// poss = ms_toollib.cal_possibility(board, 99)
 /// print(poss)# 用雷的总数计算概率
@@ -1296,7 +1296,7 @@ fn obr_cell(
 /// 注意：必须配合“params.onnx”参数文件调用。  
 /// 注意：由于利用了神经网络技术，可能发生识别错误，此时输出是不一定合法的局面。
 #[cfg(any(feature = "py", feature = "rs"))]
-pub fn OBR_board(
+pub fn obr_board(
     data_vec: Vec<usize>,
     height: usize,
     width: usize,

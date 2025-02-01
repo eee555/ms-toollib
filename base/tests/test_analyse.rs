@@ -1138,3 +1138,18 @@ fn base_video_works_err() {
     println!("局面：{:?}", video.get_game_board());
     println!("局面状态：{:?}", video.game_board_state);
 }
+
+#[test]
+fn rmv1_utf8() {
+    // a rmv1 video with the utf-8 property set
+    let mut replay = RmvVideo::new("tests/assets/test_rmv1_utf8.rmv");
+    replay.parse_video().expect("parsing should succeed");
+    let player_identifier = String::from_utf8(
+        replay.data.player_identifier.clone()
+    ).expect("player identifier should contain valid utf-8");
+    assert_eq!(player_identifier, "Thomas Kolar");
+    assert_eq!(replay.data.static_params.bbbv, 128);
+    replay.data.analyse();
+    assert_eq!(replay.data.get_rtime_ms().unwrap(), 34884);
+    assert!(replay.data.is_completed);
+}

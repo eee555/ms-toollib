@@ -110,86 +110,118 @@ impl RmvVideo {
             Ok('v') => {}
             _ => return Err(ErrReadVideoReason::FileIsNotRmv),
         };
-        match self.data.get_u16() {
-            Ok(1u16) => {}
+        let format_version = match self.data.get_u16() {
+            Ok(format_version) => format_version,
             _ => return Err(ErrReadVideoReason::FileIsNotRmv),
         };
+
+        if format_version == 0 || format_version > 2 {
+            // TODO: maybe add a better reason here?
+            // this is compatible with how it used to work, tho
+            // Perhaps VersionBackward is a better fit?
+            return Err(ErrReadVideoReason::FileIsNotRmv);
+        }
+
+        let _clone_id = if format_version >= 2 {
+            self.data.get_u8()?
+        } else { 0 };
+
+        let _major_version_of_clone = if format_version >= 2 {
+            self.data.get_u8()?
+        } else { 0 };
+
+        // skip file_size
         self.data.offset += 4;
-        let result_string_size = self.data.get_u16()?;
+
+        let result_string_size = if format_version == 1 {
+            self.data.get_u16()?
+        } else { 0 };
         let version_info_size = self.data.get_u16()?;
+
+        // skip player_info_size
+        // skip board_size
         self.data.offset += 4;
         // self.data.get_unsized_int4()?;
+        // TODO: these byte offsets are no longer universal in RMV2
+        // probably remove the comments?
         let preflags_size = self.data.get_u16()?; // Gets bytes 18-19
         let properties_size = self.data.get_u16()?; // Gets bytes 20-21
-        self.data.offset += 7;
+        let _extension_properties_size = if format_version >= 2 {
+            self.data.get_u16()?
+        } else { 0 };
 
-        if result_string_size > 35 {
-            self.data.offset += (result_string_size - 32) as usize;
-            // 这种录像格式，3BV最多只支持3位数，宽和高支持最大256，雷数最多65536
-            // 注意，3BV如果解析得到0，说明局面没有完成（我认为这种设计并不合理）
-            let mut bbbv: String = "".to_string();
+        // skip vid_size
+        // skip checksum_size
+        self.data.offset += 6;
 
-            for _ in 0..3 {
-                let v = self.data.get_char()?;
-                if v as u8 >= 48 && v as u8 <= 57 {
-                    bbbv.push(v);
+        if format_version == 1 {
+            // ignore first byte of result string?
+            // TODO: clarify
+            self.data.offset += 1;
+            if result_string_size > 35 {
+                self.data.offset += (result_string_size - 32) as usize;
+                // 这种录像格式，3BV最多只支持3位数，宽和高支持最大256，雷数最多65536
+                // 注意，3BV如果解析得到0，说明局面没有完成（我认为这种设计并不合理）
+                let mut bbbv: String = "".to_string();
+
+                for _ in 0..3 {
+                    let v = self.data.get_char()?;
+                    if v as u8 >= 48 && v as u8 <= 57 {
+                        bbbv.push(v);
+                    }
+                }
+                self.data.static_params.bbbv = match bbbv.parse() {
+                    Ok(v) => v,
+                    Err(_) => return Err(ErrReadVideoReason::InvalidParams),
+                };
+                self.data.offset += 16;
+
+                // 2286-11-21以后，会遇到时间戳溢出
+                let mut timestamp = vec![];
+                for _ in 0..10 {
+                    timestamp.push(self.data.get_u8()?);
+                }
+                self.data.start_time = timestamp;
+
+                // 2 beta和更早的版本里没有3bv和时间戳
+            } else {
+                self.data.static_params.bbbv = 0;
+                for _ in 0..result_string_size - 3 {
+                    self.data.get_u8()?;
                 }
             }
-            self.data.static_params.bbbv = match bbbv.parse() {
-                Ok(v) => v,
-                Err(_) => return Err(ErrReadVideoReason::InvalidParams),
-            };
-            self.data.offset += 16;
-
-            // 2286-11-21以后，会遇到时间戳溢出
-            let mut timestamp = vec![];
-            for _ in 0..10 {
-                timestamp.push(self.data.get_u8()?);
-            }
-            self.data.start_time = timestamp;
-
-            // 2 beta和更早的版本里没有3bv和时间戳
-        } else {
-            self.data.static_params.bbbv = 0;
-            for _ in 0..result_string_size - 3 {
-                self.data.get_u8()?;
-            }
+            self.data.offset += 2;
         }
-        self.data.offset += version_info_size as usize + 2;
+        // skip version_info
+        self.data.offset += version_info_size as usize;
 
         // 这里是uint16，不合理
         let num_player_info = self.data.get_u16()?;
 
         let mut player = vec![];
+        let mut nick = vec![];
         let mut country = vec![];
+        let mut token = vec![];
         if num_player_info > 0 {
             let name_length = self.data.get_u8()?;
-            for _ in 0..name_length {
-                player.push(self.data.get_u8()?);
-            }
+            player = self.data.get_buffer(name_length as usize)?;
         }
         // 昵称不解析
         if num_player_info > 1 {
             let nick_length = self.data.get_u8()?;
-            for _ in 0..nick_length {
-                self.data.get_char()?;
-            }
+            nick = self.data.get_buffer(nick_length as usize)?;
         }
         if num_player_info > 2 {
             let country_length = self.data.get_u8()?;
-            for _ in 0..country_length {
-                country.push(self.data.get_u8()?);
-            }
+            country = self.data.get_buffer(country_length as usize)?;
         }
         // 令牌不解析
         if num_player_info > 3 {
             let token_length = self.data.get_u8()?;
-            for _ in 0..token_length {
-                self.data.get_char()?;
-            }
+            token = self.data.get_buffer(token_length as usize)?;
         }
-        self.data.player_identifier = player;
-        self.data.country = country;
+        self.data.player_identifier = player.clone();
+        self.data.country = country.clone();
 
         self.data.offset += 4;
 
@@ -226,6 +258,9 @@ impl RmvVideo {
             }
         }
 
+        let mut square_size = 16u8; // v1 default
+        let mut utf8 = true; // v2 default
+        // skip questionmarks property
         self.data.offset += 1;
         self.data.nf = if self.data.get_u8()? == 1 {
             true
@@ -234,19 +269,74 @@ impl RmvVideo {
         };
         self.data.mode = self.data.get_u8()? as u16;
         self.data.level = self.data.get_u8()? + 3;
+        let mut properties_read = 4;
 
-        self.data.offset += (properties_size - 4) as usize;
+        if format_version >= 2 {
+            let bbbv_low = self.data.get_u8()? as usize;
+            let bbbv_high = self.data.get_u8()? as usize;
+            self.data.static_params.bbbv = bbbv_low + bbbv_high << 8;
+            square_size = self.data.get_u8()?;
+            properties_read += 3;
+        } else if properties_size > 4 {
+            utf8 = if self.data.get_u8()? == 1 {
+                true
+            } else {
+                false
+            };
+            properties_read += 1;
+        }
+        let square_size = square_size;
+        let utf8 = utf8;
+        self.data.cell_pixel_size = square_size;
+
+        // ignore remaining properties
+        self.data.offset += (properties_size - properties_read) as usize;
+
+        if format_version >= 2 {
+            let num_extension_properties = self.data.get_u16()?;
+            for _ii in 0..num_extension_properties {
+                let key_size = self.data.get_u8()?;
+                let _key = self.data.get_utf8_string(key_size as usize)?;
+                let value_size = self.data.get_u8()?;
+                let _value = self.data.get_buffer(value_size as usize)?;
+            }
+        }
+
+        if utf8 {
+            // verify that text fields that we read are valid utf-8 as specified by the RMV spec
+            let utf8_errfunc = |_e| ErrReadVideoReason::InvalidParams;
+            let _ = String::from_utf8(player).map_err(utf8_errfunc)?;
+            let _ = String::from_utf8(nick).map_err(utf8_errfunc)?;
+            let _ = String::from_utf8(country).map_err(utf8_errfunc)?;
+            let _ = String::from_utf8(token).map_err(utf8_errfunc)?;
+        }
 
         // 是不是第一个操作。录像里省略了第一个左键按下。
         let mut first_op_flag = true;
+        let xoffset = if format_version == 1 {12} else {0};
+        let yoffset = if format_version == 1 {56} else {0};
+        let (mut x, mut y, mut time) = (0u16, 0u16, 0u32);
         loop {
             let c = self.data.get_u8()?;
             if c == 0 {
                 self.data.offset += 4;
-            } else if c <= 7 {
-                let time = self.data.get_u32()? >> 8;
-                let mut x = (self.data.get_u16()?).wrapping_sub(12);
-                let mut y = (self.data.get_u16()?).wrapping_sub(56);
+            } else if c <= 7 || (format_version >= 2 && c == 28 && !first_op_flag) {
+                if c == 28 {
+                    time += self.data.get_u8()? as u32;
+                    let mv = self.data.get_u8()?;
+                    // mv is two 4bit two's complement signed integers packed into a single byte
+                    // n & 8 = leading digit, the one that has negative weight in two's complement
+                    // n & 7 = remaining three digits
+                    // for x, we shift into position first
+                    x = x.wrapping_add(((mv >> 4) & 7u8) as u16);
+                    x = x.wrapping_sub(((mv >> 4) & 8u8) as u16);
+                    y = y.wrapping_add((mv & 7u8) as u16);
+                    y = y.wrapping_sub((mv & 8u8) as u16);
+                } else {
+                    time = self.data.get_u32()? >> 8;
+                    x = (self.data.get_u16()?).wrapping_sub(xoffset);
+                    y = (self.data.get_u16()?).wrapping_sub(yoffset);
+                }
                 if c >= 1 {
                     if x >= self.data.width as u16 * 16 || y >= self.data.height as u16 * 16 {
                         x = self.data.width as u16 * 16;
@@ -276,6 +366,7 @@ impl RmvVideo {
                                 5 => "rr".to_string(),
                                 6 => "mc".to_string(),
                                 7 => "mr".to_string(),
+                                28 => "mv".to_string(),
                                 _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
                             },
                             x,

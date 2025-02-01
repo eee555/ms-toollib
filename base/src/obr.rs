@@ -5,16 +5,14 @@ use std::cmp::{max, min};
 /// 局面光学分割引擎。  
 /// - 局限：仅实现了扫雷局面的图片的分割，而不包含识别部分。  
 /// - 原理：使用了索贝尔(Sobel)算子、中值滤波、动态规划求解最短路径、霍夫(Hough)变换等。  
-/// - 注意：这个类用到的魔法数字太多，源码不宜查阅。建议直接看[OBR_board](#OBR_board)这个函数。
+/// - 注意：这个类用到的魔法数字太多，源码不宜查阅。建议直接看[obr_board](#obr_board)这个函数。
 pub struct ImageBoard {
     // data_vec: Vec<usize>,
     height: usize,
     width: usize,
     data: [Vec<Vec<f32>>; 3],
     r_1: usize,
-    r_2: usize,
     c_1: usize,
-    c_2: usize,
     r0: usize,
     c0: usize,
     pixelr: f32,
@@ -43,9 +41,7 @@ impl ImageBoard {
             width,
             data: d,
             r_1: 0,
-            r_2: 0,
             c_1: 0,
-            c_2: 0,
             r0: 0,
             c0: 0,
             pixelr: 0.0,
@@ -335,29 +331,29 @@ impl ImageBoard {
         xx
     }
 
-    fn narrow(&mut self, K: usize) {
+    fn narrow(&mut self, k_in: usize) {
         // 用中值滤波，按比例缩小self.data（因为过高的分辨率影响识别）,K为2、3等
-        let row = self.data[0].len() / K;
-        let column = self.data[0][0].len() / K;
+        let row = self.data[0].len() / k_in;
+        let column = self.data[0][0].len() / k_in;
         let mut x_bw: [Vec<Vec<f32>>; 3] = [
             vec![vec![0.0; column]; row],
             vec![vec![0.0; column]; row],
             vec![vec![0.0; column]; row],
         ];
-        let mut KK = vec![0.0; K * K];
-        let MID = (K * K) / 2;
+        let mut kk = vec![0.0; k_in * k_in];
+        let mid = (k_in * k_in) / 2;
         for k in 0..3 {
             for i in 0..row {
                 for j in 0..column {
                     let mut pos = 0;
-                    for ii in i * K..(i + 1) * K {
-                        for jj in j * K..(j + 1) * K {
-                            KK[pos] = self.data[k][ii][jj];
+                    for ii in i * k_in..(i + 1) * k_in {
+                        for jj in j * k_in..(j + 1) * k_in {
+                            kk[pos] = self.data[k][ii][jj];
                             pos += 1;
                         }
                     }
-                    KK.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                    x_bw[k][i][j] = KK[MID];
+                    kk.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                    x_bw[k][i][j] = kk[mid];
                 }
             }
         }
@@ -518,19 +514,19 @@ impl ImageBoard {
         let max_x = lines[0] + 7; // 最大的空的格子像素数
         let mut hough = vec![vec![0; max_size * 4 + 1]; max_x + 1];
         // 方格边长精度为像素的1/4
-        for L in &lines {
+        for line in &lines {
             for y in min_size * 4..max_size * 4 + 1 {
-                for n in L / max_size..L / min_size + 1 {
-                    // let x_ = L - n * y / 4;
-                    if n * y / 4 <= *L  && *L <= max_x + n * y / 4 {
-                        // let x_ = L - n * y / 4;
-                        hough[L - n * y / 4][y] += 1;
+                for n in line / max_size..line / min_size + 1 {
+                    // let x_ = line - n * y / 4;
+                    if n * y / 4 <= *line  && *line <= max_x + n * y / 4 {
+                        // let x_ = line - n * y / 4;
+                        hough[line - n * y / 4][y] += 1;
                     }
-                    if n * y / 4 <= *L + 1 && *L + 1 <= max_x + n * y / 4 {
-                        // let x_ = L - n * y / 4;
-                        // println!("{:?}", *L);
+                    if n * y / 4 <= *line + 1 && *line + 1 <= max_x + n * y / 4 {
+                        // let x_ = line - n * y / 4;
+                        // println!("{:?}", *line);
                         // println!("{:?}", n * y / 4);
-                        hough[*L + 1 - n * y / 4][y] += 1;
+                        hough[*line + 1 - n * y / 4][y] += 1;
                     }
                 }
             }
@@ -547,8 +543,8 @@ impl ImageBoard {
                 }
             }
         }
-        let N = ((lines[lineslen - 1] - lines[0] + 2) as f32 / (max_j as f32 / 4.0)) as usize;
-        (max_j as f32 / 4.0, max_i, N)
+        let nn = ((lines[lineslen - 1] - lines[0] + 2) as f32 / (max_j as f32 / 4.0)) as usize;
+        (max_j as f32 / 4.0, max_i, nn)
     }
 
     pub fn get_pos_pixel(&mut self) {

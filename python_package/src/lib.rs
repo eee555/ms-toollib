@@ -1,5 +1,4 @@
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 // use pyo3::PyTraverseError;
@@ -96,7 +95,7 @@ fn py_cal_bbbv(board: Vec<Vec<i32>>) -> PyResult<usize> {
 #[pyfunction]
 #[pyo3(name = "solve_minus")]
 fn py_solve_minus(
-    mut As: Vec<Vec<Vec<i32>>>,
+    mut a_mats: Vec<Vec<Vec<i32>>>,
     mut xs: Vec<Vec<(usize, usize)>>,
     mut bs: Vec<Vec<i32>>,
     mut board_of_game: Vec<Vec<i32>>,
@@ -110,7 +109,7 @@ fn py_solve_minus(
 )> {
     let not;
     let is;
-    let t = solve_minus(&mut As, &mut xs, &mut bs, &mut board_of_game);
+    let t = solve_minus(&mut a_mats, &mut xs, &mut bs, &mut board_of_game);
     match t {
         Ok(aa) => {
             not = aa.0;
@@ -118,7 +117,7 @@ fn py_solve_minus(
         }
         Err(code) => return Err(PyErr::new::<PyRuntimeError, _>(format!("code: {}.", code))),
     };
-    Ok((As, xs, bs, board_of_game, not, is))
+    Ok((a_mats, xs, bs, board_of_game, not, is))
 }
 
 #[pyfunction]
@@ -126,9 +125,9 @@ fn py_solve_minus(
 fn py_refresh_board(
     board: Vec<Vec<i32>>,
     mut board_of_game: Vec<Vec<i32>>,
-    ClickedPoses: Vec<(usize, usize)>,
+    clicked_poses: Vec<(usize, usize)>,
 ) -> PyResult<Vec<Vec<i32>>> {
-    refresh_board(&board, &mut board_of_game, ClickedPoses);
+    refresh_board(&board, &mut board_of_game, clicked_poses);
     Ok(board_of_game)
 }
 
@@ -137,15 +136,15 @@ fn py_refresh_board(
 fn py_get_all_not_and_is_mine_on_board(
     mut board_of_game: Vec<Vec<i32>>,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<(usize, usize)>)> {
-    let (mut As, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
-    let (not, is) = get_all_not_and_is_mine_on_board(&mut As, &mut xs, &mut bs, &mut board_of_game);
+    let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+    let (not, is) = get_all_not_and_is_mine_on_board(&mut a_mats, &mut xs, &mut bs, &mut board_of_game);
     Ok((board_of_game, not, is))
 }
 
 #[pyfunction]
 #[pyo3(name = "solve_direct")]
 fn py_solve_direct(
-    mut As: Vec<Vec<Vec<i32>>>,
+    mut a_mats: Vec<Vec<Vec<i32>>>,
     mut xs: Vec<Vec<(usize, usize)>>,
     mut bs: Vec<Vec<i32>>,
     mut board_of_game: Vec<Vec<i32>>,
@@ -159,7 +158,7 @@ fn py_solve_direct(
 )> {
     let not;
     let is;
-    let t = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game);
+    let t = solve_direct(&mut a_mats, &mut xs, &mut bs, &mut board_of_game);
     match t {
         Ok(aa) => {
             not = aa.0;
@@ -167,8 +166,8 @@ fn py_solve_direct(
         }
         Err(code) => return Err(PyErr::new::<PyRuntimeError, _>(format!("code: {}.", code))),
     };
-    // let (not, is) = solve_direct(&mut As, &mut xs, &mut bs, &mut board_of_game);
-    Ok((As, xs, bs, board_of_game, not, is))
+    // let (not, is) = solve_direct(&mut a_mats, &mut xs, &mut bs, &mut board_of_game);
+    Ok((a_mats, xs, bs, board_of_game, not, is))
 }
 
 #[pyfunction]
@@ -191,15 +190,15 @@ fn py_laymine_op(
 fn py_solve_enumerate(
     board_of_game: Vec<Vec<i32>>,
 ) -> PyResult<(Vec<(usize, usize)>, Vec<(usize, usize)>)> {
-    let (As, xs, bs, _, _) = refresh_matrixs(&board_of_game);
-    let (not, is) = solve_enumerate(&As, &xs, &bs);
+    let (a_mats, xs, bs, _, _) = refresh_matrixs(&board_of_game);
+    let (not, is) = solve_enumerate(&a_mats, &xs, &bs);
     Ok((not, is))
 }
 
 #[pyfunction]
 #[pyo3(name = "unsolvable_structure")]
-fn py_unsolvable_structure(boardCheck: Vec<Vec<i32>>) -> PyResult<bool> {
-    Ok(unsolvable_structure(&boardCheck))
+fn py_unsolvable_structure(board_check: Vec<Vec<i32>>) -> PyResult<bool> {
+    Ok(unsolvable_structure(&board_check))
 }
 
 #[pyfunction]
@@ -298,18 +297,45 @@ fn py_cal_possibility_onboard(
 
 #[pyfunction]
 #[pyo3(name = "sample_3BVs_exp")]
-fn py_sample_3BVs_exp(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
-    Ok((&sample_3BVs_exp(x0, y0, n)).to_vec())
+fn py_sample_bbbvs_exp_old(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
+    let _ = Python::with_gil(|py| {
+        let deprecation_warning = py.get_type_bound::<pyo3::exceptions::PyDeprecationWarning>();
+        PyErr::warn_bound(py, &deprecation_warning, "Renamed to sample_bbbvs_exp", 0)?;
+        Ok::<(), PyErr>(())
+    });
+    Ok((&sample_bbbvs_exp(x0, y0, n)).to_vec())
+}
+
+#[pyfunction]
+#[pyo3(name = "sample_bbbvs_exp")]
+fn py_sample_bbbvs_exp(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
+    Ok((&sample_bbbvs_exp(x0, y0, n)).to_vec())
 }
 
 #[pyfunction]
 #[pyo3(name = "OBR_board", signature = (data_vec, height, width))]
-fn py_OBR_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
-    // Ok(OBR_board(data_vec, height, width).unwrap())
-    match OBR_board(data_vec, height, width) {
+fn py_obr_board_old(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
+    let _ = Python::with_gil(|py| {
+        let deprecation_warning = py.get_type_bound::<pyo3::exceptions::PyDeprecationWarning>();
+        PyErr::warn_bound(py, &deprecation_warning, "Renamed to obr_board", 0)?;
+        Ok::<(), PyErr>(())
+    });
+    // Ok(obr_board(data_vec, height, width).unwrap())
+    match obr_board(data_vec, height, width) {
         //判断方法结果
         Ok(ans) => Ok(ans),
-        Err(e) => Ok(vec![vec![200]]),
+        Err(_e) => Ok(vec![vec![200]]),
+    }
+}
+
+#[pyfunction]
+#[pyo3(name = "obr_board", signature = (data_vec, height, width))]
+fn py_obr_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
+    // Ok(obr_board(data_vec, height, width).unwrap())
+    match obr_board(data_vec, height, width) {
+        //判断方法结果
+        Ok(ans) => Ok(ans),
+        Err(_e) => Ok(vec![vec![200]]),
     }
 }
 
@@ -392,8 +418,10 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_laymine_solvable_thread, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine_solvable_adjust, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility, m)?)?;
-    m.add_function(wrap_pyfunction!(py_sample_3BVs_exp, m)?)?;
-    m.add_function(wrap_pyfunction!(py_OBR_board, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sample_bbbvs_exp, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sample_bbbvs_exp_old, m)?)?;
+    m.add_function(wrap_pyfunction!(py_obr_board, m)?)?;
+    m.add_function(wrap_pyfunction!(py_obr_board_old, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
     m.add_function(wrap_pyfunction!(py_mark_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_guess_while_needless, m)?)?;

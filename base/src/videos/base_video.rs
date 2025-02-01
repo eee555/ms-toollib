@@ -5,17 +5,18 @@ use crate::cal_cell_nums;
 use crate::miscellaneous::s_to_ms;
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::miscellaneous::time_ms_between;
-use crate::utils::{cal_bbbv, cal_isl, cal_op};
+use crate::utils::{cal_isl, cal_op};
+#[cfg(any(feature = "py", feature = "rs"))]
+use crate::utils::cal_bbbv;
 use crate::videos::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
     analyse_super_fl_local, analyse_survive_poss, analyse_vision_transfer,
 };
 use core::panic;
+#[cfg(any(feature = "py", feature = "rs"))]
 use std::fs;
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
-#[cfg(feature = "js")]
-use web_sys::console;
 
 use crate::safe_board::BoardSize;
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -990,7 +991,6 @@ impl<T> BaseVideo<T> {
                 if old_state != GameBoardState::PreFlaging {
                     self.video_start_instant = step_instant;
                     // time_ms = time_ms_between(step_instant, self.video_start_instant);
-                    time_ms = 0;
                     time = 0.0;
                 }
             }
@@ -1238,7 +1238,7 @@ impl<T> BaseVideo<T> {
     }
 
     pub fn print_event(&self) {
-        let mut num = 0;
+        let num = 0;
         for e in &self.video_action_state_recorder {
             if num < 800 {
                 if e.mouse != "mv" {
@@ -1678,6 +1678,7 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_left() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
+            #[allow(unreachable_patterns)]
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
         }
@@ -1698,6 +1699,7 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_right() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
+            #[allow(unreachable_patterns)]
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
         }
@@ -1718,6 +1720,7 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_double() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
+            #[allow(unreachable_patterns)]
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
         }
@@ -1738,6 +1741,7 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_cl() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
+            #[allow(unreachable_patterns)]
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
         }
@@ -1758,6 +1762,7 @@ impl<T> BaseVideo<T> {
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_flag() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
+            #[allow(unreachable_patterns)]
             #[cfg(any(feature = "js"))]
             GameBoardState::Playing => 0.0,
         }

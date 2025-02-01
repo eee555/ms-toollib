@@ -2,13 +2,9 @@ extern crate libc;
 use ms_toollib::cal_bbbv as rs_cal_bbbv;
 use ms_toollib::cal_possibility_onboard as rs_cal_possibility_onboard;
 use ms_toollib::laymine as rs_laymine;
-use ms_toollib::MinesweeperBoard as RustMinesweeperBoard;
-use std::alloc::{alloc, dealloc, Layout};
+use std::alloc::{dealloc, Layout};
 use std::mem;
-use std::ptr;
 use std::slice;
-use libc::c_char;
-use std::ffi::CStr;
 
 // https://avacariu.me/writing/2014/calling-rust-from-c
 
@@ -149,7 +145,8 @@ pub extern "C" fn laymine(
     X0: usize,
     Y0: usize,
 ) -> Board {
-    let mut b = rs_laymine(row, column, MineNum, X0, Y0);
+    let b = rs_laymine(row, column, MineNum, X0, Y0);
+    // let mut b = rs_laymine(row, column, MineNum, X0, Y0);
     // let mut board: Vec<Row> = vec![];
     // for i in 0..b.len() {
     //     board.push(Row {

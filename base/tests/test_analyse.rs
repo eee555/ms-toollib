@@ -1,11 +1,15 @@
 // 测试录像分析模块
-use ms_toollib::videos::base_video::{NewBaseVideo, NewBaseVideo2};
+use ms_toollib::videos::base_video::NewBaseVideo2;
 use ms_toollib::videos::NewSomeVideo;
 use ms_toollib::{
     AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MvfVideo, RmvVideo, SafeBoard,
 };
 use std::thread;
-use tract_onnx::tract_core::anyhow::Ok;
+use std::time::Duration;
+
+fn _sleep_ms(ms: u32) {
+    thread::sleep(Duration::from_millis(ms as u64));
+}
 
 #[test]
 fn minesweeper_board_works() {
@@ -52,7 +56,7 @@ fn minesweeper_board_works() {
 
 #[test]
 // cargo test --features rs -- --nocapture AvfVideo_works
-fn AvfVideo_works() {
+fn avf_video_works() {
     // 录像解析工具测试
     let mut video =
         AvfVideo::new("../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jianing G01825.avf");
@@ -241,7 +245,7 @@ fn AvfVideo_works() {
 
 #[test]
 // cargo test --features rs -- --nocapture RmvVideo_works
-fn RmvVideo_works() {
+fn rmv_video_works() {
     // 录像解析工具测试
     let mut video = RmvVideo::new("../test_files/exp_98763_FL_1738209872.rmv");
 
@@ -272,7 +276,7 @@ fn RmvVideo_works() {
 }
 
 #[test]
-fn MvfVideo_works() {
+fn mvf_video_works() {
     // 录像解析工具测试
     let mut video = MvfVideo::new("Zhang Shen Jia_Exp_38.82(3bv122).mvf");
 
@@ -325,7 +329,7 @@ fn MvfVideo_works() {
 
 #[test]
 // cargo test --features rs -- --nocapture EvfVideo_works
-fn EvfVideo_works() {
+fn evf_video_works() {
     // 录像解析工具测试
     let mut video = EvfVideo::new("b_0_2.452_12_4.894_Mao Dun (China).evf");
 
@@ -385,7 +389,7 @@ fn EvfVideo_works() {
 }
 
 #[test]
-fn BaseVideo_works() {
+fn base_video_works() {
     let board = vec![
         vec![1, 1, 2, 1, 1, 0, 0, 0],
         vec![1, -1, 2, -1, 1, 0, 0, 0],
@@ -397,36 +401,36 @@ fn BaseVideo_works() {
         vec![-1, -1, 2, 0, 0, 2, -1, 2],
     ];
     let mut video = BaseVideo::<SafeBoard>::new(board, 16);
-    thread::sleep_ms(600);
+    _sleep_ms(600);
     // println!("3BV：{:?}", video.static_params.bbbv);
     video.step("rc", (17, 16)).unwrap();
     video.step("rr", (17, 16)).unwrap();
     video.step("rc", (16, 49)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("rr", (16, 50)).unwrap();
     video.step("mv", (48, 51)).unwrap();
     video.step("mv", (42, 48)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lc", (16, 32)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lr", (16, 32)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lc", (52, 0)).unwrap();
     video.step("lr", (53, 0)).unwrap();
     video.step("lc", (16, 32)).unwrap();
     video.step("rc", (16, 32)).unwrap();
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("rr", (16, 32)).unwrap();
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("lr", (16, 32)).unwrap();
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("lc", (0, 16)).unwrap();
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("rc", (0, 16)).unwrap();
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("rr", (0, 16)).unwrap();
     println!("left_s：{:?}", video.get_left_s());
-    thread::sleep_ms(50);
+    _sleep_ms(50);
     video.step("lr", (0, 16)).unwrap();
     video.step("mv", (4800, 51)).unwrap();
     video.step("lc", (112, 112)).unwrap();
@@ -507,7 +511,7 @@ fn BaseVideo_works() {
 }
 
 #[test]
-fn BaseVideo_works_2() {
+fn base_video_works_2() {
     let board = vec![
         vec![0, 0, 0, 0, 1, 1, 1, 0],
         vec![0, 0, 0, 0, 1, -1, 2, 1],
@@ -831,7 +835,7 @@ fn BaseVideo_works_2() {
 }
 
 #[test]
-fn BaseVideo_works_3() {
+fn base_video_works_3() {
     let board = vec![
         vec![1, 1, 2, 1, 1, 0, 0, 0],
         vec![1, -1, 2, -1, 1, 0, 0, 0],
@@ -858,7 +862,7 @@ fn BaseVideo_works_3() {
 }
 
 #[test]
-fn BaseVideo_works_4() {
+fn base_video_works_4() {
     let board = vec![
         vec![0, 0, 2, -1, 2, 0, 0, 0],
         vec![0, 0, 3, -1, 3, 0, 0, 0],
@@ -870,21 +874,21 @@ fn BaseVideo_works_4() {
         vec![-1, -1, 1, 0, 0, 0, 2, -1],
     ];
     let mut video = BaseVideo::<SafeBoard>::new(board, 16);
-    thread::sleep_ms(600);
+    _sleep_ms(600);
     // println!("3BV：{:?}", video.static_params.bbbv);
     video.step("rc", (32, 49)).unwrap();
     video.step("rr", (32, 49)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lc", (48, 64)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lr", (48, 64)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lc", (48, 64)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("rc", (48, 64)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("lr", (48, 64)).unwrap();
-    thread::sleep_ms(20);
+    _sleep_ms(20);
     video.step("rr", (48, 64)).unwrap();
 
     println!("局面：{:?}", video.get_game_board());
@@ -962,7 +966,7 @@ fn BaseVideo_works_4() {
 }
 
 #[test]
-fn BaseVideo_works_5_1bv() {
+fn base_video_works_5_1bv() {
     let board = vec![
         vec![0, 0, 0, 0, 0, 0, 0, 0],
         vec![0, 0, 0, 0, 0, 0, 0, 0],
@@ -980,7 +984,7 @@ fn BaseVideo_works_5_1bv() {
     // video.step("lr", (97, 97)).unwrap();
     // thread::sleep_ms(60);
     video.step("lc", (32, 49)).unwrap();
-    thread::sleep_ms(200);
+    _sleep_ms(200);
     video.step("lr", (32, 49)).unwrap();
     video.generate_evf_v0_raw_data();
     video.set_checksum([8; 32]).unwrap();
@@ -997,7 +1001,7 @@ fn BaseVideo_works_5_1bv() {
 }
 
 #[test]
-fn BaseVideo_works_set_board() {
+fn base_video_works_set_board() {
     let board = vec![
         vec![1, -1, 3, -1, 1, 0, 1, -1],
         vec![2, 3, -1, 2, 1, 1, 2, 2],
@@ -1055,7 +1059,7 @@ fn BaseVideo_works_set_board() {
 }
 
 #[test]
-fn BaseVideo_works_err() {
+fn base_video_works_err() {
     let board = vec![
         vec![
             1, 1, 1, 1, 2, 2, -1, 1, 1, 1, 1, 0, 0, 1, -1, 1, 2, -1, 2, 0, 0, 0, 0, 1, 1, 1, 1, -1,

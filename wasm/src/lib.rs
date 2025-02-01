@@ -1,4 +1,4 @@
-﻿use ms_toollib as ms;
+﻿use ms_toollib_original as ms;
 
 // cargo install wasm-pack
 // cargo install wasm-bindgen-cli
@@ -105,7 +105,7 @@ pub fn cal_possibility_onboard(board_json: &str, mine_num: i32) -> String {
         );
     }
     // mine_num为局面中雷的总数，不管有没有标
-    ms::mark_board(&mut board_of_game);
+    let _ = ms::mark_board(&mut board_of_game);
     match ms::cal_possibility_onboard(&board_of_game, mine_num as f64) {
         Ok(t) => return serde_json::to_string(&t).unwrap(),
         Err(_) => return serde_json::to_string(&(Vec::<i32>::new(), [0, 0, 0])).unwrap(),

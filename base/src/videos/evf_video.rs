@@ -1,6 +1,8 @@
 use crate::utils::cal_board_numbers;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
-use crate::videos::{NewSomeVideo, NewSomeVideo2};
+use crate::videos::NewSomeVideo2;
+#[cfg(any(feature = "py", feature = "rs"))]
+use crate::videos::NewSomeVideo;
 use crate::videos::base_video::NewBaseVideo;
 
 /// evf录像解析器。  

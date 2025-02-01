@@ -3,11 +3,11 @@
 // use crate::utils::{cal_board_numbers};
 use std::cmp::{max, min};
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
-use crate::videos::{NewSomeVideo, NewSomeVideo2};
+use crate::videos::NewSomeVideo2;
+#[cfg(any(feature = "py", feature = "rs"))]
+use crate::videos::NewSomeVideo;
 use crate::videos::base_video::NewBaseVideo;
 
-#[cfg(feature = "js")]
-use web_sys::console;
 
 
 /// avf录像解析器。  

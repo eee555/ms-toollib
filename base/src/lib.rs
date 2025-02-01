@@ -42,7 +42,14 @@ mod miscellaneous;
 
 mod algorithms;
 #[cfg(any(feature = "py", feature = "rs"))]
-pub use algorithms::{agent_step, laymine_solvable_thread, sample_3BVs_exp, OBR_board};
+pub use algorithms::{agent_step, laymine_solvable_thread, sample_bbbvs_exp, obr_board};
+
+#[cfg(any(feature = "py", feature = "rs"))]
+#[deprecated]
+pub use {
+    algorithms::sample_bbbvs_exp as sample_3BVs_exp,
+    algorithms::obr_board as OBR_board,
+};
 
 pub use algorithms::{
     cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard,
@@ -63,9 +70,9 @@ pub use videos::{
 };
 
 #[cfg(any(feature = "py", feature = "rs"))]
-mod OBR;
+mod obr;
 #[cfg(any(feature = "py", feature = "rs"))]
-pub use OBR::ImageBoard;
+pub use obr::ImageBoard;
 
 // #[cfg(any(feature = "py", feature = "rs"))]
 mod safe_board;
@@ -74,8 +81,6 @@ pub use crate::safe_board::SafeBoard;
 #[cfg(any(feature = "py", feature = "rs"))]
 pub use crate::safe_board::SafeBoardRow;
 
-#[cfg(any(feature = "py", feature = "rs"))]
-use crate::safe_board::BoardSize;
 
 // 最大枚举长度限制。超过这个长度，概率计算不准。全雷网的高级没有发现超出此限制的。
 const ENUM_LIMIT: usize = 55;

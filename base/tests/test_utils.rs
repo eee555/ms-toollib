@@ -1,4 +1,4 @@
-use ms_toollib::{cal_bbbv, cal_op, laymine};
+use ms_toollib::{cal_bbbv, cal_op};
 
 #[test]
 fn cal_bbbv_works() {

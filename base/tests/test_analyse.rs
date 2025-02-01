@@ -65,13 +65,7 @@ fn avf_video_works() {
     assert_eq!(r.unwrap(), ());
     // video.data.print_event();
     video.data.analyse();
-    assert!(
-        video.data.player_identifier
-            == vec![
-                87, 97, 110, 103, 32, 74, 105, 97, 110, 105, 110, 103, 32, 71, 48, 49, 56, 50, 53
-            ]
-    );
-    assert!(std::str::from_utf8(&video.data.player_identifier).unwrap() == "Wang Jianing G01825");
+    assert!(video.data.player_identifier == "Wang Jianing G01825".to_string());
     assert_eq!(
         video.data.board,
         vec![
@@ -146,6 +140,8 @@ fn avf_video_works() {
     assert_eq!(video.data.get_rtime().unwrap(), 49.25);
     assert_eq!(video.data.get_rtime_ms().unwrap(), 49250);
     assert!(video.data.is_completed);
+    assert_eq!(video.data.start_time, 1666124135660600u64);
+    assert_eq!(video.data.end_time, 1666124184886800u64);
     assert_eq!(video.data.get_stnb().unwrap(), 0.0);
     video.data.analyse_for_features(vec![
         "needless_guess",
@@ -244,6 +240,17 @@ fn avf_video_works() {
 }
 
 #[test]
+fn avf_video_works_other_encoding() {
+    // 录像解析工具测试
+    let mut video = AvfVideo::new("../test_files/beg_chinese_name.avf");
+    let _ = video.parse_video();
+    assert!(video.data.player_identifier == "王嘉宁".to_string());
+    assert_eq!(video.data.static_params.bbbv, 22);
+    assert_eq!(video.data.get_rtime().unwrap(), 9.2);
+    assert_eq!(video.data.get_rtime_ms().unwrap(), 9200);
+}
+
+#[test]
 // cargo test --features rs -- --nocapture RmvVideo_works
 fn rmv_video_works() {
     // 录像解析工具测试
@@ -295,10 +302,7 @@ fn mvf_video_works() {
     // video.data.print_raw_data(400);
     println!("board: {:?}", video.data.board);
     println!("结果：{:?}", r);
-    println!(
-        "标识：{:?}",
-        String::from_utf8(video.data.player_identifier.clone()).unwrap()
-    );
+    println!("标识：{:?}", video.data.player_identifier);
     println!("软件：{:?}", video.data.software);
     println!("race_identifier：{:?}", video.data.race_identifier);
     println!("3BV：{:?}", video.data.static_params.bbbv);
@@ -437,14 +441,10 @@ fn base_video_works() {
     video.step("lr", (112, 112)).unwrap();
     video.step("lc", (97, 112)).unwrap();
     video.step("lr", (97, 112)).unwrap();
-    video
-        .set_player_identifier("eee".as_bytes().to_vec())
-        .unwrap();
-    video
-        .set_race_identifier("555".as_bytes().to_vec())
-        .unwrap();
-    video.set_software("888".as_bytes().to_vec()).unwrap();
-    video.set_country("666".as_bytes().to_vec()).unwrap();
+    video.set_player_identifier("eee555".to_string()).unwrap();
+    video.set_race_identifier("G8888".to_string()).unwrap();
+    video.set_software("a test software".to_string()).unwrap();
+    video.set_country("CN".to_string()).unwrap();
     video.print_event();
 
     println!("局面：{:?}", video.get_game_board());
@@ -495,14 +495,8 @@ fn base_video_works() {
     // println!("3BV：{:?}", video.s.s);
     println!("time：{:?}", video.data.get_rtime().unwrap());
     println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
-    println!(
-        "start_time：{:?}",
-        String::from_utf8(video.data.start_time.clone()).unwrap()
-    );
-    println!(
-        "end_time：{:?}",
-        String::from_utf8(video.data.end_time.clone()).unwrap()
-    );
+    println!("start_time：{:?}", video.data.start_time);
+    println!("end_time：{:?}", video.data.end_time);
     println!("is win: {:?}", video.data.is_completed);
     video.data.set_current_time(1.9);
     println!("bbbv_solved(1.9s): {:?}", video.data.get_bbbv_solved());
@@ -895,14 +889,10 @@ fn base_video_works_4() {
     println!("标识：{:?}", video.player_identifier);
     println!("局面状态：{:?}", video.game_board_state);
 
-    video
-        .set_player_identifier("eee".as_bytes().to_vec())
-        .unwrap();
-    video
-        .set_race_identifier("555".as_bytes().to_vec())
-        .unwrap();
-    video.set_software("888".as_bytes().to_vec()).unwrap();
-    video.set_country("666".as_bytes().to_vec()).unwrap();
+    video.set_player_identifier("eee".to_string()).unwrap();
+    video.set_race_identifier("555".to_string()).unwrap();
+    video.set_software("888".to_string()).unwrap();
+    video.set_country("666".to_string()).unwrap();
     video.print_event();
 
     println!(
@@ -950,14 +940,8 @@ fn base_video_works_4() {
     // println!("3BV：{:?}", video.s.s);
     println!("time：{:?}", video.data.get_rtime().unwrap());
     println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
-    println!(
-        "start_time：{:?}",
-        String::from_utf8(video.data.start_time.clone()).unwrap()
-    );
-    println!(
-        "end_time：{:?}",
-        String::from_utf8(video.data.end_time.clone()).unwrap()
-    );
+    println!("start_time：{:?}", video.data.start_time);
+    println!("end_time：{:?}", video.data.end_time);
     println!("is win: {:?}", video.data.is_completed);
     video.data.set_current_time(1.9);
     println!("bbbv_solved(1.9s): {:?}", video.data.get_bbbv_solved());

@@ -195,10 +195,10 @@ impl MvfVideo {
         self.read_board(-1)?;
 
         let byte_len = self.data.get_u8()?;
-        for _ in 0..byte_len {
-            let t = self.data.get_u8()?;
-            self.data.player_identifier.push(t);
-        }
+        // for _ in 0..byte_len {
+        //     let t = self.data.get_u8()?;
+        //     self.data.player_identifier.push(t);
+        // }
 
         // First 2 bytes determine the file permutation
         let mut s = ['\0'; 40];
@@ -365,7 +365,7 @@ impl MvfVideo {
             if c as char == '5' {
                 //Clone 0.97
                 self.data.offset += 46;
-                self.data.software = "0.97 beta".as_bytes().to_vec();
+                self.data.software = "0.97 beta".to_string();
                 return self.read_097();
             } else {
                 Ok(())

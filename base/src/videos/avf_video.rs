@@ -1,14 +1,12 @@
 // use crate::MouseState;
 // use crate::miscellaneous::s_to_ms;
-// use crate::utils::{cal_board_numbers};
-use std::cmp::{max, min};
+use crate::utils::{cal_board_numbers};
+use crate::videos::base_video::NewBaseVideo;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
-use crate::videos::NewSomeVideo2;
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::videos::NewSomeVideo;
-use crate::videos::base_video::NewBaseVideo;
-
-
+use crate::videos::NewSomeVideo2;
+use std::cmp::{max, min};
 
 /// avf录像解析器。  
 /// - 功能：解析avf格式的录像，有详细分析录像的方法。  
@@ -56,7 +54,7 @@ use crate::videos::base_video::NewBaseVideo;
 ///     if v.events_useful_level(i) >= 2:
 ///         print(v.events_posteriori_game_board(i).poss)
 /// ```
-/// 
+///
 /// - 在python中被继承的示例。  
 /// ```python
 /// class MyVideo(ms.AvfVideo):
@@ -80,12 +78,12 @@ use crate::videos::base_video::NewBaseVideo;
 /// print(my_video.bbbv_solved)
 /// ```
 /// - 其他实例化方法  
-/// 
+///
 /// ```python
 /// import ms_toollib as ms
 /// # 使用绝对路径实例化
 /// v_1 = ms.AvfVideo(r"F:\SomePath\Beg_NF_3.90_3BV=12_3BVs=3.07_Wang Jianing.avf")
-/// 
+///
 /// # 使用二进制列表实例化
 /// with open(r"F:\SomePath\Beg_NF_3.90_3BV=12_3BVs=3.07_Wang Jianing.avf", 'rb') as file:
 ///     video_data_list = list(file.read())
@@ -143,7 +141,6 @@ impl AvfVideo {
         self.data.is_fair = true;
         self.data.offset += 4;
         self.data.level = self.data.get_u8()?;
-        // println!("{:?}", self.data.level);
         match self.data.level {
             3 => {
                 self.data.width = 8;
@@ -199,23 +196,25 @@ impl AvfVideo {
                 break;
             }
         }
+        // avf中的时间戳没有时区，最大可能有12小时的偏差
+        let mut start_time = String::new();
         loop {
             match self.data.get_char()? {
                 '|' => break,
-                other => self.data.start_time.push(other as u8),
+                other => start_time.push(other),
             }
         }
-        // println!("666");
-        // loop {
-        //     let v = self.get_char()?;
-        //     print!("{:?}", v as char);
-        // }
+        self.data.start_time = self.data.parse_avf_start_timestamp(&start_time)?;
+        // println!("{:?}", start_time);
+        let mut end_time = String::new();
         loop {
             match self.data.get_char()? {
                 '|' => break,
-                other => self.data.end_time.push(other as u8),
+                other => end_time.push(other),
             }
         }
+        println!("{:?}", end_time);
+        self.data.end_time = self.data.parse_avf_end_timestamp(&start_time, &end_time)?;
         let mut buffer: [char; 2];
         match self.data.get_char()? {
             '|' => buffer = ['\0', '|'],
@@ -230,25 +229,12 @@ impl AvfVideo {
             buffer[0] = buffer[1];
             buffer[1] = self.data.get_char()?;
         }
-        let mut s: String = "".to_string();
-        loop {
-            match self.data.get_char()? {
-                'T' => break,
-                other => s.push(other),
-            }
-        }
+        let s = self.data.get_utf8_c_string('T')?;
         self.data.static_params.bbbv = match s.parse() {
             Ok(v) => v,
             Err(_) => return Err(ErrReadVideoReason::InvalidParams),
         };
-        let mut s: String = "".to_string();
-        loop {
-            let v = self.data.get_char()?;
-            match v {
-                ']' => break,
-                _ => s.push(v),
-            }
-        }
+        let mut s = self.data.get_utf8_c_string(']')?;
         s = str::replace(&s, ",", "."); // 有些录像小数点是逗号
         match s.parse::<f64>() {
             Ok(v) => self.data.set_rtime(v - 1.0).unwrap(),
@@ -264,32 +250,29 @@ impl AvfVideo {
             buffer[i] = self.data.get_u8()?;
         }
         loop {
-            // if buffer[0] != 1 {
-            // println!("{:?}, {:?}", ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
-            // + (buffer[4] as f64) / 100.0, buffer[0]);}
-            self.data.video_action_state_recorder.push(VideoActionStateRecorder {
-                time: ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
-                    + (buffer[4] as f64) / 100.0,
-                mouse: match buffer[0] {
-                    1 => "mv".to_string(),
-                    3 => "lc".to_string(),
-                    5 => "lr".to_string(),
-                    9 => "rc".to_string(),
-                    17 => "rr".to_string(),
-                    33 => "mc".to_string(),
-                    65 => "mr".to_string(),
-                    145 => "rr".to_string(),
-                    193 => "mr".to_string(),
-                    11 => "sc".to_string(), // left_click_with_shift没见过，不清楚用途
-                    21 => "lr".to_string(),
-                    _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
-                },
-                // column: 0,
-                // row: 0,
-                x: (buffer[1] as u16) << 8 | buffer[3] as u16,
-                y: (buffer[5] as u16) << 8 | buffer[7] as u16,
-                ..VideoActionStateRecorder::default()
-            });
+            self.data
+                .video_action_state_recorder
+                .push(VideoActionStateRecorder {
+                    time: ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
+                        + (buffer[4] as f64) / 100.0,
+                    mouse: match buffer[0] {
+                        1 => "mv".to_string(),
+                        3 => "lc".to_string(),
+                        5 => "lr".to_string(),
+                        9 => "rc".to_string(),
+                        17 => "rr".to_string(),
+                        33 => "mc".to_string(),
+                        65 => "mr".to_string(),
+                        145 => "rr".to_string(),
+                        193 => "mr".to_string(),
+                        11 => "sc".to_string(), // left_click_with_shift没见过，不清楚用途
+                        21 => "lr".to_string(),
+                        _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
+                    },
+                    x: (buffer[1] as u16) << 8 | buffer[3] as u16,
+                    y: (buffer[5] as u16) << 8 | buffer[7] as u16,
+                    ..VideoActionStateRecorder::default()
+                });
             for i in 0..8 {
                 // ???????
                 buffer[i] = self.data.get_u8()?;
@@ -305,22 +288,9 @@ impl AvfVideo {
         while self.data.get_char()? != 'n' {}
         while self.data.get_char()? != ':' {}
         while self.data.get_char()? != '\r' {}
-        loop {
-            let v = self.data.get_char()?;
-            match v {
-                '\r' => break,
-                _ => self.data.player_identifier.push(v as u8),
-            }
-        }
-        self.data.software = "Arbiter".as_bytes().to_vec();
-        // for i in 0..1000 {
-        //     for j in 0..8 {
-        //         print!("{:?},", self.get_char().unwrap() as u8);
-        //     }
-        //     println!("");
-        // }
+        self.data.player_identifier = self.data.get_unknown_encoding_c_string('\r')?;
+        self.data.software = "Arbiter".to_string();
         self.data.can_analyse = true;
         Ok(())
     }
 }
-

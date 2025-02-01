@@ -5,9 +5,9 @@ use crate::cal_cell_nums;
 use crate::miscellaneous::s_to_ms;
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::miscellaneous::time_ms_between;
-use crate::utils::{cal_isl, cal_op};
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::utils::cal_bbbv;
+use crate::utils::{cal_isl, cal_op};
 use crate::videos::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
     analyse_super_fl_local, analyse_survive_poss, analyse_vision_transfer,
@@ -23,6 +23,7 @@ use crate::safe_board::BoardSize;
 use crate::safe_board::SafeBoard;
 
 use crate::{GameBoardState, MinesweeperBoard, MouseState};
+use encoding_rs::{GB18030, WINDOWS_1252};
 
 /// 读录像文件失败的原因
 #[derive(Debug)]
@@ -37,6 +38,7 @@ pub enum ErrReadVideoReason {
     InvalidVideoEvent,
     InvalidMinePosition,
     VersionBackward,
+    Utf8Error,
 }
 
 /// 局面活动（点击或移动）
@@ -332,7 +334,9 @@ impl Default for VideoDynamicParams {
 /// ```
 pub struct BaseVideo<T> {
     /// 软件名，包括："Viennasweeper"、"0.97 beta"、"Arbiter"、"元3.1.9"、"元3.1.11"、"元3.2.0"等
-    pub software: Vec<u8>,
+    pub software: String,
+    /// 转码用的软件名，包括："元3.1.11"、"元3.2.0"等
+    pub translate_software: String,
     /// 宽度，等同于column
     pub width: usize,
     /// 高度，等同于row
@@ -357,7 +361,10 @@ pub struct BaseVideo<T> {
     pub use_auto_replay: bool,
     /// 是不是盲扫，初始是false，不是盲扫的话，分析完还是false
     pub nf: bool,
+    /// false是此录像非转码录像；true为此录像为转码录像
+    pub translated: bool,
     /// 游戏模式。0->标准、1->upk；2->cheat；3->Density（来自Viennasweeper、clone软件）、4->win7、5->经典无猜、6->强无猜、7->弱无猜、8->准无猜、9->强可猜、10->弱可猜
+    /// 递归模式暂时未能实现
     pub mode: u16,
     /// 游戏难度（级别）。3是初级；4是中级；5是高级；6是自定义。
     pub level: u8,
@@ -387,20 +394,23 @@ pub struct BaseVideo<T> {
     pub current_time: f64,
     /// 当前指针指向
     pub current_event_id: usize,
+    /// 仅转码录像使用，标识的可能的编码方式。
+    /// 可能的值，'utf-8', 'utf-16', 'utf-16-be', 'utf-16-le', 'gbk', 'gb2312', 'big5', 'shift-jis', 'cp932', 'latin-1', 'ascii', 'iso-8859-1'等
+    pub original_encoding: String,
     /// 录像用户标识
-    pub player_identifier: Vec<u8>,
+    pub player_identifier: String,
     /// 比赛标识
-    pub race_identifier: Vec<u8>,
+    pub race_identifier: String,
     /// 唯一性标识
-    pub uniqueness_identifier: Vec<u8>,
+    pub uniqueness_identifier: String,
     /// 游戏起始时间和终止时间。不整理格式，读成字符串。
     /// 举例：在阿比特中，‘16.10.2021.22.24.23.9906’，意味2021年10月16日，下午10点24分23秒9906。
     /// 维也纳扫雷中，‘1382834716’，代表以秒为单位的时间戳
-    pub start_time: Vec<u8>,
+    pub start_time: u64,
     /// 维也纳扫雷中没有
-    pub end_time: Vec<u8>,
+    pub end_time: u64,
     /// 国家。预留字段，暂时不能解析。
-    pub country: Vec<u8>,
+    pub country: String,
     /// 设备信息相关的uuid。例如在元扫雷中，长度为32。
     pub device_uuid: Vec<u8>,
     /// 原始二进制数据
@@ -438,7 +448,8 @@ pub struct BaseVideo<T> {
 impl Default for BaseVideo<Vec<Vec<i32>>> {
     fn default() -> Self {
         BaseVideo {
-            software: vec![],
+            software: String::new(),
+            translate_software: String::new(),
             width: 0,
             height: 0,
             mine_num: 0,
@@ -449,6 +460,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             use_cursor_pos_lim: false,
             use_auto_replay: false,
             nf: false,
+            translated: true,
             mode: 0,
             level: 0,
             cell_pixel_size: 16,
@@ -464,12 +476,13 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             delta_time: 0.0,
             current_time: 0.0,
             current_event_id: 0,
-            player_identifier: vec![],
-            race_identifier: vec![],
-            uniqueness_identifier: vec![],
-            start_time: vec![],
-            end_time: vec![],
-            country: vec![],
+            original_encoding: String::new(),
+            player_identifier: String::new(),
+            race_identifier: String::new(),
+            uniqueness_identifier: String::new(),
+            start_time: 0,
+            end_time: 0,
+            country: String::new(),
             device_uuid: vec![],
             raw_data: vec![],
             offset: 0,
@@ -492,7 +505,8 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
 impl Default for BaseVideo<SafeBoard> {
     fn default() -> Self {
         BaseVideo {
-            software: vec![],
+            software: String::new(),
+            translate_software: String::new(),
             width: 0,
             height: 0,
             mine_num: 0,
@@ -503,6 +517,7 @@ impl Default for BaseVideo<SafeBoard> {
             use_cursor_pos_lim: false,
             use_auto_replay: false,
             nf: false,
+            translated: false,
             mode: 0,
             level: 0,
             cell_pixel_size: 16,
@@ -516,12 +531,13 @@ impl Default for BaseVideo<SafeBoard> {
             delta_time: 0.0,
             current_time: 0.0,
             current_event_id: 0,
-            player_identifier: vec![],
-            race_identifier: vec![],
-            uniqueness_identifier: vec![],
-            start_time: vec![],
-            end_time: vec![],
-            country: vec![],
+            original_encoding: String::new(),
+            player_identifier: String::new(),
+            race_identifier: String::new(),
+            uniqueness_identifier: String::new(),
+            start_time: 0,
+            end_time: 0,
+            country: String::new(),
             device_uuid: vec![],
             raw_data: vec![],
             offset: 0,
@@ -809,7 +825,7 @@ impl BaseVideo<SafeBoard> {
     }
 }
 
-impl<T> BaseVideo<T> {
+impl BaseVideo<Vec<Vec<i32>>> {
     pub fn get_u8(&mut self) -> Result<u8, ErrReadVideoReason> {
         let t = self.raw_data.get(self.offset);
         self.offset += 1;
@@ -837,9 +853,209 @@ impl<T> BaseVideo<T> {
         let d = self.get_u8()?;
         Ok((a as u32) << 24 | (b as u32) << 16 | (c as u32) << 8 | (d as u32))
     }
+    pub fn get_u64(&mut self) -> Result<u64, ErrReadVideoReason> {
+        let a = self.get_u32()?;
+        let b = self.get_u32()?;
+        Ok((a as u64) << 32 | (b as u64))
+    }
     pub fn get_char(&mut self) -> Result<char, ErrReadVideoReason> {
         let a = self.get_u8()?;
         Ok(a as char)
+    }
+    pub fn get_buffer<U>(&mut self, length: U) -> Result<Vec<u8>, ErrReadVideoReason>
+    where
+        U: Into<usize>,
+    {
+        let length = length.into();
+        self.offset += length;
+        self.raw_data
+            .get((self.offset - length)..self.offset)
+            .map(|vv| vv.to_vec())
+            .ok_or(ErrReadVideoReason::FileIsTooShort)
+    }
+    pub fn get_c_buffer(&mut self, end: char) -> Result<Vec<u8>, ErrReadVideoReason> {
+        let mut s = vec![];
+        loop {
+            let the_byte = self.get_char()?;
+            if the_byte == end {
+                break;
+            }
+            s.push(the_byte as u8);
+        }
+        Ok(s)
+    }
+    pub fn get_utf8_string<U>(&mut self, length: U) -> Result<String, ErrReadVideoReason>
+    where
+        U: Into<usize>,
+    {
+        let length = length.into();
+        String::from_utf8(self.get_buffer(length)?).map_err(|_e| ErrReadVideoReason::Utf8Error)
+    }
+    // 读取以end结尾的合法utf-8字符串
+    pub fn get_utf8_c_string(&mut self, end: char) -> Result<String, ErrReadVideoReason> {
+        String::from_utf8(self.get_c_buffer(end)?).map_err(|_e| ErrReadVideoReason::Utf8Error)
+    }
+    // 读取以end结尾的未知编码字符串，假如所有编码都失败，返回utf-8乱码
+    pub fn get_unknown_encoding_c_string(
+        &mut self,
+        end: char,
+    ) -> Result<String, ErrReadVideoReason> {
+        let code = self.get_c_buffer(end)?;
+        if let Ok(s) = String::from_utf8(code.clone()) {
+            return Ok(s);
+        }
+        let (cow, _, had_errors) = GB18030.decode(&code);
+        if !had_errors {
+            return Ok(cow.into_owned());
+        };
+        let (cow, _, had_errors) = WINDOWS_1252.decode(&code);
+        if !had_errors {
+            return Ok(cow.into_owned());
+        };
+        Ok(String::from_utf8_lossy(&code).to_string())
+    }
+    // 是否闰年，计算阿比特时间戳
+    fn is_leap_year(&self, year: u32) -> bool {
+        (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+    }
+    // 一个月有几天，计算阿比特时间戳
+    fn days_in_month(&self, year: u32, month: u32) -> u32 {
+        let days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        if month == 2 && self.is_leap_year(year) {
+            29
+        } else {
+            days[(month - 1) as usize]
+        }
+    }
+
+    fn days_since_epoch(&self, year: u32, month: u32, day: u32) -> u64 {
+        let mut total_days = 0;
+        for y in 1970..year {
+            total_days += if self.is_leap_year(y) { 366 } else { 365 };
+        }
+        for m in 1..month {
+            total_days += self.days_in_month(year, m) as u64;
+        }
+        total_days + day as u64 - 1
+    }
+
+    // 解析avf里的开始时间戳，返回时间戳，微秒
+    // "18.10.2022.20:15:35:6606" -> 1666124135660600
+    pub fn parse_avf_start_timestamp(
+        &mut self,
+        start_timestamp: &str,
+    ) -> Result<u64, ErrReadVideoReason> {
+        let mut timestamp_parts = start_timestamp.split('.');
+        let day = timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        let month = timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        let year = timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        timestamp_parts = timestamp_parts.next().unwrap().split(':');
+        let hour = timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        let minute = timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        let second = timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        let sub_second = timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+
+        let days = self.days_since_epoch(year, month, day);
+        let total_seconds =
+            days * 24 * 60 * 60 + hour as u64 * 60 * 60 + minute as u64 * 60 + second as u64;
+        let microseconds = total_seconds * 1_000_000 + sub_second as u64 * 100;
+
+        Ok(microseconds)
+    }
+
+    // 解析avf里的结束时间戳，返回时间戳，微秒
+    // "18.20:16:24:8868", "18.10.2022.20:15:35:6606" -> 1666124184886800
+    pub fn parse_avf_end_timestamp(
+        &mut self,
+        start_timestamp: &str,
+        end_timestamp: &str,
+    ) -> Result<u64, ErrReadVideoReason> {
+        let mut start_timestamp_parts = start_timestamp.split('.');
+        let mut end_timestamp_parts = end_timestamp.split('.');
+        let start_day = start_timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        let end_day = end_timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        let mut month = start_timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        let mut year = start_timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        if start_day > end_day {
+            // 跨月
+            month += 1;
+            if month >= 13 {
+                month = 1;
+                year += 1;
+            }
+        }
+        end_timestamp_parts = end_timestamp_parts.next().unwrap().split(':');
+        let hour = end_timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        let minute = end_timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        let second = end_timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+        let sub_second = end_timestamp_parts
+            .next()
+            .unwrap()
+            .parse::<u32>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+
+        let days = self.days_since_epoch(year, month, end_day);
+        let total_seconds =
+            days * 24 * 60 * 60 + hour as u64 * 60 * 60 + minute as u64 * 60 + second as u64;
+        let microseconds = total_seconds * 1_000_000 + sub_second as u64 * 100;
+
+        Ok(microseconds)
     }
 }
 
@@ -1007,9 +1223,7 @@ impl<T> BaseVideo<T> {
                     self.start_time = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .unwrap()
-                        .as_micros()
-                        .to_string()
-                        .into_bytes();
+                        .as_micros() as u64;
                 }
             }
             // 不可能
@@ -1018,9 +1232,7 @@ impl<T> BaseVideo<T> {
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
-                    .as_micros()
-                    .to_string()
-                    .into_bytes();
+                    .as_micros() as u64;
                 // 点一下左键可能直接获胜，但不可能直接失败
                 let t_ms = time_ms - self.game_start_ms;
                 self.is_completed = false;
@@ -1050,9 +1262,7 @@ impl<T> BaseVideo<T> {
                 self.end_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
-                    .as_micros()
-                    .to_string()
-                    .into_bytes();
+                    .as_micros() as u64;
                 if old_state == GameBoardState::PreFlaging {
                     // 点一左键下就直接获胜的情况
                     self.start_time = self.end_time.clone();
@@ -1512,7 +1722,7 @@ impl<T> BaseVideo<T> {
         self.mode = mode;
         Ok(0)
     }
-    pub fn set_software(&mut self, software: Vec<u8>) -> Result<u8, ()> {
+    pub fn set_software(&mut self, software: String) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
             && self.game_board_state != GameBoardState::Ready
@@ -1523,7 +1733,7 @@ impl<T> BaseVideo<T> {
         Ok(0)
     }
 
-    pub fn set_player_identifier(&mut self, player_identifier: Vec<u8>) -> Result<u8, ()> {
+    pub fn set_player_identifier(&mut self, player_identifier: String) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -1532,7 +1742,7 @@ impl<T> BaseVideo<T> {
         self.player_identifier = player_identifier;
         Ok(0)
     }
-    pub fn set_race_identifier(&mut self, race_identifier: Vec<u8>) -> Result<u8, ()> {
+    pub fn set_race_identifier(&mut self, race_identifier: String) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -1541,7 +1751,7 @@ impl<T> BaseVideo<T> {
         self.race_identifier = race_identifier;
         Ok(0)
     }
-    pub fn set_uniqueness_identifier(&mut self, uniqueness_identifier: Vec<u8>) -> Result<u8, ()> {
+    pub fn set_uniqueness_identifier(&mut self, uniqueness_identifier: String) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -1551,26 +1761,26 @@ impl<T> BaseVideo<T> {
         Ok(0)
     }
     /// 拟弃用，会自动记录
-    pub fn set_start_time(&mut self, start_time: Vec<u8>) -> Result<u8, ()> {
-        if self.game_board_state != GameBoardState::Loss
-            && self.game_board_state != GameBoardState::Win
-        {
-            return Err(());
-        };
-        self.start_time = start_time;
-        Ok(0)
-    }
+    // pub fn set_start_time(&mut self, start_time: Vec<u8>) -> Result<u8, ()> {
+    //     if self.game_board_state != GameBoardState::Loss
+    //         && self.game_board_state != GameBoardState::Win
+    //     {
+    //         return Err(());
+    //     };
+    //     self.start_time = start_time;
+    //     Ok(0)
+    // }
     /// 拟弃用，会自动记录
-    pub fn set_end_time(&mut self, end_time: Vec<u8>) -> Result<u8, ()> {
-        if self.game_board_state != GameBoardState::Loss
-            && self.game_board_state != GameBoardState::Win
-        {
-            return Err(());
-        };
-        self.end_time = end_time;
-        Ok(0)
-    }
-    pub fn set_country(&mut self, country: Vec<u8>) -> Result<u8, ()> {
+    // pub fn set_end_time(&mut self, end_time: Vec<u8>) -> Result<u8, ()> {
+    //     if self.game_board_state != GameBoardState::Loss
+    //         && self.game_board_state != GameBoardState::Win
+    //     {
+    //         return Err(());
+    //     };
+    //     self.end_time = end_time;
+    //     Ok(0)
+    // }
+    pub fn set_country(&mut self, country: String) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -1834,10 +2044,8 @@ impl<T> BaseVideo<T> {
         if self.game_board_state == GameBoardState::Display {
             // let t = self.current_time - self.delta_time;
             // println!("t:{:?}", t);
-            Ok(
-                c * bbbv_solved as f64 / self.current_time.powf(1.7)
-                    * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5),
-            )
+            Ok(c * bbbv_solved as f64 / self.current_time.powf(1.7)
+                * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5))
         } else {
             Ok(
                 c * bbbv_solved as f64 / self.game_dynamic_params.rtime.powf(1.7)
@@ -2082,23 +2290,26 @@ impl<T> BaseVideo<T> {
                 .try_into()
                 .unwrap(),
         );
-        self.raw_data.append(&mut self.software.clone().to_owned());
+        self.raw_data
+            .append(&mut self.software.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.player_identifier.clone().to_owned());
+            .append(&mut self.player_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.race_identifier.clone().to_owned());
+            .append(&mut self.race_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.uniqueness_identifier.clone().to_owned());
+            .append(&mut self.uniqueness_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.start_time.clone().to_owned());
+            .append(&mut self.start_time.to_string().into_bytes());
         self.raw_data.push(0);
-        self.raw_data.append(&mut self.end_time.clone().to_owned());
+        self.raw_data
+            .append(&mut self.end_time.to_string().into_bytes());
         self.raw_data.push(0);
-        self.raw_data.append(&mut self.country.clone().to_owned());
+        self.raw_data
+            .append(&mut self.country.to_string().into_bytes());
         self.raw_data.push(0);
 
         let mut byte = 0;
@@ -2198,23 +2409,25 @@ impl<T> BaseVideo<T> {
                 .try_into()
                 .unwrap(),
         );
-        self.raw_data.append(&mut self.software.clone().to_owned());
+        self.raw_data
+            .append(&mut self.software.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.player_identifier.clone().to_owned());
+            .append(&mut self.player_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.race_identifier.clone().to_owned());
+            .append(&mut self.race_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.uniqueness_identifier.clone().to_owned());
+            .append(&mut self.uniqueness_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.start_time.clone().to_owned());
+            .append(&mut self.start_time.to_string().into_bytes());
         self.raw_data.push(0);
-        self.raw_data.append(&mut self.end_time.clone().to_owned());
+        self.raw_data
+            .append(&mut self.end_time.to_string().into_bytes());
         self.raw_data.push(0);
-        self.raw_data.append(&mut self.country.clone().to_owned());
+        self.raw_data.append(&mut self.country.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
             .append(&mut self.device_uuid.clone().to_owned());
@@ -2329,23 +2542,25 @@ impl<T> BaseVideo<T> {
                 .try_into()
                 .unwrap(),
         );
-        self.raw_data.append(&mut self.software.clone().to_owned());
+        self.raw_data
+            .append(&mut self.software.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.player_identifier.clone().to_owned());
+            .append(&mut self.player_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.race_identifier.clone().to_owned());
+            .append(&mut self.race_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.uniqueness_identifier.clone().to_owned());
+            .append(&mut self.uniqueness_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.start_time.clone().to_owned());
+            .append(&mut self.start_time.to_string().into_bytes());
         self.raw_data.push(0);
-        self.raw_data.append(&mut self.end_time.clone().to_owned());
+        self.raw_data
+            .append(&mut self.end_time.to_string().into_bytes());
         self.raw_data.push(0);
-        self.raw_data.append(&mut self.country.clone().to_owned());
+        self.raw_data.append(&mut self.country.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
             .append(&mut self.device_uuid.clone().to_owned());
@@ -2463,17 +2678,10 @@ impl<T> BaseVideo<T> {
     /// - 返回3的原因有：（1）步数很少，例如使用触摸屏
     /// - （2）使用了该软件的不合法的模式，例如元扫雷中的强可猜
     pub fn is_valid(&self) -> u8 {
-        let software = match String::from_utf8(self.software.clone()) {
-            Ok(software) => software,
-            Err(_) => {
-                // 软件名称不是合法的utf-8
-                return 1;
-            }
-        };
-        if &software == "Arbiter" {
+        if self.software == "Arbiter" {
             // 对于arbiter，开源界没有鉴定的能力，只能追溯
-        } else if &software == "Viennasweeper" {
-        } else if &software == "元3.1.9" {
+        } else if self.software == "Viennasweeper" {
+        } else if self.software == "元3.1.9" {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和
                 return 1;
@@ -2486,7 +2694,7 @@ impl<T> BaseVideo<T> {
                 // 只允许标准、经典无猜
                 return 3;
             }
-        } else if &software == "元3.1.11" || &software == "元3.2.0" {
+        } else if self.software == "元3.1.11" || self.software == "元3.2.0" {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和
                 return 1;

@@ -1871,3 +1871,4 @@ pub fn cal_board_numbers(board: &mut Vec<Vec<i32>>) {
         }
     }
 }
+

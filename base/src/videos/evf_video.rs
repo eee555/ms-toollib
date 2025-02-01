@@ -1,9 +1,9 @@
 use crate::utils::cal_board_numbers;
+use crate::videos::base_video::NewBaseVideo;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
 use crate::videos::NewSomeVideo2;
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::videos::NewSomeVideo;
-use crate::videos::base_video::NewBaseVideo;
 
 /// evf录像解析器。  
 /// - 功能：解析evf格式的录像(唯一的计算机易读、开源的录像格式)，有详细分析录像的方法。  
@@ -123,55 +123,52 @@ impl EvfVideo {
         self.data.static_params.bbbv = self.data.get_u16()? as usize;
         let t = self.data.get_u24()?;
         self.data.set_rtime(t as f64 / 1000.0).unwrap();
-
+        self.data.software = self.data.get_utf8_c_string('\0')?;
+        self.data.player_identifier = self.data.get_utf8_c_string('\0')?;
+        let mut race_identifier = vec![];
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.software.push(the_byte as u8);
+            race_identifier.push(the_byte as u8);
         }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.player_identifier.push(the_byte as u8);
+        match String::from_utf8(race_identifier) {
+            Ok(s) => self.data.race_identifier = s,
+            Err(e) => return Err(ErrReadVideoReason::Utf8Error),
         }
+        let mut uniqueness_identifier = vec![];
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.race_identifier.push(the_byte as u8);
+            uniqueness_identifier.push(the_byte as u8);
         }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.uniqueness_identifier.push(the_byte as u8);
+        match String::from_utf8(uniqueness_identifier) {
+            Ok(s) => self.data.uniqueness_identifier = s,
+            Err(e) => return Err(ErrReadVideoReason::Utf8Error),
         }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     start_time.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.end_time.push(the_byte as u8);
+        // }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
                 break;
             }
-            self.data.start_time.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.end_time.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.country.push(the_byte as u8);
+            self.data.country.push(the_byte as char);
         }
 
         self.data.board = vec![vec![0; self.data.width]; self.data.height];
@@ -265,55 +262,55 @@ impl EvfVideo {
         let t = self.data.get_u24()?;
         self.data.set_rtime(t as f64 / 1000.0).unwrap();
 
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.software.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.player_identifier.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.race_identifier.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.uniqueness_identifier.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.start_time.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.end_time.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.country.push(the_byte as u8);
-        }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.software.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.player_identifier.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.race_identifier.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.uniqueness_identifier.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.start_time.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.end_time.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.country.push(the_byte as u8);
+        // }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {
@@ -417,55 +414,55 @@ impl EvfVideo {
         let t = self.data.get_u24()?;
         self.data.set_rtime(t as f64 / 1000.0).unwrap();
 
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.software.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.player_identifier.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.race_identifier.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.uniqueness_identifier.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.start_time.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.end_time.push(the_byte as u8);
-        }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
-            }
-            self.data.country.push(the_byte as u8);
-        }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.software.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.player_identifier.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.race_identifier.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.uniqueness_identifier.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.start_time.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.end_time.push(the_byte as u8);
+        // }
+        // loop {
+        //     let the_byte = self.data.get_char()?;
+        //     if the_byte == '\0' {
+        //         break;
+        //     }
+        //     self.data.country.push(the_byte as u8);
+        // }
         loop {
             let the_byte = self.data.get_char()?;
             if the_byte == '\0' {

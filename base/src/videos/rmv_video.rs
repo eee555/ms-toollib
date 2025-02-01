@@ -146,7 +146,8 @@ impl RmvVideo {
             for _ in 0..10 {
                 timestamp.push(self.data.get_u8()?);
             }
-            self.data.start_time = timestamp;
+            // ***************************
+            self.data.start_time = 0;
 
             // 2 beta和更早的版本里没有3bv和时间戳
         } else {
@@ -188,8 +189,8 @@ impl RmvVideo {
                 self.data.get_char()?;
             }
         }
-        self.data.player_identifier = player;
-        self.data.country = country;
+        self.data.player_identifier = "player".to_string();
+        self.data.country = "country".to_string();
 
         self.data.offset += 4;
 
@@ -296,7 +297,7 @@ impl RmvVideo {
         self.data
             .set_rtime(self.data.video_action_state_recorder.last().unwrap().time)
             .unwrap();
-        self.data.software = "Viennasweeper".as_bytes().to_vec();
+        self.data.software = "Viennasweeper".to_string();
         self.data.can_analyse = true;
         return Ok(());
     }

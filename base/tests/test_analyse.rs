@@ -285,11 +285,10 @@ fn rmv_video_works() {
 #[test]
 fn mvf_video_works() {
     // 录像解析工具测试
-    let mut video = MvfVideo::new("Zhang Shen Jia_Exp_38.82(3bv122).mvf");
+    let mut video = MvfVideo::new("../test_files/Zhang Shen Jia_Exp_38.82(3bv122).mvf");
 
     let r = video.parse_video();
     // video.data.print_event();
-    video.data.analyse();
     // video.data.analyse_for_features(vec![
     //     "high_risk_guess",
     //     "jump_judge",
@@ -300,33 +299,32 @@ fn mvf_video_works() {
     // ]);
 
     // video.data.print_raw_data(400);
-    println!("board: {:?}", video.data.board);
-    println!("结果：{:?}", r);
-    println!("标识：{:?}", video.data.player_identifier);
-    println!("软件：{:?}", video.data.software);
-    println!("race_identifier：{:?}", video.data.race_identifier);
-    println!("3BV：{:?}", video.data.static_params.bbbv);
-    println!("宽度：{:?}", video.data.width);
-    println!("高度：{:?}", video.data.height);
-    println!("雷数：{:?}", video.data.mine_num);
-    println!("level：{:?}", video.data.level);
-    // println!("3BV：{:?}", video.s.s);
-    println!("time：{:?}", video.data.get_rtime().unwrap());
-    println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
-    println!(
-        "video_start_time: {:?}",
-        video.data.get_video_start_time().unwrap()
+    assert_eq!(
+        video.data.board[0],
+        [
+            1, -1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, -1, -1, 1, 0, 1, -1, 1, 1, 1, 1, 0, 1,
+            1, 1
+        ]
     );
-    println!(
-        "video_end_time: {:?}",
-        video.data.get_video_end_time().unwrap()
-    );
-    println!("is win: {:?}", video.data.is_completed);
+    assert_eq!(video.data.software, "0.97 beta");
+    assert_eq!(video.data.width, 30);
+    assert_eq!(video.data.height, 16);
+    assert_eq!(video.data.mine_num, 99);
+    assert_eq!(video.data.static_params.bbbv, 122);
+    assert!(video.data.is_completed);
+    assert!(!video.data.use_question);
+    assert_eq!(video.data.player_identifier, "Zhang Shen Jia(China)");
+    assert_eq!(r.unwrap(), ());
+    assert_eq!(video.data.level, 5);
+    assert_eq!(video.data.get_rtime().unwrap(), 37.81);
+    assert_eq!(video.data.get_rtime_ms().unwrap(), 37810);
+    video.data.analyse();
+    assert_eq!(video.data.get_video_start_time().unwrap(), -0.01);
+    assert_eq!(video.data.get_video_end_time().unwrap(), 37.81);
     video.data.set_current_time(12.0);
-    println!("STNB: {:?}", video.data.get_stnb().unwrap());
-    println!("game_board: {:?}", video.data.get_game_board());
-    println!("game_board_poss: {:?}", video.data.get_game_board_poss());
-    // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
+    assert_eq!(video.data.get_stnb().unwrap(), 104.33431983657493);
+    // println!("game_board: {:?}", video.data.get_game_board());
+    // println!("game_board_poss: {:?}", video.data.get_game_board_poss());
     // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
     // video.data.print_comments();
 }

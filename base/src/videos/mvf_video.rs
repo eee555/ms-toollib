@@ -1,9 +1,9 @@
 use crate::utils::cal_board_numbers;
+use crate::videos::base_video::NewBaseVideo;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
-use crate::videos::NewSomeVideo2;
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::videos::NewSomeVideo;
-use crate::videos::base_video::NewBaseVideo;
+use crate::videos::NewSomeVideo2;
 
 /// mvf录像解析器。  
 /// - 功能：解析mvf格式的录像，有详细分析录像的方法。  
@@ -75,23 +75,7 @@ impl NewSomeVideo2<Vec<u8>, &str> for MvfVideo {
 }
 
 impl MvfVideo {
-    // #[cfg(any(feature = "py", feature = "rs"))]
-    // pub fn new(file_name: &str) -> MvfVideo {
-    //     MvfVideo {
-    //         file_name: file_name.to_string(),
-    //         data: BaseVideo::<Vec<Vec<i32>>>::new(file_name),
-    //     }
-    // }
-    // #[cfg(feature = "js")]
-    // pub fn new(video_data: Vec<u8>, file_name: &str) -> MvfVideo {
-    //     MvfVideo {
-    //         file_name: file_name.to_string(),
-    //         data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
-    //     }
-    // }
     fn read_board(&mut self, add: i32) -> Result<(), ErrReadVideoReason> {
-        //     unsigned char c;
-        // int board_sz,i,pos;
         self.data.width = self.data.get_u8()?.into();
         self.data.height = self.data.get_u8()?.into();
         self.data.board = vec![vec![0; self.data.width]; self.data.height];
@@ -179,26 +163,28 @@ impl MvfVideo {
         }
 
         // 下面3 bytes 是时间
-        let score_sec = self.data.get_u16()? as f64;
-        let score_ths = self.data.get_u8()? as f64 / 100.0;
-        self.data.set_rtime(score_sec + score_ths).unwrap();
+        let _score_sec = self.data.get_u16()? as f64;
+        let _score_ths = self.data.get_u8()? as f64 / 100.0;
+        // 此时间是第一次左键按下的时间作为开始时间，到最后一次弹起，因此，此时间不准
+        // self.data.set_rtime(_score_sec + _score_ths).unwrap();
 
         // 下面 11 bytes 只有 Clone 0.97有
-        self.data.static_params.bbbv = self.data.get_u16()?.into();
-        // bbbv_solved、Left clicks、Double clicks、Right clicks不读
-        self.data.offset += 8;
+        // 工具箱无法在解析录像时设置bbbv_solved、Left clicks、Double clicks、Right clicks这些值，而是在推演局面时自动计算
+        let bbbv = self.data.get_u16()?;
+        self.data.static_params.bbbv = bbbv.into();
+        let bbbv_solved = self.data.get_u16()?;
+        self.data.is_completed = bbbv == bbbv_solved;
+
+        self.data.offset += 6; // Left clicks、Double clicks、Right clicks不读
 
         // Check if Questionmark option was turned on
-        self.data.offset += 1;
+        self.data.use_question = self.data.get_u8()? != 0;
 
         // Function gets Width, Height and Mines then reads board layout into memory
         self.read_board(-1)?;
 
         let byte_len = self.data.get_u8()?;
-        // for _ in 0..byte_len {
-        //     let t = self.data.get_u8()?;
-        //     self.data.player_identifier.push(t);
-        // }
+        self.data.player_identifier = self.data.get_unknown_encoding_string(byte_len)?;
 
         // First 2 bytes determine the file permutation
         let mut s = ['\0'; 40];
@@ -251,7 +237,6 @@ impl MvfVideo {
                 }
             }
         }
-        // println!("s: {:?}, byte: {:?}, bit: {:?}", s, byte, bit);
 
         let event_size = self.data.get_u24()?;
         let mut prev_rb;
@@ -271,7 +256,6 @@ impl MvfVideo {
         let mut ths = 0;
         let mut sec = 0;
         let mouse;
-
         for j in 0..9 {
             x |= self.apply_perm(12 + j, &byte, &bit, &e) << j;
             y |= self.apply_perm(3 + j, &byte, &bit, &e) << j;
@@ -347,13 +331,21 @@ impl MvfVideo {
                     });
             }
         }
+        let mut start_t = 0.0;
+        // 计算rtime。如前所述，录像记录的时间是从lc开始的，并不正确
+        for v in &self.data.video_action_state_recorder{
+            if v.mouse == "lr"{
+                start_t = v.time;
+                break;
+            }
+        }
+        let rtime = self.data.video_action_state_recorder.last().unwrap().time - start_t;
+        self.data.set_rtime(rtime).unwrap();
 
-        // return 1;
         Ok(())
     }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
         self.data.can_analyse = true;
-        // self.data.is_completed; // 该格式解析前不能确定是否扫完
         self.data.is_official = true;
         self.data.is_fair = true;
         let mut c = self.data.get_u8()?;

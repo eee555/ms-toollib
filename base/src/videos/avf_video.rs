@@ -117,20 +117,6 @@ impl NewSomeVideo2<Vec<u8>, &str> for AvfVideo {
 }
 
 impl AvfVideo {
-    // #[cfg(any(feature = "py", feature = "rs"))]
-    // pub fn new(file_name: &str) -> AvfVideo {
-    //     AvfVideo {
-    //         file_name: file_name.to_string(),
-    //         data: BaseVideo::<Vec<Vec<i32>>>::new(file_name),
-    //     }
-    // }
-    // #[cfg(feature = "js")]
-    // pub fn new(video_data: Vec<u8>, file_name: &str) -> AvfVideo {
-    //     AvfVideo {
-    //         file_name: file_name.to_string(),
-    //         data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
-    //     }
-    // }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
         match self.data.get_u8() {
             Ok(_) => {}
@@ -205,7 +191,6 @@ impl AvfVideo {
             }
         }
         self.data.start_time = self.data.parse_avf_start_timestamp(&start_time)?;
-        // println!("{:?}", start_time);
         let mut end_time = String::new();
         loop {
             match self.data.get_char()? {
@@ -213,7 +198,6 @@ impl AvfVideo {
                 other => end_time.push(other),
             }
         }
-        println!("{:?}", end_time);
         self.data.end_time = self.data.parse_avf_end_timestamp(&start_time, &end_time)?;
         let mut buffer: [char; 2];
         match self.data.get_char()? {

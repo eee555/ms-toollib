@@ -895,6 +895,24 @@ impl BaseVideo<Vec<Vec<i32>>> {
     pub fn get_utf8_c_string(&mut self, end: char) -> Result<String, ErrReadVideoReason> {
         String::from_utf8(self.get_c_buffer(end)?).map_err(|_e| ErrReadVideoReason::Utf8Error)
     }
+    pub fn get_unknown_encoding_string<U>(&mut self, length: U) -> Result<String, ErrReadVideoReason>
+    where
+        U: Into<usize>,
+    {
+        let code = self.get_buffer(length)?;
+        if let Ok(s) = String::from_utf8(code.clone()) {
+            return Ok(s);
+        }
+        let (cow, _, had_errors) = GB18030.decode(&code);
+        if !had_errors {
+            return Ok(cow.into_owned());
+        };
+        let (cow, _, had_errors) = WINDOWS_1252.decode(&code);
+        if !had_errors {
+            return Ok(cow.into_owned());
+        };
+        Ok(String::from_utf8_lossy(&code).to_string())
+    }
     // 读取以end结尾的未知编码字符串，假如所有编码都失败，返回utf-8乱码
     pub fn get_unknown_encoding_c_string(
         &mut self,
@@ -1552,7 +1570,7 @@ impl<T> BaseVideo<T> {
         }
     }
     // 录像解析时，设置游戏时间，时间成绩。
-    // 什么意思？
+    // 同时设置秒和毫秒的时间，并且只能写入一次
     pub fn set_rtime(&mut self, time: f64) -> Result<u8, ()> {
         if !self.allow_set_rtime {
             return Err(());

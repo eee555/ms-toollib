@@ -428,7 +428,7 @@ pub struct BaseVideo<T> {
     // /// 开始扫前，已经标上的雷。如果操作流中包含标这些雷的过程，
     // pub pre_flags: Vec<(usize, usize)>,
     ///校验码
-    pub checksum: [u8; 32],
+    pub checksum: Vec<u8>,
     pub can_analyse: bool,
     // 游戏前标的雷数
     // new_before_game方法里用到，真正开始的时间
@@ -489,7 +489,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             static_params: StaticParams::default(),
             game_dynamic_params: GameDynamicParams::default(),
             video_dynamic_params: VideoDynamicParams::default(),
-            checksum: [0; 32],
+            checksum: vec![],
             can_analyse: false,
             // net_start_time: 0.0,
             has_checksum: false,
@@ -544,7 +544,7 @@ impl Default for BaseVideo<SafeBoard> {
             static_params: StaticParams::default(),
             game_dynamic_params: GameDynamicParams::default(),
             video_dynamic_params: VideoDynamicParams::default(),
-            checksum: [0; 32],
+            checksum: vec![],
             can_analyse: false,
             // net_start_time: 0.0,
             has_checksum: false,
@@ -1571,10 +1571,14 @@ impl<T> BaseVideo<T> {
     }
     // 录像解析时，设置游戏时间，时间成绩。
     // 同时设置秒和毫秒的时间，并且只能写入一次
-    pub fn set_rtime(&mut self, time: f64) -> Result<u8, ()> {
+    pub fn set_rtime<U>(&mut self, time: U) -> Result<u8, ()> 
+    where
+        U: Into<f64>,
+    {
         if !self.allow_set_rtime {
             return Err(());
         }
+        let time = time.into();
         self.game_dynamic_params.rtime = time;
         self.game_dynamic_params.rtime_ms = s_to_ms(time);
         self.allow_set_rtime = false;
@@ -1817,7 +1821,7 @@ impl<T> BaseVideo<T> {
         Ok(0)
     }
     /// 在生成二进制数据前得出checksum，则用这个
-    pub fn set_checksum(&mut self, checksum: [u8; 32]) -> Result<u8, ()> {
+    pub fn set_checksum(&mut self, checksum: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -2216,7 +2220,7 @@ impl<T> BaseVideo<T> {
             MouseState::Undefined => 8,
         }
     }
-    pub fn get_checksum(&self) -> Result<[u8; 32], ()> {
+    pub fn get_checksum(&self) -> Result<Vec<u8>, ()> {
         if self.game_board_state != GameBoardState::Win
             && self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Display

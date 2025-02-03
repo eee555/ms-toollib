@@ -261,21 +261,18 @@ fn rmv_video_works() {
     video.data.analyse();
     let _ = video.data.set_pix_size(60);
     assert_eq!(r.unwrap(), ());
-    println!("标识：{:?}", video.data.player_identifier);
-    println!("3BV：{:?}", video.data.static_params.bbbv);
-    println!("宽度：{:?}", video.data.width);
-    println!("高度：{:?}", video.data.height);
-    println!("雷数：{:?}", video.data.mine_num);
-    println!("level：{:?}", video.data.level);
-    // println!("3BV：{:?}", video.s.s);
-    println!("time：{:?}", video.data.get_rtime().unwrap());
-    println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
-    println!("is win: {:?}", video.data.is_completed);
+    assert_eq!(video.data.player_identifier, "王嘉宁");
+    assert_eq!(video.data.static_params.bbbv, 134);
+    assert_eq!(video.data.get_rtime().unwrap(), 98.763);
+    assert_eq!(video.data.get_rtime_ms().unwrap(), 98763);
+    assert!(video.data.is_completed);
+    assert_eq!(video.data.start_time, 1738209872000000u64);
+    assert_eq!(video.data.end_time, 1738209970763000u64);
     video.data.set_current_time(40.0);
-    println!("STNB: {:?}", video.data.get_stnb().unwrap());
-    println!("path: {:?}", video.data.get_path());
+    assert_eq!(video.data.get_stnb().unwrap(), 38.953642569326725);
+    assert_eq!(video.data.get_path(), 3034.0392068453953);
     video.data.set_current_time(-1.0);
-    println!("game_board: {:?}", video.data.get_game_board());
+    // println!("game_board: {:?}", video.data.get_game_board());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
     // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
     // video.data.print_comments();
@@ -330,15 +327,15 @@ fn mvf_video_works() {
 }
 
 #[test]
-// cargo test --features rs -- --nocapture EvfVideo_works
-fn evf_video_works() {
+// cargo test --features rs -- --nocapture evf_video_works_v3
+fn evf_video_works_v3() {
     // 录像解析工具测试
-    let mut video = EvfVideo::new("b_0_2.452_12_4.894_Mao Dun (China).evf");
+    let mut video = EvfVideo::new("../test_files/b_5_3.796_3BV=3_3BVs=0.790_王嘉宁(元3.1.9_v3).evf");
 
-    let r = video.parse_video();
-    println!("board: {:?}", video.data.board);
-    println!("cell_pixel_size：{:?}", video.data.cell_pixel_size);
-    video.data.print_event();
+    let _ = video.parse_video();
+    assert_eq!(video.data.board[0], vec![0, 2, -1, 2, 0, 0, 0, 0]);
+    assert_eq!(video.data.cell_pixel_size, 20);
+    // video.data.print_event();
     video.data.analyse();
     video.data.analyse_for_features(vec![
         "high_risk_guess",
@@ -348,36 +345,22 @@ fn evf_video_works() {
         "vision_transfer",
         "survive_poss",
     ]);
-
-    // video.data.print_raw_data(400);
-    println!("结果：{:?}", r);
-    println!("标识：{:?}", video.data.player_identifier);
-    println!("软件：{:?}", video.data.software);
-    println!("比较：{:?}", "元3.1.9".as_bytes().to_vec());
-    println!("race_identifier：{:?}", video.data.race_identifier);
-    println!("3BV：{:?}", video.data.static_params.bbbv);
-    println!("宽度：{:?}", video.data.width);
-    println!("高度：{:?}", video.data.height);
-    println!("雷数：{:?}", video.data.mine_num);
-    // println!("3BV：{:?}", video.s.s);
-    println!("rtime：{:?}", video.data.get_rtime().unwrap());
-    println!("rtime_ms：{:?}", video.data.get_rtime_ms().unwrap());
-    println!(
-        "video_start_time: {:?}",
-        video.data.get_video_start_time().unwrap()
-    );
-    println!(
-        "video_end_time: {:?}",
-        video.data.get_video_end_time().unwrap()
-    );
+    assert_eq!(video.data.player_identifier, "王嘉宁");
+    assert_eq!(video.data.software, "元3.1.9");
+    assert_eq!(video.data.static_params.bbbv, 3);
+    assert_eq!(video.data.width, 8);
+    assert_eq!(video.data.height, 8);
+    assert_eq!(video.data.mine_num, 10);
+    assert_eq!(video.data.get_rtime().unwrap(), 3.796);
+    assert_eq!(video.data.get_rtime_ms().unwrap(), 3796);
     println!("is win: {:?}", video.data.is_completed);
     println!("is_official: {:?}", video.data.is_official);
     println!("is_fair: {:?}", video.data.is_fair);
     println!("is_valid: {:?}", video.data.is_valid());
     video.data.set_current_time(0.001);
-    println!("time：{:?}", video.data.get_time());
-    println!("STNB: {:?}", video.data.get_stnb().unwrap());
-    println!("bbbv_solved: {:?}", video.data.get_bbbv_solved().unwrap());
+    assert_eq!(video.data.get_time(), 0.001);
+    assert_eq!(video.data.get_stnb().unwrap(), 3437884.8929975377);
+    assert_eq!(video.data.get_bbbv_solved().unwrap(), 1);
     video.data.set_current_time(999.999);
     println!("get_right: {:?}", video.data.get_right());
     println!("get_flag: {:?}", video.data.get_flag());
@@ -388,6 +371,14 @@ fn evf_video_works() {
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
     // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
     // video.data.print_comments();
+}
+
+#[test]
+// cargo test --features rs -- --nocapture evf_video_works_v4
+fn evf_video_works_v4() {
+    // 录像解析工具测试
+    
+    
 }
 
 #[test]
@@ -468,7 +459,7 @@ fn base_video_works() {
     println!("cell0: {:?}", video.static_params.cell0);
 
     video.generate_evf_v0_raw_data();
-    video.set_checksum([8; 32]).unwrap();
+    video.set_checksum(vec![8; 32]).unwrap();
     video.save_to_evf_file("test");
 
     let mut video = EvfVideo::new("test.evf");
@@ -913,7 +904,7 @@ fn base_video_works_4() {
     println!("cell0: {:?}", video.static_params.cell0);
 
     video.generate_evf_v0_raw_data();
-    video.set_checksum([8; 32]).unwrap();
+    video.set_checksum(vec![8; 32]).unwrap();
     video.save_to_evf_file("test");
 
     let mut video = EvfVideo::new("test.evf");
@@ -969,7 +960,7 @@ fn base_video_works_5_1bv() {
     _sleep_ms(200);
     video.step("lr", (32, 49)).unwrap();
     video.generate_evf_v0_raw_data();
-    video.set_checksum([8; 32]).unwrap();
+    video.set_checksum(vec![8; 32]).unwrap();
     video.save_to_evf_file("test");
 
     println!("局面：{:?}", video.get_game_board());

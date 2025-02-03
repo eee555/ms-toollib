@@ -1,9 +1,9 @@
 use crate::utils::cal_board_numbers;
 use crate::videos::base_video::NewBaseVideo;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
-use crate::videos::NewSomeVideo2;
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::videos::NewSomeVideo;
+use crate::videos::NewSomeVideo2;
 
 /// evf录像解析器。  
 /// - 功能：解析evf格式的录像(唯一的计算机易读、开源的录像格式)，有详细分析录像的方法。  
@@ -75,25 +75,14 @@ impl NewSomeVideo2<Vec<u8>, &str> for EvfVideo {
 }
 
 impl EvfVideo {
-    // #[cfg(any(feature = "py", feature = "rs"))]
-    // pub fn new_with_file(file_name: &str) -> EvfVideo {
-    //     EvfVideo {
-    //         file_name: file_name.to_string(),
-    //         data: BaseVideo::<Vec<Vec<i32>>>::new(file_name),
-    //     }
-    // }
-    // pub fn new(video_data: Vec<u8>, file_name: &str) -> EvfVideo {
-    //     EvfVideo {
-    //         file_name: file_name.to_string(),
-    //         data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
-    //     }
-    // }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
         let version = self.data.get_u8()?;
+        println!("{:?}", version);
         match version {
             0 | 1 => self.parse_v1(),
             2 => self.parse_v2(),
             3 => self.parse_v3(),
+            4 => self.parse_v4(),
             _ => Err(ErrReadVideoReason::VersionBackward),
         }
     }
@@ -124,53 +113,35 @@ impl EvfVideo {
         let t = self.data.get_u24()?;
         self.data.set_rtime(t as f64 / 1000.0).unwrap();
         self.data.software = self.data.get_utf8_c_string('\0')?;
-        self.data.player_identifier = self.data.get_utf8_c_string('\0')?;
-        let mut race_identifier = vec![];
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
+        self.data.translated = !self.data.software.starts_with("元");
+        self.data.player_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        self.data.race_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        self.data.uniqueness_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        let start_time = self.data.get_utf8_c_string('\0')?;
+        let end_time = self.data.get_utf8_c_string('\0')?;
+        match self.data.software.as_str() {
+            "Arbiter" => {
+                self.data.start_time = self.data.parse_avf_start_timestamp(&start_time)?;
+                self.data.end_time = self.data.parse_avf_end_timestamp(&start_time, &end_time)?;
             }
-            race_identifier.push(the_byte as u8);
-        }
-        match String::from_utf8(race_identifier) {
-            Ok(s) => self.data.race_identifier = s,
-            Err(e) => return Err(ErrReadVideoReason::Utf8Error),
-        }
-        let mut uniqueness_identifier = vec![];
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
+            "Viennasweeper" => {
+                self.data.start_time = start_time
+                    .parse::<u64>()
+                    .map_err(|_| ErrReadVideoReason::InvalidParams)?
+                    * 1000000;
+                self.data.end_time = self.data.start_time + (t as u64) * 1000;
             }
-            uniqueness_identifier.push(the_byte as u8);
-        }
-        match String::from_utf8(uniqueness_identifier) {
-            Ok(s) => self.data.uniqueness_identifier = s,
-            Err(e) => return Err(ErrReadVideoReason::Utf8Error),
-        }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     start_time.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.end_time.push(the_byte as u8);
-        // }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
+            software @ _ if software.starts_with("元") => {
+                self.data.start_time = start_time
+                    .parse::<u64>()
+                    .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+                self.data.end_time = end_time
+                    .parse::<u64>()
+                    .map_err(|_| ErrReadVideoReason::InvalidParams)?;
             }
-            self.data.country.push(the_byte as char);
+            _ => {}
         }
-
+        self.data.country = self.data.get_unknown_encoding_c_string('\0')?;
         self.data.board = vec![vec![0; self.data.width]; self.data.height];
 
         let mut byte = 0;
@@ -225,11 +196,10 @@ impl EvfVideo {
                     ..VideoActionStateRecorder::default()
                 });
         }
-        let mut csum = [0; 32];
+        let mut csum = vec![];
         if have_checksum {
-            for i in 0..32 {
-                csum[i] = self.data.get_u8()?;
-                // csum.push(self.data.get_char()?)
+            for _ in 0..32 {
+                csum.push(self.data.get_u8()?);
             }
         }
         self.data.checksum = csum;
@@ -262,63 +232,37 @@ impl EvfVideo {
         let t = self.data.get_u24()?;
         self.data.set_rtime(t as f64 / 1000.0).unwrap();
 
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.software.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.player_identifier.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.race_identifier.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.uniqueness_identifier.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.start_time.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.end_time.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.country.push(the_byte as u8);
-        // }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
+        self.data.software = self.data.get_utf8_c_string('\0')?;
+        self.data.translated = !self.data.software.starts_with("元");
+        self.data.player_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        self.data.race_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        self.data.uniqueness_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        let start_time = self.data.get_utf8_c_string('\0')?;
+        let end_time = self.data.get_utf8_c_string('\0')?;
+        match self.data.software.as_str() {
+            "Arbiter" => {
+                self.data.start_time = self.data.parse_avf_start_timestamp(&start_time)?;
+                self.data.end_time = self.data.parse_avf_end_timestamp(&start_time, &end_time)?;
             }
-            self.data.device_uuid.push(the_byte as u8);
+            "Viennasweeper" => {
+                self.data.start_time = start_time
+                    .parse::<u64>()
+                    .map_err(|_| ErrReadVideoReason::InvalidParams)?
+                    * 1000000;
+                self.data.end_time = self.data.start_time + (t as u64) * 1000;
+            }
+            software @ _ if software.starts_with("元") => {
+                self.data.start_time = start_time
+                    .parse::<u64>()
+                    .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+                self.data.end_time = end_time
+                    .parse::<u64>()
+                    .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+            }
+            _ => {}
         }
-
+        self.data.country = self.data.get_unknown_encoding_c_string('\0')?;
+        self.data.device_uuid = self.data.get_c_buffer('\0')?;
         self.data.board = vec![vec![0; self.data.width]; self.data.height];
 
         let mut byte = 0;
@@ -373,11 +317,10 @@ impl EvfVideo {
                     ..VideoActionStateRecorder::default()
                 });
         }
-        let mut csum = [0; 32];
+        let mut csum = vec![];
         if have_checksum {
-            for i in 0..32 {
-                csum[i] = self.data.get_u8()?;
-                // csum.push(self.data.get_char()?)
+            for _ in 0..32 {
+                csum.push(self.data.get_u8()?);
             }
         }
         self.data.checksum = csum;
@@ -414,63 +357,37 @@ impl EvfVideo {
         let t = self.data.get_u24()?;
         self.data.set_rtime(t as f64 / 1000.0).unwrap();
 
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.software.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.player_identifier.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.race_identifier.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.uniqueness_identifier.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.start_time.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.end_time.push(the_byte as u8);
-        // }
-        // loop {
-        //     let the_byte = self.data.get_char()?;
-        //     if the_byte == '\0' {
-        //         break;
-        //     }
-        //     self.data.country.push(the_byte as u8);
-        // }
-        loop {
-            let the_byte = self.data.get_char()?;
-            if the_byte == '\0' {
-                break;
+        self.data.software = self.data.get_utf8_c_string('\0')?;
+        self.data.translated = !self.data.software.starts_with("元");
+        self.data.player_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        self.data.race_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        self.data.uniqueness_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        let start_time = self.data.get_utf8_c_string('\0')?;
+        let end_time = self.data.get_utf8_c_string('\0')?;
+        match self.data.software.as_str() {
+            "Arbiter" => {
+                self.data.start_time = self.data.parse_avf_start_timestamp(&start_time)?;
+                self.data.end_time = self.data.parse_avf_end_timestamp(&start_time, &end_time)?;
             }
-            self.data.device_uuid.push(the_byte as u8);
+            "Viennasweeper" => {
+                self.data.start_time = start_time
+                    .parse::<u64>()
+                    .map_err(|_| ErrReadVideoReason::InvalidParams)?
+                    * 1000000;
+                self.data.end_time = self.data.start_time + (t as u64) * 1000;
+            }
+            software @ _ if software.starts_with("元") => {
+                self.data.start_time = start_time
+                    .parse::<u64>()
+                    .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+                self.data.end_time = end_time
+                    .parse::<u64>()
+                    .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+            }
+            _ => {}
         }
-
+        self.data.country = self.data.get_unknown_encoding_c_string('\0')?;
+        self.data.device_uuid = self.data.get_c_buffer('\0')?;
         self.data.board = vec![vec![0; self.data.width]; self.data.height];
 
         let mut byte = 0;
@@ -528,14 +445,130 @@ impl EvfVideo {
                     ..VideoActionStateRecorder::default()
                 });
         }
-        let mut csum = [0; 32];
+        let mut csum = vec![];
         if have_checksum {
-            for i in 0..32 {
-                csum[i] = self.data.get_u8()?;
-                // csum.push(self.data.get_char()?)
+            for _ in 0..32 {
+                csum.push(self.data.get_u8()?);
             }
         }
         self.data.checksum = csum;
+        self.data.can_analyse = true;
+        return Ok(());
+    }
+    /// 0.4版本
+    fn parse_v4(&mut self) -> Result<(), ErrReadVideoReason> {
+        let the_byte = self.data.get_u8()?;
+        self.data.is_completed = the_byte & 0b1000_0000 != 0;
+        self.data.is_official = the_byte & 0b0100_0000 != 0;
+        self.data.is_fair = the_byte & 0b0010_0000 != 0;
+        self.data.nf = the_byte & 0b0001_0000 != 0;
+        self.data.translated = the_byte & 0b0000_1000 != 0;
+        let the_byte = self.data.get_u8()?;
+        self.data.use_question = the_byte & 0b1000_0000 != 0;
+        self.data.use_cursor_pos_lim = the_byte & 0b0100_0000 != 0;
+        self.data.use_auto_replay = the_byte & 0b0010_0000 != 0;
+        self.data.height = self.data.get_u8()? as usize;
+        self.data.width = self.data.get_u8()? as usize;
+        self.data.mine_num = self.data.get_u16()? as usize;
+        if self.data.height == 8 && self.data.width == 8 && self.data.mine_num == 10 {
+            self.data.level = 3;
+        } else if self.data.height == 16 && self.data.width == 16 && self.data.mine_num == 40 {
+            self.data.level = 4;
+        } else if self.data.height == 16 && self.data.width == 30 && self.data.mine_num == 99 {
+            self.data.level = 5;
+        } else {
+            self.data.level = 6;
+        }
+
+        self.data.cell_pixel_size = self.data.get_u8()?;
+        self.data.mode = self.data.get_u16()?;
+        self.data.static_params.bbbv = self.data.get_u16()? as usize;
+        let t = self.data.get_u32()?;
+        self.data.set_rtime(t as f64 / 1000.0).unwrap();
+        self.data.country = self.data.get_utf8_string(2usize)?;
+        self.data.start_time = self.data.get_u64()?;
+        self.data.end_time = self.data.get_u64()?;
+        self.data.software = self.data.get_utf8_c_string('\0')?;
+        if self.data.translated {
+            self.data.translate_software = self.data.get_utf8_c_string('\0')?;
+            self.data.original_encoding = self.data.get_utf8_c_string('\0')?;
+        }
+        self.data.player_identifier = self.data.get_utf8_c_string('\0')?;
+        self.data.race_identifier = self.data.get_utf8_c_string('\0')?;
+        self.data.uniqueness_identifier = self.data.get_utf8_c_string('\0')?;
+        let device_uuid_length = self.data.get_u16()?;
+        self.data.device_uuid = self.data.get_buffer(device_uuid_length)?;
+        self.data.board = vec![vec![0; self.data.width]; self.data.height];
+        let mut byte = 0;
+        let mut ptr = 0;
+        for i in 0..self.data.height {
+            for j in 0..self.data.width {
+                ptr -= 1;
+                if ptr < 0 {
+                    byte = self.data.get_u8()?;
+                    ptr = 7;
+                }
+                if byte & (1 << ptr) != 0 {
+                    self.data.board[i][j] = -1
+                }
+            }
+        }
+        cal_board_numbers(&mut self.data.board);
+        // 自定义指标暂时不解析，没人用到
+        let custom_index_num = self.data.get_u16()?;
+        for _ in 0..custom_index_num {
+            self.data.get_utf8_c_string('\0')?;
+        }
+
+        // 解析事件循环，暂时只包含鼠标事件、停顿事件
+        loop {
+            let byte = self.data.get_u8()?;
+            let mouse;
+            match byte {
+                0 => {
+                    break;
+                }
+                1 => mouse = "mv",
+                2 => mouse = "lc",
+                3 => mouse = "lr",
+                4 => mouse = "rc",
+                5 => mouse = "rr",
+                6 => mouse = "mc",
+                7 => mouse = "mr",
+                8 => mouse = "pf",
+                9 => mouse = "cc",
+                10 => mouse = "l",
+                11 => mouse = "r",
+                12 => mouse = "m",
+                255 => {
+                    let pause_time = self.data.get_u16()?;
+                    self.data
+                        .video_action_state_recorder
+                        .last_mut()
+                        .unwrap()
+                        .time += pause_time as f64;
+                    continue;
+                }
+                _ => {
+                    continue;
+                }
+            }
+            let time = self.data.get_u8()? as f64 / 1000.0;
+            let x = self.data.get_u16()?;
+            let y = self.data.get_u16()?;
+            self.data
+                .video_action_state_recorder
+                .push(VideoActionStateRecorder {
+                    time,
+                    mouse: mouse.to_string(),
+                    x,
+                    y,
+                    ..VideoActionStateRecorder::default()
+                });
+        }
+
+        let checksum_length = self.data.get_u16()?;
+        self.data.checksum = self.data.get_buffer(checksum_length)?;
         self.data.can_analyse = true;
         return Ok(());
     }

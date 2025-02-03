@@ -1,9 +1,9 @@
 use crate::utils::cal_board_numbers;
+use crate::videos::base_video::NewBaseVideo;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
-use crate::videos::NewSomeVideo2;
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::videos::NewSomeVideo;
-use crate::videos::base_video::NewBaseVideo;
+use crate::videos::NewSomeVideo2;
 
 /// rmv录像解析器。  
 /// - 功能：解析rmv格式的录像(Vienna MineSweeper产生的)，有详细分析录像的方法。  
@@ -75,22 +75,7 @@ impl NewSomeVideo2<Vec<u8>, &str> for RmvVideo {
 }
 
 impl RmvVideo {
-    // #[cfg(any(feature = "py", feature = "rs"))]
-    // pub fn new(file_name: &str) -> RmvVideo {
-    //     RmvVideo {
-    //         file_name: file_name.to_string(),
-    //         data: BaseVideo::<Vec<Vec<i32>>>::new(file_name),
-    //     }
-    // }
-    // #[cfg(feature = "js")]
-    // pub fn new(video_data: Vec<u8>, file_name: &str) -> RmvVideo {
-    //     RmvVideo {
-    //         file_name: file_name.to_string(),
-    //         data: BaseVideo::<Vec<Vec<i32>>>::new(video_data),
-    //     }
-    // }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
-        // self.data.is_completed; // 该格式解析前不能确定是否扫完
         self.data.is_official = true;
         self.data.is_fair = true;
         match self.data.get_char() {
@@ -139,16 +124,15 @@ impl RmvVideo {
                 Ok(v) => v,
                 Err(_) => return Err(ErrReadVideoReason::InvalidParams),
             };
+            self.data.is_completed = self.data.static_params.bbbv > 0;
             self.data.offset += 16;
 
             // 2286-11-21以后，会遇到时间戳溢出
-            let mut timestamp = vec![];
-            for _ in 0..10 {
-                timestamp.push(self.data.get_u8()?);
-            }
-            // ***************************
-            self.data.start_time = 0;
-
+            let timestamp = self.data.get_utf8_string(10usize)?;
+            self.data.start_time = timestamp
+                .parse::<u64>()
+                .map_err(|_| ErrReadVideoReason::InvalidParams)?;
+            self.data.start_time *= 1000000;
             // 2 beta和更早的版本里没有3bv和时间戳
         } else {
             self.data.static_params.bbbv = 0;
@@ -161,26 +145,18 @@ impl RmvVideo {
         // 这里是uint16，不合理
         let num_player_info = self.data.get_u16()?;
 
-        let mut player = vec![];
-        let mut country = vec![];
         if num_player_info > 0 {
             let name_length = self.data.get_u8()?;
-            for _ in 0..name_length {
-                player.push(self.data.get_u8()?);
-            }
+            self.data.player_identifier = self.data.get_unknown_encoding_string(name_length)?;
         }
         // 昵称不解析
         if num_player_info > 1 {
             let nick_length = self.data.get_u8()?;
-            for _ in 0..nick_length {
-                self.data.get_char()?;
-            }
+            self.data.uniqueness_identifier = self.data.get_unknown_encoding_string(nick_length)?;
         }
         if num_player_info > 2 {
             let country_length = self.data.get_u8()?;
-            for _ in 0..country_length {
-                country.push(self.data.get_u8()?);
-            }
+            self.data.country = self.data.get_unknown_encoding_string(country_length)?;
         }
         // 令牌不解析
         if num_player_info > 3 {
@@ -189,8 +165,6 @@ impl RmvVideo {
                 self.data.get_char()?;
             }
         }
-        self.data.player_identifier = "player".to_string();
-        self.data.country = "country".to_string();
 
         self.data.offset += 4;
 
@@ -297,6 +271,10 @@ impl RmvVideo {
         self.data
             .set_rtime(self.data.video_action_state_recorder.last().unwrap().time)
             .unwrap();
+        if result_string_size > 35 {
+            self.data.end_time =
+                self.data.start_time + (self.data.get_rtime_ms().unwrap() as u64) * 1000;
+        }
         self.data.software = "Viennasweeper".to_string();
         self.data.can_analyse = true;
         return Ok(());

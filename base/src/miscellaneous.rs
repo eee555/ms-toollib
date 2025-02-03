@@ -3,8 +3,11 @@
 use std::time::Instant;
 
 /// 将游戏时间从IEEE754标准规定的64位浮点数转为精确的以毫秒为单位的整数。四舍五入。
-pub fn s_to_ms(time: f64) -> u32 {
-    (time * 1000.0).round() as u32
+pub fn s_to_ms<T>(time: T) -> u32
+where
+    T: Into<f64>,
+{
+    (time.into() * 1000.0).round() as u32
 }
 
 /// 返回以毫秒为单位的时间。四舍五入。
@@ -15,5 +18,3 @@ pub fn s_to_ms(time: f64) -> u32 {
 pub fn time_ms_between(future: Instant, past: Instant) -> u32 {
     (future.duration_since(past).as_micros() as f64 / 1000.0).round() as u32
 }
-
-

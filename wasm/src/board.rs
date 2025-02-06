@@ -157,7 +157,7 @@ macro_rules! generate_video {
                     self.core.data.get_raw_data().unwrap()
                 }
                 #[wasm_bindgen(getter = software)]
-                pub fn get_software(&self) -> Vec<u8> {
+                pub fn get_software(&self) -> String {
                     self.core.data.software.clone()
                 }
                 #[wasm_bindgen(getter = row)]
@@ -193,19 +193,19 @@ macro_rules! generate_video {
                     self.core.data.mine_num
                 }
                 #[wasm_bindgen(getter = player_identifier)]
-                pub fn get_player_identifier(&self) -> Vec<u8> {
+                pub fn get_player_identifier(&self) -> String {
                     self.core.data.player_identifier.clone()
                 }
                 #[wasm_bindgen(getter = race_identifier)]
-                pub fn get_race_identifier(&self) -> Vec<u8> {
+                pub fn get_race_identifier(&self) -> String {
                     self.core.data.race_identifier.clone()
                 }
                 #[wasm_bindgen(getter = uniqueness_identifier)]
-                pub fn get_uniqueness_identifier(&self) -> Vec<u8> {
+                pub fn get_uniqueness_identifier(&self) -> String {
                     self.core.data.uniqueness_identifier.clone()
                 }
                 #[wasm_bindgen(getter = country)]
-                pub fn get_country(&self) -> Vec<u8> {
+                pub fn get_country(&self) -> String {
                     self.core.data.country.clone()
                 }
                 #[wasm_bindgen(getter = device_uuid)]
@@ -217,12 +217,12 @@ macro_rules! generate_video {
                     self.core.data.static_params.bbbv
                 }
                 #[wasm_bindgen(getter = start_time)]
-                pub fn get_start_time(&self) -> Vec<u8> {
-                    self.core.data.start_time.clone()
+                pub fn get_start_time(&self) -> u64 {
+                    self.core.data.start_time
                 }
                 #[wasm_bindgen(getter = end_time)]
-                pub fn get_end_time(&self) -> Vec<u8> {
-                    self.core.data.end_time.clone()
+                pub fn get_end_time(&self) -> u64 {
+                    self.core.data.end_time
                 }
                 #[wasm_bindgen(getter = op)]
                 pub fn get_op(&self) -> usize {

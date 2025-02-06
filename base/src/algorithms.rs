@@ -1291,7 +1291,7 @@ fn obr_cell(
 /// - 性能：识别的成功率不是百分之百。识别失败时，甚至可能出现不可恢复的错误。想提高成功率，需要满足：图片清晰、格子的宽度在8到300像素之间、图片中没有鼠标遮挡。  
 /// - 以下提供一段用python调用时的示例：  
 /// ```python
-/// # pip install ms_toollib==1.3.6（windows和linux不一样，请查看[主页](https://github.com/eee555/ms_toollib)）
+/// # pip install ms_toollib
 /// import ms_toollib
 /// import matplotlib.image as mpimg
 /// import numpy as np

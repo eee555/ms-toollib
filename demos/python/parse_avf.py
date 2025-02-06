@@ -3,29 +3,35 @@ v = ms.AvfVideo("../../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jian
 v.parse_video() # 第二步，解析文件的二进制内容
 v.analyse() # 第三步，根据解析到的内容，推衍整个局面
 v.current_time = 999.999 # set time to the end of the v
-print(v.left)
-print(v.right)
-print(v.double)
-print(v.left_s)
-print(v.right_s)
-print(v.double_s)
-print(v.level)
-print(v.cl)
-print(v.cl_s)
-print(v.ce)
-print(v.ce_s)
-print(v.bbbv)
-print(v.bbbv_solved)
-print(v.bbbv_s)
-print(v.flag)
-print(v.path)
+assert v.left == 126
+assert v.right == 11
+assert v.double == 14
+assert v.left_s == 2.5583756345177666
+assert v.right_s == 0.2233502538071066
+assert v.double_s == 0.28426395939086296
+assert v.level == 5
+assert v.cl == 151
+assert v.cl_s == 3.065989847715736
+assert v.ce == 144
+assert v.ce_s == 2.9238578680203045
+assert v.rce == 11
+assert v.lce == 119
+assert v.dce == 14
+assert v.bbbv == 127
+assert v.bbbv_solved == 127
+assert v.bbbv_s == 2.5786802030456855
+assert v.flag == 11
+assert v.path == 6082.352554578606
 print(v.time)  # the time shown on the counter currently
 print(v.rtime) # game time, shown on leaderboard
 print(v.etime) # the estimated time shown on the counter currently
-print(v.start_time)
-print(v.end_time)
-print(v.mode)
-print(v.software)
+assert v.start_time == 1666124135660600
+assert v.end_time == 1666124184886800
+assert v.mode == 0
+assert v.software == "Arbiter"
+assert v.player_identifier == "Wang Jianing G01825"
+assert v.race_identifier == ""
+assert v.uniqueness_identifier == ""
 print(v.stnb)
 print(v.corr)
 print(v.thrp)

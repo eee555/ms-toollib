@@ -58,7 +58,7 @@ use std::cmp::{max, min};
 /// - 在python中被继承的示例。  
 /// ```python
 /// class MyVideo(ms.AvfVideo):
-///     def __new__(cls, *args, **kargs):
+///     def __new__(cls, *args, **kargs)
 ///         return ms.AvfVideo.__new__(cls, *args, **kargs):
 ///     def __init__(self, *args, **kargs):
 ///         super(MyVideo, self).__init__()

@@ -1,3 +1,4 @@
+use crate::miscellaneous::s_to_ms;
 use crate::utils::cal_board_numbers;
 use crate::videos::base_video::NewBaseVideo;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
@@ -77,7 +78,6 @@ impl NewSomeVideo2<Vec<u8>, &str> for EvfVideo {
 impl EvfVideo {
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
         let version = self.data.get_u8()?;
-        println!("{:?}", version);
         match version {
             0 | 1 => self.parse_v1(),
             2 => self.parse_v2(),
@@ -521,6 +521,36 @@ impl EvfVideo {
         }
 
         // 解析事件循环，暂时只包含鼠标事件、停顿事件
+        let byte = self.data.get_u8()?;
+        let mouse;
+        match byte {
+            1 => mouse = "mv",
+            2 => mouse = "lc",
+            3 => mouse = "lr",
+            4 => mouse = "rc",
+            5 => mouse = "rr",
+            6 => mouse = "mc",
+            7 => mouse = "mr",
+            8 => mouse = "pf",
+            9 => mouse = "cc",
+            10 => mouse = "l",
+            11 => mouse = "r",
+            12 => mouse = "m",
+            _ => mouse = "ub", // impossible
+        }
+        let time = self.data.get_u8()? as f64 / 1000.0;
+        let x = self.data.get_u16()?;
+        let y = self.data.get_u16()?;
+        self.data
+            .video_action_state_recorder
+            .push(VideoActionStateRecorder {
+                time,
+                mouse: mouse.to_string(),
+                x,
+                y,
+                ..VideoActionStateRecorder::default()
+            });
+        let mut pause_time_ms = 0;
         loop {
             let byte = self.data.get_u8()?;
             let mouse;
@@ -542,29 +572,27 @@ impl EvfVideo {
                 12 => mouse = "m",
                 255 => {
                     let pause_time = self.data.get_u16()?;
-                    self.data
-                        .video_action_state_recorder
-                        .last_mut()
-                        .unwrap()
-                        .time += pause_time as f64;
+                    pause_time_ms += pause_time as u32;
                     continue;
                 }
                 _ => {
                     continue;
                 }
             }
-            let time = self.data.get_u8()? as f64 / 1000.0;
-            let x = self.data.get_u16()?;
-            let y = self.data.get_u16()?;
+            let time: u8 = self.data.get_u8()?;
+            let x = self.data.get_i16()?;
+            let y = self.data.get_i16()?;
+            let last_event = self.data.video_action_state_recorder.last().unwrap();
             self.data
                 .video_action_state_recorder
                 .push(VideoActionStateRecorder {
-                    time,
+                    time: (s_to_ms(last_event.time) + time as u32 + pause_time_ms) as f64 / 1000.0,
                     mouse: mouse.to_string(),
-                    x,
-                    y,
+                    x: (last_event.x as i16 + x) as u16,
+                    y: (last_event.y as i16 + y) as u16,
                     ..VideoActionStateRecorder::default()
                 });
+            pause_time_ms = 0;
         }
 
         let checksum_length = self.data.get_u16()?;

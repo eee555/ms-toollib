@@ -53,6 +53,7 @@ pub enum ErrReadVideoReason {
 // }
 
 /// 录像里的局面活动（点击或移动）、指标状态(该活动完成后的)、先验后验局面索引
+#[derive(Clone)]
 pub struct VideoActionStateRecorder {
     /// 相对时间，从0开始，大于rtime
     pub time: f64,
@@ -142,6 +143,7 @@ impl Default for StaticParams {
 
 /// 侧重实时记录中间过程、中间状态
 /// 每个鼠标事件都会存一个，mv也存，存在浪费
+#[derive(Clone)]
 pub struct KeyDynamicParams {
     pub left: usize,
     pub right: usize,
@@ -435,8 +437,8 @@ pub struct BaseVideo<T> {
     // net_start_time: f64,
     // 允许设置最终成绩，解析录像文件时用
     allow_set_rtime: bool,
-    // 是否有checksum
-    has_checksum: bool,
+    // 是否有checksum，似乎无用，拟废弃
+    // has_checksum: bool,
     // 播放录像文件时用，按几倍放大来播放，涉及回报的鼠标位置
     video_playing_pix_size_k: f64,
     // 最后一次局面内的光标位置，用于计算path
@@ -492,7 +494,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             checksum: vec![],
             can_analyse: false,
             // net_start_time: 0.0,
-            has_checksum: false,
+            // has_checksum: false,
             allow_set_rtime: false,
             video_playing_pix_size_k: 1.0,
             last_in_board_pos: (u16::MAX, u16::MAX),
@@ -547,7 +549,7 @@ impl Default for BaseVideo<SafeBoard> {
             checksum: vec![],
             can_analyse: false,
             // net_start_time: 0.0,
-            has_checksum: false,
+            // has_checksum: false,
             allow_set_rtime: false,
             video_playing_pix_size_k: 1.0,
             last_in_board_pos: (u16::MAX, u16::MAX),
@@ -658,42 +660,36 @@ impl BaseVideo<Vec<Vec<i32>>> {
                 }
             }
         }
+        let rtime = self.game_dynamic_params.rtime;
+        let bbbv = self.static_params.bbbv as f64;
         self.is_completed = b.game_board_state == GameBoardState::Win;
-        self.nf = b.right == 0;
+        self.nf = b.rce == 0;
         self.game_dynamic_params.left = b.left;
-        self.game_dynamic_params.left_s = b.left as f64 / self.game_dynamic_params.rtime;
+        self.game_dynamic_params.left_s = b.left as f64 / rtime;
         self.game_dynamic_params.right = b.right;
-        self.game_dynamic_params.right_s = b.right as f64 / self.game_dynamic_params.rtime;
+        self.game_dynamic_params.right_s = b.right as f64 / rtime;
         // println!("---{:?}", b.bbbv_solved);
         self.video_dynamic_params.bbbv_solved = b.bbbv_solved;
         self.video_dynamic_params.lce = b.lce;
         self.video_dynamic_params.rce = b.rce;
         self.video_dynamic_params.dce = b.dce;
         self.video_dynamic_params.ce = b.lce + b.rce + b.dce;
-        self.video_dynamic_params.ce_s =
-            (b.lce + b.rce + b.dce) as f64 / self.game_dynamic_params.rtime;
+        self.video_dynamic_params.ce_s = (b.lce + b.rce + b.dce) as f64 / rtime;
         self.game_dynamic_params.double = b.double;
         self.game_dynamic_params.cl = b.left + b.right + b.double;
-        self.game_dynamic_params.cl_s =
-            self.game_dynamic_params.cl as f64 / self.game_dynamic_params.rtime;
+        self.game_dynamic_params.cl_s = self.game_dynamic_params.cl as f64 / rtime;
         self.game_dynamic_params.flag = b.flag;
-        self.video_dynamic_params.bbbv_s =
-            self.static_params.bbbv as f64 / self.game_dynamic_params.rtime;
-        self.video_dynamic_params.rqp = self.game_dynamic_params.rtime
-            * self.game_dynamic_params.rtime
-            / self.static_params.bbbv as f64;
+        self.video_dynamic_params.bbbv_s = bbbv / rtime;
+        self.video_dynamic_params.rqp = rtime * rtime / bbbv;
         if self.height == 8 && self.width == 8 && self.mine_num == 10 {
-            self.video_dynamic_params.stnb = 47.22
-                / (self.game_dynamic_params.rtime.powf(1.7) / self.static_params.bbbv as f64)
-                * (b.bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5);
+            self.video_dynamic_params.stnb =
+                47.22 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
         } else if self.height == 16 && self.width == 16 && self.mine_num == 40 {
-            self.video_dynamic_params.stnb = 153.73
-                / (self.game_dynamic_params.rtime.powf(1.7) / self.static_params.bbbv as f64)
-                * (b.bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5);
+            self.video_dynamic_params.stnb =
+                153.73 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
         } else if self.height == 16 && self.width == 30 && self.mine_num == 99 {
-            self.video_dynamic_params.stnb = 435.001
-                / (self.game_dynamic_params.rtime.powf(1.7) / self.static_params.bbbv as f64)
-                * (b.bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5);
+            self.video_dynamic_params.stnb =
+                435.001 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
         } // 凡自定义的stnb都等于0
         self.video_dynamic_params.ioe = b.bbbv_solved as f64 / self.game_dynamic_params.cl as f64;
         self.video_dynamic_params.corr =
@@ -840,6 +836,11 @@ impl BaseVideo<Vec<Vec<i32>>> {
         let b = self.get_u8()?;
         Ok((a as u16) << 8 | (b as u16))
     }
+    pub fn get_i16(&mut self) -> Result<i16, ErrReadVideoReason> {
+        let a = self.get_u8()?;
+        let b = self.get_u8()?;
+        Ok((a as i16) << 8 | (b as i16))
+    }
     pub fn get_u24(&mut self) -> Result<u32, ErrReadVideoReason> {
         let a = self.get_u8()?;
         let b = self.get_u8()?;
@@ -895,7 +896,10 @@ impl BaseVideo<Vec<Vec<i32>>> {
     pub fn get_utf8_c_string(&mut self, end: char) -> Result<String, ErrReadVideoReason> {
         String::from_utf8(self.get_c_buffer(end)?).map_err(|_e| ErrReadVideoReason::Utf8Error)
     }
-    pub fn get_unknown_encoding_string<U>(&mut self, length: U) -> Result<String, ErrReadVideoReason>
+    pub fn get_unknown_encoding_string<U>(
+        &mut self,
+        length: U,
+    ) -> Result<String, ErrReadVideoReason>
     where
         U: Into<usize>,
     {
@@ -1571,7 +1575,7 @@ impl<T> BaseVideo<T> {
     }
     // 录像解析时，设置游戏时间，时间成绩。
     // 同时设置秒和毫秒的时间，并且只能写入一次
-    pub fn set_rtime<U>(&mut self, time: U) -> Result<u8, ()> 
+    pub fn set_rtime<U>(&mut self, time: U) -> Result<u8, ()>
     where
         U: Into<f64>,
     {
@@ -1635,8 +1639,10 @@ impl<T> BaseVideo<T> {
         if self.game_board_state != GameBoardState::Display {
             return Err(());
         }
-        Ok(self.video_action_state_recorder.last().unwrap().time - self.delta_time)
-        // Ok(self.game_dynamic_params.rtime)
+        // end_time的计算方法是特殊的，直接返回rtime，而不是用减法
+        // 因为此处减法会带来浮点数误差
+        // Ok(self.video_action_state_recorder.last().unwrap().time - self.delta_time)
+        Ok(self.game_dynamic_params.rtime)
     }
     /// 录像播放时，按时间设置current_time；超出两端范围取两端。
     /// 游戏时不要调用。
@@ -1820,19 +1826,20 @@ impl<T> BaseVideo<T> {
         self.device_uuid = device_uuid;
         Ok(0)
     }
-    /// 在生成二进制数据前得出checksum，则用这个
-    pub fn set_checksum(&mut self, checksum: Vec<u8>) -> Result<u8, ()> {
+    /// 在生成二进制数据后，在raw_data里添加checksum
+    /// 按照evf0-3的标准添加，即删除末尾的/255，添加/0、32位checksum
+    pub fn set_checksum_evf_v3(&mut self, checksum: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
             return Err(());
         };
-        if !self.has_checksum {
+        if self.checksum.is_empty() {
             *self.raw_data.last_mut().unwrap() = 0;
             self.raw_data
                 .append(&mut checksum.clone().to_vec().to_owned());
             self.checksum = checksum;
-            self.has_checksum = true;
+            // self.has_checksum = true;
             return Ok(0);
         } else {
             let ptr = self.raw_data.len() - 32;
@@ -1841,6 +1848,22 @@ impl<T> BaseVideo<T> {
             }
             return Ok(0);
         }
+    }
+    /// 在生成二进制数据后，在raw_data里添加checksum
+    /// 按照evf4的标准添加，即添加u16的长度、若干位checksum
+    pub fn set_checksum_evf_v4(&mut self, checksum: Vec<u8>) -> Result<u8, ()> {
+        if self.game_board_state != GameBoardState::Loss
+            && self.game_board_state != GameBoardState::Win
+        {
+            return Err(());
+        };
+        self.raw_data
+            .truncate(self.raw_data.len() - self.checksum.len() - 2);
+        self.raw_data
+            .extend_from_slice(&(checksum.len() as u16).to_be_bytes());
+        self.raw_data
+            .append(&mut checksum.clone().to_vec().to_owned());
+        return Ok(0);
     }
     pub fn get_raw_data(&self) -> Result<Vec<u8>, ()> {
         if self.game_board_state != GameBoardState::Win
@@ -2050,8 +2073,6 @@ impl<T> BaseVideo<T> {
     }
     pub fn get_stnb(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
-        // println!("self.current_time:{:?}", self.current_time);
-        // println!("self.game_board_state:{:?}", self.game_board_state);
         if self.game_board_state == GameBoardState::Display && self.current_time < 0.00099 {
             return Ok(0.0);
         }
@@ -2064,8 +2085,6 @@ impl<T> BaseVideo<T> {
         }
 
         if self.game_board_state == GameBoardState::Display {
-            // let t = self.current_time - self.delta_time;
-            // println!("t:{:?}", t);
             Ok(c * bbbv_solved as f64 / self.current_time.powf(1.7)
                 * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5))
         } else {
@@ -2379,7 +2398,7 @@ impl<T> BaseVideo<T> {
             self.raw_data.push((event.y >> 8).try_into().unwrap());
             self.raw_data.push((event.y % 256).try_into().unwrap());
         }
-        if self.has_checksum {
+        if !self.checksum.is_empty() {
             self.raw_data.push(0);
             self.raw_data
                 .append(&mut self.checksum.clone().to_vec().to_owned());
@@ -2500,7 +2519,7 @@ impl<T> BaseVideo<T> {
             self.raw_data.push((event.y >> 8).try_into().unwrap());
             self.raw_data.push((event.y % 256).try_into().unwrap());
         }
-        if self.has_checksum {
+        if !self.checksum.is_empty() {
             self.raw_data.push(0);
             self.raw_data
                 .append(&mut self.checksum.clone().to_vec().to_owned());
@@ -2633,13 +2652,193 @@ impl<T> BaseVideo<T> {
             self.raw_data.push((event.y >> 8).try_into().unwrap());
             self.raw_data.push((event.y % 256).try_into().unwrap());
         }
-        if self.has_checksum {
+        if !self.checksum.is_empty() {
             self.raw_data.push(0);
             self.raw_data
                 .append(&mut self.checksum.clone().to_vec().to_owned());
         } else {
             self.raw_data.push(255);
         }
+    }
+
+    /// 按evf v4标准，编码出原始二进制数据
+    pub fn generate_evf_v4_raw_data(&mut self)
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        assert!(self.height <= 255);
+        assert!(self.width <= 255);
+        assert!(self.height * self.cell_pixel_size as usize <= 32767);
+        assert!(self.width * self.cell_pixel_size as usize <= 32767);
+        assert!(self.mine_num <= 65535);
+        self.raw_data = vec![4, 0, 0];
+        if self.is_completed {
+            self.raw_data[1] |= 0b1000_0000;
+        }
+        if self.is_official {
+            self.raw_data[1] |= 0b0100_0000;
+        }
+        if self.is_fair {
+            self.raw_data[1] |= 0b0010_0000;
+        }
+        if self.get_rce().unwrap() == 0 {
+            self.raw_data[1] |= 0b0001_0000;
+        }
+        if self.translated {
+            self.raw_data[1] |= 0b0000_1000;
+        }
+        if self.use_question {
+            self.raw_data[2] |= 0b1000_0000;
+        }
+        if self.use_cursor_pos_lim {
+            self.raw_data[2] |= 0b0100_0000;
+        }
+        if self.use_auto_replay {
+            self.raw_data[2] |= 0b0010_0000;
+        }
+        self.raw_data.push(self.height as u8);
+        self.raw_data.push(self.width as u8);
+        self.raw_data.push((self.mine_num >> 8).try_into().unwrap());
+        self.raw_data
+            .push((self.mine_num % 256).try_into().unwrap());
+        self.raw_data.push(self.cell_pixel_size);
+        self.raw_data.push((self.mode >> 8).try_into().unwrap());
+        self.raw_data.push((self.mode % 256).try_into().unwrap());
+        self.raw_data
+            .push((self.static_params.bbbv >> 8).try_into().unwrap());
+        self.raw_data
+            .push((self.static_params.bbbv % 256).try_into().unwrap());
+        self.raw_data
+            .extend_from_slice(&self.game_dynamic_params.rtime_ms.to_be_bytes());
+        if self.country.len() < 2 {
+            self.raw_data.extend("XX".as_bytes());
+        } else {
+            let first_char = self.country.chars().nth(0).unwrap();
+            let second_char = self.country.chars().nth(1).unwrap();
+            if first_char.is_ascii_alphabetic() && second_char.is_ascii_alphabetic() {
+                self.raw_data.push(first_char.to_ascii_uppercase() as u8);
+                self.raw_data.push(second_char.to_ascii_uppercase() as u8);
+            } else {
+                self.raw_data.extend("XX".as_bytes());
+            }
+        }
+        self.raw_data
+            .extend_from_slice(&self.start_time.to_be_bytes());
+        self.raw_data
+            .extend_from_slice(&self.end_time.to_be_bytes());
+        self.raw_data
+            .append(&mut self.software.clone().into_bytes());
+        self.raw_data.push(0);
+        if self.translated {
+            self.raw_data
+                .append(&mut self.translate_software.clone().into_bytes());
+            self.raw_data.push(0);
+            self.raw_data
+                .append(&mut self.original_encoding.clone().into_bytes());
+            self.raw_data.push(0);
+        }
+        self.raw_data
+            .append(&mut self.player_identifier.clone().into_bytes());
+        self.raw_data.push(0);
+        self.raw_data
+            .append(&mut self.race_identifier.clone().into_bytes());
+        self.raw_data.push(0);
+        self.raw_data
+            .append(&mut self.uniqueness_identifier.clone().into_bytes());
+        self.raw_data.push(0);
+        let device_uuid_length = self.device_uuid.len() as u16;
+        self.raw_data
+            .extend_from_slice(&device_uuid_length.to_be_bytes());
+        self.raw_data
+            .append(&mut self.device_uuid.clone().to_owned());
+        let mut byte = 0;
+        let mut ptr = 0;
+        for i in 0..self.height {
+            for j in 0..self.width {
+                byte <<= 1;
+                if self.board[i][j] == -1 {
+                    byte |= 1;
+                }
+                ptr += 1;
+                if ptr == 8 {
+                    self.raw_data.push(byte);
+                    ptr = 0;
+                    byte = 0;
+                }
+            }
+        }
+        if ptr > 0 {
+            byte <<= 8 - ptr;
+            self.raw_data.push(byte);
+        }
+        // 自定义指标的数量
+        self.raw_data.push(0);
+        self.raw_data.push(0);
+        let event_0 = &self.video_action_state_recorder[0];
+        match event_0.mouse.as_str() {
+            "mv" => self.raw_data.push(1),
+            "lc" => self.raw_data.push(2),
+            "lr" => self.raw_data.push(3),
+            "rc" => self.raw_data.push(4),
+            "rr" => self.raw_data.push(5),
+            "mc" => self.raw_data.push(6),
+            "mr" => self.raw_data.push(7),
+            "pf" => self.raw_data.push(8),
+            "cc" => self.raw_data.push(9),
+            "l" => self.raw_data.push(10),
+            "r" => self.raw_data.push(11),
+            "m" => self.raw_data.push(12),
+            // 不可能出现，出现再说
+            _ => {}
+        }
+        let t_ms = s_to_ms(event_0.time) as u8;
+        self.raw_data.push((t_ms).try_into().unwrap());
+        self.raw_data.push((event_0.x >> 8).try_into().unwrap());
+        self.raw_data.push((event_0.x % 256).try_into().unwrap());
+        self.raw_data.push((event_0.y >> 8).try_into().unwrap());
+        self.raw_data.push((event_0.y % 256).try_into().unwrap());
+
+        for event_id in 1..self.video_action_state_recorder.len() {
+            let event = &self.video_action_state_recorder[event_id];
+            // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
+            let last_event = &self.video_action_state_recorder[event_id - 1];
+            let mut delta_t = s_to_ms(event.time) - s_to_ms(last_event.time);
+            while delta_t > 255 {
+                self.raw_data.push(255);
+                let pause_time = (delta_t % (1 << 16)) as u16;
+                self.raw_data.extend_from_slice(&pause_time.to_be_bytes());
+                delta_t -= pause_time as u32;
+            }
+            match event.mouse.as_str() {
+                "mv" => self.raw_data.push(1),
+                "lc" => self.raw_data.push(2),
+                "lr" => self.raw_data.push(3),
+                "rc" => self.raw_data.push(4),
+                "rr" => self.raw_data.push(5),
+                "mc" => self.raw_data.push(6),
+                "mr" => self.raw_data.push(7),
+                "pf" => self.raw_data.push(8),
+                "cc" => self.raw_data.push(9),
+                "l" => self.raw_data.push(10),
+                "r" => self.raw_data.push(11),
+                "m" => self.raw_data.push(12),
+                // 不可能出现，出现再说
+                _ => {
+                    continue;
+                }
+            }
+            self.raw_data.push(delta_t as u8);
+            let delta_x = event.x as i16 - last_event.x as i16;
+            let delta_y = event.y as i16 - last_event.y as i16;
+            self.raw_data.extend_from_slice(&delta_x.to_be_bytes());
+            self.raw_data.extend_from_slice(&delta_y.to_be_bytes());
+        }
+        self.raw_data.push(0);
+        self.raw_data
+            .extend_from_slice(&(self.checksum.len() as u16).to_be_bytes());
+        self.raw_data
+            .append(&mut self.checksum.clone().to_vec().to_owned());
     }
     // /// 在二进制数据最后添加checksum。通过generate_evf_v0_raw_data或push_checksum添加checksum二选一。
     // /// 若无checksum就用generate_evf_v0_raw_data
@@ -2648,7 +2847,7 @@ impl<T> BaseVideo<T> {
     //     self.raw_data.append(checksum);
     // }
     /// 存evf文件，自动加后缀，xxx.evf重复变成xxx(2).evf
-    pub fn save_to_evf_file(&self, file_name: &str) {
+    pub fn save_to_evf_file(&self, file_name: &str) -> String {
         let file_exist =
             std::path::Path::new((file_name.to_string() + &(".evf".to_string())).as_str()).exists();
         if !file_exist {
@@ -2657,7 +2856,9 @@ impl<T> BaseVideo<T> {
                 &self.raw_data,
             )
             .unwrap();
-            return;
+            return (file_name.to_string() + &(".evf".to_string()))
+                .as_str()
+                .to_string();
         } else {
             let mut id = 2;
             let mut format_name;
@@ -2667,7 +2868,7 @@ impl<T> BaseVideo<T> {
                 let file_exist = std::path::Path::new(new_file_name).exists();
                 if !file_exist {
                     fs::write(new_file_name, &self.raw_data).unwrap();
-                    return;
+                    return new_file_name.to_string();
                 }
                 id += 1;
             }

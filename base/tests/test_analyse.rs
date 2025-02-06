@@ -2,8 +2,9 @@
 use ms_toollib::videos::base_video::NewBaseVideo2;
 use ms_toollib::videos::NewSomeVideo;
 use ms_toollib::{
-    AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MvfVideo, RmvVideo, SafeBoard,
+    AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MouseState, MvfVideo, RmvVideo, SafeBoard
 };
+use std::mem::transmute;
 use std::thread;
 use std::time::Duration;
 
@@ -330,7 +331,8 @@ fn mvf_video_works() {
 // cargo test --features rs -- --nocapture evf_video_works_v3
 fn evf_video_works_v3() {
     // 录像解析工具测试
-    let mut video = EvfVideo::new("../test_files/b_5_3.796_3BV=3_3BVs=0.790_王嘉宁(元3.1.9_v3).evf");
+    let mut video =
+        EvfVideo::new("../test_files/b_5_3.796_3BV=3_3BVs=0.790_王嘉宁(元3.1.9_v3).evf");
 
     let _ = video.parse_video();
     assert_eq!(video.data.board[0], vec![0, 2, -1, 2, 0, 0, 0, 0]);
@@ -377,8 +379,121 @@ fn evf_video_works_v3() {
 // cargo test --features rs -- --nocapture evf_video_works_v4
 fn evf_video_works_v4() {
     // 录像解析工具测试
-    
-    
+    let board = vec![
+        vec![1, 1, 2, 1, 1, 0, 0, 0],
+        vec![1, -1, 2, -1, 1, 0, 0, 0],
+        vec![1, 1, 2, 1, 1, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![2, 2, 1, 0, 0, 0, 0, 0],
+        vec![-1, -1, 2, 0, 0, 1, 1, 1],
+        vec![-1, -1, 3, 0, 0, 2, -1, 2],
+        vec![-1, -1, 2, 0, 0, 2, -1, 2],
+    ];
+    let mut video = BaseVideo::<SafeBoard>::new(board, 16);
+    _sleep_ms(100);
+    // println!("3BV：{:?}", video.static_params.bbbv);
+    assert_eq!(video.game_board_state, GameBoardState::Ready);
+    video.step("rc", (17, 16)).unwrap();
+    assert_eq!(video.game_board_state, GameBoardState::PreFlaging);
+    video.step("rr", (17, 16)).unwrap();
+    video.step("rc", (16, 49)).unwrap();
+    _sleep_ms(20);
+    video.step("rr", (16, 50)).unwrap();
+    video.step("mv", (48, 51)).unwrap();
+    video.step("mv", (42, 48)).unwrap();
+    _sleep_ms(20);
+    video.step("lc", (16, 32)).unwrap();
+    _sleep_ms(20);
+    video.step("lr", (16, 32)).unwrap();
+    assert_eq!(video.game_board_state, GameBoardState::Playing);
+    _sleep_ms(20);
+    video.step("lc", (52, 0)).unwrap();
+    video.step("lr", (53, 0)).unwrap();
+    video.step("lc", (16, 32)).unwrap();
+    video.step("rc", (16, 32)).unwrap();
+    _sleep_ms(5000);
+    video.step("rr", (16, 32)).unwrap();
+    _sleep_ms(50);
+    video.step("lr", (16, 32)).unwrap();
+    _sleep_ms(50);
+    video.step("lc", (0, 16)).unwrap();
+    _sleep_ms(50);
+    video.step("rc", (0, 16)).unwrap();
+    _sleep_ms(50);
+    video.step("rr", (0, 16)).unwrap();
+    assert!(video.get_left_s() <= 9.0);
+    _sleep_ms(50);
+    video.step("lr", (0, 16)).unwrap();
+    video.step("mv", (4800, 51)).unwrap();
+    video.step("lc", (112, 112)).unwrap();
+    video.step("lr", (112, 112)).unwrap();
+    video.step("lc", (97, 112)).unwrap();
+    video.step("lr", (97, 112)).unwrap();
+    video
+        .set_player_identifier("English中文çкий языкにご한어ü".to_string())
+        .unwrap();
+    video.set_race_identifier("G8888".to_string()).unwrap();
+    video
+        .set_uniqueness_identifier("💣🚩1️⃣3️⃣8️⃣".to_string())
+        .unwrap();
+    video.set_software("a test software".to_string()).unwrap();
+    video.set_country("CN".to_string()).unwrap();
+    // video.print_event();
+
+    assert_eq!(video.get_game_board()[1], [1, 11, 2, 11, 1, 0, 0, 0]);
+    assert_eq!(video.get_game_board()[5], [10, 10, 2, 0, 0, 1, 1, 1]);
+    assert_eq!(video.game_board_state, GameBoardState::Win);
+    assert_eq!(video.get_bbbv_solved().unwrap(), 9);
+    assert_eq!(video.static_params.bbbv, 9);
+    assert_eq!(video.height, 8);
+    assert_eq!(video.mine_num, 10);
+    assert_eq!(video.get_ce().unwrap(), 8);
+    assert!(video.get_rtime().unwrap() > 0.2);
+    assert_eq!(video.is_completed, true);
+
+    let stnb = video.get_stnb().unwrap();
+    println!("start_time: {:?}", video.start_time);
+    println!("end_time: {:?}", video.end_time);
+    let path = video.get_path();
+    let etime = video.get_etime().unwrap();
+    assert_eq!(video.static_params.op, 1);
+    assert_eq!(video.static_params.cell0, 28);
+
+    video.generate_evf_v4_raw_data();
+    video.set_checksum_evf_v4(vec![8; 32]).unwrap();
+    let test_file_name = video.save_to_evf_file("test");
+    // println!("{:?}", test_file_name);
+    let mut video = EvfVideo::new(&test_file_name);
+    let r = video.parse_video();
+    assert_eq!(r.unwrap(), ());
+    // video.data.print_event();
+    // video.data.print_raw_data(400);
+
+    assert_eq!(video.data.height, 8);
+    assert_eq!(video.data.width, 8);
+    assert_eq!(video.data.mine_num, 10);
+    assert_eq!(video.data.static_params.bbbv, 9);
+
+    video.data.analyse();
+    assert_eq!(video.data.game_board_state, GameBoardState::Display);
+    assert_eq!(video.data.software, "a test software");
+    assert_eq!(video.data.country, "CN");
+    assert_eq!(video.data.uniqueness_identifier, "💣🚩1️⃣3️⃣8️⃣");
+    assert_eq!(video.data.race_identifier, "G8888");
+    assert_eq!(
+        video.data.player_identifier,
+        "English中文çкий языкにご한어ü"
+    );
+    println!("time：{:?}", video.data.get_rtime().unwrap());
+    println!("time_ms：{:?}", video.data.get_rtime_ms().unwrap());
+    println!("start_time：{:?}", video.data.start_time);
+    println!("end_time：{:?}", video.data.end_time);
+    assert!(video.data.is_completed);
+    video.data.set_current_time(9999.0);
+    assert_eq!(video.data.get_stnb().unwrap(), stnb);
+    assert_eq!(video.data.get_etime().unwrap(), etime);
+    assert_eq!(video.data.get_path(), path);
+    assert_eq!(video.data.get_checksum().unwrap(), vec![8; 32]);
 }
 
 #[test]
@@ -459,7 +574,7 @@ fn base_video_works() {
     println!("cell0: {:?}", video.static_params.cell0);
 
     video.generate_evf_v0_raw_data();
-    video.set_checksum(vec![8; 32]).unwrap();
+    video.set_checksum_evf_v3(vec![8; 32]).unwrap();
     video.save_to_evf_file("test");
 
     let mut video = EvfVideo::new("test.evf");
@@ -904,7 +1019,7 @@ fn base_video_works_4() {
     println!("cell0: {:?}", video.static_params.cell0);
 
     video.generate_evf_v0_raw_data();
-    video.set_checksum(vec![8; 32]).unwrap();
+    video.set_checksum_evf_v3(vec![8; 32]).unwrap();
     video.save_to_evf_file("test");
 
     let mut video = EvfVideo::new("test.evf");
@@ -960,7 +1075,7 @@ fn base_video_works_5_1bv() {
     _sleep_ms(200);
     video.step("lr", (32, 49)).unwrap();
     video.generate_evf_v0_raw_data();
-    video.set_checksum(vec![8; 32]).unwrap();
+    video.set_checksum_evf_v3(vec![8; 32]).unwrap();
     video.save_to_evf_file("test");
 
     println!("局面：{:?}", video.get_game_board());

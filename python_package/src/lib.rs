@@ -15,19 +15,24 @@ mod gameboard;
 pub use gameboard::{PyBoard, PyGameBoard};
 
 mod base_video;
-pub use base_video::{PyBaseVideo, PySafeBoard};
+pub use base_video::{
+    PyBaseVideo, PyKeyDynamicParams, PySafeBoard, PySafeBoardRow, PyVideoActionStateRecorder,
+};
 
-mod avf_video;
-pub use avf_video::PyAvfVideo;
+// mod avf_video;
+// pub use avf_video::PyAvfVideo;
 
-mod evf_video;
-pub use evf_video::PyEvfVideo;
+// mod evf_video;
+// pub use evf_video::PyEvfVideo;
 
-mod mvf_video;
-pub use mvf_video::PyMvfVideo;
+// mod mvf_video;
+// pub use mvf_video::PyMvfVideo;
 
-mod rmv_video;
-pub use rmv_video::PyRmvVideo;
+// mod rmv_video;
+// pub use rmv_video::PyRmvVideo;
+
+mod videos;
+pub use videos::{AvfVideo, EvfVideo, MvfVideo, RmvVideo};
 
 // pip install maturin
 // maturin publish --manylinux 2014
@@ -137,7 +142,8 @@ fn py_get_all_not_and_is_mine_on_board(
     mut board_of_game: Vec<Vec<i32>>,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<(usize, usize)>)> {
     let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
-    let (not, is) = get_all_not_and_is_mine_on_board(&mut a_mats, &mut xs, &mut bs, &mut board_of_game);
+    let (not, is) =
+        get_all_not_and_is_mine_on_board(&mut a_mats, &mut xs, &mut bs, &mut board_of_game);
     Ok((board_of_game, not, is))
 }
 
@@ -378,7 +384,7 @@ fn py_cal_board_numbers(mut board: Vec<Vec<i32>>) -> PyResult<Vec<Vec<i32>>> {
 #[pyo3(name = "cal_board_numbers")]
 fn py_valid_time_period(software: &str) -> PyResult<(String, String)> {
     match valid_time_period(software) {
-        Ok(a)=> Ok(a),
+        Ok(a) => Ok(a),
         Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e)),
     }
 }
@@ -431,13 +437,16 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_valid_time_period, m)?)?;
     m.add_class::<PyMinesweeperBoard>()?;
     m.add_class::<PySafeMinesweeperBoard>()?;
-    m.add_class::<PyAvfVideo>()?;
-    m.add_class::<PyRmvVideo>()?;
-    m.add_class::<PyMvfVideo>()?;
-    m.add_class::<PyEvfVideo>()?;
+    m.add_class::<AvfVideo>()?;
+    m.add_class::<RmvVideo>()?;
+    m.add_class::<MvfVideo>()?;
+    m.add_class::<EvfVideo>()?;
     m.add_class::<PyBaseVideo>()?;
     m.add_class::<PyGameBoard>()?;
     m.add_class::<PyBoard>()?;
     m.add_class::<PySafeBoard>()?;
+    m.add_class::<PySafeBoardRow>()?;
+    m.add_class::<PyVideoActionStateRecorder>()?;
+    m.add_class::<PyKeyDynamicParams>()?;
     Ok(())
 }

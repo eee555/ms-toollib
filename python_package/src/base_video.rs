@@ -1,7 +1,7 @@
 use crate::PyGameBoard;
-use ms_toollib_original::*;
+use ms_toollib_original::videos::base_video::{KeyDynamicParams, NewBaseVideo2};
+use ms_toollib_original::{videos::base_video::VideoActionStateRecorder, *};
 use pyo3::prelude::*;
-use ms_toollib_original::videos::base_video::NewBaseVideo2;
 
 #[pyclass(name = "SafeBoardRow")]
 pub struct PySafeBoardRow {
@@ -12,10 +12,12 @@ pub struct PySafeBoardRow {
 impl PySafeBoardRow {
     #[new]
     pub fn new(row: Vec<i32>) -> PySafeBoardRow {
-        PySafeBoardRow { core: SafeBoardRow::new(row) }
+        PySafeBoardRow {
+            core: SafeBoardRow::new(row),
+        }
     }
-    fn __getitem__(&self, key: isize) -> PyResult<i32> {
-        Ok(self.core[key as usize])
+    fn __getitem__(&self, key: usize) -> PyResult<i32> {
+        Ok(self.core[key])
     }
 }
 
@@ -40,6 +42,119 @@ impl PySafeBoard {
     }
     fn __getitem__(&self, key: isize) -> PyResult<PySafeBoardRow> {
         Ok(PySafeBoardRow::new(self.core[key as usize].into_vec()))
+    }
+}
+
+#[pyclass(name = "KeyDynamicParams")]
+pub struct PyKeyDynamicParams {
+    pub core: KeyDynamicParams,
+}
+
+#[pymethods]
+impl PyKeyDynamicParams {
+    #[getter]
+    fn get_left(&self) -> PyResult<usize> {
+        Ok(self.core.left)
+    }
+    #[getter]
+    fn get_right(&self) -> PyResult<usize> {
+        Ok(self.core.right)
+    }
+    #[getter]
+    fn get_double(&self) -> PyResult<usize> {
+        Ok(self.core.double)
+    }
+    #[getter]
+    fn get_lce(&self) -> PyResult<usize> {
+        Ok(self.core.lce)
+    }
+    #[getter]
+    fn get_rce(&self) -> PyResult<usize> {
+        Ok(self.core.rce)
+    }
+    #[getter]
+    fn get_dce(&self) -> PyResult<usize> {
+        Ok(self.core.dce)
+    }
+    #[getter]
+    fn get_flag(&self) -> PyResult<usize> {
+        Ok(self.core.flag)
+    }
+    #[getter]
+    fn get_bbbv_solved(&self) -> PyResult<usize> {
+        Ok(self.core.bbbv_solved)
+    }
+    #[getter]
+    fn get_op_solved(&self) -> PyResult<usize> {
+        Ok(self.core.op_solved)
+    }
+    #[getter]
+    fn get_isl_solved(&self) -> PyResult<usize> {
+        Ok(self.core.isl_solved)
+    }
+}
+
+#[pyclass(name = "VideoActionStateRecorder")]
+pub struct PyVideoActionStateRecorder {
+    pub core: VideoActionStateRecorder,
+}
+
+#[pymethods]
+impl PyVideoActionStateRecorder {
+    #[getter]
+    fn get_time(&self) -> PyResult<f64> {
+        Ok(self.core.time)
+    }
+    #[getter]
+    fn get_x(&self) -> PyResult<u16> {
+        Ok(self.core.x)
+    }
+    #[getter]
+    fn get_y(&self) -> PyResult<u16> {
+        Ok(self.core.y)
+    }
+    #[getter]
+    fn get_mouse(&self) -> PyResult<String> {
+        Ok(self.core.mouse.clone())
+    }
+    #[getter]
+    fn get_useful_level(&self) -> PyResult<u8> {
+        Ok(self.core.useful_level)
+    }
+    #[getter]
+    fn get_prior_game_board_id(&self) -> PyResult<usize> {
+        Ok(self.core.prior_game_board_id)
+    }
+    #[getter]
+    fn get_next_game_board_id(&self) -> PyResult<usize> {
+        Ok(self.core.next_game_board_id)
+    }
+    #[getter]
+    fn get_comments(&self) -> PyResult<String> {
+        Ok(self.core.comments.clone())
+    }
+    #[getter]
+    fn get_path(&self) -> PyResult<f64> {
+        Ok(self.core.path)
+    }
+    #[getter]
+    fn get_mouse_state(&self) -> PyResult<usize> {
+        match self.core.mouse_state {
+            MouseState::UpUp => Ok(1),
+            MouseState::UpDown => Ok(2),
+            MouseState::UpDownNotFlag => Ok(3),
+            MouseState::DownUp => Ok(4),
+            MouseState::Chording => Ok(5),
+            MouseState::ChordingNotFlag => Ok(6),
+            MouseState::DownUpAfterChording => Ok(7),
+            MouseState::Undefined => Ok(8),
+        }
+    }
+    #[getter]
+    fn get_key_dynamic_params(&self) -> PyResult<PyKeyDynamicParams> {
+        Ok(PyKeyDynamicParams {
+            core: self.core.key_dynamic_params.clone(),
+        })
     }
 }
 
@@ -113,7 +228,7 @@ impl PyBaseVideo {
         Ok(self.core.get_time())
     }
     #[getter]
-    fn get_software(&self) -> PyResult<Vec<u8>> {
+    fn get_software(&self) -> PyResult<String> {
         Ok(self.core.software.clone())
     }
     #[getter]
@@ -149,19 +264,19 @@ impl PyBaseVideo {
         Ok(self.core.mine_num)
     }
     #[getter]
-    fn get_player_identifier(&self) -> PyResult<Vec<u8>> {
+    fn get_player_identifier(&self) -> PyResult<String> {
         Ok(self.core.player_identifier.clone())
     }
     #[getter]
-    fn get_race_identifier(&self) -> PyResult<Vec<u8>> {
+    fn get_race_identifier(&self) -> PyResult<String> {
         Ok(self.core.race_identifier.clone())
     }
     #[getter]
-    fn get_uniqueness_identifier(&self) -> PyResult<Vec<u8>> {
+    fn get_uniqueness_identifier(&self) -> PyResult<String> {
         Ok(self.core.uniqueness_identifier.clone())
     }
     #[getter]
-    fn get_country(&self) -> PyResult<Vec<u8>> {
+    fn get_country(&self) -> PyResult<String> {
         Ok(self.core.country.clone())
     }
     #[getter]
@@ -169,12 +284,12 @@ impl PyBaseVideo {
         Ok(self.core.static_params.bbbv)
     }
     #[getter]
-    fn get_start_time(&self) -> PyResult<Vec<u8>> {
-        Ok(self.core.start_time.clone())
+    fn get_start_time(&self) -> PyResult<u64> {
+        Ok(self.core.start_time)
     }
     #[getter]
-    fn get_end_time(&self) -> PyResult<Vec<u8>> {
-        Ok(self.core.end_time.clone())
+    fn get_end_time(&self) -> PyResult<u64> {
+        Ok(self.core.end_time)
     }
     #[getter]
     fn get_op(&self) -> PyResult<usize> {
@@ -336,51 +451,69 @@ impl PyBaseVideo {
     fn get_corr(&self) -> PyResult<f64> {
         Ok(self.core.get_corr().unwrap())
     }
+    // #[getter]
+    // fn get_events_len(&self) -> PyResult<usize> {
+    //     Ok(self.core.video_action_state_recorder.len())
+    // }
     #[getter]
-    fn get_events_len(&self) -> PyResult<usize> {
-        Ok(self.core.video_action_state_recorder.len())
+    fn get_events(&self) -> PyResult<Vec<PyVideoActionStateRecorder>> {
+        Ok(self
+            .core
+            .video_action_state_recorder
+            .iter()
+            .map(|x| PyVideoActionStateRecorder { core: x.clone() })
+            .collect())
     }
-    pub fn events_time(&self, index: usize) -> PyResult<f64> {
-        Ok(self.core.video_action_state_recorder[index].time)
+    #[getter]
+    fn get_game_board_stream(&self) -> PyResult<Vec<PyGameBoard>> {
+        Ok(self
+            .core
+            .game_board_stream
+            .iter()
+            .map(|x| PyGameBoard { core: x.clone() })
+            .collect())
     }
-    pub fn events_mouse(&self, index: usize) -> PyResult<String> {
-        Ok(self.core.video_action_state_recorder[index].mouse.clone())
-    }
-    pub fn events_x(&self, index: usize) -> PyResult<u16> {
-        Ok(self.core.video_action_state_recorder[index].x)
-    }
-    pub fn events_y(&self, index: usize) -> PyResult<u16> {
-        Ok(self.core.video_action_state_recorder[index].y)
-    }
-    pub fn events_useful_level(&self, index: usize) -> PyResult<u8> {
-        Ok(self.core.video_action_state_recorder[index].useful_level)
-    }
-    pub fn events_prior_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
-        let mut t = PyGameBoard::new(self.core.mine_num);
-        t.set_core(
-            self.core.game_board_stream
-                [self.core.video_action_state_recorder[index].prior_game_board_id]
-                .clone(),
-        );
-        Ok(t)
-    }
-    pub fn events_comments(&self, index: usize) -> PyResult<String> {
-        Ok(self.core.video_action_state_recorder[index]
-            .comments
-            .clone())
-    }
-    pub fn events_mouse_state(&self, index: usize) -> PyResult<usize> {
-        match self.core.video_action_state_recorder[index].mouse_state {
-            MouseState::UpUp => Ok(1),
-            MouseState::UpDown => Ok(2),
-            MouseState::UpDownNotFlag => Ok(3),
-            MouseState::DownUp => Ok(4),
-            MouseState::Chording => Ok(5),
-            MouseState::ChordingNotFlag => Ok(6),
-            MouseState::DownUpAfterChording => Ok(7),
-            MouseState::Undefined => Ok(8),
-        }
-    }
+    // pub fn events_time(&self, index: usize) -> PyResult<f64> {
+    //     Ok(self.core.video_action_state_recorder[index].time)
+    // }
+    // pub fn events_mouse(&self, index: usize) -> PyResult<String> {
+    //     Ok(self.core.video_action_state_recorder[index].mouse.clone())
+    // }
+    // pub fn events_x(&self, index: usize) -> PyResult<u16> {
+    //     Ok(self.core.video_action_state_recorder[index].x)
+    // }
+    // pub fn events_y(&self, index: usize) -> PyResult<u16> {
+    //     Ok(self.core.video_action_state_recorder[index].y)
+    // }
+    // pub fn events_useful_level(&self, index: usize) -> PyResult<u8> {
+    //     Ok(self.core.video_action_state_recorder[index].useful_level)
+    // }
+    // pub fn events_prior_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
+    //     let mut t = PyGameBoard::new(self.core.mine_num);
+    //     t.set_core(
+    //         self.core.game_board_stream
+    //             [self.core.video_action_state_recorder[index].prior_game_board_id]
+    //             .clone(),
+    //     );
+    //     Ok(t)
+    // }
+    // pub fn events_comments(&self, index: usize) -> PyResult<String> {
+    //     Ok(self.core.video_action_state_recorder[index]
+    //         .comments
+    //         .clone())
+    // }
+    // pub fn events_mouse_state(&self, index: usize) -> PyResult<usize> {
+    //     match self.core.video_action_state_recorder[index].mouse_state {
+    //         MouseState::UpUp => Ok(1),
+    //         MouseState::UpDown => Ok(2),
+    //         MouseState::UpDownNotFlag => Ok(3),
+    //         MouseState::DownUp => Ok(4),
+    //         MouseState::Chording => Ok(5),
+    //         MouseState::ChordingNotFlag => Ok(6),
+    //         MouseState::DownUpAfterChording => Ok(7),
+    //         MouseState::Undefined => Ok(8),
+    //     }
+    // }
     #[getter]
     pub fn get_current_event_id(&self) -> PyResult<usize> {
         Ok(self.core.current_event_id)
@@ -428,7 +561,7 @@ impl PyBaseVideo {
         Ok(self.core.get_x_y().unwrap())
     }
     #[getter]
-    pub fn get_checksum(&self) -> PyResult<[u8; 32]> {
+    pub fn get_checksum(&self) -> PyResult<Vec<u8>> {
         Ok(self.core.get_checksum().unwrap())
     }
     #[setter]
@@ -445,7 +578,9 @@ impl PyBaseVideo {
     }
     #[setter]
     pub fn set_use_cursor_pos_lim(&mut self, use_cursor_pos_lim: bool) {
-        self.core.set_use_cursor_pos_lim(use_cursor_pos_lim).unwrap();
+        self.core
+            .set_use_cursor_pos_lim(use_cursor_pos_lim)
+            .unwrap();
     }
     #[setter]
     pub fn set_use_auto_replay(&mut self, use_auto_replay: bool) {
@@ -464,25 +599,25 @@ impl PyBaseVideo {
         self.core.set_mode(mode).unwrap();
     }
     #[setter]
-    pub fn set_software(&mut self, software: Vec<u8>) {
+    pub fn set_software(&mut self, software: String) {
         self.core.set_software(software).unwrap();
     }
     #[setter]
-    pub fn set_player_identifier(&mut self, player_identifier: Vec<u8>) {
+    pub fn set_player_identifier(&mut self, player_identifier: String) {
         self.core.set_player_identifier(player_identifier).unwrap();
     }
     #[setter]
-    pub fn set_race_identifier(&mut self, race_identifier: Vec<u8>) {
+    pub fn set_race_identifier(&mut self, race_identifier: String) {
         self.core.set_race_identifier(race_identifier).unwrap();
     }
     #[setter]
-    pub fn set_uniqueness_identifier(&mut self, uniqueness_identifier: Vec<u8>) {
+    pub fn set_uniqueness_identifier(&mut self, uniqueness_identifier: String) {
         self.core
             .set_uniqueness_identifier(uniqueness_identifier)
             .unwrap();
     }
     #[setter]
-    pub fn set_country(&mut self, country: Vec<u8>) {
+    pub fn set_country(&mut self, country: String) {
         self.core.set_country(country).unwrap();
     }
     #[setter]
@@ -490,8 +625,12 @@ impl PyBaseVideo {
         self.core.set_device_uuid(device_uuid).unwrap();
     }
     #[setter]
-    pub fn set_checksum(&mut self, checksum: [u8; 32]) {
-        self.core.set_checksum(checksum).unwrap();
+    pub fn set_checksum_evf_v3(&mut self, checksum: Vec<u8>) {
+        self.core.set_checksum_evf_v3(checksum).unwrap();
+    }
+    #[setter]
+    pub fn set_checksum_evf_v4(&mut self, checksum: Vec<u8>) {
+        self.core.set_checksum_evf_v4(checksum).unwrap();
     }
     #[setter]
     pub fn set_pix_size(&mut self, pix_size: u8) {

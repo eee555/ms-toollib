@@ -24,6 +24,10 @@ impl PyGameBoard {
         self.core.set_game_board(&board);
     }
     #[getter]
+    fn get_game_board(&mut self) -> PyResult<Vec<Vec<i32>>> {
+        Ok(self.core.game_board.clone())
+    }
+    #[getter]
     fn get_poss(&mut self) -> PyResult<Vec<Vec<f64>>> {
         Ok(self.core.get_poss().to_vec())
     }

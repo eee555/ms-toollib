@@ -1,6 +1,6 @@
 // use crate::MouseState;
 // use crate::miscellaneous::s_to_ms;
-use crate::utils::{cal_board_numbers};
+use crate::utils::cal_board_numbers;
 use crate::videos::base_video::NewBaseVideo;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -118,13 +118,14 @@ impl NewSomeVideo2<Vec<u8>, &str> for AvfVideo {
 
 impl AvfVideo {
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
+        // 按源码，第一位是版本号，0.52.3是34
         match self.data.get_u8() {
             Ok(_) => {}
             Err(_) => return Err(ErrReadVideoReason::FileIsEmpty),
         };
-        // self.data.is_completed; // 该格式解析前不能确定是否扫完
         self.data.is_official = true;
         self.data.is_fair = true;
+        // 按源码，该四位全是随机数
         self.data.offset += 4;
         self.data.level = self.data.get_u8()?;
         match self.data.level {
@@ -156,7 +157,7 @@ impl AvfVideo {
             let d = self.data.get_u8()? as usize;
             self.data.board[c - 1][d - 1] = -1;
         }
-
+        // 算数字
         for x in 0..self.data.height {
             for y in 0..self.data.width {
                 if self.data.board[x][y] == -1 {
@@ -169,19 +170,66 @@ impl AvfVideo {
                     }
                 }
             }
-        } // 算数字
-        let mut buffer: [char; 3] = ['\0', '\0', '\0'];
+        }
+        // 动态的全局校验过程，不管。目的是读取country。
+        let mut t = 0;
+        for x in 0..self.data.width {
+            for y in 0..self.data.height {
+                let a2res = match self.data.board[y][x] {
+                    -1 => 10,
+                    e @ _ => e as usize + 1,
+                };
+                t += a2res * (x + x * y);
+            }
+        }
+        let s = t.to_string(); // 将 t 转换为字符串
+        let mut s1 = String::new(); // 初始化 s1 为空字符串
+
+        // 遍历 s 中的每个字符
+        for c in s.chars() {
+            let new_char = (c as u8 - 45) as char; // 将字符的 ASCII 码值减去 45 并转换回字符
+            s1.push(new_char); // 将变换后的字符添加到 s1 中
+        }
+        for _ in 0..s1.to_string().len() + 4 {
+            self.data.get_char()?;
+        }
+        // 中国8，英格兰10， 法国12，美国41
+        // print!("{:?}, ", self.data.get_u8()?);
+        // https://www.qqxiuzi.cn/zh/region-codes.htm
+        self.data.country = match self.data.get_u8()? {
+            8 | 37 => "CN".to_string(),
+            10 => "GB".to_string(), // 英格兰
+            12 => "FR".to_string(),
+            13 => "DE".to_string(),
+            23 => "KR".to_string(),
+            29 => "PL".to_string(),
+            31 => "RU".to_string(),
+            41 => "US".to_string(),
+            69 => "JP".to_string(),
+            _ => "XX".to_string(),
+        };
+
+        let mut buffer: [char; 5] = ['\0'; 5];
         loop {
             buffer[0] = buffer[1];
             buffer[1] = buffer[2];
-            buffer[2] = self.data.get_char()?;
-            if buffer[0] == '['
-                && (buffer[1] == '0' || buffer[1] == '1' || buffer[1] == '2' || buffer[1] == '3')
-                && buffer[2] == '|'
+            buffer[2] = buffer[3];
+            buffer[3] = buffer[4];
+            buffer[4] = self.data.get_char()?;
+            if buffer[2] == '['
+                && (buffer[3] == '0' || buffer[3] == '1' || buffer[3] == '2' || buffer[3] == '3')
+                && buffer[4] == '|'
             {
                 break;
             }
         }
+        // 解析是否开启标问号
+        if buffer[0] as u8 == 17 {
+            self.data.use_question = true;
+        } else if buffer[0] as u8 != 127 {
+            return Err(ErrReadVideoReason::InvalidParams);
+        }
+
         // avf中的时间戳没有时区，最大可能有12小时的偏差
         let mut start_time = String::new();
         loop {

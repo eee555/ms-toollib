@@ -2,7 +2,8 @@
 use ms_toollib::videos::base_video::NewBaseVideo2;
 use ms_toollib::videos::NewSomeVideo;
 use ms_toollib::{
-    AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MouseState, MvfVideo, RmvVideo, SafeBoard
+    AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MouseState, MvfVideo,
+    RmvVideo, SafeBoard,
 };
 use std::mem::transmute;
 use std::thread;
@@ -67,6 +68,7 @@ fn avf_video_works() {
     // video.data.print_event();
     video.data.analyse();
     assert!(video.data.player_identifier == "Wang Jianing G01825".to_string());
+    assert_eq!(video.data.country, "CN");
     assert_eq!(
         video.data.board,
         vec![

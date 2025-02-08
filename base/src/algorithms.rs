@@ -788,10 +788,10 @@ pub fn try_solve(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> (Vec<Vec<i32>>,
         }
         let mut operation = vec![];
         for n in not_mine{
-            operation.push(("lc", n));
-            operation.push(("lr", n));
+            operation.push(("lc".to_string(), n));
+            operation.push(("lr".to_string(), n));
         }
-        let _  = minesweeper_board.step_flow(operation);
+        let _  = minesweeper_board.step_flow(&operation);
         if minesweeper_board.game_board_state == GameBoardState::Win{
             return (minesweeper_board.game_board, minesweeper_board.bbbv_solved);
         }

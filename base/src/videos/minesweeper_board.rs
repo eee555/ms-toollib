@@ -843,13 +843,13 @@ impl<T> MinesweeperBoard<T> {
     }
     /// 直接分析整局的操作流，中间也可以停顿
     /// 开始游戏前的任何操作也都记录次数
-    pub fn step_flow(&mut self, operation: Vec<(&str, (usize, usize))>) -> Result<(), ()>
+    pub fn step_flow(&mut self, operation: &Vec<(String, (usize, usize))>) -> Result<(), ()>
     where
         T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         for op in operation {
-            self.step(op.0, op.1)?;
+            self.step(&op.0, op.1)?;
         }
         Ok(())
     }

@@ -1,8 +1,8 @@
-use crate::board;
-use crate::transfor::{js_value_to_vec_vec, json2vec, trans_opt, vec2json, vec_vec_to_js_value};
+// use crate::board;
+use crate::transfor::{js_value_to_vec_vec, vec_vec_to_js_value};
 use js_sys::Array;
-use ms_toollib_original as ms;
-use ms_toollib_original::videos::NewSomeVideo2;
+use ms;
+use ms::videos::NewSomeVideo2;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 
@@ -103,13 +103,22 @@ impl MinesweeperBoard {
     pub fn step(&mut self, e: &str, x: usize, y: usize) {
         self.core.step(e, (x, y)).unwrap();
     }
-    pub fn step_flow(&mut self, operation: &str) {
-        let opera = trans_opt(operation);
-        let operation = opera
+    pub fn step_flow(&mut self, js_operation: JsValue) {
+        let array_operation = Array::from(&js_operation);
+        let operation = array_operation
             .iter()
-            .map(|x| (&((*x).0)[..], ((*x).1 .0, (*x).1 .1)))
+            .map(|item| {
+                let item_array = Array::from(&item);
+                let key = item_array.get(0);
+                let value = Array::from(&item_array.get(1));
+                let key_str = key.as_string().unwrap();
+                let x = value.get(0).as_f64().unwrap() as usize;
+                let y = value.get(1).as_f64().unwrap() as usize;
+
+                (key_str, (x, y))
+            })
             .collect();
-        self.core.step_flow(operation).unwrap();
+        self.core.step_flow(&operation).unwrap();
     }
     // 这个方法与强可猜、弱可猜有关
     #[wasm_bindgen(setter = board)]
@@ -118,8 +127,8 @@ impl MinesweeperBoard {
     }
     // 直接设置游戏局面是不安全的！但在一些游戏中，结束时需要修改再展示
     #[wasm_bindgen(setter = game_board)]
-    pub fn set_game_board(&mut self, game_board: &str) {
-        self.core.game_board = json2vec(game_board);
+    pub fn set_game_board(&mut self, js_board: JsValue) {
+        self.core.game_board = js_value_to_vec_vec(js_board);
     }
     #[wasm_bindgen(getter = board)]
     pub fn get_board(&self) -> JsValue {
@@ -579,7 +588,7 @@ macro_rules! generate_video {
                 pub fn get_game_board_stream(&self) -> JsValue {
                     let array = Array::new();
                     for i in self.core.data.game_board_stream.clone(){
-                        let v = GameBoard{core: i};
+                        let v = GameBoard { core: i };
                         array.push(&JsValue::from(v));
                     }
                     array.into()
@@ -593,12 +602,12 @@ macro_rules! generate_video {
                     self.core.data.current_event_id = id
                 }
                 #[wasm_bindgen(getter = game_board)]
-                pub fn get_game_board(&self) -> String {
-                    vec2json(&self.core.data.get_game_board())
+                pub fn get_game_board(&self) -> JsValue {
+                    vec_vec_to_js_value(self.core.data.get_game_board().clone())
                 }
                 #[wasm_bindgen(getter = game_board_poss)]
-                pub fn get_game_board_poss(&mut self) -> String {
-                    vec2json(&self.core.data.get_game_board_poss())
+                pub fn get_game_board_poss(&mut self) -> JsValue {
+                    vec_vec_to_js_value(self.core.data.get_game_board_poss().clone())
                 }
                 #[wasm_bindgen(getter = mouse_state)]
                 pub fn get_mouse_state(&self) -> u32 {

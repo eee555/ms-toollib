@@ -10,7 +10,7 @@ const { assert } = require('console');
 const video_file = '../../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jianing G01825.avf';
 const data = fs.readFileSync(video_file)
 
-
+// 使用二进制数据和文件名初始化
 let v = ms.AvfVideo.new(data, video_file)
 v.parse_video();
 v.analyse();

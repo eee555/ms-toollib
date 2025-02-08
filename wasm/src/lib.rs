@@ -20,159 +20,76 @@
 // npm config set registry https://registry.npm.taobao.org/
 // npm config set registry https://registry.npmjs.org/
 
-// use serde::{Deserialize, Serialize};
-use serde_json;
-
+use js_sys::Array;
 use wasm_bindgen::prelude::*;
-// use web_sys;
 mod board;
 // use board::{MinesweeperBoard,AvfVideo};
 mod transfor;
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+use transfor::{js_value_to_vec_vec, vec_vec_to_js_value};
 
 #[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-}
-
-pub fn set_panic_hook() {
-    // https://github.com/rustwasm/console_error_panic_hook#readme
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
+pub fn cal_bbbv(js_board: JsValue) -> usize {
+    let board = js_value_to_vec_vec(js_board);
+    ms::cal_bbbv(&board)
 }
 
 #[wasm_bindgen]
-pub fn cal_bbbv(board_json: &str) -> i32 {
-    // set_panic_hook();
-    let board_: serde_json::Value = serde_json::from_str(&board_json).unwrap();
-    let board__ = board_.as_array().unwrap();
-    let len_ = board__.len();
-    let mut res = vec![];
-    for i in 0..len_ {
-        res.push(
-            board__[i]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|x| x.as_i64().unwrap() as i32)
-                .collect::<Vec<_>>(),
-        );
-    }
-    ms::cal_bbbv(&res) as i32
+pub fn cal_op(js_board: JsValue) -> usize {
+    let board = js_value_to_vec_vec(js_board);
+    ms::cal_op(&board)
 }
 
 #[wasm_bindgen]
-pub fn cal_op(board_json: &str) -> i32 {
-    // set_panic_hook();
-    let board_: serde_json::Value = serde_json::from_str(&board_json).unwrap();
-    let board__ = board_.as_array().unwrap();
-    let len_ = board__.len();
-    let mut res = vec![];
-    for i in 0..len_ {
-        res.push(
-            board__[i]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|x| x.as_i64().unwrap() as i32)
-                .collect::<Vec<_>>(),
-        );
-    }
-    ms::cal_op(&res) as i32
-}
-
-#[wasm_bindgen]
-pub fn cal_possibility_onboard(board_json: &str, mine_num: i32) -> String {
-    // set_panic_hook();
-    let board_: serde_json::Value = serde_json::from_str(&board_json).unwrap();
-    let board__ = board_.as_array().unwrap();
-    let len_ = board__.len();
-    let mut board_of_game = vec![];
-    for i in 0..len_ {
-        board_of_game.push(
-            board__[i]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|x| x.as_i64().unwrap() as i32)
-                .collect::<Vec<_>>(),
-        );
-    }
-    // mine_num为局面中雷的总数，不管有没有标
-    let _ = ms::mark_board(&mut board_of_game);
-    match ms::cal_possibility_onboard(&board_of_game, mine_num as f64) {
-        Ok(t) => return serde_json::to_string(&t).unwrap(),
-        Err(_) => return serde_json::to_string(&(Vec::<i32>::new(), [0, 0, 0])).unwrap(),
+pub fn cal_possibility_onboard(js_board: JsValue, mine_num: f64) -> JsValue {
+    let mut game_board = js_value_to_vec_vec(js_board);
+    let _ = ms::mark_board(&mut game_board);
+    let array = js_sys::Array::new();
+    match ms::cal_possibility_onboard(&game_board, mine_num) {
+        Ok(t) => {
+            array.push(&vec_vec_to_js_value(t.0));
+            let mine_num_array = Array::new_with_length(3);
+            mine_num_array.set(0, JsValue::from(t.1[0]));
+            mine_num_array.set(1, JsValue::from(t.1[1]));
+            mine_num_array.set(2, JsValue::from(t.1[2]));
+            array.push(&mine_num_array);
+            return array.into();
+        }
+        Err(t) => JsValue::from(t),
     }
 }
 
 #[wasm_bindgen]
-pub fn laymine(row: i32, column: i32, mine_num: i32, x0: i32, y0: i32) -> String {
-    serde_json::to_string(&ms::laymine(
-        row as usize,
-        column as usize,
-        mine_num as usize,
-        x0 as usize,
-        y0 as usize,
-    ))
-    .unwrap()
+pub fn laymine(row: usize, column: usize, mine_num: usize, x0: usize, y0: usize) -> JsValue {
+    let board = ms::laymine(row, column, mine_num, x0, y0);
+    vec_vec_to_js_value(board)
 }
 
 #[wasm_bindgen]
-pub fn laymine_op(row: i32, column: i32, mine_num: i32, x0: i32, y0: i32) -> String {
-    serde_json::to_string(&ms::laymine_op(
-        row as usize,
-        column as usize,
-        mine_num as usize,
-        x0 as usize,
-        y0 as usize,
-    ))
-    .unwrap()
+pub fn laymine_op(row: usize, column: usize, mine_num: usize, x0: usize, y0: usize) -> JsValue {
+    let board = ms::laymine_op(row, column, mine_num, x0, y0);
+    vec_vec_to_js_value(board)
 }
 
 #[wasm_bindgen]
 pub fn laymine_solvable(
-    row: i32,
-    column: i32,
-    mine_num: i32,
-    x0: i32,
-    y0: i32,
-    max_times: i32,
-) -> String {
-    serde_json::to_string(&ms::laymine_solvable(
-        row as usize,
-        column as usize,
-        mine_num as usize,
-        x0 as usize,
-        y0 as usize,
-        max_times as usize,
-    ))
-    .unwrap()
+    row: usize,
+    column: usize,
+    mine_num: usize,
+    x0: usize,
+    y0: usize,
+    max_times: usize,
+) -> JsValue {
+    let board_flag = ms::laymine_solvable(row, column, mine_num, x0, y0, max_times);
+    let array = js_sys::Array::new();
+    array.push(&vec_vec_to_js_value(board_flag.0));
+    array.push(&JsValue::from_bool(board_flag.1));
+    array.into()
 }
 
 #[wasm_bindgen]
-pub fn is_solvable(board_json: &str, x0: i32, y0: i32) -> bool {
-    let board_: serde_json::Value = serde_json::from_str(&board_json).unwrap();
-    let board__ = board_.as_array().unwrap();
-    let len_ = board__.len();
-    let mut board: Vec<_> = vec![];
-    for i in 0..len_ {
-        board.push(
-            board__[i]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|x| x.as_i64().unwrap() as i32)
-                .collect::<Vec<_>>(),
-        );
-    }
-    ms::is_solvable(&board, x0 as usize, y0 as usize)
+pub fn is_solvable(js_board: JsValue, x0: usize, y0: usize) -> bool {
+    let board = js_value_to_vec_vec(js_board);
+    ms::is_solvable(&board, x0, y0)
 }
 
 #[wasm_bindgen(getter_with_clone)]

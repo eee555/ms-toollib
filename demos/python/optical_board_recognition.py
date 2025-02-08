@@ -11,7 +11,7 @@ board_img_data = np.concatenate((board_img_data, 1.0 * np.ones((height, width, 1
 t = board_img_data[:,:,0].copy()
 board_img_data[:,:,0] = board_img_data[:,:,2]
 board_img_data[:,:,2] = t
-board_img_data = (np.reshape(board_img_data, -1) * 255).astype(np.uint32)
+board_img_data = (np.reshape(board_img_data, -1) * 255).astype(np.uint8)
 # board_img_data(b, g, r, a): [205, 197, 122, 255, 205, 197, 122, 255, 205, 197, 122, 255, ...]
 # 对b,g,r三种颜色敏感；透明度随意。board_img_data的长度为4*height*width
 board = ms_toollib.obr_board(board_img_data, height, width)

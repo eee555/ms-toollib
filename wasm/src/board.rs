@@ -1,22 +1,92 @@
-use crate::transfor::{json2vec, trans_opt, vec2json};
-// use crate::web_sys;
+use crate::board;
+use crate::transfor::{js_value_to_vec_vec, json2vec, trans_opt, vec2json, vec_vec_to_js_value};
+use js_sys::Array;
 use ms_toollib_original as ms;
 use ms_toollib_original::videos::NewSomeVideo2;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsValue;
 
-pub fn set_panic_hook() {
-    // https://github.com/rustwasm/console_error_panic_hook#readme
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
+#[wasm_bindgen]
+pub struct GameBoard {
+    core: ms::GameBoard,
+}
+
+#[wasm_bindgen]
+impl GameBoard {
+    pub fn new(mine_num: usize) -> GameBoard {
+        let c = ms::GameBoard::new(mine_num);
+        GameBoard { core: c }
+    }
+    #[wasm_bindgen(setter = game_board)]
+    pub fn set_game_board(&mut self, js_board: JsValue) {
+        let board = js_value_to_vec_vec(js_board);
+        self.core.set_game_board(&board);
+    }
+    #[wasm_bindgen(getter = game_board)]
+    pub fn get_game_board(&mut self) -> JsValue {
+        vec_vec_to_js_value(self.core.game_board.clone())
+    }
+    #[wasm_bindgen(getter = poss)]
+    pub fn get_poss(&mut self) -> JsValue {
+        vec_vec_to_js_value(self.core.get_poss().to_vec())
+    }
+    #[wasm_bindgen(getter = basic_not_mine)]
+    pub fn get_basic_not_mine(&mut self) -> JsValue {
+        let ps = self.core.get_basic_not_mine().to_vec();
+        let outer_array = Array::new_with_length(ps.len() as u32);
+        for (i, (a, b)) in ps.iter().enumerate() {
+            let inner_array = Array::new_with_length(2);
+            inner_array.set(0, JsValue::from(*a));
+            inner_array.set(1, JsValue::from(*b));
+            outer_array.set(i as u32, inner_array.into());
+        }
+        outer_array.into()
+    }
+    #[wasm_bindgen(getter = basic_is_mine)]
+    pub fn get_basic_is_mine(&mut self) -> JsValue {
+        let ps = self.core.get_basic_is_mine().to_vec();
+        let outer_array = Array::new_with_length(ps.len() as u32);
+        for (i, (a, b)) in ps.iter().enumerate() {
+            let inner_array = Array::new_with_length(2);
+            inner_array.set(0, JsValue::from(*a));
+            inner_array.set(1, JsValue::from(*b));
+            outer_array.set(i as u32, inner_array.into());
+        }
+        outer_array.into()
+    }
+    #[wasm_bindgen(getter = enum_not_mine)]
+    pub fn get_enum_not_mine(&mut self) -> JsValue {
+        let ps = self.core.get_enum_not_mine().to_vec();
+        let outer_array = Array::new_with_length(ps.len() as u32);
+        for (i, (a, b)) in ps.iter().enumerate() {
+            let inner_array = Array::new_with_length(2);
+            inner_array.set(0, JsValue::from(*a));
+            inner_array.set(1, JsValue::from(*b));
+            outer_array.set(i as u32, inner_array.into());
+        }
+        outer_array.into()
+    }
+    #[wasm_bindgen(getter = enum_is_mine)]
+    pub fn get_enum_is_mine(&mut self) -> JsValue {
+        let ps = self.core.get_enum_is_mine().to_vec();
+        let outer_array = Array::new_with_length(ps.len() as u32);
+        for (i, (a, b)) in ps.iter().enumerate() {
+            let inner_array = Array::new_with_length(2);
+            inner_array.set(0, JsValue::from(*a));
+            inner_array.set(1, JsValue::from(*b));
+            outer_array.set(i as u32, inner_array.into());
+        }
+        outer_array.into()
+    }
 }
 
 // 局面自动机
-#[wasm_bindgen(inspectable)]
+#[wasm_bindgen]
 pub struct MinesweeperBoard {
     core: ms::MinesweeperBoard<Vec<Vec<i32>>>,
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(getter_with_clone)]
 pub struct CursorPos {
     pub x: u16,
     pub y: u16,
@@ -24,14 +94,14 @@ pub struct CursorPos {
 
 #[wasm_bindgen]
 impl MinesweeperBoard {
-    pub fn new(board: &str) -> MinesweeperBoard {
-        let board = json2vec(board);
+    pub fn new(board: JsValue) -> MinesweeperBoard {
+        let board = js_value_to_vec_vec(board);
         MinesweeperBoard {
             core: ms::MinesweeperBoard::new(board),
         }
     }
-    pub fn step(&mut self, e: &str, x: u32, y: u32) {
-        self.core.step(e, (x as usize, y as usize)).unwrap();
+    pub fn step(&mut self, e: &str, x: usize, y: usize) {
+        self.core.step(e, (x, y)).unwrap();
     }
     pub fn step_flow(&mut self, operation: &str) {
         let opera = trans_opt(operation);
@@ -43,8 +113,8 @@ impl MinesweeperBoard {
     }
     // 这个方法与强可猜、弱可猜有关
     #[wasm_bindgen(setter = board)]
-    pub fn set_board(&mut self, board: &str) {
-        self.core.board = json2vec(board);
+    pub fn set_board(&mut self, board: JsValue) {
+        self.core.board = js_value_to_vec_vec(board);
     }
     // 直接设置游戏局面是不安全的！但在一些游戏中，结束时需要修改再展示
     #[wasm_bindgen(setter = game_board)]
@@ -52,12 +122,12 @@ impl MinesweeperBoard {
         self.core.game_board = json2vec(game_board);
     }
     #[wasm_bindgen(getter = board)]
-    pub fn get_board(&self) -> String {
-        vec2json(&self.core.board)
+    pub fn get_board(&self) -> JsValue {
+        vec_vec_to_js_value(self.core.board.clone())
     }
     #[wasm_bindgen(getter = game_board)]
-    pub fn get_game_board(&self) -> String {
-        vec2json(&self.core.game_board)
+    pub fn get_game_board(&self) -> JsValue {
+        vec_vec_to_js_value(self.core.game_board.clone())
     }
     #[wasm_bindgen(getter = left)]
     pub fn get_left(&self) -> u32 {
@@ -129,6 +199,119 @@ impl MinesweeperBoard {
     }
 }
 
+#[wasm_bindgen]
+pub struct KeyDynamicParams {
+    core: ms::videos::base_video::KeyDynamicParams,
+}
+
+#[wasm_bindgen]
+impl KeyDynamicParams {
+    #[wasm_bindgen(getter = left)]
+    pub fn get_left(&self) -> usize {
+        self.core.left
+    }
+    #[wasm_bindgen(getter = right)]
+    pub fn get_right(&self) -> usize {
+        self.core.right
+    }
+    #[wasm_bindgen(getter = double)]
+    pub fn get_double(&self) -> usize {
+        self.core.double
+    }
+    #[wasm_bindgen(getter = lce)]
+    pub fn get_lce(&self) -> usize {
+        self.core.lce
+    }
+    #[wasm_bindgen(getter = rce)]
+    pub fn get_rce(&self) -> usize {
+        self.core.rce
+    }
+    #[wasm_bindgen(getter = dce)]
+    pub fn get_dce(&self) -> usize {
+        self.core.dce
+    }
+    #[wasm_bindgen(getter = flag)]
+    pub fn get_flag(&self) -> usize {
+        self.core.flag
+    }
+    #[wasm_bindgen(getter = bbbv_solved)]
+    pub fn get_bbbv_solved(&self) -> usize {
+        self.core.bbbv_solved
+    }
+    #[wasm_bindgen(getter = op_solved)]
+    pub fn get_op_solved(&self) -> usize {
+        self.core.op_solved
+    }
+    #[wasm_bindgen(getter = isl_solved)]
+    pub fn get_isl_solved(&self) -> usize {
+        self.core.isl_solved
+    }
+}
+
+#[wasm_bindgen]
+pub struct VideoActionStateRecorder {
+    core: ms::videos::base_video::VideoActionStateRecorder,
+}
+
+#[wasm_bindgen]
+impl VideoActionStateRecorder {
+    #[wasm_bindgen(getter = time)]
+    pub fn get_time(&self) -> f64 {
+        self.core.time
+    }
+    #[wasm_bindgen(getter = x)]
+    pub fn get_x(&self) -> u16 {
+        self.core.x
+    }
+    #[wasm_bindgen(getter = y)]
+    pub fn get_y(&self) -> u16 {
+        self.core.y
+    }
+    #[wasm_bindgen(getter = mouse)]
+    pub fn get_mouse(&self) -> String {
+        self.core.mouse.clone()
+    }
+    #[wasm_bindgen(getter = useful_level)]
+    pub fn get_useful_level(&self) -> u8 {
+        self.core.useful_level
+    }
+    #[wasm_bindgen(getter = prior_game_board_id)]
+    pub fn get_prior_game_board_id(&self) -> usize {
+        self.core.prior_game_board_id
+    }
+    #[wasm_bindgen(getter = next_game_board_id)]
+    pub fn get_next_game_board_id(&self) -> usize {
+        self.core.next_game_board_id
+    }
+    #[wasm_bindgen(getter = comments)]
+    pub fn get_comments(&self) -> String {
+        self.core.comments.clone()
+    }
+    #[wasm_bindgen(getter = path)]
+    pub fn get_path(&self) -> f64 {
+        self.core.path
+    }
+    #[wasm_bindgen(getter = mouse_state)]
+    pub fn get_mouse_state(&self) -> usize {
+        match self.core.mouse_state {
+            ms::MouseState::UpUp => 1,
+            ms::MouseState::UpDown => 2,
+            ms::MouseState::UpDownNotFlag => 3,
+            ms::MouseState::DownUp => 4,
+            ms::MouseState::Chording => 5,
+            ms::MouseState::ChordingNotFlag => 6,
+            ms::MouseState::DownUpAfterChording => 7,
+            ms::MouseState::Undefined => 8,
+        }
+    }
+    #[wasm_bindgen(getter = key_dynamic_params)]
+    pub fn get_key_dynamic_params(&self) -> KeyDynamicParams {
+        KeyDynamicParams {
+            core: self.core.key_dynamic_params.clone(),
+        }
+    }
+}
+
 // 定义宏，生成所有类型录像的子类
 macro_rules! generate_video {
     ($($some_video:ident),*) => {
@@ -140,7 +323,6 @@ macro_rules! generate_video {
             #[wasm_bindgen]
             impl $some_video {
                 pub fn new(data: Box<[u8]>, file_name: &str) -> $some_video {
-                    set_panic_hook();
                     let data = data.into_vec();
                     $some_video {
                         core: ms::$some_video::new(data, file_name),
@@ -384,47 +566,23 @@ macro_rules! generate_video {
                 pub fn get_corr(&self) -> f64 {
                     self.core.data.get_corr().unwrap()
                 }
-                #[wasm_bindgen(getter = events_len)]
-                pub fn get_events_len(&self) -> usize {
-                    self.core.data.video_action_state_recorder.len()
-                }
-                pub fn events_time(&self, index: usize) -> f64 {
-                    self.core.data.video_action_state_recorder[index].time
-                }
-                pub fn events_mouse(&self, index: usize) -> String {
-                    self.core.data.video_action_state_recorder[index]
-                        .mouse
-                        .clone()
-                }
-                pub fn events_x(&self, index: usize) -> u16 {
-                    self.core.data.video_action_state_recorder[index].x
-                }
-                pub fn events_y(&self, index: usize) -> u16 {
-                    self.core.data.video_action_state_recorder[index].y
-                }
-                pub fn events_useful_level(&self, index: usize) -> u8 {
-                    self.core.data.video_action_state_recorder[index].useful_level
-                }
-                // 这里用不到先不往下写
-                // pub fn events_posteriori_game_board(&self, index: usize) -> PyGameBoard> {
-                //     let mut t = PyGameBoard::new(self.core.mine_num);
-                //     t.set_core(self.core.events[index].posteriori_game_board.clone());
-                //     Ok(t)
-                // }
-                // pub fn events_comments(&self, index: usize) -> String {
-                //     self.core.events[index].comments.clone()
-                // }
-                pub fn events_mouse_state(&self, index: usize) -> u32 {
-                    match self.core.data.video_action_state_recorder[index].mouse_state {
-                        ms::MouseState::UpUp => 1,
-                        ms::MouseState::UpDown => 2,
-                        ms::MouseState::UpDownNotFlag => 3,
-                        ms::MouseState::DownUp => 4,
-                        ms::MouseState::Chording => 5,
-                        ms::MouseState::ChordingNotFlag => 6,
-                        ms::MouseState::DownUpAfterChording => 7,
-                        ms::MouseState::Undefined => 8,
+                #[wasm_bindgen(getter = events)]
+                pub fn get_events(&self) -> JsValue {
+                    let array = Array::new();
+                    for i in self.core.data.video_action_state_recorder.clone(){
+                        let v = VideoActionStateRecorder{core: i};
+                        array.push(&JsValue::from(v));
                     }
+                    array.into()
+                }
+                #[wasm_bindgen(getter = game_board_stream)]
+                pub fn get_game_board_stream(&self) -> JsValue {
+                    let array = Array::new();
+                    for i in self.core.data.game_board_stream.clone(){
+                        let v = GameBoard{core: i};
+                        array.push(&JsValue::from(v));
+                    }
+                    array.into()
                 }
                 #[wasm_bindgen(getter = current_event_id)]
                 pub fn get_current_event_id(&self) -> usize {

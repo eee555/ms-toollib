@@ -11,7 +11,7 @@ const video_file = '../../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang J
 const data = fs.readFileSync(video_file)
 
 // 使用二进制数据和文件名初始化
-let v = ms.AvfVideo.new(data, video_file)
+let v = new ms.AvfVideo(data, video_file)
 v.parse_video();
 v.analyse();
 assert(v.bbbv == 127);

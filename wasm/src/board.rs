@@ -6,6 +6,70 @@ use ms::videos::NewSomeVideo2;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 
+
+#[wasm_bindgen]
+pub struct Board {
+    core: ms::Board,
+}
+
+#[wasm_bindgen]
+impl Board {
+    #[wasm_bindgen(constructor)]
+    pub fn new(board: JsValue) -> Board {
+        let c = ms::Board::new(js_value_to_vec_vec(board));
+        Board { core: c }
+    }
+    #[wasm_bindgen(getter = bbbv)]
+    pub fn get_bbbv(&mut self) -> usize {
+        self.core.get_bbbv()
+    }
+    #[wasm_bindgen(getter = op)]
+    pub fn get_op(&mut self) -> usize {
+        self.core.get_op()
+    }
+    #[wasm_bindgen(getter = isl)]
+    pub fn get_isl(&mut self) -> usize {
+        self.core.get_isl()
+    }
+    #[wasm_bindgen(getter = cell0)]
+    pub fn get_cell0(&mut self) -> usize {
+        self.core.get_cell0()
+    }
+    #[wasm_bindgen(getter = cell1)]
+    pub fn get_cell1(&mut self) -> usize {
+        self.core.get_cell1()
+    }
+    #[wasm_bindgen(getter = cell2)]
+    pub fn get_cell2(&mut self) -> usize {
+        self.core.get_cell2()
+    }
+    #[wasm_bindgen(getter = cell3)]
+    pub fn get_cell3(&mut self) -> usize {
+        self.core.get_cell3()
+    }
+    #[wasm_bindgen(getter = cell4)]
+    pub fn get_cell4(&mut self) -> usize {
+        self.core.get_cell4()
+    }
+    #[wasm_bindgen(getter = cell5)]
+    pub fn get_cell5(&mut self) -> usize {
+        self.core.get_cell5()
+    }
+    #[wasm_bindgen(getter = cell6)]
+    pub fn get_cell6(&mut self) -> usize {
+        self.core.get_cell6()
+    }
+    #[wasm_bindgen(getter = cell7)]
+    pub fn get_cell7(&mut self) -> usize {
+        self.core.get_cell7()
+    }
+    #[wasm_bindgen(getter = cell8)]
+    pub fn get_cell8(&mut self) -> usize {
+        self.core.get_cell8()
+    }
+}
+
+
 #[wasm_bindgen]
 pub struct GameBoard {
     core: ms::GameBoard,
@@ -13,6 +77,7 @@ pub struct GameBoard {
 
 #[wasm_bindgen]
 impl GameBoard {
+    #[wasm_bindgen(constructor)]
     pub fn new(mine_num: usize) -> GameBoard {
         let c = ms::GameBoard::new(mine_num);
         GameBoard { core: c }
@@ -94,6 +159,7 @@ pub struct CursorPos {
 
 #[wasm_bindgen]
 impl MinesweeperBoard {
+    #[wasm_bindgen(constructor)]
     pub fn new(board: JsValue) -> MinesweeperBoard {
         let board = js_value_to_vec_vec(board);
         MinesweeperBoard {
@@ -331,6 +397,7 @@ macro_rules! generate_video {
             }
             #[wasm_bindgen]
             impl $some_video {
+                #[wasm_bindgen(constructor)]
                 pub fn new(data: Box<[u8]>, file_name: &str) -> $some_video {
                     let data = data.into_vec();
                     $some_video {

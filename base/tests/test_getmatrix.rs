@@ -92,5 +92,9 @@ fn refresh_matrixses_works2() {
     println!("matrix_ases: {:?}", matrix_ases);
     println!("matrix_xses: {:?}", matrix_xses);
     println!("matrix_bses: {:?}", matrix_bses);
-    println!("matrix_bses: {:?}", cal_possibility_onboard(&game_board, 4.0));
+    println!(
+        "matrix_bses: {:?}",
+        cal_possibility_onboard(&game_board, 4.0)
+    );
 }
+

@@ -42,7 +42,7 @@ mod miscellaneous;
 
 mod algorithms;
 #[cfg(any(feature = "py", feature = "rs"))]
-pub use algorithms::{agent_step, laymine_solvable_thread, sample_bbbvs_exp, obr_board};
+pub use algorithms::{laymine_solvable_thread, sample_bbbvs_exp, obr_board};
 
 #[cfg(any(feature = "py", feature = "rs"))]
 #[deprecated]

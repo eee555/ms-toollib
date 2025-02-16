@@ -2,7 +2,7 @@
 #[cfg(any(feature = "py", feature = "rs"))]
 use ms_toollib::laymine_solvable_thread;
 use ms_toollib::{
-    laymine, laymine_op, laymine_solvable, laymine_solvable_adjust,
+    is_solvable, laymine, laymine_op, laymine_solvable, laymine_solvable_adjust, try_solve,
 };
 use std::time::Instant; // timer
 
@@ -29,15 +29,34 @@ fn laymine_solvable_works() {
     print!("{:?}", game_board.1);
 }
 
-// cargo test -- --nocapture laymine_solvable_adjust_works
-// cargo run | head -100
+fn print_matrix(matrix: &Vec<Vec<i32>>) {
+    println!("[");
+    for row in matrix {
+        for num in row {
+            // 使用格式化字符串将数字格式化为宽度为 4 的字符串
+            print!("{:4}", num);
+        }
+        // 每一行结束后换行
+        println!();
+    }
+    println!("]");
+}
+
 #[test]
+// cargo test --package ms_toollib --test test_laymine -- laymine_solvable_adjust_works --exact --show-output --nocapture
 fn laymine_solvable_adjust_works() {
     // 测试调整法无猜埋雷
-    let game_board = laymine_solvable_adjust(16, 30, 200, 0, 0);
-    game_board.0.iter().for_each(|i| println!("{:?}", i));
-    if game_board.1 {
-        print!("成功！！！");
+    let board = laymine_solvable_adjust(16, 30, 200, 0, 0);
+    // board.0.iter().for_each(|i| println!("{:?}", i));
+    print_matrix(&board.0);
+    if board.1 {
+        if is_solvable(&board.0, 0, 0) {
+            print!("成功！！！");
+        } else {
+            println!("失败！！！");
+            let (board_end, _bbbv_solved) = try_solve(&board.0, 0, 0);
+            print_matrix(&board_end);
+        }
     } else {
         print!("失败！！！");
     }
@@ -53,4 +72,3 @@ fn laymine_op_works() {
     print!("{:?}", laymine_op(8, 8, 43, 0, 0));
     print!("{:?}", laymine_op(3, 5, 3, 1, 4));
 }
-

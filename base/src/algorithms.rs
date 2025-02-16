@@ -19,7 +19,7 @@ use itertools::Itertools;
 use rand::seq::SliceRandom;
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::thread_rng;
-use tract_onnx::tract_hir::ops::array::Flatten;
+// use tract_onnx::tract_hir::ops::array::Flatten;
 
 use std::cmp::{max, min};
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -994,14 +994,6 @@ pub fn laymine_solvable_adjust(
             }
         }
     }
-    let mut count = 0;
-    for row in &b {
-        for element in row {
-            if *element == -1 {
-                count += 1;
-            }
-        }
-    }
     (b, flag)
 }
 
@@ -1444,39 +1436,39 @@ pub fn obr_board(
 
 // 扫雷AI
 // 看不懂，拟废弃
-#[cfg(any(feature = "py", feature = "rs"))]
-pub fn agent_step(board_of_game: Vec<Vec<i32>>, _pos: (usize, usize)) -> Result<usize, String> {
-    let _board_of_game_input: Vec<Vec<f32>> = board_of_game
-        .into_iter()
-        .map(|x| x.into_iter().map(|y| y as f32).collect::<Vec<f32>>())
-        .collect_vec();
-    let model = (tract_onnx::onnx()
-        .model_for_path("ppo_agent.onnx")
-        .unwrap()
-        .with_input_fact(
-            0,
-            InferenceFact::dt_shape(f32::datum_type(), tvec!(1i32, 16, 30)),
-        )
-        .unwrap()
-        .with_input_fact(
-            1,
-            InferenceFact::dt_shape(f32::datum_type(), tvec!(1i32, 2)),
-        )
-        .unwrap()
-        .into_optimized()
-        .unwrap()
-        .into_runnable())
-    .unwrap();
+// #[cfg(any(feature = "py", feature = "rs"))]
+// pub fn agent_step(board_of_game: Vec<Vec<i32>>, _pos: (usize, usize)) -> Result<usize, String> {
+//     let _board_of_game_input: Vec<Vec<f32>> = board_of_game
+//         .into_iter()
+//         .map(|x| x.into_iter().map(|y| y as f32).collect::<Vec<f32>>())
+//         .collect_vec();
+//     let model = (tract_onnx::onnx()
+//         .model_for_path("ppo_agent.onnx")
+//         .unwrap()
+//         .with_input_fact(
+//             0,
+//             InferenceFact::dt_shape(f32::datum_type(), tvec!(1i32, 16, 30)),
+//         )
+//         .unwrap()
+//         .with_input_fact(
+//             1,
+//             InferenceFact::dt_shape(f32::datum_type(), tvec!(1i32, 2)),
+//         )
+//         .unwrap()
+//         .into_optimized()
+//         .unwrap()
+//         .into_runnable())
+//     .unwrap();
 
-    let cell_image = vec![10f32; 480];
-    let image: Tensor = Array::from_shape_vec((1, 16, 30), cell_image.clone())
-        .unwrap()
-        .into();
-    let image_2: Tensor = Array::from_shape_vec((1, 2), vec![0f32; 2]).unwrap().into();
-    let ans = model.run(tvec!(image, image_2)).unwrap();
-    let _aaa = ans[0].to_array_view::<i32>().unwrap();
-    Ok(30)
-}
+//     let cell_image = vec![10f32; 480];
+//     let image: Tensor = Array::from_shape_vec((1, 16, 30), cell_image.clone())
+//         .unwrap()
+//         .into();
+//     let image_2: Tensor = Array::from_shape_vec((1, 2), vec![0f32; 2]).unwrap().into();
+//     let ans = model.run(tvec!(image, image_2)).unwrap();
+//     let _aaa = ans[0].to_array_view::<i32>().unwrap();
+//     Ok(30)
+// }
 
 /// 对局面用单集合、双集合判雷引擎，快速标雷、标非雷，以供概率计算引擎处理。这是非常重要的加速。  
 /// 相当于一种预处理，即先标出容易计算的。mark可能因为无解而报错，此时返回错误码。  

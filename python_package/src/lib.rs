@@ -290,7 +290,7 @@ fn py_cal_possibility_onboard(
     mine_num: f64,
 ) -> PyResult<(Vec<Vec<f64>>, [usize; 3])> {
     // mine_num为局面中雷的总数，不管有没有标
-    let legal_flag = mark_board(&mut board_of_game);
+    let legal_flag = mark_board(&mut board_of_game, true);
     match legal_flag {
         Ok(_) => {}
         Err(_) => return Err(PyErr::new::<PyRuntimeError, _>("标记阶段无解的局面")),
@@ -318,21 +318,21 @@ fn py_sample_bbbvs_exp(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
     Ok((&sample_bbbvs_exp(x0, y0, n)).to_vec())
 }
 
-#[pyfunction]
-#[pyo3(name = "OBR_board", signature = (data_vec, height, width))]
-fn py_obr_board_old(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
-    let _ = Python::with_gil(|py| {
-        let deprecation_warning = py.get_type_bound::<pyo3::exceptions::PyDeprecationWarning>();
-        PyErr::warn_bound(py, &deprecation_warning, "Renamed to obr_board", 0)?;
-        Ok::<(), PyErr>(())
-    });
-    // Ok(obr_board(data_vec, height, width).unwrap())
-    match obr_board(data_vec, height, width) {
-        //判断方法结果
-        Ok(ans) => Ok(ans),
-        Err(_e) => Ok(vec![vec![200]]),
-    }
-}
+// #[pyfunction]
+// #[pyo3(name = "OBR_board", signature = (data_vec, height, width))]
+// fn py_obr_board_old(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
+//     let _ = Python::with_gil(|py| {
+//         let deprecation_warning = py.get_type_bound::<pyo3::exceptions::PyDeprecationWarning>();
+//         PyErr::warn_bound(py, &deprecation_warning, "Renamed to obr_board", 0)?;
+//         Ok::<(), PyErr>(())
+//     });
+//     // Ok(obr_board(data_vec, height, width).unwrap())
+//     match obr_board(data_vec, height, width) {
+//         //判断方法结果
+//         Ok(ans) => Ok(ans),
+//         Err(_e) => Ok(vec![vec![200]]),
+//     }
+// }
 
 #[pyfunction]
 #[pyo3(name = "obr_board", signature = (data_vec, height, width))]
@@ -347,8 +347,8 @@ fn py_obr_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<V
 
 #[pyfunction]
 #[pyo3(name = "mark_board")]
-fn py_mark_board(mut board_of_game: Vec<Vec<i32>>) -> PyResult<Vec<Vec<i32>>> {
-    mark_board(&mut board_of_game).unwrap();
+fn py_mark_board(mut board_of_game: Vec<Vec<i32>>, remark: bool) -> PyResult<Vec<Vec<i32>>> {
+    mark_board(&mut board_of_game, remark).unwrap();
     Ok(board_of_game)
 }
 

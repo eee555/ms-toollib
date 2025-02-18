@@ -164,7 +164,8 @@ pub fn refresh_matrix(
     (matrix_a, matrixx, matrixb)
 }
 
-/// 根据游戏局面生成矩阵，分段。输入的必须保证是合法的游戏局面。  
+/// 根据游戏局面生成矩阵，分段。输入的必须保证是合法的游戏局面。
+/// 返回：系数矩阵、变量矩阵、常数向量、内部方格、标出的雷数  
 /// - *基于数字生成，矩阵的行可能有重复。  
 pub fn refresh_matrixs(
     board_of_game: &Vec<Vec<i32>>,
@@ -178,10 +179,10 @@ pub fn refresh_matrixs(
     // 根据游戏局面分块生成矩阵。分段的数据结构是最外面再套一层Vec
     // board_of_game必须且肯定是正确标雷的游戏局面，但不需要标全，不能标非雷
     // 矩阵的行和列都可能有重复
-    // unknow_block是未知格子数量, is_minenum是标出的是雷的数量
+    // inside_cell是未知格子数量, is_minenum是标出的是雷的数量
     let row = board_of_game.len();
     let column = board_of_game[0].len();
-    let mut unknow_block = 0;
+    let mut inside_cell = 0;
     let mut is_minenum = 0;
     let mut matrix_as = vec![];
     let mut matrix_xs = vec![];
@@ -209,7 +210,7 @@ pub fn refresh_matrixs(
                     }
                 }
                 if flag {
-                    unknow_block += 1;
+                    inside_cell += 1;
                 }
             } else if board_of_game[i][j] == 11 {
                 is_minenum += 1;
@@ -217,7 +218,6 @@ pub fn refresh_matrixs(
         }
     }
     let mut p = 0; //指针，代表第几块
-                   // println!("{:?}", all_cell);
     while !all_cell.is_empty() {
         matrix_xs.push(vec![]);
         matrix_bs.push(vec![]);
@@ -295,7 +295,7 @@ pub fn refresh_matrixs(
         all_cell.remove(0);
         p += 1;
     }
-    (matrix_as, matrix_xs, matrix_bs, unknow_block, is_minenum)
+    (matrix_as, matrix_xs, matrix_bs, inside_cell, is_minenum)
 }
 
 /// 根据游戏局面生成矩阵，分段、且分块。输入的必须保证是合法的游戏局面。  
@@ -1649,7 +1649,6 @@ pub fn chunk_matrixes(
 }
 
 // 重新分块一个矩阵
-// 这些矩阵必须非空、没有空的块、没有b=0的情况
 pub fn chunk_matrix(
     mut matrix_a: Vec<Vec<i32>>,
     mut matrix_x: Vec<(usize, usize)>,

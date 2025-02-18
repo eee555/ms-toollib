@@ -1,5 +1,4 @@
 ﻿// 局面相关的类，录像在video
-
 use crate::algorithms::{cal_possibility_onboard, solve_direct, solve_enumerate, solve_minus};
 use crate::utils::{cal_bbbv_on_island, cal_cell_nums, cal_isl, cal_op, refresh_matrixs};
 
@@ -160,12 +159,9 @@ impl GameBoard {
 #[derive(Clone)]
 pub struct Board {
     pub board: Vec<Vec<i32>>,
-    bbbv: usize,
-    has_cal_bbbv: bool,
-    openings: usize,
-    has_cal_openings: bool,
-    islands: usize,
-    has_cal_islands: bool,
+    bbbv: Option<usize>,
+    openings: Option<usize>,
+    islands: Option<usize>,
     cell0: usize,
     cell1: usize,
     cell2: usize,
@@ -181,13 +177,10 @@ pub struct Board {
 impl Board {
     pub fn new(board: Vec<Vec<i32>>) -> Board {
         Board {
-            board: board,
-            bbbv: 0,
-            has_cal_bbbv: false,
-            openings: 0,
-            has_cal_openings: false,
-            islands: 0,
-            has_cal_islands: false,
+            board,
+            bbbv: None,
+            openings: None,
+            islands: None,
             cell0: 0,
             cell1: 0,
             cell2: 0,
@@ -201,30 +194,17 @@ impl Board {
         }
     }
     pub fn get_bbbv(&mut self) -> usize {
-        if self.has_cal_bbbv {
-            return self.bbbv;
+        if let Some(value) = self.bbbv {
+            return value;
         }
-        let a = cal_bbbv_on_island(&self.board);
-        if !self.has_cal_openings {
-            self.openings = cal_op(&self.board);
-            self.has_cal_openings = true;
-        }
-        self.has_cal_bbbv = true;
-        return a + self.openings;
+        self.bbbv = Some(cal_bbbv_on_island(&self.board) + self.get_op());
+        return self.bbbv.unwrap();
     }
     pub fn get_op(&mut self) -> usize {
-        if self.has_cal_openings {
-            return self.openings;
-        }
-        self.has_cal_openings = true;
-        return cal_op(&self.board);
+        *self.openings.get_or_insert_with(|| cal_op(&self.board))
     }
     pub fn get_isl(&mut self) -> usize {
-        if self.has_cal_islands {
-            return self.islands;
-        }
-        self.has_cal_islands = true;
-        return cal_isl(&self.board);
+        *self.islands.get_or_insert_with(|| cal_isl(&self.board))
     }
     fn cal_cell_nums(&mut self) {
         let ans = cal_cell_nums(&self.board);

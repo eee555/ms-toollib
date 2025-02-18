@@ -1,9 +1,9 @@
-use ms_toollib::{cal_bbbv, cal_table_minenum_recursion, combine, refresh_matrix, refresh_matrixs};
 use ms_toollib::{
-    cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard, is_able_to_solve,
-    is_guess_while_needless, mark_board, solve_direct, solve_enumerate, try_solve,
-    cal_all_solution
+    cal_all_solution, cal_possibility_cells_is_op, cal_possibility, cal_possibility_onboard,
+    is_able_to_solve, is_guess_while_needless, mark_board, solve_direct, solve_enumerate,
+    try_solve,
 };
+use ms_toollib::{cal_bbbv, cal_table_minenum_recursion, combine, refresh_matrix, refresh_matrixs};
 
 // 测试各种引擎类的函数
 
@@ -11,17 +11,25 @@ use ms_toollib::{
 fn cal_is_op_possibility_cells_works() {
     // 测试开空概率计算函数
     let game_board = vec![
-        vec![10, 10, 1, 1, 10, 1, 0, 0],
+        vec![10, 11, 1, 1, 10, 1, 0, 0],
         vec![10, 10, 1, 10, 10, 3, 2, 1],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 2, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
-        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 12, 10, 10],
     ];
-    let ans = cal_is_op_possibility_cells(&game_board, 20.0, &vec![[0, 0], [1, 1], [1, 6], [7, 2]]);
-    print!("{:?}", ans)
+    let ans = cal_possibility_cells_is_op(
+        &game_board,
+        20,
+        &vec![(0, 0), (1, 1), (1, 6), (7, 2), (7, 5)],
+    );
+    assert_eq!(ans[0], 0.0);
+    assert_eq!(ans[1], 0.0);
+    assert_eq!(ans[2], 0.0);
+    assert_eq!(ans[3], 0.04178885630498531);
+    assert_eq!(ans[4], 0.1020578686019862);
 }
 
 #[test]
@@ -139,7 +147,7 @@ fn cal_possibility_onboard_1_works() {
     let ans = cal_possibility(&game_board, 0.15625);
     print!("设置雷的比例为15.625%，概率计算引擎的结果为：{:?}", ans);
     // 对局面预标记，以加速计算
-    let _ = mark_board(&mut game_board);
+    let _ = mark_board(&mut game_board, false);
     let ans = cal_possibility_onboard(&game_board, 10.0);
     print!("设置雷的比例为10，与局面位置对应的概率结果为：{:?}", ans);
 }
@@ -222,7 +230,7 @@ fn cal_possibility_onboard_2_works() {
 fn cal_possibility_onboard_3_works() {
     // 测试概率计算引擎
     let mut game_board = vec![
-        vec![0, 1, 0, 10, 10, 10, 10],
+        vec![1, 1, 2, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10],
@@ -231,12 +239,18 @@ fn cal_possibility_onboard_3_works() {
         vec![10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10],
     ];
-    let _ = mark_board(&mut game_board);
+    let _ = mark_board(&mut game_board, false);
 
-    let ans = cal_possibility_onboard(&game_board, 10.0);
-    // print!("{:?}", ans);
-    // let ans = cal_possibility_onboard(&game_board, 3.0);
-    print!("{:?}", ans);
+    let (board_poss, [mine_min, mine_num, mine_max]) =
+        cal_possibility_onboard(&game_board, 10.0).unwrap();
+    assert_eq!(board_poss[0][3], 0.5444444444444445);
+    assert_eq!(board_poss[1][0], 0.08888888888888888);
+    assert_eq!(board_poss[1][1], 0.9111111111111112);
+    assert_eq!(board_poss[1][2], 0.0);
+    assert_eq!(board_poss[1][3], 0.5444444444444445);
+    assert_eq!(mine_min, 2);
+    assert_eq!(mine_num, 10);
+    assert_eq!(mine_max, 51);
 }
 
 #[test]
@@ -340,7 +354,7 @@ fn cal_possibility_onboard_5_works() {
         ],
     ];
     // let b = refresh_matrixs(&game_board);
-    let b = mark_board(&mut game_board);
+    let b = mark_board(&mut game_board, false);
     // let ans = cal_possibility_onboard(&game_board, 10.0);
     // let (mut matrix_as, mut matrix_xs, mut matrix_bs, _, _) = refresh_matrixs(&game_board);
     // let ans = solve_direct(

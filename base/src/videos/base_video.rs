@@ -24,6 +24,7 @@ use crate::safe_board::SafeBoard;
 
 use crate::{GameBoardState, MinesweeperBoard, MouseState};
 use encoding_rs::{GB18030, WINDOWS_1252};
+use tract_onnx::prelude::Op;
 
 /// 读录像文件失败的原因
 #[derive(Debug)]
@@ -63,11 +64,11 @@ pub struct VideoActionStateRecorder {
     pub x: u16,
     /// 距离上端有几像素。
     pub y: u16,
-    /// 0代表完全没用，
-    /// 1代表能仅推进局面但不改变对局面的后验判断，例如标雷和取消标雷
-    /// 2代表改变对局面的后验判断的操作，例如左键点开一个或一片格子，不包括双击
-    /// 3代表有效、至少打开了一个格子的双击
-    /// 4代表踩雷并失败
+    /// 0代表完全没用；
+    /// 1代表能仅推进局面但不改变对局面的后验判断，例如标雷和取消标雷；
+    /// 2代表改变对局面的后验判断的操作，例如左键点开一个或一片格子，不包括双击；
+    /// 3代表有效、至少打开了一个格子的双击；
+    /// 4代表踩雷并失败；
     /// 和ce没有关系，仅用于控制计算
     pub useful_level: u8,
     /// 操作前的局面（先验局面）的索引。
@@ -156,6 +157,7 @@ pub struct KeyDynamicParams {
     pub bbbv_solved: usize,
     pub op_solved: usize,
     pub isl_solved: usize,
+    pub pluck: Option<f64>,
 }
 
 impl Default for KeyDynamicParams {
@@ -171,11 +173,13 @@ impl Default for KeyDynamicParams {
             bbbv_solved: 0,
             op_solved: 0,
             isl_solved: 0,
+            pluck: None,
         }
     }
 }
 
 /// 游戏动态类指标，侧重保存最终结果
+/// 游戏阶段就可以展示
 pub struct GameDynamicParams {
     /// 最终时间成绩，不是时间的函数
     pub rtime: f64,
@@ -192,7 +196,7 @@ pub struct GameDynamicParams {
     pub cl_s: f64,
     pub flag_s: f64,
     /// 四舍五入折算到16像素边长，最终路径长度
-    pub path: usize,
+    pub path: f64,
 }
 
 impl Default for GameDynamicParams {
@@ -210,12 +214,13 @@ impl Default for GameDynamicParams {
             double_s: 0.0,
             cl_s: 0.0,
             flag_s: 0.0,
-            path: 0,
+            path: 0.0,
         }
     }
 }
 
 /// 录像动态类指标，侧重保存最终结果
+/// 游戏阶段不能展示，录像播放时可以展示
 pub struct VideoDynamicParams {
     pub etime: f64,
     pub bbbv_s: f64,
@@ -231,7 +236,9 @@ pub struct VideoDynamicParams {
     pub ioe: f64,
     pub corr: f64,
     pub thrp: f64,
+    // 未完成
     pub op_solved: usize,
+    // 未完成
     pub isl_solved: usize,
 }
 
@@ -255,6 +262,18 @@ impl Default for VideoDynamicParams {
             op_solved: 0,
             isl_solved: 0,
         }
+    }
+}
+
+/// 需要分析才能计算出的指标，通常计算代价很大。最终结果
+/// 游戏阶段不能展示，录像播放时可以展示
+pub struct VideoAnalyseParams {
+    pub pluck: Option<f64>,
+}
+
+impl Default for VideoAnalyseParams {
+    fn default() -> Self {
+        VideoAnalyseParams { pluck: None }
     }
 }
 
@@ -425,6 +444,8 @@ pub struct BaseVideo<T> {
     game_dynamic_params: GameDynamicParams,
     /// 最终的录像动态指标
     video_dynamic_params: VideoDynamicParams,
+    /// 最终的录像需要分析才能计算的指标，计算代价最大
+    pub video_analyse_params: VideoAnalyseParams,
     // /// 最终的路径长度
     // pub path: usize,
     // /// 开始扫前，已经标上的雷。如果操作流中包含标这些雷的过程，
@@ -491,6 +512,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             static_params: StaticParams::default(),
             game_dynamic_params: GameDynamicParams::default(),
             video_dynamic_params: VideoDynamicParams::default(),
+            video_analyse_params: VideoAnalyseParams::default(),
             checksum: vec![],
             can_analyse: false,
             // net_start_time: 0.0,
@@ -546,6 +568,7 @@ impl Default for BaseVideo<SafeBoard> {
             static_params: StaticParams::default(),
             game_dynamic_params: GameDynamicParams::default(),
             video_dynamic_params: VideoDynamicParams::default(),
+            video_analyse_params: VideoAnalyseParams::default(),
             checksum: vec![],
             can_analyse: false,
             // net_start_time: 0.0,
@@ -1386,6 +1409,7 @@ impl<T> BaseVideo<T> {
                     bbbv_solved: self.minesweeper_board.bbbv_solved,
                     op_solved: 0,
                     isl_solved: 0,
+                    pluck: None,
                 },
                 path,
             });
@@ -2198,6 +2222,7 @@ impl<T> BaseVideo<T> {
         }
         Ok(bbbv_solved as f64 / cl as f64)
     }
+    // 未实现
     pub fn get_op_solved(&self) -> Result<usize, ()> {
         if self.game_board_state != GameBoardState::Display
             && self.game_board_state != GameBoardState::Win
@@ -2209,6 +2234,7 @@ impl<T> BaseVideo<T> {
             .key_dynamic_params
             .op_solved)
     }
+    // 未实现
     pub fn get_isl_solved(&self) -> Result<usize, ()> {
         if self.game_board_state != GameBoardState::Display
             && self.game_board_state != GameBoardState::Win
@@ -2219,6 +2245,13 @@ impl<T> BaseVideo<T> {
         Ok(self.video_action_state_recorder[self.current_event_id]
             .key_dynamic_params
             .isl_solved)
+    }
+    // 必须用survive_poss方法分析以后才能获取
+    pub fn get_pluck(&self) -> Result<f64, ()> {
+        if self.game_board_state != GameBoardState::Display {
+            return Err(());
+        };
+        Ok(self.video_analyse_params.pluck.unwrap())
     }
     /// 跨语言调用时，不能传递枚举体用这个
     pub fn get_mouse_state(&self) -> usize {

@@ -323,9 +323,10 @@ fn mvf_video_works() {
     assert_eq!(video.data.get_video_end_time().unwrap(), 37.81);
     video.data.set_current_time(12.0);
     assert_eq!(video.data.get_stnb().unwrap(), 104.33431983657493);
-    // println!("game_board: {:?}", video.data.get_game_board());
-    // println!("game_board_poss: {:?}", video.data.get_game_board_poss());
-    // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
+    video.data.analyse_for_features(vec![
+        "survive_poss",
+    ]);
+    assert_eq!(video.data.get_pluck().unwrap(), 0.9504906677386042);
     // video.data.print_comments();
 }
 
@@ -347,7 +348,6 @@ fn evf_video_works_v3() {
         "needless_guess",
         "mouse_trace",
         "vision_transfer",
-        "survive_poss",
     ]);
     assert_eq!(video.data.player_identifier, "王嘉宁");
     assert_eq!(video.data.software, "元3.1.9");

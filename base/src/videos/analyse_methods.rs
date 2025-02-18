@@ -1,6 +1,8 @@
+use crate::algorithms::{cal_possibility_cells_not_mine, mark_board};
 use crate::utils::is_good_chording;
 use crate::videos::base_video::BaseVideo;
 use crate::MouseState;
+use std::cmp::{max, min};
 
 // 录像的事件分析。参与分析的录像必须已经计算出对应的数据。
 // error: 高风险的猜雷（猜对概率0.05）√
@@ -82,10 +84,11 @@ pub fn analyse_jump_judge(video: &mut BaseVideo<Vec<Vec<i32>>>) {
     }
 }
 
+// 猜雷时，假如周围5*5范围内有可判的，引发可以判雷时选择猜雷
 pub fn analyse_needless_guess(video: &mut BaseVideo<Vec<Vec<i32>>>) {
     let mut x;
     let mut y;
-    for ide in 2..video.video_action_state_recorder.len() {
+    'outer: for ide in 2..video.video_action_state_recorder.len() {
         if video.video_action_state_recorder[ide].useful_level >= 2
             && video.video_action_state_recorder[ide].mouse == "lr"
         {
@@ -95,20 +98,31 @@ pub fn analyse_needless_guess(video: &mut BaseVideo<Vec<Vec<i32>>>) {
             if video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
                 .get_poss()[x][y]
                 > 0.0
-                && !video.game_board_stream
-                    [video.video_action_state_recorder[ide].prior_game_board_id]
-                    .get_basic_not_mine()
-                    .contains(&(x, y))
-                && !video.game_board_stream
-                    [video.video_action_state_recorder[ide].prior_game_board_id]
-                    .get_enum_not_mine()
-                    .contains(&(x, y))
+            // && !video.game_board_stream
+            //     [video.video_action_state_recorder[ide].prior_game_board_id]
+            //     .get_basic_not_mine()
+            //     .contains(&(x, y))
+            // && !video.game_board_stream
+            //     [video.video_action_state_recorder[ide].prior_game_board_id]
+            //     .get_enum_not_mine()
+            //     .contains(&(x, y))
             {
-                video.video_action_state_recorder[ide].comments = format!(
-                    "{}{}",
-                    video.video_action_state_recorder[ide].comments,
-                    format!("warning: 可以判雷时选择猜雷;")
-                );
+                let game_board = &mut video.game_board_stream
+                    [video.video_action_state_recorder[ide].prior_game_board_id];
+                for m in max(2, x) - 2..min(video.height, x + 3) {
+                    for n in max(2, y) - 2..min(video.width, y + 3) {
+                        if game_board.get_basic_not_mine().contains(&(m, n))
+                            || game_board.get_enum_not_mine().contains(&(m, n))
+                        {
+                            video.video_action_state_recorder[ide].comments = format!(
+                                "{}{}",
+                                video.video_action_state_recorder[ide].comments,
+                                format!("warning: 可以判雷时选择猜雷;")
+                            );
+                            continue 'outer;
+                        }
+                    }
+                }
             }
         }
     }
@@ -201,7 +215,8 @@ pub fn analyse_vision_transfer(video: &mut BaseVideo<Vec<Vec<i32>>>) {
             if ((click_last.0 - click_current.0).powf(2.0)
                 + (click_last.1 - click_current.1).powf(2.0))
             .sqrt()
-                >= 112.0
+                / video.cell_pixel_size as f64
+                >= 6.0
             {
                 let mut flag = false;
                 for &(xxx, yyy) in video.game_board_stream
@@ -242,46 +257,64 @@ pub fn analyse_vision_transfer(video: &mut BaseVideo<Vec<Vec<i32>>>) {
     }
 }
 
+/// 计算扫开这局的后验开率
+/// 不计算comment，修改pluck参数
 pub fn analyse_survive_poss(video: &mut BaseVideo<Vec<Vec<i32>>>) {
-    // 计算扫开这局的后验开率
-    let mut s_poss = 1.0;
-    let mut message = "luck: ".to_string();
+    let mut pluck = 0.0;
     let mut has_begin = false;
-    for ide in 0..video.video_action_state_recorder.len() {
-        if video.video_action_state_recorder[ide].useful_level > 0 {
-            if video.video_action_state_recorder[ide].mouse == "lr" {
-                if !has_begin {
-                    has_begin = true;
-                    continue;
-                }
-                let l_x = (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16)
-                    as usize;
-                let l_y = (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16)
-                    as usize;
-                let p = video.game_board_stream
-                    [video.video_action_state_recorder[ide].prior_game_board_id]
-                    .get_poss()[l_x][l_y];
-                if p > 0.0 && p < 1.0 {
-                    s_poss *= 1.0 - p;
-                    message.push_str(&format!("{:.3} * ", 1.0 - p));
-                    // println!("{:?} ==> {:?}", video.video_action_state_recorder[ide].time, 1.0 - p);
+    for vas in video.video_action_state_recorder.iter_mut() {
+        if vas.useful_level == 2 {
+            // 有效的左键
+            if !has_begin {
+                has_begin = true;
+                vas.key_dynamic_params.pluck = Some(0.0);
+                continue;
+            }
+            let x = (vas.y / video.cell_pixel_size as u16) as usize;
+            let y = (vas.x / video.cell_pixel_size as u16) as usize;
+            // 安全的概率
+            let p = 1.0 - video.game_board_stream[vas.prior_game_board_id].get_poss()[x][y];
+            if p <= 0.0 || pluck == f64::MAX {
+                pluck = f64::MAX;
+            } else if p < 1.0 {
+                pluck -= p.log10();
+            }
+        } else if vas.useful_level == 3 {
+            // 有效的双键
+            let x = (vas.y / video.cell_pixel_size as u16) as usize;
+            let y = (vas.x / video.cell_pixel_size as u16) as usize;
+            let mut game_board_clone = video.game_board_stream[vas.prior_game_board_id]
+                .game_board
+                .clone();
+            let _ = mark_board(&mut game_board_clone, true).unwrap();
+            let mut chording_cells = vec![];
+            for m in max(1, x) - 1..min(video.height, x + 2) {
+                for n in max(1, y) - 1..min(video.width, y + 2) {
+                    if game_board_clone[m][n] == 10 {
+                        chording_cells.push((m, n));
+                    }
                 }
             }
+            // 安全的概率
+            let p = cal_possibility_cells_not_mine(
+                &game_board_clone,
+                video.mine_num as f64,
+                &chording_cells,
+            );
+            if p >= 1.0 || pluck == f64::MAX {
+                pluck = f64::MAX;
+            } else if p > 0.0 {
+                pluck -= p.log10();
+            }
+        }
+
+        if has_begin {
+            vas.key_dynamic_params.pluck = Some(pluck);
+        } else {
+            vas.key_dynamic_params.pluck = Some(0.0);
         }
     }
-    if message.len() > 7 {
-        message.pop();
-        message.pop();
-        message.push_str("= ");
-        message.push_str(&format!("{:.6};", s_poss));
-    } else {
-        message.push_str("1;");
-    }
-    video
-        .video_action_state_recorder
-        .last_mut()
-        .unwrap()
-        .comments = message;
+    video.video_analyse_params.pluck = Some(pluck);
 }
 
 #[derive(Debug, PartialEq)]

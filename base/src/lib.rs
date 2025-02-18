@@ -52,7 +52,7 @@ pub use {
 };
 
 pub use algorithms::{
-    cal_is_op_possibility_cells, cal_possibility, cal_possibility_onboard,
+    cal_possibility_cells_is_op, cal_possibility, cal_possibility_onboard,
     get_all_not_and_is_mine_on_board, is_able_to_solve, is_guess_while_needless, is_solvable,
     laymine_solvable, laymine_solvable_adjust, mark_board, solve_direct, solve_enumerate,
     solve_minus, try_solve,

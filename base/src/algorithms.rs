@@ -206,7 +206,7 @@ pub fn solve_direct(
 }
 
 /// 游戏局面概率计算引擎。  
-/// - 输入：局面、未被标出的雷数。未被标出的雷数大于等于1时，理解成实际数量；小于1时理解为比例。  
+/// - 输入：局面、总雷数。总雷数大于等于1时，理解成实际数量；小于1时理解为比例。  
 /// - 注意：局面中可以标雷（11）和非类（12），但必须全部标对。  
 /// - 注意：若超出枚举长度（固定值55），则该区块的部分返回平均概率，且返回所需的枚举长度。  
 /// - 返回：所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数（未知雷数 = 总雷数 - 已经标出的雷）的范围、上述“所需的枚举长度”。  
@@ -226,7 +226,7 @@ pub fn cal_possibility(
     let mut table_minenum_s: Vec<[Vec<usize>; 2]> = vec![];
     // 每段雷数分布表：记录了每段（不包括内部段）每种总雷数下的是雷总情况数
     // 例如：[[[17, 18, 19, 20, 21, 22, 23, 24], [48, 2144, 16872, 49568, 68975, 48960, 16608, 2046]]]
-    let (mut matrix_a_s, mut matrix_x_s, mut matrix_b_s, mut unknow_block, is_minenum) =
+    let (mut matrix_a_s, mut matrix_x_s, mut matrix_b_s, mut inside_cell, is_minenum) =
         refresh_matrixs(&board_of_game);
     for i in (0..matrix_a_s.len()).rev() {
         let matrix_x_s_len = matrix_x_s[i].len();
@@ -237,7 +237,7 @@ pub fn cal_possibility(
             matrix_a_s.remove(i);
             matrix_x_s.remove(i);
             matrix_b_s.remove(i);
-            unknow_block += matrix_x_s_len;
+            inside_cell += matrix_x_s_len;
         }
     }
 
@@ -256,25 +256,13 @@ pub fn cal_possibility(
     }
     // 分段枚举后，根据雷数限制，删除某些情况
     for i in 0..block_num {
-        let table_minenum_i;
-        let table_cell_minenum_i;
-        match cal_table_minenum_recursion(
+        let (table_minenum_i, table_cell_minenum_i) = cal_table_minenum_recursion(
             &matrix_a_squeeze_s[i],
             &matrixx_squeeze_s[i],
             &matrix_b_s[i],
             &comb_relp_s[i],
-        ) {
-            Ok((table_minenum_i_, table_cell_minenum_i_)) => {
-                table_minenum_i = table_minenum_i_;
-                table_cell_minenum_i = table_cell_minenum_i_;
-                // block_num_calable += 1;
-            }
-            Err(e) => {
-                // 1: 这是不明显的，通过枚举才能发现的不合法、矛盾的的局面
-                // 5: 这是明显的、不合法、矛盾的的局面
-                return Err(e);
-            }
-        };
+        )?;
+
         // min_max_minenum[0] += table_minenum_i[0][0];
         // min_max_minenum[1] += table_minenum_i[0][table_minenum_i[0].len() - 1];
 
@@ -294,7 +282,7 @@ pub fn cal_possibility(
         let mn = ((board_of_game.len() * board_of_game[0].len()) as f64 * minenum) as usize;
         min(
             max(mn - is_minenum, min_minenum),
-            max_minenum + unknow_block,
+            max_minenum + inside_cell,
         )
     } else {
         let mm = (minenum as usize).overflowing_sub(is_minenum);
@@ -310,11 +298,11 @@ pub fn cal_possibility(
         return Err(3); // 这种错误，例如一共10个雷，却出现了3个不相邻的5
     }
     let unknow_minenum: Vec<usize> =
-        (minenum - max_minenum..min(minenum - min_minenum, unknow_block) + 1).collect();
+        (minenum - max_minenum..min(minenum - min_minenum, inside_cell) + 1).collect();
     // 这里的写法存在极小的风险，例如边缘格雷数分布是0，1，3，而我们直接认为了可能有2
     let mut unknow_mine_s_num = vec![];
     for i in &unknow_minenum {
-        unknow_mine_s_num.push(c(unknow_block, *i));
+        unknow_mine_s_num.push(c(inside_cell, *i));
     }
     // 第二步，整理内部未知段雷数分布表，并筛选。这样内部未知雷段和边缘雷段的地位视为几乎等同，但数据结构不同
     table_minenum_s.push([unknow_minenum.clone(), vec![]]);
@@ -398,8 +386,8 @@ pub fn cal_possibility(
         u.mul_usize(unknow_minenum[i]);
         u_s.add_big_number(&u);
     }
-    let p_unknow = u_s.div_big_num(&tt) / unknow_block as f64;
     // 第七步，计算内部未知区域是雷的概率
+    let p_unknow = u_s.div_big_num(&tt) / inside_cell as f64;
 
     Ok((
         p,
@@ -407,13 +395,14 @@ pub fn cal_possibility(
         [
             min_minenum + is_minenum,
             minenum + is_minenum,
-            max_minenum + is_minenum + unknow_block,
+            max_minenum + is_minenum + inside_cell,
         ],
         exceed_len,
     ))
 }
 
 /// 计算局面中各位置是雷的概率，按照所在的位置返回。
+/// 输入：局面，总雷数
 /// # Example
 /// - 用rust调用时的示例：
 /// ```rust
@@ -484,8 +473,9 @@ pub fn cal_possibility_onboard(
     Ok((p, pp.2))
 }
 
+
 /// 计算开空概率算法。  
-/// - 输入：局面、未被标出的雷数、坐标（可以同时输入多个）。  
+/// - 输入：局面、总雷数、位置（可以同时输入多个）。  
 /// - 返回：坐标处开空的概率。  
 /// # Example
 /// ```
@@ -503,28 +493,26 @@ pub fn cal_possibility_onboard(
 /// let ans = cal_is_op_possibility_cells(&game_board, 20.0, &vec![[0, 0], [1, 1], [1, 6], [7, 2]]);
 /// print!("{:?}", ans)
 /// ```
-pub fn cal_is_op_possibility_cells(
+pub fn cal_possibility_cells_is_op(
     board_of_game: &Vec<Vec<i32>>,
-    minenum: f64,
-    cells: &Vec<[usize; 2]>,
+    minenum: usize,
+    cells: &Vec<(usize, usize)>,
 ) -> Vec<f64> {
     let mut poss = vec![1.0; cells.len()];
     let row = board_of_game.len();
     let column = board_of_game[0].len();
-    for (cell_id, cell) in cells.iter().enumerate() {
+    for (cell_id, &(x, y)) in cells.iter().enumerate() {
         let mut board_of_game_modified = board_of_game.clone();
-        'outer: for m in max(1, cell[0]) - 1..min(row, cell[0] + 2) {
-            for n in max(1, cell[1]) - 1..min(column, cell[1] + 2) {
-                if (board_of_game[m][n] < 10 && m == cell[0] && n == cell[1])
-                    || board_of_game[m][n] == 11
-                {
+        'outer: for m in max(1, x) - 1..min(row, x + 2) {
+            for n in max(1, y) - 1..min(column, y + 2) {
+                if (board_of_game[m][n] < 10 && m == x && n == y) || board_of_game[m][n] == 11 {
                     poss[cell_id] = 0.0;
                     break 'outer;
                 } else if board_of_game[m][n] == 12 || board_of_game[m][n] < 10 {
                     continue;
                 } else {
                     let p;
-                    match cal_possibility_onboard(&board_of_game_modified, minenum) {
+                    match cal_possibility_onboard(&board_of_game_modified, minenum as f64) {
                         Ok((ppp, _)) => p = ppp,
                         Err(_) => {
                             poss[cell_id] = 0.0;
@@ -535,6 +523,32 @@ pub fn cal_is_op_possibility_cells(
                     board_of_game_modified[m][n] = 12;
                 }
             }
+        }
+    }
+    poss
+}
+
+// 效率不高。最好应该从底层枚举的位置开始
+/// 多个格子同时不是雷的概率。和pluck参数的计算有关
+/// 雷数必须在合法范围内
+/// 输入：局面，总雷数，位置
+pub fn cal_possibility_cells_not_mine(
+    game_board: &Vec<Vec<i32>>,
+    minenum: f64,
+    cells: &Vec<(usize, usize)>,
+) -> f64 {
+    let mut poss = 0.0;
+    let mut game_board_modified = game_board.clone();
+    for &(x, y) in cells.iter() {
+        if game_board[x][y] < 10 || game_board[x][y] == 12 {
+            continue;
+        } else if game_board[x][y] == 11 {
+            return 0.0;
+        } else {
+            let (board_poss, _) =
+                cal_possibility_onboard(&game_board_modified, minenum).unwrap();
+            poss *= 1.0 - board_poss[x][y];
+            game_board_modified[x][y] = 12;
         }
     }
     poss
@@ -1473,26 +1487,29 @@ pub fn obr_board(
 /// 对局面用单集合、双集合判雷引擎，快速标雷、标非雷，以供概率计算引擎处理。这是非常重要的加速。  
 /// 相当于一种预处理，即先标出容易计算的。mark可能因为无解而报错，此时返回错误码。  
 /// 若不合法，直接中断，不继续标记。  
+/// 输入：游戏局面、是否全部重新标记（用户的游戏局面需要全部重标，或者需要统计数量）  
+/// 返回：成功为标记的非雷数、是雷数；失败为错误代码  
 /// - 注意：在rust中，cal_possibility往往需要和mark_board搭配使用，而在其他语言（python）中可能不需要如此！这是由于其ffi不支持原地操作。
-pub fn mark_board(board_of_game: &mut Vec<Vec<i32>>) -> Result<(), usize> {
-    let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
-    solve_direct(&mut a_mats, &mut xs, &mut bs, board_of_game)?;
-    for i in 0..a_mats.len() {
-        for j in 0..a_mats[i].len() {
-            if a_mats[i][j].iter().sum::<i32>() < bs[i][j] || bs[i][j] < 0 {
-                return Err(7);
+pub fn mark_board(game_board: &mut Vec<Vec<i32>>, remark: bool) -> Result<(usize, usize), usize> {
+    if remark {
+        for row in game_board.iter_mut() {
+            for num in row.iter_mut() {
+                if *num == 11 || *num == 12 {
+                    *num = 10;
+                }
             }
         }
     }
-    let _ = solve_minus(&mut a_mats, &mut xs, &mut bs, board_of_game);
-    for i in 0..a_mats.len() {
-        for j in 0..a_mats[i].len() {
-            if a_mats[i][j].iter().sum::<i32>() < bs[i][j] || bs[i][j] < 0 {
-                return Err(8);
-            }
-        }
-    }
-    Ok(())
+    let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&game_board);
+    let mut not_mine_num = 0;
+    let mut is_mine_num = 0;
+    let (not, is) = solve_direct(&mut a_mats, &mut xs, &mut bs, game_board)?;
+    not_mine_num += not.len();
+    is_mine_num += is.len();
+    let (not, is) = solve_minus(&mut a_mats, &mut xs, &mut bs, game_board)?;
+    not_mine_num += not.len();
+    is_mine_num += is.len();
+    Ok((not_mine_num, is_mine_num))
 }
 
 /// 求出游戏局面中所有非雷、是雷的位置。  

@@ -203,6 +203,9 @@ impl PyBaseVideo {
     pub fn generate_evf_v3_raw_data(&mut self) {
         self.core.generate_evf_v3_raw_data();
     }
+    pub fn generate_evf_v4_raw_data(&mut self) {
+        self.core.generate_evf_v4_raw_data();
+    }
     pub fn save_to_evf_file(&self, file_name: &str) {
         self.core.save_to_evf_file(file_name);
     }

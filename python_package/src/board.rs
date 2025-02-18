@@ -73,7 +73,7 @@ impl PyMinesweeperBoard {
                 }
             })
         });
-        let _ = mark_board(&mut game_board_clone);
+        let _ = mark_board(&mut game_board_clone, false);
         let (t_2, _) = cal_possibility_onboard(&game_board_clone, mine_num).unwrap();
         let t = vec![t_1, t_2];
         Ok(t)
@@ -209,7 +209,7 @@ impl PySafeMinesweeperBoard {
                 }
             })
         });
-        let _ = mark_board(&mut game_board_clone);
+        let _ = mark_board(&mut game_board_clone, false);
         let (t_2, _) = cal_possibility_onboard(&game_board_clone, mine_num).unwrap();
         let t = vec![t_1, t_2];
         Ok(t)

@@ -2922,6 +2922,8 @@ pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
         "元3.1.9" => Ok(("1721836800".to_string(), "1753459200".to_string())),
         // 2024-09-10 00:00:00 发布，有效期将有至少一年
         "元3.1.11" => Ok(("1725811200".to_string(), "1757433600".to_string())),
+        // 2024-11-21 00:00:00 发布，有效期将有至少一年
+        "元3.2.0" => Ok(("1732118400".to_string(), "1763654400".to_string())),
         _ => Err(String::from("Unknown software: ") + software),
     }
 }

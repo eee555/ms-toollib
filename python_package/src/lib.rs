@@ -38,17 +38,23 @@ pub use videos::{AvfVideo, EvfVideo, MvfVideo, RmvVideo};
 // maturin publish --manylinux 2014
 
 #[pyfunction]
-#[pyo3(name = "refresh_matrix")]
+#[pyo3(
+    name = "refresh_matrix",
+    signature = (game_board)
+)]
 fn py_refresh_matrix(
-    board_of_game: Vec<Vec<i32>>,
+    game_board: Vec<Vec<i32>>,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<i32>)> {
-    Ok(refresh_matrix(&board_of_game))
+    Ok(refresh_matrix(&game_board))
 }
 
 #[pyfunction]
-#[pyo3(name = "refresh_matrixs")]
+#[pyo3(
+    name = "refresh_matrixs",
+    signature = (game_board)
+)]
 fn py_refresh_matrixs(
-    board_of_game: Vec<Vec<i32>>,
+    game_board: Vec<Vec<i32>>,
 ) -> PyResult<(
     Vec<Vec<Vec<i32>>>,
     Vec<Vec<(usize, usize)>>,
@@ -56,7 +62,7 @@ fn py_refresh_matrixs(
     usize,
     usize,
 )> {
-    Ok(refresh_matrixs(&board_of_game))
+    Ok(refresh_matrixs(&game_board))
 }
 
 #[pyfunction]
@@ -72,11 +78,25 @@ fn py_refresh_matrixses(
 }
 
 #[pyfunction]
-#[pyo3(name = "cal_op")]
+#[pyo3(
+    name = "cal_op",
+    signature = (board)
+)]
 fn py_cal_op(board: Vec<Vec<i32>>) -> PyResult<usize> {
     Ok(cal_op(&board))
 }
 
+///  通用标准埋雷引擎。起手位置非雷，其余位置的雷服从均匀分布。
+/// 
+/// # 参数
+/// - `row`: 局面行数。
+/// - `column`：局面列数。。
+/// - `mine_num`：雷数。
+/// - `x0`：起手位置在第几行。
+/// - `y0`：起手位置在第几列。
+///
+/// # 返回值
+/// 二维的局面，其中0代表空，1~8代表1~8，-1代表雷。
 #[pyfunction]
 #[pyo3(name = "laymine", signature = (row, column, mine_num, x0, y0))]
 fn py_laymine(
@@ -86,13 +106,14 @@ fn py_laymine(
     x0: usize,
     y0: usize,
 ) -> PyResult<Vec<Vec<i32>>> {
-    // 通用标准埋雷引擎
-    // 输出为二维的局面
     Ok(laymine(row, column, mine_num, x0, y0))
 }
 
 #[pyfunction]
-#[pyo3(name = "cal_bbbv")]
+#[pyo3(
+    name = "cal_bbbv",
+    signature = (board)
+)]
 fn py_cal_bbbv(board: Vec<Vec<i32>>) -> PyResult<usize> {
     Ok(cal_bbbv(&board))
 }
@@ -137,14 +158,17 @@ fn py_refresh_board(
 }
 
 #[pyfunction]
-#[pyo3(name = "get_all_not_and_is_mine_on_board")]
+#[pyo3(
+    name = "get_all_not_and_is_mine_on_board",
+    signature = (game_board)
+)]
 fn py_get_all_not_and_is_mine_on_board(
-    mut board_of_game: Vec<Vec<i32>>,
+    mut game_board: Vec<Vec<i32>>,
 ) -> PyResult<(Vec<Vec<i32>>, Vec<(usize, usize)>, Vec<(usize, usize)>)> {
-    let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&board_of_game);
+    let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&game_board);
     let (not, is) =
-        get_all_not_and_is_mine_on_board(&mut a_mats, &mut xs, &mut bs, &mut board_of_game);
-    Ok((board_of_game, not, is))
+        get_all_not_and_is_mine_on_board(&mut a_mats, &mut xs, &mut bs, &mut game_board);
+    Ok((game_board, not, is))
 }
 
 #[pyfunction]
@@ -176,6 +200,18 @@ fn py_solve_direct(
     Ok((a_mats, xs, bs, board_of_game, not, is))
 }
 
+
+///  通用win7规则埋雷引擎。起手位置开空，其余位置的雷服从均匀分布。
+/// 
+/// # 参数
+/// - `row`: 局面行数。
+/// - `column`：局面列数。。
+/// - `mine_num`：雷数。
+/// - `x0`：起手位置在第几行。
+/// - `y0`：起手位置在第几列。
+///
+/// # 返回值
+/// 二维的局面，其中0代表空，1~8代表1~8，-1代表雷。
 #[pyfunction]
 #[pyo3(
     name = "laymine_op",
@@ -208,7 +244,10 @@ fn py_unsolvable_structure(board_check: Vec<Vec<i32>>) -> PyResult<bool> {
 }
 
 #[pyfunction]
-#[pyo3(name = "is_solvable")]
+#[pyo3(
+    name = "is_solvable",
+    signature = (board, x0, y0)
+)]
 fn py_is_solvable(board: Vec<Vec<i32>>, x0: usize, y0: usize) -> PyResult<bool> {
     Ok(is_solvable(&board, x0, y0))
 }
@@ -263,59 +302,66 @@ pub fn py_laymine_solvable_adjust(
 }
 
 #[pyfunction]
-#[pyo3(name = "cal_possibility")]
+#[pyo3(
+    name = "cal_possibility",
+    signature = (game_board, mine_num)
+)]
 fn py_cal_possibility(
-    mut board_of_game: Vec<Vec<i32>>,
+    mut game_board: Vec<Vec<i32>>,
     mine_num: f64,
 ) -> PyResult<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize)> {
     // mine_num为局面中雷的总数，不管有没有标
     // 还返回局面中雷数的范围
-    let legal_flag = mark_board(&mut board_of_game);
-    match legal_flag {
-        Ok(_) => {}
-        Err(_) => return Err(PyErr::new::<PyRuntimeError, _>("标记阶段无解的局面")),
-    }
-    match cal_possibility(&board_of_game, mine_num) {
+    mark_board(&mut game_board, true)
+        .map_err(|_| PyErr::new::<PyRuntimeError, _>("标记阶段无解的局面"))?;
+    match cal_possibility(&game_board, mine_num) {
         Ok(t) => return Ok(t),
         Err(1) => return Err(PyErr::new::<PyRuntimeError, _>("枚举阶段无解的局面")),
         _ => return Err(PyErr::new::<PyRuntimeError, _>("未知的错误")),
     };
 }
 
+/// 计算局面中各位置是雷的概率，按照所在的位置返回。
+///
+/// # 参数
+/// - `game_board`: 游戏局面。自动纠正错误的标雷。
+/// - `mine_num`：雷数。>=1时，理解为总的雷数；<1时，理解为雷的比例。
+///
+/// # 返回值
+/// - 元组的第一个元素是一个局面中，所有位置是雷的概率
+/// - 元组的第二个元素是一个长度为3的列表，表示最小雷数、当前雷数、最大雷数
+/// 
+/// # 异常
+/// - `PyRuntimeError`: `标记阶段无解的局面`和`枚举阶段无解的局面`两种。
 #[pyfunction]
-#[pyo3(name = "cal_possibility_onboard")]
+#[pyo3(
+    name = "cal_possibility_onboard",
+    signature = (game_board, mine_num)
+)]
 fn py_cal_possibility_onboard(
     // 可以接受无解的局面
-    mut board_of_game: Vec<Vec<i32>>,
+    mut game_board: Vec<Vec<i32>>,
     mine_num: f64,
 ) -> PyResult<(Vec<Vec<f64>>, [usize; 3])> {
     // mine_num为局面中雷的总数，不管有没有标
-    let legal_flag = mark_board(&mut board_of_game, true);
+    let legal_flag = mark_board(&mut game_board, true);
     match legal_flag {
         Ok(_) => {}
         Err(_) => return Err(PyErr::new::<PyRuntimeError, _>("标记阶段无解的局面")),
     }
-    match cal_possibility_onboard(&board_of_game, mine_num) {
+    match cal_possibility_onboard(&game_board, mine_num) {
         Ok(t) => return Ok(t),
         Err(_) => return Err(PyErr::new::<PyRuntimeError, _>("枚举阶段无解的局面")),
     };
 }
 
 #[pyfunction]
-#[pyo3(name = "sample_3BVs_exp")]
-fn py_sample_bbbvs_exp_old(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
-    let _ = Python::with_gil(|py| {
-        let deprecation_warning = py.get_type_bound::<pyo3::exceptions::PyDeprecationWarning>();
-        PyErr::warn_bound(py, &deprecation_warning, "Renamed to sample_bbbvs_exp", 0)?;
-        Ok::<(), PyErr>(())
-    });
-    Ok((&sample_bbbvs_exp(x0, y0, n)).to_vec())
-}
-
-#[pyfunction]
-#[pyo3(name = "sample_bbbvs_exp")]
-fn py_sample_bbbvs_exp(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
-    Ok((&sample_bbbvs_exp(x0, y0, n)).to_vec())
+#[pyo3(
+    name = "sample_bbbvs_exp",
+    signature = (x0, y0, n)
+)]
+fn py_sample_bbbvs_exp(x0: usize, y0: usize, n: usize) -> PyResult<[usize; 382]> {
+    Ok(sample_bbbvs_exp(x0, y0, n))
 }
 
 // #[pyfunction]
@@ -334,6 +380,7 @@ fn py_sample_bbbvs_exp(x0: usize, y0: usize, n: usize) -> PyResult<Vec<usize>> {
 //     }
 // }
 
+
 #[pyfunction]
 #[pyo3(name = "obr_board", signature = (data_vec, height, width))]
 fn py_obr_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<Vec<Vec<i32>>> {
@@ -346,10 +393,13 @@ fn py_obr_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<V
 }
 
 #[pyfunction]
-#[pyo3(name = "mark_board")]
-fn py_mark_board(mut board_of_game: Vec<Vec<i32>>, remark: bool) -> PyResult<Vec<Vec<i32>>> {
-    mark_board(&mut board_of_game, remark).unwrap();
-    Ok(board_of_game)
+#[pyo3(
+    name = "mark_board",
+    signature = (game_board, remark)
+)]
+fn py_mark_board(mut game_board: Vec<Vec<i32>>, remark: bool) -> PyResult<Vec<Vec<i32>>> {
+    mark_board(&mut game_board, remark).unwrap();
+    Ok(game_board)
 }
 
 #[pyfunction]
@@ -380,8 +430,15 @@ fn py_cal_board_numbers(mut board: Vec<Vec<i32>>) -> PyResult<Vec<Vec<i32>>> {
     Ok(board)
 }
 
+/// 软件的合法时间范围。单位为秒。
+///
+/// # 参数
+/// - `software`: 软件名称，"Arbiter"、"0.97 beta"、"Viennasweeper"、"元3.1.9"、"元3.1.11"、"元3.2.0"等等
+///
+/// # 返回值
+/// 秒为单位的开始时间戳字符串、秒为单位的结束时间戳字符串
 #[pyfunction]
-#[pyo3(name = "cal_board_numbers")]
+#[pyo3(name = "valid_time_period")]
 fn py_valid_time_period(software: &str) -> PyResult<(String, String)> {
     match valid_time_period(software) {
         Ok(a) => Ok(a),
@@ -425,9 +482,8 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_laymine_solvable_adjust, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility, m)?)?;
     m.add_function(wrap_pyfunction!(py_sample_bbbvs_exp, m)?)?;
-    m.add_function(wrap_pyfunction!(py_sample_bbbvs_exp_old, m)?)?;
     m.add_function(wrap_pyfunction!(py_obr_board, m)?)?;
-    m.add_function(wrap_pyfunction!(py_obr_board_old, m)?)?;
+    // m.add_function(wrap_pyfunction!(py_obr_board_old, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_possibility_onboard, m)?)?;
     m.add_function(wrap_pyfunction!(py_mark_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_is_guess_while_needless, m)?)?;

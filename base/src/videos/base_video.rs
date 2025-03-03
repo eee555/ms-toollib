@@ -24,7 +24,8 @@ use crate::safe_board::SafeBoard;
 
 use crate::{GameBoardState, MinesweeperBoard, MouseState};
 use encoding_rs::{GB18030, WINDOWS_1252};
-use tract_onnx::prelude::Op;
+// use tract_onnx::prelude::Op;
+use std::cmp::min;
 
 /// 读录像文件失败的原因
 #[derive(Debug)]
@@ -1876,6 +1877,11 @@ impl<T> BaseVideo<T> {
     /// 在生成二进制数据后，在raw_data里添加checksum
     /// 按照evf4的标准添加，即添加u16的长度、若干位checksum
     pub fn set_checksum_evf_v4(&mut self, checksum: Vec<u8>) -> Result<u8, ()> {
+        // avf、evfv3、evfv4的典型高级录像体积对比，单位kB
+        // 压缩前：64.2，63.9，47.9
+        // 压缩后(zip)：25.4，24.6，6.84
+        // 压缩后(gzip)：25.2，24.7，6.6
+        // 压缩后(xz-6)：10.9，11.1，4.98
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -2251,7 +2257,10 @@ impl<T> BaseVideo<T> {
         if self.game_board_state != GameBoardState::Display {
             return Err(());
         };
-        Ok(self.video_analyse_params.pluck.unwrap())
+        Ok(self.video_action_state_recorder[self.current_event_id]
+            .key_dynamic_params
+            .pluck
+            .unwrap())
     }
     /// 跨语言调用时，不能传递枚举体用这个
     pub fn get_mouse_state(&self) -> usize {
@@ -2839,7 +2848,7 @@ impl<T> BaseVideo<T> {
             let mut delta_t = s_to_ms(event.time) - s_to_ms(last_event.time);
             while delta_t > 255 {
                 self.raw_data.push(255);
-                let pause_time = (delta_t % (1 << 16)) as u16;
+                let pause_time = min(65535 as u32, delta_t) as u16;
                 self.raw_data.extend_from_slice(&pause_time.to_be_bytes());
                 delta_t -= pause_time as u32;
             }

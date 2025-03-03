@@ -1138,7 +1138,7 @@ fn adjust_step(
     let xs_cell_num = front_xs_0.len();
     let mut minenum_except = (xs_cell_num as f64 * remain_minenum as f64
         / (remain_not_minenum + remain_minenum) as f64) as usize;
-    let minenum_exp = (xs_cell_num as f64 * 0.21) as usize;
+    let minenum_exp = (xs_cell_num as f64 * 0.25) as usize;
     if minenum_except > minenum_exp {
         minenum_except = minenum_exp;
     }

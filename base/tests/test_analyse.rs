@@ -65,7 +65,7 @@ fn avf_video_works() {
 
     let r = video.parse_video();
     assert_eq!(r.unwrap(), ());
-    // video.data.print_event();
+    video.data.print_event();
     video.data.analyse();
     assert!(video.data.player_identifier == "Wang Jianing G01825".to_string());
     assert_eq!(video.data.country, "CN");
@@ -275,6 +275,7 @@ fn rmv_video_works() {
     assert_eq!(video.data.get_stnb().unwrap(), 38.953642569326725);
     assert_eq!(video.data.get_path(), 3034.0392068453953);
     video.data.set_current_time(-1.0);
+    assert_eq!(video.data.current_time, -0.0);
     // println!("game_board: {:?}", video.data.get_game_board());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
     // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);

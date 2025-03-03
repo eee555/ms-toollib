@@ -454,6 +454,10 @@ impl PyBaseVideo {
     fn get_corr(&self) -> PyResult<f64> {
         Ok(self.core.get_corr().unwrap())
     }
+    #[getter]
+    fn get_pluck(&self) -> PyResult<f64> {
+        Ok(self.core.get_pluck().unwrap())
+    }
     // #[getter]
     // fn get_events_len(&self) -> PyResult<usize> {
     //     Ok(self.core.video_action_state_recorder.len())

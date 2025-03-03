@@ -286,6 +286,10 @@ macro_rules! generate_video {
                 Ok(self.core.data.get_corr().unwrap())
             }
             #[getter]
+            fn get_pluck(&self) -> PyResult<f64> {
+                Ok(self.core.data.get_pluck().unwrap())
+            }
+            #[getter]
             fn get_events(&self) -> PyResult<Vec<PyVideoActionStateRecorder>> {
                 Ok(self
                     .core

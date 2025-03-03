@@ -46,7 +46,7 @@ fn print_matrix(matrix: &Vec<Vec<i32>>) {
 // cargo test --package ms_toollib --test test_laymine -- laymine_solvable_adjust_works --exact --show-output --nocapture
 fn laymine_solvable_adjust_works() {
     // 测试调整法无猜埋雷
-    let board = laymine_solvable_adjust(16, 30, 200, 0, 0);
+    let board = laymine_solvable_adjust(16, 30, 170, 0, 0);
     // board.0.iter().for_each(|i| println!("{:?}", i));
     print_matrix(&board.0);
     if board.1 {

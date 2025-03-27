@@ -11,6 +11,6 @@ let game_board = [
     [10, 10, 10, 10, 10, 10, 10, 10],
 ];
 
-let a = ms.cal_possibility_onboard(game_board, 10)
+let a = ms.cal_probability_onboard(game_board, 10)
 console.log(a);
 

@@ -1,5 +1,5 @@
 ﻿// 局面相关的类，录像在video
-use crate::algorithms::{cal_possibility_onboard, solve_direct, solve_enumerate, solve_minus};
+use crate::algorithms::{cal_probability_onboard, solve_direct, solve_enumerate, solve_minus};
 use crate::utils::{cal_bbbv_on_island, cal_cell_nums, cal_isl, cal_op, refresh_matrixs};
 
 /// 静态游戏局面的包装类。  
@@ -104,7 +104,7 @@ impl GameBoard {
         if !self.has_poss {
             self.mark();
             // println!("{:?}, {:?}", self.game_board_marked, self.mine_num);
-            self.poss = cal_possibility_onboard(&self.game_board_marked, self.mine_num as f64)
+            self.poss = cal_probability_onboard(&self.game_board_marked, self.mine_num as f64)
                 .unwrap()
                 .0;
             self.has_poss = true;

@@ -70,7 +70,7 @@ int main()
             beg_game_board_1.push_back(test_beg_game_board[i][j]);
         }
     }
-    BoardPossReturn poss_a = cal_possibility_onboard(beg_game_board_1, 8, 10.0);
+    BoardPossReturn poss_a = cal_probability_onboard(beg_game_board_1, 8, 10.0);
 
     for (int i = 0; i < poss_a.board_poss.size(); i++)
     {

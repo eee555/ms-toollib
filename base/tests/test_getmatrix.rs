@@ -1,4 +1,4 @@
-use ms_toollib::cal_possibility_onboard;
+use ms_toollib::cal_probability_onboard;
 use ms_toollib::refresh_matrixses;
 
 // 测试获取局面矩阵的函数
@@ -94,7 +94,7 @@ fn refresh_matrixses_works2() {
     println!("matrix_bses: {:?}", matrix_bses);
     println!(
         "matrix_bses: {:?}",
-        cal_possibility_onboard(&game_board, 4.0)
+        cal_probability_onboard(&game_board, 4.0)
     );
 }
 

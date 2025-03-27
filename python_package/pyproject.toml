@@ -4,7 +4,7 @@ version = "1.4.15"
 description = "Algorithms for minesweeper."
 readme = "readme.md"
 requires-python = ">=3.7"
-keywords = ["minesweeper", "sweeper", "possibility", "solver", "3BV"]
+keywords = ["minesweeper", "sweeper", "probability", "solver", "3BV"]
 authors = [
   {email = "wangjianing@88.com"},
   {name = "Wang Jianing"}

@@ -1,4 +1,4 @@
-use crate::algorithms::{cal_possibility_cells_not_mine, mark_board};
+use crate::algorithms::{cal_probability_cells_not_mine, mark_board};
 use crate::utils::is_good_chording;
 use crate::videos::base_video::BaseVideo;
 use crate::MouseState;
@@ -296,7 +296,7 @@ pub fn analyse_survive_poss(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                 }
             }
             // 安全的概率
-            let p = cal_possibility_cells_not_mine(
+            let p = cal_probability_cells_not_mine(
                 &game_board_clone,
                 video.mine_num as f64,
                 &chording_cells,

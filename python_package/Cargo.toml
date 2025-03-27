@@ -5,7 +5,7 @@ description = "Algorithms  for Minesweeper"
 documentation = "https://docs.rs/ms_toollib/"
 license = "MIT"
 readme = "readme.md"
-keywords = ["minesweeper", "possibility", "solver", "laymine", "3BV"]
+keywords = ["minesweeper", "probability", "solver", "laymine", "3BV"]
 edition = "2021"
 authors = ["Wang Jianing <wangjianing@88.com>"]
 

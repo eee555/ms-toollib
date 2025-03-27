@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Error, Result};
 use cxx::CxxVector;
-use ms_toollib::cal_possibility_onboard as ms_cal_possibility_onboard;
+use ms_toollib::cal_probability_onboard as ms_cal_probability_onboard;
 use ms_toollib::laymine as ms_laymine;
 use ms_toollib::laymine_op as ms_laymine_op;
 use ms_toollib::laymine_solvable as ms_laymine_solvable;
@@ -60,7 +60,7 @@ mod ffi {
             y0: usize,
             max_times: usize,
         ) -> BoardFlag;
-        fn cal_possibility_onboard(
+        fn cal_probability_onboard(
             board_of_game: &CxxVector<i32>,
             n_row: usize,
             // board_of_game: Vec<ffi::Veci32>,
@@ -135,7 +135,7 @@ fn laymine_solvable_thread(
 //     }
 // }
 
-fn cal_possibility_onboard(
+fn cal_probability_onboard(
     board_of_game: &CxxVector<i32>,
     n_row: usize,
     // board_of_game: Vec<ffi::Veci32>,
@@ -153,7 +153,7 @@ fn cal_possibility_onboard(
         }
     }
     // board_of_game_rust.iter().for_each(|x| println!("{:?}", x));
-    let a = ms_cal_possibility_onboard(&board_of_game_rust, mine_num);
+    let a = ms_cal_probability_onboard(&board_of_game_rust, mine_num);
     match a {
         Ok((b, c)) => {
             let bb = b

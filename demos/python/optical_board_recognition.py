@@ -16,12 +16,12 @@ board_img_data = (np.reshape(board_img_data, -1) * 255).astype(np.uint8)
 # 对b,g,r三种颜色敏感；透明度随意。board_img_data的长度为4*height*width
 board = ms_toollib.obr_board(board_img_data, height, width)
 print(np.array(board))# 打印识别出的局面
-poss = ms_toollib.cal_possibility(board, 99)
+poss = ms_toollib.cal_probability(board, 99)
 # 用雷的总数计算概率
 print(poss)
-poss_onboard = ms_toollib.cal_possibility_onboard(board, 99)
+poss_onboard = ms_toollib.cal_probability_onboard(board, 99)
 # 用雷的总数计算概率，输出局面对应的位置
 print(poss_onboard)
-poss_ = ms_toollib.cal_possibility_onboard(board, 0.20625)
+poss_ = ms_toollib.cal_probability_onboard(board, 0.20625)
 # 用雷的密度计算概率
 print(poss_)

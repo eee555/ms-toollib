@@ -84,8 +84,8 @@ int main(void) {
             a_test_beg_game_board.rows[i].cells[j] = test_beg_game_board[i][j];
         };
     };
-    struct BoardPossReturn board_poss_return = cal_possibility_onboard(a_test_beg_game_board, 10.0);
-    printf("\nPrint the beg game board possibility(is mine):\n");
+    struct BoardPossReturn board_poss_return = cal_probability_onboard(a_test_beg_game_board, 10.0);
+    printf("\nPrint the beg game board probability(is mine):\n");
     for(int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {
             printf("%f, ", board_poss_return.board_poss.rows_poss[i].cells_poss[j]);

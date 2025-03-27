@@ -212,7 +212,7 @@ pub fn solve_direct(
 /// - 返回：所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数（未知雷数 = 总雷数 - 已经标出的雷）的范围、上述“所需的枚举长度”。  
 /// - 注意：若没有内部未知区域，“内部未知格子是雷的概率”返回NaN。
 /// - 局限：不能将所有矛盾的局面都检查出来。例如空中间出现一个数字，这种错误的局面，不能检查出来。
-pub fn cal_possibility(
+pub fn cal_probability(
     board_of_game: &Vec<Vec<i32>>,
     minenum: f64,
 ) -> Result<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize), usize> {
@@ -416,13 +416,13 @@ pub fn cal_possibility(
 ///     vec![10, 10, 10, 10, 10, 10, 10, 10],
 ///     vec![10, 10, 10, 10, 10, 10, 10, 10],
 /// ];
-/// let ans = cal_possibility(&game_board, 10.0);
+/// let ans = cal_probability(&game_board, 10.0);
 /// print!("设置雷数为10，概率计算引擎的结果为：{:?}", ans);
-/// let ans = cal_possibility(&game_board, 0.15625);
+/// let ans = cal_probability(&game_board, 0.15625);
 /// print!("设置雷的比例为15.625%，概率计算引擎的结果为：{:?}", ans);
 /// // 对局面预标记，以加速计算
 /// mark_board(&mut game_board);
-/// let ans = cal_possibility_onboard(&game_board, 10.0);
+/// let ans = cal_probability_onboard(&game_board, 10.0);
 /// print!("设置雷的比例为10，与局面位置对应的概率结果为：{:?}", ans);
 /// ```
 /// - 用Python调用时的示例：
@@ -439,21 +439,21 @@ pub fn cal_possibility(
 ///     [10, 10, 10, 10, 10, 10, 10, 10],
 ///     [10, 10, 10, 10, 10, 10, 10, 10],
 ///     ];
-/// ans = ms.cal_possibility(game_board, 10);
+/// ans = ms.cal_probability(game_board, 10);
 /// print("设置雷数为10，概率计算引擎的结果为：", ans);
-/// ans = ms.cal_possibility(game_board, 0.15625);
+/// ans = ms.cal_probability(game_board, 0.15625);
 /// print("设置雷的比例为15.625%，概率计算引擎的结果为：", ans);
 /// # 对局面预标记，以加速计算
 /// ms.mark_board(game_board);
-/// ans = ms.cal_possibility_onboard(game_board, 10.0);
+/// ans = ms.cal_probability_onboard(game_board, 10.0);
 /// print("设置雷的比例为10，与局面位置对应的概率结果为：", ans);
 /// ```
-pub fn cal_possibility_onboard(
+pub fn cal_probability_onboard(
     board_of_game: &Vec<Vec<i32>>,
     minenum: f64,
 ) -> Result<(Vec<Vec<f64>>, [usize; 3]), usize> {
     let mut p = vec![vec![-1.0; board_of_game[0].len()]; board_of_game.len()];
-    let pp = cal_possibility(&board_of_game, minenum)?;
+    let pp = cal_probability(&board_of_game, minenum)?;
     for i in pp.0 {
         p[i.0 .0][i.0 .1] = i.1;
     }
@@ -479,7 +479,7 @@ pub fn cal_possibility_onboard(
 /// - 返回：坐标处开空的概率。  
 /// # Example
 /// ```
-/// use ms_toollib::cal_is_op_possibility_cells;
+/// use ms_toollib::cal_is_op_probability_cells;
 /// let game_board = vec![
 ///     vec![10, 10,  1,  1, 10,  1,  0,  0],
 ///     vec![10, 10,  1, 10, 10,  3,  2,  1],
@@ -490,10 +490,10 @@ pub fn cal_possibility_onboard(
 ///     vec![10, 10, 10, 10, 10, 10, 10, 10],
 ///     vec![10, 10, 10, 10, 10, 10, 10, 10],
 /// ];
-/// let ans = cal_is_op_possibility_cells(&game_board, 20.0, &vec![[0, 0], [1, 1], [1, 6], [7, 2]]);
+/// let ans = cal_is_op_probability_cells(&game_board, 20.0, &vec![[0, 0], [1, 1], [1, 6], [7, 2]]);
 /// print!("{:?}", ans)
 /// ```
-pub fn cal_possibility_cells_is_op(
+pub fn cal_probability_cells_is_op(
     board_of_game: &Vec<Vec<i32>>,
     minenum: usize,
     cells: &Vec<(usize, usize)>,
@@ -512,7 +512,7 @@ pub fn cal_possibility_cells_is_op(
                     continue;
                 } else {
                     let p;
-                    match cal_possibility_onboard(&board_of_game_modified, minenum as f64) {
+                    match cal_probability_onboard(&board_of_game_modified, minenum as f64) {
                         Ok((ppp, _)) => p = ppp,
                         Err(_) => {
                             poss[cell_id] = 0.0;
@@ -532,7 +532,7 @@ pub fn cal_possibility_cells_is_op(
 /// 多个格子同时不是雷的概率。和pluck参数的计算有关
 /// 雷数必须在合法范围内
 /// 输入：局面，总雷数，位置
-pub fn cal_possibility_cells_not_mine(
+pub fn cal_probability_cells_not_mine(
     game_board: &Vec<Vec<i32>>,
     minenum: f64,
     cells: &Vec<(usize, usize)>,
@@ -546,7 +546,7 @@ pub fn cal_possibility_cells_not_mine(
             return 0.0;
         } else {
             let (board_poss, _) =
-                cal_possibility_onboard(&game_board_modified, minenum).unwrap();
+                cal_probability_onboard(&game_board_modified, minenum).unwrap();
             poss *= 1.0 - board_poss[x][y];
             game_board_modified[x][y] = 12;
         }
@@ -1400,11 +1400,11 @@ fn obr_cell(
 /// lena = (np.reshape(lena, -1) * 255).astype(np.uint32)
 /// board = ms_toollib.obr_board(lena, height, width)
 /// print(np.array(board))# 打印识别出的局面
-/// poss = ms_toollib.cal_possibility(board, 99)
+/// poss = ms_toollib.cal_probability(board, 99)
 /// print(poss)# 用雷的总数计算概率
-/// poss_onboard = ms_toollib.cal_possibility_onboard(board, 99)
+/// poss_onboard = ms_toollib.cal_probability_onboard(board, 99)
 /// print(poss_onboard)# 用雷的总数计算概率，输出局面对应的位置
-/// poss_ = ms_toollib.cal_possibility_onboard(board, 0.20625)
+/// poss_ = ms_toollib.cal_probability_onboard(board, 0.20625)
 /// print(poss_)# 用雷的密度计算概率
 /// ```
 /// 细节：对于标雷、游戏结束后的红雷、叉雷，一律识别成10，即没有打开。
@@ -1489,7 +1489,7 @@ pub fn obr_board(
 /// 若不合法，直接中断，不继续标记。  
 /// 输入：游戏局面、是否全部重新标记（用户的游戏局面需要全部重标，或者需要统计数量）  
 /// 返回：成功为标记的非雷数、是雷数；失败为错误代码  
-/// - 注意：在rust中，cal_possibility往往需要和mark_board搭配使用，而在其他语言（python）中可能不需要如此！这是由于其ffi不支持原地操作。
+/// - 注意：在rust中，cal_probability往往需要和mark_board搭配使用，而在其他语言（python）中可能不需要如此！这是由于其ffi不支持原地操作。
 pub fn mark_board(game_board: &mut Vec<Vec<i32>>, remark: bool) -> Result<(usize, usize), usize> {
     if remark {
         for row in game_board.iter_mut() {

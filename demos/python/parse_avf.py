@@ -1,5 +1,8 @@
 import ms_toollib as ms
-v = ms.AvfVideo("../../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jianing G01825.avf") # 第一步，读取文件的二进制内容
+
+file_path = r"../../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jianing G01825.avf"
+
+v = ms.AvfVideo(file_path) # 第一步，读取文件的二进制内容
 v.parse_video() # 第二步，解析文件的二进制内容
 v.analyse() # 第三步，根据解析到的内容，推衍整个局面
 v.current_time = 999.999 # set time to the end of the v
@@ -62,4 +65,11 @@ for e in v.events:
         print(builtin_game_board.enum_not_mine)
         # 用枚举法求解时，得出的所有是雷的位置，不包括basic_is_mine
         print(builtin_game_board.enum_is_mine)
-        
+
+# 其他实例化方法
+with open(file_path, 'rb') as file:
+    video_data_list = file.read() # 或video_data_list = list(file.read())
+    # 自定义另一个文件名
+    v_2 = ms.AvfVideo(r"my_file.avf", video_data_list)
+    # 也可以缺省第一个参数`file_name`，则file_name为空字符串
+    v_3 = ms.AvfVideo(raw_data=video_data_list)

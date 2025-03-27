@@ -1,6 +1,6 @@
 extern crate libc;
 use ms_toollib::cal_bbbv as rs_cal_bbbv;
-use ms_toollib::cal_possibility_onboard as rs_cal_possibility_onboard;
+use ms_toollib::cal_probability_onboard as rs_cal_probability_onboard;
 use ms_toollib::laymine as rs_laymine;
 use std::alloc::{dealloc, Layout};
 use std::mem;
@@ -165,7 +165,7 @@ pub extern "C" fn laymine(
 }
 
 #[no_mangle]
-pub extern "C" fn cal_possibility_onboard(board_of_game: Board, mine_num: f64) -> BoardPossReturn {
+pub extern "C" fn cal_probability_onboard(board_of_game: Board, mine_num: f64) -> BoardPossReturn {
     let rows_ptr = unsafe { slice::from_raw_parts(board_of_game.rows, board_of_game.n_row) };
     let mut b: Vec<Vec<i32>> = vec![];
     for i in 0..board_of_game.n_row {
@@ -175,7 +175,7 @@ pub extern "C" fn cal_possibility_onboard(board_of_game: Board, mine_num: f64) -
             b[i].push(array[j]);
         }
     }
-    let (mut b, c) = rs_cal_possibility_onboard(&b, mine_num).unwrap();
+    let (mut b, c) = rs_cal_probability_onboard(&b, mine_num).unwrap();
 
     let mut board: Vec<RowPoss> = vec![];
     for i in 0..b.len() {

@@ -31,7 +31,7 @@ void free_board(struct Board b);
 void free_board_poss(struct BoardPossReturn b);
 size_t cal3BV(struct Board board);
 struct Board laymine(size_t row, size_t column, size_t MineNum, size_t X0, size_t Y0);
-struct BoardPossReturn cal_possibility_onboard(struct Board board_of_game, double mine_num);
+struct BoardPossReturn cal_probability_onboard(struct Board board_of_game, double mine_num);
 
 // 编译命令
 // cl /EHsc test.c

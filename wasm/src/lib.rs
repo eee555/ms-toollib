@@ -40,11 +40,11 @@ pub fn cal_op(js_board: JsValue) -> usize {
 }
 
 #[wasm_bindgen]
-pub fn cal_possibility_onboard(js_board: JsValue, mine_num: f64) -> JsValue {
+pub fn cal_probability_onboard(js_board: JsValue, mine_num: f64) -> JsValue {
     let mut game_board = js_value_to_vec_vec(js_board);
     let _ = ms::mark_board(&mut game_board);
     let array = js_sys::Array::new();
-    match ms::cal_possibility_onboard(&game_board, mine_num) {
+    match ms::cal_probability_onboard(&game_board, mine_num) {
         Ok(t) => {
             array.push(&vec_vec_to_js_value(t.0));
             let mine_num_array = Array::new_with_length(3);

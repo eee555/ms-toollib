@@ -16,7 +16,7 @@ const b = [[1, 10, 10, 10, 10, 10, 10, 10, 10],
 [10, 10, 10, 10, 10, 10, 10, 10, 10],
 [10, 10, 10, 10, 10, 10, 10, 10, 10],
 [10, 10, 10, 10, 10, 10, 10, 10, 10]]
-let poss = ms.cal_possibility_onboard(JSON.stringify(b), 10);
+let poss = ms.cal_probability_onboard(JSON.stringify(b), 10);
 console.log(poss);
 
 const board = ms.laymine_solvable(16, 30, 99, 0, 0, 10000)

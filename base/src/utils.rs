@@ -4,7 +4,6 @@ use rand::seq::SliceRandom;
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::thread_rng;
 use std::cmp::{max, min};
-use std::ops::{Add, Div, Mul};
 use std::vec;
 // use std::convert::TryInto;
 #[cfg(feature = "js")]
@@ -13,6 +12,7 @@ use getrandom::getrandom;
 use crate::safe_board;
 use crate::safe_board::BoardSize;
 use crate::ENUM_LIMIT;
+use crate:: big_number::BigNumber;
 
 // 整个模块是最底层的一些小工具，如埋雷、局面分块、计算3BV等
 
@@ -645,94 +645,6 @@ pub fn refresh_board<T>(
                 }
             }
         }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct BigNumber {
-    // 科学计数法表示的大数字
-    // 必定大于等于1，a必定满足小于10大于等于1
-    pub a: f64,
-    pub b: i32,
-}
-
-impl Mul for &BigNumber {
-    type Output = BigNumber;
-    fn mul(self, other: &BigNumber) -> Self::Output {
-        let mut new_a = self.a * other.a;
-        let mut new_b = self.b + other.b;
-        if new_a >= 10.0 {
-            new_a = new_a / 10.0;
-            new_b += 1;
-        }
-        BigNumber { a: new_a, b: new_b }
-    }
-}
-
-impl Mul<f64> for &BigNumber {
-    type Output = BigNumber;
-    fn mul(self, other: f64) -> Self::Output {
-        if other == 0.0 {
-            return BigNumber { a: 0.0, b: 0 };
-        }
-        let mut new_a = self.a * other as f64;
-        let mut new_b = self.b;
-        while new_a >= 10.0 {
-            new_a /= 10.0;
-            new_b += 1;
-        }
-        while new_a < 1.0 {
-            new_a *= 10.0;
-            new_b -= 1;
-        }
-        BigNumber { a: new_a, b: new_b }
-    }
-}
-
-impl Add for &BigNumber {
-    type Output = BigNumber;
-    fn add(self, other: &BigNumber) -> Self::Output {
-        let (larger, smaller) = if self.b > other.b {
-            (self, other)
-        } else {
-            (other, self)
-        };
-        let diff = (larger.b - smaller.b) as u32;
-        let mut new_a = larger.a + smaller.a / (10.0f64.powi(diff as i32));
-        let mut new_b = larger.b;
-        while new_a >= 10.0 {
-            new_a /= 10.0;
-            new_b += 1;
-        }
-        BigNumber { a: new_a, b: new_b }
-    }
-}
-
-// BigNumber 与 BigNumber 相除
-impl Div for &BigNumber {
-    type Output = BigNumber;
-    fn div(self, other: &BigNumber) -> Self::Output {
-        if self.a == 0.0 {
-            return BigNumber { a: 0.0, b: 0 };
-        }
-        let new_a = self.a / other.a;
-        let new_b = self.b - other.b;
-        let mut result = BigNumber { a: new_a, b: new_b };
-        while result.a >= 10.0 {
-            result.a /= 10.0;
-            result.b += 1;
-        }
-        while result.a < 1.0 {
-            result.a *= 10.0;
-            result.b -= 1;
-        }
-        result
-    }
-}
-
-impl Into<f64> for BigNumber {
-    fn into(self) -> f64 {
-        self.a * 10.0_f64.powi(self.b)
     }
 }
 

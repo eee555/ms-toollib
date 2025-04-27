@@ -1,11 +1,13 @@
 use crate::utils::{
     c, cal_table_minenum_recursion, chunk_matrixes, combine, find_a_border_cell, laymine,
-    laymine_op, refresh_board, refresh_matrixs, refresh_matrixses, unsolvable_structure, BigNumber,
+    laymine_op, refresh_board, refresh_matrixs, refresh_matrixses, unsolvable_structure,
 };
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::utils::{cal_bbbv_exp, legalize_board};
 
 use crate::videos::{GameBoardState, MinesweeperBoard};
+
+use crate::big_number::BigNumber;
 
 #[cfg(feature = "js")]
 use crate::utils::JsShuffle;
@@ -333,29 +335,29 @@ pub fn cal_probability(
             let mut s_mn = minenum; // 未知区域中的雷数
             for j in 0..block_num {
                 if i != j {
-                    s_num = &s_num * table_minenum_s[j][1][s[j]] as f64;
+                    s_num *= table_minenum_s[j][1][s[j]] as f64;
                 }
                 s_mn -= table_minenum_s[j][0][s[j]];
             }
             let ps = unknow_minenum.iter().position(|x| *x == s_mn).unwrap();
-            s_num = &s_num * &unknow_mine_s_num[ps];
-            table_minenum_other[i][s[i]] = &table_minenum_other[i][s[i]] + &s_num;
+            s_num *= &unknow_mine_s_num[ps];
+            table_minenum_other[i][s[i]] += &s_num;
         }
         let mut s_num = BigNumber { a: 1.0, b: 0 };
         let mut s_mn = minenum; // 未知区域中的雷数
         for j in 0..block_num {
-            s_num = &s_num * table_minenum_s[j][1][s[j]] as f64;
+            s_num *= table_minenum_s[j][1][s[j]] as f64;
             s_mn -= table_minenum_s[j][0][s[j]];
         }
         let ps = unknow_minenum.iter().position(|x| *x == s_mn).unwrap();
-        table_minenum_other[block_num][ps] = &table_minenum_other[block_num][ps] + &s_num;
+        table_minenum_other[block_num][ps] += &s_num;
     }
     // 第四步，计算每段其他雷数情况表
     let mut tt = BigNumber { a: 0.0, b: 0 };
     for i in 0..unknow_mine_s_num.len() {
         let mut t = table_minenum_other[block_num][i].clone();
-        t = &t * &unknow_mine_s_num[i];
-        tt = &tt + &t;
+        t *= &unknow_mine_s_num[i];
+        tt += &t;
     }
     // 第五步，计算局面总情况数
 
@@ -366,8 +368,8 @@ pub fn cal_probability(
                 let mut s_cell = BigNumber { a: 0.0, b: 0 };
                 for s in 0..table_minenum_other[i].len() {
                     let mut o = table_minenum_other[i][s].clone();
-                    o = &o * table_cell_minenum_s[i][s][cells_id] as f64;
-                    s_cell = &s_cell + &o;
+                    o *= table_cell_minenum_s[i][s][cells_id] as f64;
+                    s_cell += &o;
                 }
                 let p_cell = (&s_cell / &tt).into();
                 let id = comb_relp_s[i][cells_id][cell_id];
@@ -379,9 +381,9 @@ pub fn cal_probability(
     let mut u_s = BigNumber { a: 0.0, b: 0 };
     for i in 0..unknow_minenum.len() {
         let mut u = table_minenum_other[block_num][i].clone();
-        u = &u * &unknow_mine_s_num[i];
-        u = &u * unknow_minenum[i] as f64;
-        u_s = &u_s + &u;
+        u *= &unknow_mine_s_num[i];
+        u *= unknow_minenum[i] as f64;
+        u_s += &u;
     }
     // 第七步，计算内部未知区域是雷的概率
     let temp: f64 = (&u_s / &tt).into();

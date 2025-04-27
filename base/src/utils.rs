@@ -4,6 +4,7 @@ use rand::seq::SliceRandom;
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::thread_rng;
 use std::cmp::{max, min};
+use std::ops::{Add, Div, Mul};
 use std::vec;
 // use std::convert::TryInto;
 #[cfg(feature = "js")]
@@ -385,7 +386,8 @@ pub fn refresh_matrixses(
         while !buffer.is_empty() {
             let t = buffer.pop().unwrap();
             a_matses.last_mut().unwrap().push(vec![]);
-            a_matses.last_mut()
+            a_matses
+                .last_mut()
                 .unwrap()
                 .last_mut()
                 .unwrap()
@@ -622,7 +624,9 @@ pub fn refresh_board<T>(
             board_of_game[i][j] = 0;
             for m in max(1, i) - 1..min(row, i + 2) {
                 for n in max(1, j) - 1..min(column, j + 2) {
-                    if (i != m || j != n) && (board_of_game[m][n] == 10 || board_of_game[m][n] == 12) {
+                    if (i != m || j != n)
+                        && (board_of_game[m][n] == 10 || board_of_game[m][n] == 12)
+                    {
                         clicked_poses.push((m, n));
                     }
                 }
@@ -652,77 +656,99 @@ pub struct BigNumber {
     pub b: i32,
 }
 
-impl BigNumber {
-    fn a_become_smaller_than(&mut self, thrd: f64) {
-        // 如果big_number大于thrd
-        // 把位数都放到指数上，使其满足a小于10大于等于1
-        if self.a < thrd {
-            return;
+impl Mul for &BigNumber {
+    type Output = BigNumber;
+    fn mul(self, other: &BigNumber) -> Self::Output {
+        let mut new_a = self.a * other.a;
+        let mut new_b = self.b + other.b;
+        if new_a >= 10.0 {
+            new_a = new_a / 10.0;
+            new_b += 1;
         }
-        while self.a >= 10.0 {
-            self.a /= 10.0;
-            self.b += 1;
-        }
-    }
-    pub fn mul_usize(&mut self, k: usize) {
-        // 与usize相乘
-        if k == 0 {
-            self.a = 0.0;
-            self.b = 1;
-        } else {
-            self.a *= k as f64;
-            self.a_become_smaller_than(10.0);
-        }
-    }
-    pub fn mul_big_number(&mut self, k: &BigNumber) {
-        // 与big_number相乘, big_number必须至少为1
-        self.a *= k.a;
-        self.b += k.b;
-        self.a_become_smaller_than(10.0);
-    }
-    pub fn add_big_number(&mut self, k: &BigNumber) {
-        let mut ka = k.a;
-        let mut kb = k.b;
-        while self.b > kb {
-            ka /= 10.0;
-            kb += 1;
-        }
-        while self.b < kb {
-            self.a /= 10.0;
-            self.b += 1;
-        }
-        self.a += ka;
-        self.a_become_smaller_than(10.0);
-    }
-    pub fn div_big_num(&mut self, k: &BigNumber) -> f64 {
-        // 计算大数相除
-        let mut ans = self.a / k.a;
-        while self.b < k.b {
-            ans /= 10.0;
-            self.b += 1;
-        }
-        while self.b > k.b {
-            ans *= 10.0;
-            self.b -= 1;
-        }
-        ans
+        BigNumber { a: new_a, b: new_b }
     }
 }
 
-pub fn c(n: usize, k: usize) -> BigNumber {
-    // n不超过1e10
-    if n < k + k {
-        return c(n, n - k);
-    };
-    let maximum_limit: f64 = 1e208;
-    let mut cc = BigNumber { a: 1.0, b: 0 };
-    for i in 0..k {
-        cc.a *= (n - i) as f64;
-        cc.a /= (i + 1) as f64;
-        cc.a_become_smaller_than(maximum_limit);
+impl Mul<f64> for &BigNumber {
+    type Output = BigNumber;
+    fn mul(self, other: f64) -> Self::Output {
+        if other == 0.0 {
+            return BigNumber { a: 0.0, b: 0 };
+        }
+        let mut new_a = self.a * other as f64;
+        let mut new_b = self.b;
+        while new_a >= 10.0 {
+            new_a /= 10.0;
+            new_b += 1;
+        }
+        while new_a < 1.0 {
+            new_a *= 10.0;
+            new_b -= 1;
+        }
+        BigNumber { a: new_a, b: new_b }
     }
-    cc.a_become_smaller_than(10.0);
-    cc
+}
+
+impl Add for &BigNumber {
+    type Output = BigNumber;
+    fn add(self, other: &BigNumber) -> Self::Output {
+        let (larger, smaller) = if self.b > other.b {
+            (self, other)
+        } else {
+            (other, self)
+        };
+        let diff = (larger.b - smaller.b) as u32;
+        let mut new_a = larger.a + smaller.a / (10.0f64.powi(diff as i32));
+        let mut new_b = larger.b;
+        while new_a >= 10.0 {
+            new_a /= 10.0;
+            new_b += 1;
+        }
+        BigNumber { a: new_a, b: new_b }
+    }
+}
+
+// BigNumber 与 BigNumber 相除
+impl Div for &BigNumber {
+    type Output = BigNumber;
+    fn div(self, other: &BigNumber) -> Self::Output {
+        if self.a == 0.0 {
+            return BigNumber { a: 0.0, b: 0 };
+        }
+        let new_a = self.a / other.a;
+        let new_b = self.b - other.b;
+        let mut result = BigNumber { a: new_a, b: new_b };
+        while result.a >= 10.0 {
+            result.a /= 10.0;
+            result.b += 1;
+        }
+        while result.a < 1.0 {
+            result.a *= 10.0;
+            result.b -= 1;
+        }
+        result
+    }
+}
+
+impl Into<f64> for BigNumber {
+    fn into(self) -> f64 {
+        self.a * 10.0_f64.powi(self.b)
+    }
+}
+
+// 计算组合数 C(n, k)
+pub fn c(n: usize, k: usize) -> BigNumber {
+    if k > n {
+        return BigNumber { a: 0.0, b: 0 };
+    }
+    if k > n - k {
+        return c(n, n - k);
+    }
+    let mut result = BigNumber { a: 1.0, b: 0 };
+    for i in 0..k {
+        result = &result * ((n - i) as f64 / (i + 1) as f64);
+    }
+    result
 }
 
 pub fn c_query<T, U>(n: T, k: U) -> usize
@@ -785,12 +811,8 @@ pub fn combine(
     (matrix_a_squeeze, matrixx_squeeze, pair_cells)
 }
 
-
 /// 枚举法求解矩阵，返回所有的解
-pub fn cal_all_solution(
-    matrix_a: &Vec<Vec<i32>>,
-    matrixb: &Vec<i32>,
-) -> Vec<Vec<u8>> {
+pub fn cal_all_solution(matrix_a: &Vec<Vec<i32>>, matrixb: &Vec<i32>) -> Vec<Vec<u8>> {
     let column = matrix_a[0].len();
     let row = matrix_a.len();
     let mut enum_comb_table: Vec<Vec<u8>> = vec![vec![0; column]];
@@ -1870,4 +1892,6 @@ pub fn cal_board_numbers(board: &mut Vec<Vec<i32>>) {
         }
     }
 }
+
+
 

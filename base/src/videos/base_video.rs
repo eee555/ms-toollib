@@ -1550,7 +1550,7 @@ impl<T> BaseVideo<T> {
         println!();
         for i in 0..n {
             let v = self.raw_data[i];
-            print!("{:?}, ", v);
+            print!("{:b}, ", v);
         }
     }
 }
@@ -2704,6 +2704,7 @@ impl<T> BaseVideo<T> {
     }
 
     /// 按evf v4标准，编码出原始二进制数据
+    /// v4开始，判断nf的标准发生了变化！
     pub fn generate_evf_v4_raw_data(&mut self)
     where
         T: std::ops::Index<usize> + BoardSize,

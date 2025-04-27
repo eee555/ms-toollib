@@ -244,8 +244,8 @@ fn cal_probability_onboard_3_works() {
     let (board_poss, [mine_min, mine_num, mine_max]) =
         cal_probability_onboard(&game_board, 10.0).unwrap();
     assert_eq!(board_poss[0][3], 0.5444444444444445);
-    assert_eq!(board_poss[1][0], 0.08888888888888888);
-    assert_eq!(board_poss[1][1], 0.9111111111111112);
+    assert_eq!(board_poss[1][0], 0.0888888888888889);
+    assert_eq!(board_poss[1][1], 0.9111111111111113);
     assert_eq!(board_poss[1][2], 0.0);
     assert_eq!(board_poss[1][3], 0.5444444444444445);
     assert_eq!(mine_min, 2);

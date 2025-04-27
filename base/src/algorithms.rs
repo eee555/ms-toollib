@@ -280,10 +280,7 @@ pub fn cal_probability(
     }
     let minenum = if minenum < 1.0 {
         let mn = ((board_of_game.len() * board_of_game[0].len()) as f64 * minenum) as usize;
-        min(
-            max(mn - is_minenum, min_minenum),
-            max_minenum + inside_cell,
-        )
+        min(max(mn - is_minenum, min_minenum), max_minenum + inside_cell)
     } else {
         let mm = (minenum as usize).overflowing_sub(is_minenum);
         match mm.1 {
@@ -336,29 +333,29 @@ pub fn cal_probability(
             let mut s_mn = minenum; // 未知区域中的雷数
             for j in 0..block_num {
                 if i != j {
-                    s_num.mul_usize(table_minenum_s[j][1][s[j]]);
+                    s_num = &s_num * table_minenum_s[j][1][s[j]] as f64;
                 }
                 s_mn -= table_minenum_s[j][0][s[j]];
             }
             let ps = unknow_minenum.iter().position(|x| *x == s_mn).unwrap();
-            s_num.mul_big_number(&unknow_mine_s_num[ps]);
-            table_minenum_other[i][s[i]].add_big_number(&s_num);
+            s_num = &s_num * &unknow_mine_s_num[ps];
+            table_minenum_other[i][s[i]] = &table_minenum_other[i][s[i]] + &s_num;
         }
         let mut s_num = BigNumber { a: 1.0, b: 0 };
         let mut s_mn = minenum; // 未知区域中的雷数
         for j in 0..block_num {
-            s_num.mul_usize(table_minenum_s[j][1][s[j]]);
+            s_num = &s_num * table_minenum_s[j][1][s[j]] as f64;
             s_mn -= table_minenum_s[j][0][s[j]];
         }
         let ps = unknow_minenum.iter().position(|x| *x == s_mn).unwrap();
-        table_minenum_other[block_num][ps].add_big_number(&s_num);
+        table_minenum_other[block_num][ps] = &table_minenum_other[block_num][ps] + &s_num;
     }
     // 第四步，计算每段其他雷数情况表
     let mut tt = BigNumber { a: 0.0, b: 0 };
     for i in 0..unknow_mine_s_num.len() {
         let mut t = table_minenum_other[block_num][i].clone();
-        t.mul_big_number(&unknow_mine_s_num[i]);
-        tt.add_big_number(&t);
+        t = &t * &unknow_mine_s_num[i];
+        tt = &tt + &t;
     }
     // 第五步，计算局面总情况数
 
@@ -369,10 +366,10 @@ pub fn cal_probability(
                 let mut s_cell = BigNumber { a: 0.0, b: 0 };
                 for s in 0..table_minenum_other[i].len() {
                     let mut o = table_minenum_other[i][s].clone();
-                    o.mul_usize(table_cell_minenum_s[i][s][cells_id]);
-                    s_cell.add_big_number(&o);
+                    o = &o * table_cell_minenum_s[i][s][cells_id] as f64;
+                    s_cell = &s_cell + &o;
                 }
-                let p_cell = s_cell.div_big_num(&tt);
+                let p_cell = (&s_cell / &tt).into();
                 let id = comb_relp_s[i][cells_id][cell_id];
                 p.push((matrix_x_s[i][id], p_cell));
             }
@@ -382,12 +379,13 @@ pub fn cal_probability(
     let mut u_s = BigNumber { a: 0.0, b: 0 };
     for i in 0..unknow_minenum.len() {
         let mut u = table_minenum_other[block_num][i].clone();
-        u.mul_big_number(&unknow_mine_s_num[i]);
-        u.mul_usize(unknow_minenum[i]);
-        u_s.add_big_number(&u);
+        u = &u * &unknow_mine_s_num[i];
+        u = &u * unknow_minenum[i] as f64;
+        u_s = &u_s + &u;
     }
     // 第七步，计算内部未知区域是雷的概率
-    let p_unknow = u_s.div_big_num(&tt) / inside_cell as f64;
+    let temp: f64 = (&u_s / &tt).into();
+    let p_unknow: f64 = temp / (inside_cell as f64);
 
     Ok((
         p,
@@ -473,7 +471,6 @@ pub fn cal_probability_onboard(
     Ok((p, pp.2))
 }
 
-
 /// 计算开空概率算法。  
 /// - 输入：局面、总雷数、位置（可以同时输入多个）。  
 /// - 返回：坐标处开空的概率。  
@@ -545,8 +542,7 @@ pub fn cal_probability_cells_not_mine(
         } else if game_board[x][y] == 11 {
             return 0.0;
         } else {
-            let (board_poss, _) =
-                cal_probability_onboard(&game_board_modified, minenum).unwrap();
+            let (board_poss, _) = cal_probability_onboard(&game_board_modified, minenum).unwrap();
             poss *= 1.0 - board_poss[x][y];
             game_board_modified[x][y] = 12;
         }

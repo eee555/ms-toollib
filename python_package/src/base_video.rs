@@ -94,7 +94,7 @@ impl PyKeyDynamicParams {
     }
 }
 
-#[pyclass(name = "VideoActionStateRecorder")]
+#[pyclass(name = "VideoActionStateRecorder", unsendable)]
 pub struct PyVideoActionStateRecorder {
     pub core: VideoActionStateRecorder,
 }
@@ -122,12 +122,14 @@ impl PyVideoActionStateRecorder {
         Ok(self.core.useful_level)
     }
     #[getter]
-    fn get_prior_game_board_id(&self) -> PyResult<usize> {
-        Ok(self.core.prior_game_board_id)
+    fn get_prior_game_board(&self) -> PyResult<PyGameBoard> {
+        let t = self.core.prior_game_board.as_ref().unwrap().borrow();
+        Ok(PyGameBoard { core: t.clone() })
     }
     #[getter]
-    fn get_next_game_board_id(&self) -> PyResult<usize> {
-        Ok(self.core.next_game_board_id)
+    fn get_next_game_board(&self) -> PyResult<PyGameBoard> {
+        let t = self.core.next_game_board.as_ref().unwrap().borrow();
+        Ok(PyGameBoard { core: t.clone() })
     }
     #[getter]
     fn get_comments(&self) -> PyResult<String> {
@@ -173,7 +175,7 @@ impl PyVideoActionStateRecorder {
 // }
 
 #[pyclass]
-#[pyo3(name = "BaseVideo", subclass)]
+#[pyo3(name = "BaseVideo", subclass, unsendable)]
 pub struct PyBaseVideo {
     pub core: BaseVideo<SafeBoard>,
 }
@@ -471,55 +473,14 @@ impl PyBaseVideo {
             .map(|x| PyVideoActionStateRecorder { core: x.clone() })
             .collect())
     }
-    #[getter]
-    fn get_game_board_stream(&self) -> PyResult<Vec<PyGameBoard>> {
-        Ok(self
-            .core
-            .game_board_stream
-            .iter()
-            .map(|x| PyGameBoard { core: x.clone() })
-            .collect())
-    }
-    // pub fn events_time(&self, index: usize) -> PyResult<f64> {
-    //     Ok(self.core.video_action_state_recorder[index].time)
-    // }
-    // pub fn events_mouse(&self, index: usize) -> PyResult<String> {
-    //     Ok(self.core.video_action_state_recorder[index].mouse.clone())
-    // }
-    // pub fn events_x(&self, index: usize) -> PyResult<u16> {
-    //     Ok(self.core.video_action_state_recorder[index].x)
-    // }
-    // pub fn events_y(&self, index: usize) -> PyResult<u16> {
-    //     Ok(self.core.video_action_state_recorder[index].y)
-    // }
-    // pub fn events_useful_level(&self, index: usize) -> PyResult<u8> {
-    //     Ok(self.core.video_action_state_recorder[index].useful_level)
-    // }
-    // pub fn events_prior_game_board(&self, index: usize) -> PyResult<PyGameBoard> {
-    //     let mut t = PyGameBoard::new(self.core.mine_num);
-    //     t.set_core(
-    //         self.core.game_board_stream
-    //             [self.core.video_action_state_recorder[index].prior_game_board_id]
-    //             .clone(),
-    //     );
-    //     Ok(t)
-    // }
-    // pub fn events_comments(&self, index: usize) -> PyResult<String> {
-    //     Ok(self.core.video_action_state_recorder[index]
-    //         .comments
-    //         .clone())
-    // }
-    // pub fn events_mouse_state(&self, index: usize) -> PyResult<usize> {
-    //     match self.core.video_action_state_recorder[index].mouse_state {
-    //         MouseState::UpUp => Ok(1),
-    //         MouseState::UpDown => Ok(2),
-    //         MouseState::UpDownNotFlag => Ok(3),
-    //         MouseState::DownUp => Ok(4),
-    //         MouseState::Chording => Ok(5),
-    //         MouseState::ChordingNotFlag => Ok(6),
-    //         MouseState::DownUpAfterChording => Ok(7),
-    //         MouseState::Undefined => Ok(8),
-    //     }
+    // #[getter]
+    // fn get_game_board_stream(&self) -> PyResult<Vec<PyGameBoard>> {
+    //     Ok(self
+    //         .core
+    //         .game_board_stream
+    //         .iter()
+    //         .map(|x| PyGameBoard { core: x.clone() })
+    //         .collect())
     // }
     #[getter]
     pub fn get_current_event_id(&self) -> PyResult<usize> {

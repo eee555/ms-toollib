@@ -7,6 +7,8 @@ use pyo3::wrap_pyfunction;
 
 // 发布pypi：打tag，工作流直接发布
 
+// 开发文档：https://pyo3.rs/latest/
+
 use ms_toollib_original::*;
 mod board;
 pub use board::{PyMinesweeperBoard, PySafeMinesweeperBoard};

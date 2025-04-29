@@ -7,7 +7,7 @@ use pyo3::prelude::*;
 // 定义宏，生成所有类型录像的子类
 macro_rules! generate_video {
     ($name:ident) => {
-        #[pyclass(subclass)]
+        #[pyclass(subclass, unsendable)]
         pub struct $name {
             pub core: ms_toollib_original::$name,
         }
@@ -299,16 +299,16 @@ macro_rules! generate_video {
                     .map(|x| PyVideoActionStateRecorder { core: x.clone() })
                     .collect())
             }
-            #[getter]
-            fn get_game_board_stream(&self) -> PyResult<Vec<PyGameBoard>> {
-                Ok(self
-                    .core
-                    .data
-                    .game_board_stream
-                    .iter()
-                    .map(|x| PyGameBoard { core: x.clone() })
-                    .collect())
-            }
+            // #[getter]
+            // fn get_game_board_stream(&self) -> PyResult<Vec<PyGameBoard>> {
+            //     Ok(self
+            //         .core
+            //         .data
+            //         .game_board_stream
+            //         .iter()
+            //         .map(|x| PyGameBoard { core: x.clone() })
+            //         .collect())
+            // }
             #[getter]
             pub fn get_current_event_id(&self) -> PyResult<usize> {
                 Ok(self.core.data.current_event_id)

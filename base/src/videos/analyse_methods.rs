@@ -25,8 +25,11 @@ pub fn analyse_high_risk_guess(video: &mut BaseVideo<Vec<Vec<i32>>>) {
         x = (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16) as usize;
         y = (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16) as usize;
         if video.video_action_state_recorder[ide].useful_level >= 2 {
-            let p = video.game_board_stream
-                [video.video_action_state_recorder[ide].prior_game_board_id]
+            let p = video.video_action_state_recorder[ide]
+                .prior_game_board
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
                 .get_poss()[x][y];
             if p >= 0.51 {
                 video.video_action_state_recorder[ide].comments = format!(
@@ -49,11 +52,18 @@ pub fn analyse_jump_judge(video: &mut BaseVideo<Vec<Vec<i32>>>) {
         if video.video_action_state_recorder[ide].useful_level >= 2
             && video.video_action_state_recorder[ide].mouse == "lr"
         {
-            if !video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
+            if !video.video_action_state_recorder[ide]
+                .prior_game_board
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
                 .get_basic_not_mine()
                 .contains(&(x, y))
-                && video.game_board_stream
-                    [video.video_action_state_recorder[ide].prior_game_board_id]
+                && video.video_action_state_recorder[ide]
+                    .prior_game_board
+                    .as_ref()
+                    .unwrap()
+                    .borrow_mut()
                     .get_enum_not_mine()
                     .contains(&(x, y))
             {
@@ -66,11 +76,18 @@ pub fn analyse_jump_judge(video: &mut BaseVideo<Vec<Vec<i32>>>) {
         } else if video.video_action_state_recorder[ide].useful_level == 1
             && video.video_action_state_recorder[ide].mouse == "rc"
         {
-            if !video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
+            if !video.video_action_state_recorder[ide]
+                .prior_game_board
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
                 .get_basic_is_mine()
                 .contains(&(x, y))
-                && video.game_board_stream
-                    [video.video_action_state_recorder[ide].prior_game_board_id]
+                && video.video_action_state_recorder[ide]
+                    .prior_game_board
+                    .as_ref()
+                    .unwrap()
+                    .borrow_mut()
                     .get_enum_is_mine()
                     .contains(&(x, y))
             {
@@ -95,24 +112,30 @@ pub fn analyse_needless_guess(video: &mut BaseVideo<Vec<Vec<i32>>>) {
             x = (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16) as usize;
             y = (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16) as usize;
 
-            if video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
+            if video.video_action_state_recorder[ide]
+                .prior_game_board
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
                 .get_poss()[x][y]
                 > 0.0
-            // && !video.game_board_stream
-            //     [video.video_action_state_recorder[ide].prior_game_board_id]
-            //     .get_basic_not_mine()
-            //     .contains(&(x, y))
-            // && !video.game_board_stream
-            //     [video.video_action_state_recorder[ide].prior_game_board_id]
-            //     .get_enum_not_mine()
-            //     .contains(&(x, y))
             {
-                let game_board = &mut video.game_board_stream
-                    [video.video_action_state_recorder[ide].prior_game_board_id];
                 for m in max(2, x) - 2..min(video.height, x + 3) {
                     for n in max(2, y) - 2..min(video.width, y + 3) {
-                        if game_board.get_basic_not_mine().contains(&(m, n))
-                            || game_board.get_enum_not_mine().contains(&(m, n))
+                        if video.video_action_state_recorder[ide]
+                            .prior_game_board
+                            .as_ref()
+                            .unwrap()
+                            .borrow_mut()
+                            .get_basic_not_mine()
+                            .contains(&(m, n))
+                            || video.video_action_state_recorder[ide]
+                                .prior_game_board
+                                .as_ref()
+                                .unwrap()
+                                .borrow_mut()
+                                .get_enum_not_mine()
+                                .contains(&(m, n))
                         {
                             video.video_action_state_recorder[ide].comments = format!(
                                 "{}{}",
@@ -219,16 +242,22 @@ pub fn analyse_vision_transfer(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                 >= 6.0
             {
                 let mut flag = false;
-                for &(xxx, yyy) in video.game_board_stream
-                    [video.video_action_state_recorder[ide].prior_game_board_id]
+                for &(xxx, yyy) in video.video_action_state_recorder[ide]
+                    .prior_game_board
+                    .as_ref()
+                    .unwrap()
+                    .borrow_mut()
                     .get_basic_not_mine()
                 {
                     if xxx <= l_x + 3 && xxx + 3 >= l_x && yyy <= l_y + 3 && yyy + 3 >= l_y {
                         flag = true;
                     }
                 }
-                for &(xxx, yyy) in video.game_board_stream
-                    [video.video_action_state_recorder[ide].prior_game_board_id]
+                for &(xxx, yyy) in video.video_action_state_recorder[ide]
+                    .prior_game_board
+                    .as_ref()
+                    .unwrap()
+                    .borrow_mut()
                     .get_enum_not_mine()
                 {
                     if xxx <= l_x + 3 && xxx + 3 >= l_x && yyy <= l_y + 3 && yyy + 3 >= l_y {
@@ -273,7 +302,13 @@ pub fn analyse_survive_poss(video: &mut BaseVideo<Vec<Vec<i32>>>) {
             let x = (vas.y / video.cell_pixel_size as u16) as usize;
             let y = (vas.x / video.cell_pixel_size as u16) as usize;
             // 安全的概率
-            let p = 1.0 - video.game_board_stream[vas.prior_game_board_id].get_poss()[x][y];
+            let p = 1.0
+                - vas
+                    .prior_game_board
+                    .as_ref()
+                    .unwrap()
+                    .borrow_mut()
+                    .get_poss()[x][y];
             if p <= 0.0 || pluck == f64::MAX {
                 pluck = f64::MAX;
             } else if p < 1.0 {
@@ -283,7 +318,11 @@ pub fn analyse_survive_poss(video: &mut BaseVideo<Vec<Vec<i32>>>) {
             // 有效的双键
             let x = (vas.y / video.cell_pixel_size as u16) as usize;
             let y = (vas.x / video.cell_pixel_size as u16) as usize;
-            let mut game_board_clone = video.game_board_stream[vas.prior_game_board_id]
+            let mut game_board_clone = vas
+                .prior_game_board
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
                 .game_board
                 .clone();
             let _ = mark_board(&mut game_board_clone, true).unwrap();
@@ -349,7 +388,11 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo<Vec<Vec<i32>>>) {
         // }
 
         if video.video_action_state_recorder[ide].mouse == "rc"
-            && video.game_board_stream[video.video_action_state_recorder[ide].prior_game_board_id]
+            && video.video_action_state_recorder[ide]
+                .prior_game_board
+                .as_ref()
+                .unwrap()
+                .borrow()
                 .game_board[x][y]
                 == 10
             && video.video_action_state_recorder[ide].useful_level == 1
@@ -377,8 +420,11 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo<Vec<Vec<i32>>>) {
         } else if video.video_action_state_recorder[ide].useful_level == 3 {
             // 正确的双击
             if !is_good_chording(
-                &video.game_board_stream
-                    [video.video_action_state_recorder[ide].prior_game_board_id]
+                &video.video_action_state_recorder[ide]
+                    .prior_game_board
+                    .as_ref()
+                    .unwrap()
+                    .borrow()
                     .game_board,
                 (x, y),
             ) {

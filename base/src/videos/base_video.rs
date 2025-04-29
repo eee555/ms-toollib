@@ -1,5 +1,4 @@
 // 录像相关的类，局面在board
-
 use crate::board::GameBoard;
 use crate::cal_cell_nums;
 use crate::miscellaneous::s_to_ms;
@@ -13,8 +12,10 @@ use crate::videos::analyse_methods::{
     analyse_super_fl_local, analyse_survive_poss, analyse_vision_transfer,
 };
 use core::panic;
+use std::cell::RefCell;
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::fs;
+use std::rc::Rc;
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
@@ -72,10 +73,10 @@ pub struct VideoActionStateRecorder {
     /// 4代表踩雷并失败；
     /// 和ce没有关系，仅用于控制计算
     pub useful_level: u8,
-    /// 操作前的局面（先验局面）的索引。
-    pub prior_game_board_id: usize,
-    /// 操作后的局面（后验的局面）的索引。
-    pub next_game_board_id: usize,
+    /// 操作前的局面（先验局面）的计数引用。
+    pub prior_game_board: Option<Rc<RefCell<GameBoard>>>,
+    /// 操作后的局面（后验的局面）的计数引用。
+    pub next_game_board: Option<Rc<RefCell<GameBoard>>>,
     pub comments: String,
     /// 该操作完成以后的鼠标状态。和录像高亮有关。即使是鼠标move也会记录。
     pub mouse_state: MouseState,
@@ -94,8 +95,8 @@ impl Default for VideoActionStateRecorder {
             x: 0,
             y: 0,
             useful_level: 0,
-            prior_game_board_id: 0,
-            next_game_board_id: 0,
+            prior_game_board: None,
+            next_game_board: None,
             comments: "".to_string(),
             mouse_state: MouseState::Undefined,
             key_dynamic_params: KeyDynamicParams::default(),
@@ -402,7 +403,7 @@ pub struct BaseVideo<T> {
     /// 假如不改局面，游戏时用不到。假如改局面，最后需要重新推演一遍。
     pub video_action_state_recorder: Vec<VideoActionStateRecorder>,
     /// 游戏局面流，从一开始没有打开任何格子（包含玩家游戏前的标雷过程），到最后打开了所有
-    pub game_board_stream: Vec<GameBoard>,
+    game_board_stream: Vec<Rc<RefCell<GameBoard>>>,
     /// 录像开始的时间（区别于游戏开始的时间），由计时器控制，仅游戏时用
     #[cfg(any(feature = "py", feature = "rs"))]
     pub video_start_instant: Instant,
@@ -612,11 +613,12 @@ impl BaseVideo<Vec<Vec<i32>>> {
         let mut b = MinesweeperBoard::<Vec<Vec<i32>>>::new(self.board.clone());
         let mut first_game_board = GameBoard::new(self.mine_num);
         first_game_board.set_game_board(&vec![vec![10; self.width]; self.height]);
-        self.game_board_stream.push(first_game_board);
+        self.game_board_stream
+            .push(Rc::new(RefCell::new(first_game_board)));
         for ide in 0..self.video_action_state_recorder.len() {
             // 控制svi的生命周期
             let svi = &mut self.video_action_state_recorder[ide];
-            svi.prior_game_board_id = self.game_board_stream.len() - 1;
+            svi.prior_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
             if svi.mouse != "mv" {
                 let old_state = b.game_board_state;
                 // println!(">>>  {:?}, {:?}", svi.mouse, b.mouse_state);
@@ -634,14 +636,14 @@ impl BaseVideo<Vec<Vec<i32>>> {
                 if u_level >= 1 {
                     let mut g_b = GameBoard::new(self.mine_num);
                     g_b.set_game_board(&b.game_board);
-                    self.game_board_stream.push(g_b);
+                    self.game_board_stream.push(Rc::new(RefCell::new(g_b)));
                     if old_state != GameBoardState::Playing {
                         self.delta_time = svi.time;
                     }
                     // println!("{:?}, {:?}", self.game_board_stream.len(), svi.mouse);
                 }
             }
-            svi.next_game_board_id = self.game_board_stream.len() - 1;
+            svi.next_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
             svi.mouse_state = b.mouse_state.clone();
             svi.key_dynamic_params.left = b.left;
             svi.key_dynamic_params.right = b.right;
@@ -1372,21 +1374,21 @@ impl<T> BaseVideo<T> {
             // 维护第一个先验局面（和path无关）
             let mut g_b = GameBoard::new(self.mine_num);
             g_b.set_game_board(&vec![vec![10; self.width]; self.height]);
-            self.game_board_stream.push(g_b);
+            self.game_board_stream.push(Rc::new(RefCell::new(g_b)));
             path = 0.0;
         }
         // self.current_time = time;
-        let prior_game_board_id;
-        let next_game_board_id;
+        let prior_game_board;
+        let next_game_board;
         if a >= 1 {
+            prior_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
             let mut g_b = GameBoard::new(self.mine_num);
             g_b.set_game_board(&self.minesweeper_board.game_board);
-            self.game_board_stream.push(g_b);
-            next_game_board_id = self.game_board_stream.len() - 1;
-            prior_game_board_id = self.game_board_stream.len() - 2;
+            self.game_board_stream.push(Rc::new(RefCell::new(g_b)));
+            next_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
         } else {
-            next_game_board_id = self.game_board_stream.len() - 1;
-            prior_game_board_id = self.game_board_stream.len() - 1;
+            next_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
+            prior_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
         }
         self.video_action_state_recorder
             .push(VideoActionStateRecorder {
@@ -1394,8 +1396,8 @@ impl<T> BaseVideo<T> {
                 mouse: e.to_string(),
                 x: pos.1 as u16,
                 y: pos.0 as u16,
-                next_game_board_id,
-                prior_game_board_id,
+                next_game_board,
+                prior_game_board,
                 useful_level: a,
                 comments: "".to_string(),
                 mouse_state: self.minesweeper_board.mouse_state,
@@ -1569,8 +1571,11 @@ impl<T> BaseVideo<T> {
     /// 获取当前录像时刻的后验的游戏局面
     pub fn get_game_board(&self) -> Vec<Vec<i32>> {
         if self.game_board_state == GameBoardState::Display {
-            return self.game_board_stream[self.video_action_state_recorder[self.current_event_id]
-                .next_game_board_id as usize]
+            return self.video_action_state_recorder[self.current_event_id]
+                .next_game_board
+                .as_ref()
+                .unwrap()
+                .borrow()
                 .game_board
                 .clone();
         } else {
@@ -1589,12 +1594,13 @@ impl<T> BaseVideo<T> {
                 }
             } else {
                 // println!("{:?}, {:?}",self.current_event_id, self.video_action_state_recorder.len());
-                return self.game_board_stream[self.video_action_state_recorder
-                    [self.current_event_id]
-                    .next_game_board_id as usize]
+                return self.video_action_state_recorder[self.current_event_id]
+                    .next_game_board
+                    .as_ref()
+                    .unwrap()
+                    .borrow_mut()
                     .get_poss()
-                    .to_vec();
-                // return self.events[id].prior_game_board.get_poss().clone();
+                    .clone();
             }
         }
     }

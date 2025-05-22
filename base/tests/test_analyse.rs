@@ -143,8 +143,8 @@ fn avf_video_works() {
     assert_eq!(video.data.get_rtime().unwrap(), 49.25);
     assert_eq!(video.data.get_rtime_ms().unwrap(), 49250);
     assert!(video.data.is_completed);
-    assert_eq!(video.data.start_time, 1666124135660600u64);
-    assert_eq!(video.data.end_time, 1666124184886800u64);
+    assert_eq!(video.data.start_time, 1666124135600000u64);
+    assert_eq!(video.data.end_time, 1666124184860000u64);
     assert_eq!(video.data.get_stnb().unwrap(), 0.0);
     video.data.analyse_for_features(vec![
         "needless_guess",

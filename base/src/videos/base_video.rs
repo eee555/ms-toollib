@@ -428,9 +428,9 @@ pub struct BaseVideo<T> {
     pub uniqueness_identifier: String,
     /// 游戏起始时间和终止时间。单位为微秒的时间戳。
     /// 本工具箱对文件中的数据进行了加工，实际上文件中的原始信息如下：
-    /// 在阿比特中，‘16.10.2021.22.24.23.9906’，意味2021年10月16日，下午10点24分23秒90。
-    /// 其中"9906"这四位数字，只取中间两位（第2、3位）有效，第1、4位没有意义。
-    /// 也有可能是三位数字，那么就是第1、2位有效，第3位没有意义。
+    /// 在阿比特中，‘16.10.2021.22.24.23.9906’，意味2021年10月16日，下午10点24分23秒906。
+    /// 其中"9906"这四位数字，表示毫秒整除100、毫秒整除10（一或二位数）、毫秒对10取余。
+    /// 所以"9906"就是906毫秒；再例如"083"就是83毫秒。
     /// 在维也纳扫雷中，‘1382834716’，代表以秒为单位的时间戳
     pub start_time: u64,
     /// 单位为微秒的时间戳。维也纳扫雷中没有记录，而是计算得到。
@@ -1028,23 +1028,13 @@ impl BaseVideo<Vec<Vec<i32>>> {
             .unwrap()
             .parse::<u64>()
             .map_err(|_| ErrReadVideoReason::InvalidParams)?;
-        let sub_second_str = timestamp_parts.next().unwrap();
-        let sub_second;
-        if sub_second_str.len() == 3 {
-            sub_second = sub_second_str[..2]
-                .parse::<u64>()
-                .map_err(|_| ErrReadVideoReason::InvalidParams)?;
-        } else if sub_second_str.len() == 4 {
-            sub_second = sub_second_str[1..3]
-                .parse::<u64>()
-                .map_err(|_| ErrReadVideoReason::InvalidParams)?;
-        } else {
-            return Err(ErrReadVideoReason::InvalidParams);
-        }
+        let sub_second = timestamp_parts.next().unwrap()[1..]
+            .parse::<u64>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
 
         let days = self.days_since_epoch(year, month, day);
         let total_seconds = days * 24 * 60 * 60 + hour * 60 * 60 + minute * 60 + second;
-        let microseconds = total_seconds * 1_000_000 + sub_second * 10_000;
+        let microseconds = total_seconds * 1_000_000 + sub_second * 1_000;
 
         Ok(microseconds)
     }
@@ -1102,23 +1092,13 @@ impl BaseVideo<Vec<Vec<i32>>> {
             .unwrap()
             .parse::<u64>()
             .map_err(|_| ErrReadVideoReason::InvalidParams)?;
-        let sub_second_str = end_timestamp_parts.next().unwrap();
-        let sub_second;
-        if sub_second_str.len() == 3 {
-            sub_second = sub_second_str[..2]
-                .parse::<u64>()
-                .map_err(|_| ErrReadVideoReason::InvalidParams)?;
-        } else if sub_second_str.len() == 4 {
-            sub_second = sub_second_str[1..3]
-                .parse::<u64>()
-                .map_err(|_| ErrReadVideoReason::InvalidParams)?;
-        } else {
-            return Err(ErrReadVideoReason::InvalidParams);
-        }
+        let sub_second = end_timestamp_parts.next().unwrap()[1..]
+            .parse::<u64>()
+            .map_err(|_| ErrReadVideoReason::InvalidParams)?;
 
         let days = self.days_since_epoch(year, month, end_day);
         let total_seconds = days * 24 * 60 * 60 + hour * 60 * 60 + minute * 60 + second;
-        let microseconds = total_seconds * 1_000_000 + sub_second * 10_000;
+        let microseconds = total_seconds * 1_000_000 + sub_second * 1_000;
 
         Ok(microseconds)
     }

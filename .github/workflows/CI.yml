@@ -72,7 +72,7 @@ jobs:
             target: x86
           - runner: ubuntu-22.04
             target: aarch64
-          #- runner: ubuntu-22.04
+          #- runner: ubuntu-22.04 这玩意儿突然报错，不知道为什么，用到再说
           #  target: armv7
     steps:
       - uses: actions/checkout@v4

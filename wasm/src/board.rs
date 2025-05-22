@@ -351,12 +351,14 @@ impl VideoActionStateRecorder {
         self.core.useful_level
     }
     #[wasm_bindgen(getter = prior_game_board_id)]
-    pub fn get_prior_game_board_id(&self) -> usize {
-        self.core.prior_game_board_id
+    pub fn get_prior_game_board(&self) -> GameBoard {
+        let t = self.core.prior_game_board.as_ref().unwrap().borrow();
+        GameBoard { core: t.clone() }
     }
     #[wasm_bindgen(getter = next_game_board_id)]
-    pub fn get_next_game_board_id(&self) -> usize {
-        self.core.next_game_board_id
+    pub fn get_next_game_board(&self) -> GameBoard {
+        let t = self.core.next_game_board.as_ref().unwrap().borrow();
+        GameBoard { core: t.clone() }
     }
     #[wasm_bindgen(getter = comments)]
     pub fn get_comments(&self) -> String {
@@ -651,15 +653,15 @@ macro_rules! generate_video {
                     }
                     array.into()
                 }
-                #[wasm_bindgen(getter = game_board_stream)]
-                pub fn get_game_board_stream(&self) -> JsValue {
-                    let array = Array::new();
-                    for i in self.core.data.game_board_stream.clone(){
-                        let v = GameBoard { core: i };
-                        array.push(&JsValue::from(v));
-                    }
-                    array.into()
-                }
+                // #[wasm_bindgen(getter = game_board_stream)]
+                // pub fn get_game_board_stream(&self) -> JsValue {
+                //     let array = Array::new();
+                //     for i in self.core.data.game_board_stream.clone(){
+                //         let v = GameBoard { core: i };
+                //         array.push(&JsValue::from(v));
+                //     }
+                //     array.into()
+                // }
                 #[wasm_bindgen(getter = current_event_id)]
                 pub fn get_current_event_id(&self) -> usize {
                     self.core.data.current_event_id

@@ -32,7 +32,7 @@ features = ['console']
 optional  = true
 
 [dependencies.tract-onnx]
-version = "0.15.8"
+version = "0.21.13"
 optional  = true
 
 [dependencies]

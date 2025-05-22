@@ -1359,7 +1359,7 @@ fn obr_cell(
     let image: Tensor = Array::from_shape_vec((1, 3, 16, 16), (*cell_image).clone())
         .unwrap()
         .into();
-    let result = model.run(tvec!(image))?;
+    let result = model.run(tvec!(image.into()))?;
 
     let best = result[0]
         .to_array_view::<f32>()?

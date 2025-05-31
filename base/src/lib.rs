@@ -5,8 +5,8 @@
 //! 1. “游戏局面”
 //!    - 变量名为`game_board: Vec<Vec>`
 //!    - 类型
-//!      - Python：`list[list[int]]`
-//!      - Javascript、Typescript：`Array(Array())`
+//!      - Python：`List[List[int]]`
+//!      - Javascript、Typescript：`number[][]`
 //!      - C：`struct Board { struct Row *rows; size_t n_row; }; struct Row { int32_t *cells; size_t n_column; }`
 //!      - C++：`std::vector<int32_t>`
 //!    - 值的含义

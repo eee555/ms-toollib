@@ -40,24 +40,22 @@ for (e of v.events) {
 
 for (e of v.events) {
     if (e.useful_level >= 2) {
-        // 该事件发生前的游戏局面在game_board_stream中的id索引
-        const prior_game_board_id = e.prior_game_board_id
-        // 该事件发生后的游戏局面在game_board_stream中的id索引
-        const next_game_board_id = e.next_game_board_id
+        // 该事件发生前的游戏局面
+        const prior_game_board = e.prior_game_board
+        // 该事件发生后的游戏局面
+        const next_game_board = e.next_game_board
         // 内置的游戏局面类
-        const builtin_game_board = v.game_board_stream[prior_game_board_id]
-        // 内置的游戏局面类的列表类型的游戏局面
-        console.log(builtin_game_board.game_board)
+        console.log(next_game_board.game_board)
         // 内置的游戏局面类的每格是雷的概率
-        console.log(builtin_game_board.poss)
+        console.log(next_game_board.poss)
         // 用1或2个方程求解时，得出的所有非雷的位置
-        console.log(builtin_game_board.basic_not_mine)
+        console.log(next_game_board.basic_not_mine)
         // 用1或2个方程求解时，得出的所有是雷的位置
-        console.log(builtin_game_board.basic_is_mine)
+        console.log(next_game_board.basic_is_mine)
         // 用枚举法求解时，得出的所有非雷的位置，不包括basic_not_mine
-        console.log(builtin_game_board.enum_not_mine)
+        console.log(next_game_board.enum_not_mine)
         // 用枚举法求解时，得出的所有是雷的位置，不包括basic_is_mine
-        console.log(builtin_game_board.enum_is_mine)
+        console.log(next_game_board.enum_is_mine)
     }
 }
 

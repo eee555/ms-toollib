@@ -341,13 +341,13 @@ impl Default for VideoAnalyseParams {
 /// game.use_auto_replay = False
 /// game.is_fair = False
 /// game.is_official = False
-/// game.software = b"Demo"
+/// game.software = "Demo"
 /// game.mode = 0
-/// game.player_identifier = "程序".encode( "UTF-8" )
-/// game.race_identifier = b""
-/// game.uniqueness_identifier = b"contact us with QQ 2234208506"
-/// game.country = "中国".encode( "UTF-8" )
-/// game.device_uuid = b"2ds2ge6rg5165g1r32ererrrtgrefd6we54"
+/// game.player_identifier = "赵大锤"
+/// game.race_identifier = "G1234"
+/// game.uniqueness_identifier = "contact us with QQ 2234208506"
+/// game.country = "CN"
+/// game.device_uuid = "2ds2ge6rg5165g1r32ererrrtgrefd6we54"
 /// game.generate_evf_v3_raw_data()
 /// # 补上校验值
 /// checksum = b"0" * 32
@@ -360,9 +360,9 @@ pub struct BaseVideo<T> {
     pub software: String,
     /// 转码用的软件名，包括："元3.1.11"、"元3.2.0"等
     pub translate_software: String,
-    /// 宽度，等同于column
+    /// 宽度（格数），等同于column
     pub width: usize,
-    /// 高度，等同于row
+    /// 高度（格数），等同于row
     pub height: usize,
     /// 雷数
     pub mine_num: usize,
@@ -415,7 +415,7 @@ pub struct BaseVideo<T> {
     delta_time: f64,
     /// 当前时间，仅录像播放时用。有负数。
     pub current_time: f64,
-    /// 当前指针指向
+    /// 当前current_time对应的video_action_state_recorder中的索引
     pub current_event_id: usize,
     /// 仅转码录像使用，标识的可能的编码方式。
     /// 可能的值，'utf-8', 'utf-16', 'utf-16-be', 'utf-16-le', 'gbk', 'gb2312', 'big5', 'shift-jis', 'cp932', 'latin-1', 'ascii', 'iso-8859-1'等
@@ -435,7 +435,7 @@ pub struct BaseVideo<T> {
     pub start_time: u64,
     /// 游戏终止时间，单位为微秒的时间戳。维也纳扫雷中没有记录，而是计算得到。
     pub end_time: u64,
-    /// 国家。预留字段，暂时不能解析。
+    /// 国家。大写的两位国家代码，例如中国"CN"、美国"US"，未知"XX"
     pub country: String,
     /// 设备信息相关的uuid。例如在元扫雷中，长度为32。
     pub device_uuid: Vec<u8>,
@@ -921,7 +921,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
         let length = length.into();
         String::from_utf8(self.get_buffer(length)?).map_err(|_e| ErrReadVideoReason::Utf8Error)
     }
-    // 读取以end结尾的合法utf-8字符串
+    /// 读取以end结尾的合法utf-8字符串
     pub fn get_utf8_c_string(&mut self, end: char) -> Result<String, ErrReadVideoReason> {
         String::from_utf8(self.get_c_buffer(end)?).map_err(|_e| ErrReadVideoReason::Utf8Error)
     }
@@ -946,7 +946,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
         };
         Ok(String::from_utf8_lossy(&code).to_string())
     }
-    // 读取以end结尾的未知编码字符串，假如所有编码都失败，返回utf-8乱码
+    /// 读取以end结尾的未知编码字符串，假如所有编码都失败，返回utf-8乱码
     pub fn get_unknown_encoding_c_string(
         &mut self,
         end: char,
@@ -990,8 +990,8 @@ impl BaseVideo<Vec<Vec<i32>>> {
         total_days + day as u64 - 1
     }
 
-    /// 解析avf里的开始时间戳，返回时间戳，微秒。“6606”只取“60”
-    /// "18.10.2022.20:15:35:6606" -> 1666124135600000
+    /// 解析avf里的开始时间戳，返回时间戳，微秒。“6606”只取后三位“606”，三位数取后两位
+    /// "18.10.2022.20:15:35:6606" -> 1666124135606000
     pub fn parse_avf_start_timestamp(
         &mut self,
         start_timestamp: &str,
@@ -1040,7 +1040,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
     }
 
     // 解析avf里的结束时间戳，返回时间戳，微秒
-    // "18.20:16:24:8868", "18.10.2022.20:15:35:6606" -> 1666124184886800
+    // "18.10.2022.20:15:35:6606", "18.20:16:24:8868" -> 1666124184868000
     pub fn parse_avf_end_timestamp(
         &mut self,
         start_timestamp: &str,

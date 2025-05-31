@@ -350,12 +350,12 @@ impl VideoActionStateRecorder {
     pub fn get_useful_level(&self) -> u8 {
         self.core.useful_level
     }
-    #[wasm_bindgen(getter = prior_game_board_id)]
+    #[wasm_bindgen(getter = prior_game_board)]
     pub fn get_prior_game_board(&self) -> GameBoard {
         let t = self.core.prior_game_board.as_ref().unwrap().borrow();
         GameBoard { core: t.clone() }
     }
-    #[wasm_bindgen(getter = next_game_board_id)]
+    #[wasm_bindgen(getter = next_game_board)]
     pub fn get_next_game_board(&self) -> GameBoard {
         let t = self.core.next_game_board.as_ref().unwrap().borrow();
         GameBoard { core: t.clone() }

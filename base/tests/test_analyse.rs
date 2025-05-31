@@ -362,6 +362,8 @@ fn evf_video_works_v3() {
     println!("is_official: {:?}", video.data.is_official);
     println!("is_fair: {:?}", video.data.is_fair);
     println!("is_valid: {:?}", video.data.is_valid());
+    assert_eq!(video.data.start_time, 1723313188971031);
+    assert_eq!(video.data.end_time, 1723313192767449);
     video.data.set_current_time(0.001);
     assert_eq!(video.data.get_time(), 0.001);
     assert_eq!(video.data.get_stnb().unwrap(), 3437884.8929975377);

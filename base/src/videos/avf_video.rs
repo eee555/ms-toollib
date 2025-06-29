@@ -123,8 +123,6 @@ impl AvfVideo {
             Ok(_) => {}
             Err(_) => return Err(ErrReadVideoReason::FileIsEmpty),
         };
-        self.data.is_official = true;
-        self.data.is_fair = true;
         // 按源码，该四位全是随机数
         self.data.offset += 4;
         self.data.level = self.data.get_u8()?;

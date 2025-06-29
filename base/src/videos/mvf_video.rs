@@ -174,6 +174,9 @@ impl MvfVideo {
         self.data.static_params.bbbv = bbbv.into();
         let bbbv_solved = self.data.get_u16()?;
         self.data.is_completed = bbbv == bbbv_solved;
+        // 没有判断是否公正的方法，只能根据是否扫完
+        self.data.is_official = self.data.is_completed;
+        self.data.is_fair = self.data.is_completed;
 
         self.data.offset += 6; // Left clicks、Double clicks、Right clicks不读
 
@@ -346,8 +349,6 @@ impl MvfVideo {
     }
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
         self.data.can_analyse = true;
-        self.data.is_official = true;
-        self.data.is_fair = true;
         let mut c = self.data.get_u8()?;
         let d = self.data.get_u8()?;
         let _size: usize; // 动作总数量

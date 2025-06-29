@@ -370,7 +370,7 @@ pub struct BaseVideo<T> {
     /// 初始是false，踩雷的话，分析完还是false
     pub is_completed: bool,
     /// 是否正式: 软件证明这局是正式的，一定扫完，包括没有用软件筛选3BV、没有看概率、是标准模式、时间等所有数值没有溢出。  
-    /// 不一定包括是否满足排名网站对于3BV的额外限制。例如，没有人能证明avf录像是否正式。
+    /// 不一定包括是否满足排名网站对于3BV的额外限制。例如，。
     pub is_official: bool,
     /// 是否公平完成。软件证明这局是公平完成的，一定扫完，比如没有用软件筛选3BV、没有看概率、时间等所有数值没有溢出。  
     /// 公平完成和正式的区别是，只有标准游戏模式可以是正式的，而upk、无猜等模式不正式，但可以是公平完成的。  
@@ -692,6 +692,12 @@ impl BaseVideo<Vec<Vec<i32>>> {
         let rtime = self.game_dynamic_params.rtime;
         let bbbv = self.static_params.bbbv as f64;
         self.is_completed = b.game_board_state == GameBoardState::Win;
+        
+        // evf以外的录像没有判断是否公正的方法，只能根据是否扫完
+        // avf是唯一在parse解析阶段不能判定是否扫完的录像
+        self.is_official = self.is_completed;
+        self.is_fair = self.is_completed;
+
         self.nf = b.rce == 0;
         self.game_dynamic_params.left = b.left;
         self.game_dynamic_params.left_s = b.left as f64 / rtime;

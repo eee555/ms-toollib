@@ -76,8 +76,6 @@ impl NewSomeVideo2<Vec<u8>, &str> for RmvVideo {
 
 impl RmvVideo {
     pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
-        self.data.is_official = true;
-        self.data.is_fair = true;
         match self.data.get_char() {
             Ok('*') => {}
             Ok(_) => return Err(ErrReadVideoReason::FileIsNotRmv),
@@ -125,6 +123,10 @@ impl RmvVideo {
                 Err(_) => return Err(ErrReadVideoReason::InvalidParams),
             };
             self.data.is_completed = self.data.static_params.bbbv > 0;
+            // 没有判断是否公正的方法，只能根据是否扫完
+            self.data.is_official = self.data.is_completed;
+            self.data.is_fair = self.data.is_completed;
+
             self.data.offset += 16;
 
             // 2286-11-21以后，会遇到时间戳溢出

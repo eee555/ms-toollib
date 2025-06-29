@@ -7,7 +7,7 @@ license = "MIT"
 readme = "readme.md"
 keywords = ["minesweeper", "probability", "solver", "laymine", "3BV"]
 edition = "2021"
-authors = ["Wang Jianing <wangjianing@88.com>"]
+authors = ["Wang Jianing <wangjn@88.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

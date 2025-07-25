@@ -32,11 +32,22 @@ C++(仅Linux): 1.0.0
 Julia: 同python
 
 
+### 核心功能
+
+- **埋雷**：无猜埋雷，包括筛选法埋雷（雷密度极高时无法成功、成功时保证无猜）、调整法埋雷（百分百成功、成功时概率有猜）。
+
+- **局面状态机**：接受用户的鼠标点击为输入，自动计时、推衍局面变化、计算指标数据。
+
+- **光学局面识别**：输入局面的彩色图片数据，智能识别局面。
+
+- **概率计算**：输入局面、总雷数，计算各位置是雷的概率。
+
+- **录像处理**：avf、evf、mvf、rmv等扫雷录像格式的读取；将局面状态机中的数据保存或另存为evf录像。
+
 ### 如何调试源码
 
 在编译之前，请确保自己拥有：
 
-*   c++开发工具(windows下尽量Visual Studio，即MSVC，依据操作系统、博客教程或安装rust环境过程中的提示)
 *   Rust工具链(rustup -V能够打印版本号、cargo -V能够打印版本号)
 *   Visual Studio Code及对应插件(例如rust-analyzer)
 *   会用Powershell或者其它命令行工具的能力
@@ -54,3 +65,18 @@ Julia: 同python
 *   编辑器打开需要执行的测试程序文件，例如tests/test_analyse.rs
 
 *   找到您想要执行的测试程序，例如minesweeper_board_works这个函数，用鼠标点击#[test]下方的灰色的Run Test按钮，即可打印执行结果！
+
+
+### 其他示例项目
+
+- [https://github.com/eee555/Metasweeper](https://github.com/eee555/Metasweeper)：元扫雷，win10/11平台的开源专业扫雷。具有全部6种无猜扫雷模式+标准+win7，演示了本仓库的埋雷、局面状态机、光学局面识别、概率计算、录像保存播放等功能。
+
+- [https://github.com/eee555/saolei_website](https://github.com/eee555/saolei_website)：开源扫雷网，前后端均开源的的扫雷纪录排名网站。演示了本仓库在前后端用于录像校验、数据计算功能。
+
+- [https://apps.apple.com/cn/app/益智扫雷/id6748243595?uo=4][https://apps.apple.com/cn/app/益智扫雷/id6748243595?uo=4]：益智扫雷，App Store上的无猜扫雷软件。使用了本仓库的埋雷算法，有条件可以体验。
+
+
+
+
+
+

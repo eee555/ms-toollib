@@ -1231,3 +1231,34 @@ fn base_video_works_err() {
     println!("局面：{:?}", video.get_game_board());
     println!("局面状态：{:?}", video.game_board_state);
 }
+
+
+#[test]
+fn custom_video_works() {
+    // 自定义模式录像的测试
+    let mut video = AvfVideo::new("../test_files/Cus_8x11_7mines_5.42_3BV=8_3BVs=1.47_Wang Jianing G15208.avf");
+    let r = video.parse_video();
+    assert!(r.is_ok());
+    // video.data.print_event();
+    video.data.analyse();
+    assert_eq!(r.unwrap(), ());
+    assert_eq!(video.data.player_identifier, "王嘉宁");
+    assert_eq!(video.data.static_params.bbbv, 8);
+    assert_eq!(video.data.get_rtime().unwrap(), 5.42);
+    assert_eq!(video.data.get_rtime_ms().unwrap(), 5420);
+    assert!(video.data.is_completed);
+    assert_eq!(video.data.start_time, 1756918808660000u64);
+    assert_eq!(video.data.end_time, 1756918814081000u64);
+    video.data.set_current_time(40.0);
+    assert_eq!(video.data.get_stnb().unwrap(), 0.0);
+    assert_eq!(video.data.get_path(), 540.5601548331261);
+    video.data.set_current_time(-1.0);
+    assert_eq!(video.data.current_time, -0.0);
+    // println!("game_board: {:?}", video.data.get_game_board());
+    // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
+    // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
+    // video.data.print_comments();
+    // video.data.is_valid();
+}
+
+

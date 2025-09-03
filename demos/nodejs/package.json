@@ -2,9 +2,9 @@
   "name": "nodejs_demo",
   "version": "0.0.1",
   "description": "ms-toollib在nodejs中的使用示例",
-  "main": "index.js",
+  "main": "parse_rmv.js",
   "scripts": {
-    "test": "node index.js"
+    "test": "node parse_rmv.js"
   },
   "keywords": [
     "node"

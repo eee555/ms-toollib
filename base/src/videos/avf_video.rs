@@ -208,6 +208,13 @@ impl AvfVideo {
         };
 
         let mut buffer: [char; 5] = ['\0'; 5];
+
+        // 关问号：'\u{6}', '\u{a0}', 'È', '\u{8f}', '¡', '\u{97}', 'Ñ', '\u{7}', '\u{8}', '\u{b}', '\n', '\u{7f}', '9', '[', '3', '|', 'W', '8'
+        // 关问号：'\u{6}', '\u{a0}', 'È', '\u{8f}', '¡', '\u{97}', 'Ñ', '\u{7}', '\u{8}', '\u{b}', '\n', '\u{7f}', '<', '[', '3', '|', 'W', '1', '2'
+        // 开问号：'\u{6}', '\u{a0}', 'È', '\u{8f}', '¡', '\u{97}', 'Ñ', '\u{7}', '\u{8}', '\u{b}', '\n', '\u{11}', '=', '[', '3', '|', 'W', '1', '7',
+        // for _ in 0..300 {
+        //     print!("{:?}, ", self.data.get_char()?);
+        // }
         loop {
             buffer[0] = buffer[1];
             buffer[1] = buffer[2];
@@ -224,10 +231,19 @@ impl AvfVideo {
         // 解析是否开启标问号
         if buffer[0] as u8 == 17 {
             self.data.use_question = true;
-        } else if buffer[0] as u8 != 127 {
+        } else if buffer[0] as u8 == 127 {
+            self.data.use_question = false;
+        } else {
             return Err(ErrReadVideoReason::InvalidParams);
         }
 
+        if self.data.level == 6 {
+            loop {
+                if self.data.get_char()? == '|' {
+                    break;
+                }
+            }
+        }
         // avf中的时间戳没有时区，最大可能有12小时的偏差
         let mut start_time = String::new();
         loop {

@@ -422,7 +422,7 @@ pub struct BaseVideo<T> {
     pub original_encoding: String,
     /// 录像用户标识
     pub player_identifier: String,
-    /// 比赛标识
+    /// 比赛标识。仅支持元扫雷和维也纳。对于不支持的版本，返回空字符串。
     pub race_identifier: String,
     /// 唯一性标识
     pub uniqueness_identifier: String,

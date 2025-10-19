@@ -1596,8 +1596,10 @@ impl<T> BaseVideo<T> {
         let mut id = self.current_event_id;
         loop {
             if self.video_action_state_recorder[id].useful_level < 2 {
-                id -= 1;
-                if id <= 0 {
+                if id >= 1 {
+                    id -= 1;
+                }
+                if id == 0 {
                     let p = self.mine_num as f64 / (self.height * self.width) as f64;
                     return vec![vec![p; self.height]; self.width];
                 }

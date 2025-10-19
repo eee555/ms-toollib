@@ -7,9 +7,9 @@ game_board = [[1, 1, 2, 10, 10, 10, 10],
               [10, 10, 10, 10, 10, 10, 10],
               [10, 10, 10, 10, 10, 10, 10],
               [10, 10, 10, 10, 10, 10, 10],
-              ];
+              ]
 
-result = ms.cal_possibility_onboard(game_board, 10.0)
+result = ms.cal_probability_onboard(game_board, 10.0)
 
 print(result)
 

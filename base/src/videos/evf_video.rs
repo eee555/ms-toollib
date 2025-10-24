@@ -53,23 +53,29 @@ use crate::videos::NewSomeVideo2;
 /// ```
 pub struct EvfVideo {
     pub file_name: String,
+    pub version: u8,
     pub data: BaseVideo<Vec<Vec<i32>>>,
 }
 
 #[cfg(any(feature = "py", feature = "rs"))]
 impl NewSomeVideo<&str> for EvfVideo {
+    /// 从文件名创建EvfVideo实例
     fn new(file_name: &str) -> Self {
+        let data = BaseVideo::<Vec<Vec<i32>>>::new(file_name);
         EvfVideo {
             file_name: file_name.to_string(),
-            data: BaseVideo::<Vec<Vec<i32>>>::new(file_name),
+            version: data.get_raw_data().unwrap()[0],
+            data,
         }
     }
 }
 
 impl NewSomeVideo2<Vec<u8>, &str> for EvfVideo {
+    /// 从二进制数据和虚拟的文件名创建EvfVideo实例
     fn new(raw_data: Vec<u8>, file_name: &str) -> Self {
         EvfVideo {
             file_name: file_name.to_string(),
+            version: raw_data[0],
             data: BaseVideo::<Vec<Vec<i32>>>::new(raw_data),
         }
     }

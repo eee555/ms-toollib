@@ -698,7 +698,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
         let rtime = self.game_dynamic_params.rtime;
         let bbbv = self.static_params.bbbv as f64;
         self.is_completed = b.game_board_state == GameBoardState::Win;
-        
+
         // evf以外的录像没有判断是否公正的方法，只能根据是否扫完
         // avf是唯一在parse解析阶段不能判定是否扫完的录像
         self.is_official = self.is_completed;
@@ -2908,6 +2908,11 @@ impl<T> BaseVideo<T> {
     // }
     /// 存evf文件，自动加后缀，xxx.evf重复变成xxx(2).evf
     pub fn save_to_evf_file(&self, file_name: &str) -> String {
+        if self.raw_data.is_empty() {
+            panic!(
+                "Raw data is empty. Please generate raw data by `generate_evf_v4_raw_data` first."
+            );
+        }
         let file_exist =
             std::path::Path::new((file_name.to_string() + &(".evf".to_string())).as_str()).exists();
         if !file_exist {
@@ -2979,7 +2984,10 @@ impl<T> BaseVideo<T> {
                 // 只允许标准、经典无猜
                 return 3;
             }
-        } else if self.software == "元3.1.11" || self.software == "元3.2.0" {
+        } else if self.software == "元3.1.11"
+            || self.software == "元3.2.0"
+            || self.software == "元3.2.1"
+        {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和
                 return 1;

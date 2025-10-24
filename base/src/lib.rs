@@ -96,6 +96,9 @@ pub use algorithms::{
 mod board;
 pub use board::{Board, GameBoard};
 
+mod evfs;
+pub use evfs::{Evfs};
+
 pub mod videos;
 pub use videos::{
     valid_time_period, AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MouseState,

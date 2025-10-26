@@ -105,6 +105,7 @@ impl Default for VideoActionStateRecorder {
     }
 }
 
+#[derive(Clone)]
 pub struct StaticParams {
     pub bbbv: usize,
     pub op: usize,
@@ -182,6 +183,7 @@ impl Default for KeyDynamicParams {
 
 /// 游戏动态类指标，侧重保存最终结果
 /// 游戏阶段就可以展示
+#[derive(Clone)]
 pub struct GameDynamicParams {
     /// 最终时间成绩，不是时间的函数
     pub rtime: f64,
@@ -223,6 +225,7 @@ impl Default for GameDynamicParams {
 
 /// 录像动态类指标，侧重保存最终结果
 /// 游戏阶段不能展示，录像播放时可以展示
+#[derive(Clone)]
 pub struct VideoDynamicParams {
     pub etime: f64,
     pub bbbv_s: f64,
@@ -269,6 +272,7 @@ impl Default for VideoDynamicParams {
 
 /// 需要分析才能计算出的指标，通常计算代价很大。最终结果
 /// 游戏阶段不能展示，录像播放时可以展示
+#[derive(Clone)]
 pub struct VideoAnalyseParams {
     pub pluck: Option<f64>,
 }
@@ -355,6 +359,7 @@ impl Default for VideoAnalyseParams {
 /// # 保存为test.evf
 /// game.save_to_evf_file("test")
 /// ```
+#[derive(Clone)]
 pub struct BaseVideo<T> {
     /// 软件名，包括："Viennasweeper"、"0.97 beta"、"Arbiter"、"元3.1.9"、"元3.1.11"、"元3.2.0"等
     pub software: String,
@@ -397,7 +402,7 @@ pub struct BaseVideo<T> {
     pub board: T,
     /// 局面状态机
     pub minesweeper_board: MinesweeperBoard<T>,
-    /// 录像状态。貌似用不到。
+    /// 录像状态。
     pub game_board_state: GameBoardState,
     /// 动作、状态记录器。用于播放录像时的指标，例如solved_bbbv。
     /// 假如不改局面，游戏时用不到。假如改局面，最后需要重新推演一遍。
@@ -1227,7 +1232,7 @@ impl<T> BaseVideo<T> {
     //         ..BaseVideo::default()
     //     }
     // }
-    /// 步进
+    /// 实施鼠标动作
     /// - pos的单位是像素，(距离上方，距离左侧)
     /// - 如果操作发生在界外，要求转换成pos=(row*pixsize, column*pixsize)
     #[cfg(any(feature = "py", feature = "rs"))]

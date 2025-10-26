@@ -7,11 +7,11 @@ pub struct PyGameBoard {
 }
 
 // 似乎没用？
-impl PyGameBoard {
-    pub fn set_core(&mut self, value: GameBoard) {
-        self.core = value;
-    }
-}
+// impl PyGameBoard {
+//     pub fn set_core(&mut self, value: GameBoard) {
+//         self.core = value;
+//     }
+// }
 
 #[pymethods]
 impl PyGameBoard {

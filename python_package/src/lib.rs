@@ -36,6 +36,9 @@ pub use base_video::{
 mod videos;
 pub use videos::{AvfVideo, EvfVideo, MvfVideo, RmvVideo};
 
+mod evfs;
+pub use evfs::{PyEvfs, PyEvfsCell};
+
 // pip install maturin
 // maturin publish --manylinux 2014
 
@@ -506,5 +509,7 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySafeBoardRow>()?;
     m.add_class::<PyVideoActionStateRecorder>()?;
     m.add_class::<PyKeyDynamicParams>()?;
+    m.add_class::<PyEvfs>()?;
+    m.add_class::<PyEvfsCell>()?;
     Ok(())
 }

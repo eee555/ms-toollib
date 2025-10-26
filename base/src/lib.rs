@@ -97,7 +97,7 @@ mod board;
 pub use board::{Board, GameBoard};
 
 mod evfs;
-pub use evfs::{Evfs};
+pub use evfs::{Evfs, EvfsCell};
 
 pub mod videos;
 pub use videos::{

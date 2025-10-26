@@ -1,4 +1,4 @@
-use crate::videos::{EvfVideo, NewSomeVideo, NewSomeVideo2};
+use crate::videos::{ErrReadVideoReason, EvfVideo, NewSomeVideo, NewSomeVideo2};
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::fs;
 use std::ops::{Index, IndexMut};
@@ -11,9 +11,12 @@ use itertools::Itertools;
 pub struct Evfs {
     pub raw_data: Vec<u8>,
     pub cells: Vec<EvfsCell>,
+    /// 解析raw_data的偏移量
+    pub offset: usize,
 }
 
 /// evfs重复结构的一个单元
+#[derive(Clone)]
 pub struct EvfsCell {
     pub evf_video: EvfVideo,
     pub checksum: Vec<u8>,
@@ -25,6 +28,7 @@ impl Evfs {
         Evfs {
             raw_data: vec![],
             cells: vec![],
+            offset: 0,
         }
     }
     /// 解析已有的evfs文件的二进制数据
@@ -32,6 +36,7 @@ impl Evfs {
         Evfs {
             raw_data: data,
             cells: vec![],
+            offset: 0,
         }
     }
     /// 向末尾追加录像，文件名不要带后缀
@@ -171,6 +176,112 @@ impl Evfs {
             self.raw_data.extend_from_slice(&cell.checksum);
         }
     }
+    pub fn parse(&mut self) -> Result<(), ErrReadVideoReason> {
+        let version = self.get_u8()?;
+        match version {
+            0 => self.parse_v0()?,
+            _ => {},
+        }
+        
+        for cell in self.cells.iter_mut() {
+            if !cell.evf_video.data.can_analyse {
+                cell.evf_video.parse_video()?;
+            }
+        }
+        Ok(())
+    }
+    /// 0.0-0.1版本
+    fn parse_v0(&mut self) -> Result<(), ErrReadVideoReason> {
+        let checksum_len = self.get_u16()?;
+        while self.offset < self.raw_data.len() - 1 {
+            let file_name = self.get_utf8_c_string('\0')?;
+            let file_size = self.get_u32()?;
+            let evf_data = self.get_buffer(file_size as usize)?;
+            let checksum = self.get_buffer(checksum_len)?;
+            self.cells.push(EvfsCell {
+                evf_video: <EvfVideo as NewSomeVideo2<Vec<u8>, &str>>::new(evf_data, &file_name),
+                checksum,
+            });
+        }
+        Ok(())
+    }
+}
+
+impl Evfs {
+    pub fn get_u8(&mut self) -> Result<u8, ErrReadVideoReason> {
+        let t = self.raw_data.get(self.offset);
+        self.offset += 1;
+        match t {
+            Some(x) => Ok(*x),
+            None => Err(ErrReadVideoReason::FileIsTooShort),
+        }
+    }
+    /// 都是大端法
+    pub fn get_u16(&mut self) -> Result<u16, ErrReadVideoReason> {
+        let a = self.get_u8()?;
+        let b = self.get_u8()?;
+        Ok((a as u16) << 8 | (b as u16))
+    }
+    pub fn get_i16(&mut self) -> Result<i16, ErrReadVideoReason> {
+        let a = self.get_u8()?;
+        let b = self.get_u8()?;
+        Ok((a as i16) << 8 | (b as i16))
+    }
+    pub fn get_u24(&mut self) -> Result<u32, ErrReadVideoReason> {
+        let a = self.get_u8()?;
+        let b = self.get_u8()?;
+        let c = self.get_u8()?;
+        Ok((a as u32) << 16 | (b as u32) << 8 | (c as u32))
+    }
+    pub fn get_u32(&mut self) -> Result<u32, ErrReadVideoReason> {
+        let a = self.get_u8()?;
+        let b = self.get_u8()?;
+        let c = self.get_u8()?;
+        let d = self.get_u8()?;
+        Ok((a as u32) << 24 | (b as u32) << 16 | (c as u32) << 8 | (d as u32))
+    }
+    pub fn get_u64(&mut self) -> Result<u64, ErrReadVideoReason> {
+        let a = self.get_u32()?;
+        let b = self.get_u32()?;
+        Ok((a as u64) << 32 | (b as u64))
+    }
+    pub fn get_char(&mut self) -> Result<char, ErrReadVideoReason> {
+        let a = self.get_u8()?;
+        Ok(a as char)
+    }
+    pub fn get_buffer<U>(&mut self, length: U) -> Result<Vec<u8>, ErrReadVideoReason>
+    where
+        U: Into<usize>,
+    {
+        let length = length.into();
+        self.offset += length;
+        self.raw_data
+            .get((self.offset - length)..self.offset)
+            .map(|vv| vv.to_vec())
+            .ok_or(ErrReadVideoReason::FileIsTooShort)
+    }
+    pub fn get_c_buffer(&mut self, end: char) -> Result<Vec<u8>, ErrReadVideoReason> {
+        let mut s = vec![];
+        loop {
+            let the_byte = self.get_char()?;
+            if the_byte == end {
+                break;
+            }
+            s.push(the_byte as u8);
+        }
+        Ok(s)
+    }
+    pub fn get_utf8_string<U>(&mut self, length: U) -> Result<String, ErrReadVideoReason>
+    where
+        U: Into<usize>,
+    {
+        let length = length.into();
+        String::from_utf8(self.get_buffer(length)?).map_err(|_e| ErrReadVideoReason::Utf8Error)
+    }
+    /// 读取以end结尾的合法utf-8字符串
+    pub fn get_utf8_c_string(&mut self, end: char) -> Result<String, ErrReadVideoReason> {
+        String::from_utf8(self.get_c_buffer(end)?).map_err(|_e| ErrReadVideoReason::Utf8Error)
+    }
 }
 
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -181,6 +292,7 @@ impl Evfs {
         Evfs {
             raw_data: data,
             cells: vec![],
+            offset: 0,
         }
     }
     /// 将evfs中的所有录像保存到指定目录，文件名为原文件名加上.evf后缀
@@ -243,5 +355,13 @@ impl Index<usize> for Evfs {
 impl IndexMut<usize> for Evfs {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.cells[index]
+    }
+}
+
+impl Index<std::ops::Range<usize>> for Evfs {
+    type Output = [EvfsCell];
+    fn index(&self, index: std::ops::Range<usize>) -> &Self::Output {
+        let cells = &self.cells[index.start..index.end];
+        cells
     }
 }

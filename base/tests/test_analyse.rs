@@ -986,7 +986,7 @@ fn base_video_works_4() {
         vec![-1, -1, 1, 0, 0, 0, 2, -1],
     ];
     let mut video = BaseVideo::<SafeBoard>::new(board, 16);
-    _sleep_ms(600);
+    _sleep_ms(60);
     // println!("3BV：{:?}", video.static_params.bbbv);
     video.step("rc", (32, 49)).unwrap();
     video.step("rr", (32, 49)).unwrap();

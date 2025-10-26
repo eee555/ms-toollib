@@ -34,6 +34,7 @@ use std::cmp::{max, min};
 /// print('解决3BV数: ', v.solved3BV)
 /// print('局面: ', v.game_board)
 /// ```
+#[derive(Clone)]
 pub struct MinesweeperBoard<T> {
     pub board: T,
     /// 局面

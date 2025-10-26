@@ -51,6 +51,7 @@ use crate::videos::NewSomeVideo2;
 ///     if v.events_useful_level(i) >= 2:
 ///         print(v.events_posteriori_game_board(i).poss)
 /// ```
+#[derive(Clone)]
 pub struct EvfVideo {
     pub file_name: String,
     pub version: u8,

@@ -253,21 +253,29 @@ impl AvfVideo {
             }
         }
         self.data.start_time = self.data.parse_avf_start_timestamp(&start_time)?;
+        // 时间戳部分正常情况举例：
+        // 初级：[0|26.10.2022.23:13:27:2236|26.23:13:29:7764|B7T3.52]
+        // 高级破纪录时：[2|18.10.2022.20:15:35:6606|18.20:16:24:8868|HS|B127T50.25]
+        // 自定义：[3|W8H11M7|3.9.2025.17:00:08:6660|3.17:00:14:081|B8T6.42]
+        // 异常情况举例：
+        // 高级：[2|17.7.2012.12:08:03:3338|17.12:09:44:6697B248T102.34]
         let mut end_time = String::new();
+        let mut buffer: [char; 2];
         loop {
             match self.data.get_char()? {
-                '|' => break,
+                '|' => {
+                    buffer = ['\0', '|'];
+                    break;
+                }
+                'B' => {
+                    buffer = ['|', 'B'];
+                    break;
+                }
                 other => end_time.push(other),
             }
         }
         self.data.end_time = self.data.parse_avf_end_timestamp(&start_time, &end_time)?;
-        let mut buffer: [char; 2];
-        match self.data.get_char()? {
-            '|' => buffer = ['\0', '|'],
-            'B' => buffer = ['|', 'B'],
-            _ => buffer = ['\0', '\0'],
-        }
-        // 此处以下10行的写法有危险
+
         loop {
             if buffer[0] == '|' && buffer[1] == 'B' {
                 break;

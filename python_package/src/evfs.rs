@@ -49,6 +49,9 @@ impl PyEvfs {
     pub fn append(&mut self, data: Vec<u8>, file_name: &str, checksum: Vec<u8>) {
         self.core.append(data, file_name, checksum);
     }
+    pub fn pop(&mut self) {
+        self.core.pop();
+    }
     pub fn len(&self) -> usize {
         self.core.len()
     }

@@ -46,6 +46,10 @@ impl Evfs {
             checksum,
         });
     }
+    /// 删除最后一个录像
+    pub fn pop(&mut self) {
+        self.cells.pop();
+    }
     pub fn len(&self) -> usize {
         self.cells.len()
     }

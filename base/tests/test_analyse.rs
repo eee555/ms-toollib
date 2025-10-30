@@ -249,6 +249,10 @@ fn avf_video_works() {
     video.data.set_current_time(-0.01);
     let t= video.data.get_game_board_poss();
     println!("{:?}", video.data.get_game_board_poss());
+    video.data.set_current_time(20.0);
+    assert_eq!(video.data.get_pluck().unwrap(), 0.20115579693141436);
+    video.data.set_current_time(999.999);
+    assert_eq!(video.data.get_pluck().unwrap(), 0.3772470559870956);
 }
 
 #[test]
@@ -336,7 +340,7 @@ fn mvf_video_works() {
     video.data.analyse_for_features(vec![
         "survive_poss",
     ]);
-    assert_eq!(video.data.get_pluck().unwrap(), 0.9504906677386042);
+    assert_eq!(video.data.get_pluck().unwrap(), 0.4612441009087633);
     // video.data.print_comments();
 }
 

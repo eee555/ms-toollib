@@ -9,7 +9,7 @@ use crate::utils::cal_bbbv;
 use crate::utils::{cal_isl, cal_op};
 use crate::videos::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
-    analyse_super_fl_local, analyse_survive_poss, analyse_vision_transfer,
+    analyse_pluck, analyse_super_fl_local, analyse_vision_transfer,
 };
 use core::panic;
 use std::cell::RefCell;
@@ -26,7 +26,9 @@ use crate::safe_board::SafeBoard;
 use crate::{GameBoardState, MinesweeperBoard, MouseState};
 use encoding_rs::{GB18030, WINDOWS_1252};
 // use tract_onnx::prelude::Op;
-use std::cmp::min;
+use std::cmp::{min, max};
+use crate::mark_board;
+use crate::algorithms::cal_probability_cells_not_mine;
 
 /// 读录像文件失败的原因
 #[derive(Debug)]
@@ -160,7 +162,7 @@ pub struct KeyDynamicParams {
     pub bbbv_solved: usize,
     pub op_solved: usize,
     pub isl_solved: usize,
-    pub pluck: Option<f64>,
+    pub pluck: f64,
 }
 
 impl Default for KeyDynamicParams {
@@ -176,7 +178,7 @@ impl Default for KeyDynamicParams {
             bbbv_solved: 0,
             op_solved: 0,
             isl_solved: 0,
-            pluck: None,
+            pluck: f64::NAN,
         }
     }
 }
@@ -274,12 +276,12 @@ impl Default for VideoDynamicParams {
 /// 游戏阶段不能展示，录像播放时可以展示
 #[derive(Clone)]
 pub struct VideoAnalyseParams {
-    pub pluck: Option<f64>,
+    pub pluck: f64,
 }
 
 impl Default for VideoAnalyseParams {
     fn default() -> Self {
-        VideoAnalyseParams { pluck: None }
+        VideoAnalyseParams { pluck: f64::NAN }
     }
 }
 
@@ -791,10 +793,19 @@ impl BaseVideo<Vec<Vec<i32>>> {
                 "needless_guess" => analyse_needless_guess(self),
                 "mouse_trace" => analyse_mouse_trace(self),
                 "vision_transfer" => analyse_vision_transfer(self),
-                "survive_poss" => analyse_survive_poss(self),
+                "pluck" => analyse_pluck(self),
                 "super_fl_local" => analyse_super_fl_local(self),
-                _ => continue,
+                _ => panic!("not supported analysis feature!"),
             };
+        }
+    }
+    // 播放阶段计算pluck，必须先手动调用analyse_pluck
+    pub fn get_pluck(&self) -> Result<f64, ()> {
+        match self.game_board_state {
+            GameBoardState::Display => Ok(self.video_action_state_recorder[self.current_event_id]
+                .key_dynamic_params
+                .pluck),
+            _ => Err(()),
         }
     }
 }
@@ -864,6 +875,78 @@ impl BaseVideo<SafeBoard> {
         }
 
         Ok(0)
+    }
+    // 游戏阶段（结束后）计算pluck，不必手动调用analyse_pluck
+    pub fn get_pluck(&mut self) -> Result<f64, ()> {
+        match self.game_board_state {
+            GameBoardState::Win | GameBoardState::Loss => {
+                let pluck = self.video_analyse_params.pluck;
+                if pluck.is_nan() {
+                    let mut pluck = 0.0;
+                    let mut has_begin = false;
+                    for vas in self.video_action_state_recorder.iter_mut() {
+                        if vas.useful_level == 2 {
+                            // 有效的左键
+                            if !has_begin {
+                                has_begin = true;
+                                continue;
+                            }
+                            let x = (vas.y / self.cell_pixel_size as u16) as usize;
+                            let y = (vas.x / self.cell_pixel_size as u16) as usize;
+                            // 安全的概率
+                            let p = 1.0
+                                - vas
+                                    .prior_game_board
+                                    .as_ref()
+                                    .unwrap()
+                                    .borrow_mut()
+                                    .get_poss()[x][y];
+                            if p <= 0.0 {
+                                return Ok(f64::MAX)
+                            } else if p < 1.0 {
+                                pluck -= p.log10();
+                            }
+                        } else if vas.useful_level == 3 {
+                            // 有效的双键
+                            let x = (vas.y / self.cell_pixel_size as u16) as usize;
+                            let y = (vas.x / self.cell_pixel_size as u16) as usize;
+                            let mut game_board_clone = vas
+                                .prior_game_board
+                                .as_ref()
+                                .unwrap()
+                                .borrow_mut()
+                                .game_board
+                                .clone();                    
+                            let mut chording_cells = vec![];
+                            for m in max(1, x) - 1..min(self.height, x + 2) {
+                                for n in max(1, y) - 1..min(self.width, y + 2) {
+                                    if game_board_clone[m][n] == 10 {
+                                        chording_cells.push((m, n));
+                                    }
+                                }
+                            }
+                            let _ = mark_board(&mut game_board_clone, true).unwrap();
+                            // 安全的概率
+                            let p = cal_probability_cells_not_mine(
+                                &game_board_clone,
+                                self.mine_num as f64,
+                                &chording_cells,
+                            );
+                            if p <= 0.0 {
+                                return Ok(f64::MAX)
+                            } else if p > 0.0 {
+                                pluck -= p.log10();
+                            }
+                        }else if vas.useful_level == 4 {
+                            return Ok(f64::MAX)
+                        }
+                    }
+                    return Ok(pluck)
+                }
+                Ok(pluck)
+            }
+            _ => Err(()),
+        }
     }
 }
 
@@ -1242,6 +1325,8 @@ impl<T> BaseVideo<T> {
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         // 第一时间获取时间戳
+
+        use core::f64;
         let step_instant = Instant::now();
         let mut time_ms = time_ms_between(step_instant, self.video_start_instant);
         let mut time = time_ms as f64 / 1000.0;
@@ -1426,7 +1511,7 @@ impl<T> BaseVideo<T> {
                     bbbv_solved: self.minesweeper_board.bbbv_solved,
                     op_solved: 0,
                     isl_solved: 0,
-                    pluck: None,
+                    pluck: f64::NAN,
                 },
                 path,
             });
@@ -2273,16 +2358,6 @@ impl<T> BaseVideo<T> {
         Ok(self.video_action_state_recorder[self.current_event_id]
             .key_dynamic_params
             .isl_solved)
-    }
-    // 必须用survive_poss方法分析以后才能获取
-    pub fn get_pluck(&self) -> Result<f64, ()> {
-        if self.game_board_state != GameBoardState::Display {
-            return Err(());
-        };
-        Ok(self.video_action_state_recorder[self.current_event_id]
-            .key_dynamic_params
-            .pluck
-            .unwrap())
     }
     /// 跨语言调用时，不能传递枚举体用这个
     pub fn get_mouse_state(&self) -> usize {

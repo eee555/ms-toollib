@@ -21,10 +21,9 @@ name = "ms_toollib"
 crate-type = ["cdylib", "lib"]
 
 
-# [profile.release]
-# opt-level = 'z'
-# lto = true
-# codegen-units = 1
-# panic = 'abort'
-# 4018
+[profile.release]
+opt-level = "z"  # 优化大小
+lto = true       # 链接时优化，跨crate优化代码
+panic = "abort"  # 禁用恐慌的展开信息
+strip = true     # 剥离调试符号
 

@@ -539,7 +539,7 @@ pub fn cal_probability_cells_not_mine(
     minenum: f64,
     cells: &Vec<(usize, usize)>,
 ) -> f64 {
-    let mut poss = 0.0;
+    let mut poss = 1.0;
     let mut game_board_modified = game_board.clone();
     for &(x, y) in cells.iter() {
         if game_board[x][y] < 10 || game_board[x][y] == 12 {
@@ -1632,4 +1632,51 @@ pub fn is_able_to_solve(board_of_game: &mut Vec<Vec<i32>>, xy: &(usize, usize)) 
         return true;
     }
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cal_probability_cells_not_mine() {
+        let game_board = vec![
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10,  2, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+        ];
+
+        let p = cal_probability_cells_not_mine(
+            &game_board,
+            10.0,
+            &vec![(2, 2), (3, 2), (4, 2), (2, 4), (3, 4), (4, 4)],
+        );
+        println!("{:?}", p);
+    }
+    
+    #[test]
+    fn test_cal_probability_cells_not_mine_2() {
+        let game_board = vec![
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10,  1, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+        ];
+
+        let p = cal_probability_cells_not_mine(
+            &game_board,
+            11.0,
+            &vec![(2, 3), (2, 4), (2, 5), (3, 3), (3, 5), (4, 3), (4, 4), (4, 5)],
+        );
+        println!("{:?}", p);
+    }
 }

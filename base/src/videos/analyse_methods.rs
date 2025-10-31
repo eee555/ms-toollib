@@ -286,9 +286,8 @@ pub fn analyse_vision_transfer(video: &mut BaseVideo<Vec<Vec<i32>>>) {
     }
 }
 
-/// 计算扫开这局的后验开率
-/// 不计算comment，修改pluck参数
-pub fn analyse_survive_poss(video: &mut BaseVideo<Vec<Vec<i32>>>) {
+/// 计算回放的录像的各个时刻的pluck参数
+pub fn analyse_pluck(video: &mut BaseVideo<Vec<Vec<i32>>>) {
     let mut pluck = 0.0;
     let mut has_begin = false;
     for vas in video.video_action_state_recorder.iter_mut() {
@@ -296,7 +295,7 @@ pub fn analyse_survive_poss(video: &mut BaseVideo<Vec<Vec<i32>>>) {
             // 有效的左键
             if !has_begin {
                 has_begin = true;
-                vas.key_dynamic_params.pluck = Some(0.0);
+                vas.key_dynamic_params.pluck = 0.0;
                 continue;
             }
             let x = (vas.y / video.cell_pixel_size as u16) as usize;
@@ -325,7 +324,6 @@ pub fn analyse_survive_poss(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                 .borrow_mut()
                 .game_board
                 .clone();
-            let _ = mark_board(&mut game_board_clone, true).unwrap();
             let mut chording_cells = vec![];
             for m in max(1, x) - 1..min(video.height, x + 2) {
                 for n in max(1, y) - 1..min(video.width, y + 2) {
@@ -334,26 +332,29 @@ pub fn analyse_survive_poss(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                     }
                 }
             }
+            let _ = mark_board(&mut game_board_clone, true).unwrap();
             // 安全的概率
             let p = cal_probability_cells_not_mine(
                 &game_board_clone,
                 video.mine_num as f64,
                 &chording_cells,
             );
-            if p >= 1.0 || pluck == f64::MAX {
+            if p <= 0.0 || pluck == f64::MAX {
                 pluck = f64::MAX;
             } else if p > 0.0 {
                 pluck -= p.log10();
             }
+        } else if vas.useful_level == 4 {
+            pluck = f64::MAX;
         }
 
         if has_begin {
-            vas.key_dynamic_params.pluck = Some(pluck);
+            vas.key_dynamic_params.pluck = pluck;
         } else {
-            vas.key_dynamic_params.pluck = Some(0.0);
+            vas.key_dynamic_params.pluck = 0.0;
         }
     }
-    video.video_analyse_params.pluck = Some(pluck);
+    video.video_analyse_params.pluck = pluck;
 }
 
 #[derive(Debug, PartialEq)]

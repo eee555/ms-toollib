@@ -150,7 +150,7 @@ fn avf_video_works() {
         "needless_guess",
         "high_risk_guess",
         "jump_judge",
-        "survive_poss",
+        "pluck",
     ]);
     // video.data.print_comments();
     video.data.set_current_time(1000.0);
@@ -244,7 +244,7 @@ fn avf_video_works() {
         "needless_guess",
         "high_risk_guess",
         "jump_judge",
-        "survive_poss",
+        "pluck",
     ]);
     video.data.set_current_time(-0.01);
     let t= video.data.get_game_board_poss();
@@ -338,7 +338,7 @@ fn mvf_video_works() {
     video.data.set_current_time(12.0);
     assert_eq!(video.data.get_stnb().unwrap(), 104.33431983657493);
     video.data.analyse_for_features(vec![
-        "survive_poss",
+        "pluck",
     ]);
     assert_eq!(video.data.get_pluck().unwrap(), 0.4612441009087633);
     // video.data.print_comments();
@@ -389,7 +389,7 @@ fn evf_video_works_v3() {
     println!("game_board: {:?}", video.data.get_game_board());
     // println!("game_board_poss: {:?}", video.data.get_game_board_poss());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
-    // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
+    // video.data.analyse_for_features(vec!["jump_judge", "pluck"]);
     // video.data.print_comments();
 }
 
@@ -590,6 +590,7 @@ fn base_video_works() {
     println!("etime: {:?}", video.get_etime());
     println!("op: {:?}", video.static_params.op);
     println!("cell0: {:?}", video.static_params.cell0);
+    println!("pluck：{:?}", video.get_pluck());
 
     video.generate_evf_v0_raw_data();
     video.set_checksum_evf_v3(vec![8; 32]).unwrap();
@@ -627,7 +628,7 @@ fn base_video_works() {
 }
 
 #[test]
-fn base_video_works_2() {
+fn base_video_works_2_win() {
     let board = vec![
         vec![0, 0, 0, 0, 1, 1, 1, 0],
         vec![0, 0, 0, 0, 1, -1, 2, 1],
@@ -978,7 +979,7 @@ fn base_video_works_3() {
 }
 
 #[test]
-fn base_video_works_4() {
+fn base_video_works_4_win() {
     let board = vec![
         vec![0, 0, 2, -1, 2, 0, 0, 0],
         vec![0, 0, 3, -1, 3, 0, 0, 0],
@@ -1035,6 +1036,7 @@ fn base_video_works_4() {
     println!("etime: {:?}", video.get_etime());
     println!("op: {:?}", video.static_params.op);
     println!("cell0: {:?}", video.static_params.cell0);
+    println!("pluck: {:?}", video.get_pluck());
 
     video.generate_evf_v0_raw_data();
     video.set_checksum_evf_v3(vec![8; 32]).unwrap();
@@ -1105,6 +1107,54 @@ fn base_video_works_5_1bv() {
     println!("时间毫秒：{:?}", video.get_rtime_ms());
     println!("时间毫秒：{:?}", video.get_bbbv_s());
 }
+
+
+#[test]
+fn base_video_works_6_fail() {
+    let board = vec![
+        vec![1, 1, 2, 1, 1, 0, 0, 0],
+        vec![1, -1, 2, -1, 1, 0, 0, 0],
+        vec![1, 1, 2, 1, 1, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![2, 2, 1, 0, 0, 0, 0, 0],
+        vec![-1, -1, 2, 0, 0, 1, 1, 1],
+        vec![-1, -1, 3, 0, 0, 2, -1, 2],
+        vec![-1, -1, 2, 0, 0, 2, -1, 2],
+    ];
+    let mut video = BaseVideo::<SafeBoard>::new(board, 16);
+    _sleep_ms(60);
+    video.step("lc", (17, 16)).unwrap();
+    video.step("lr", (17, 16)).unwrap();
+    assert_eq!(video.game_board_state, GameBoardState::Loss);
+    println!("pluck：{:?}", video.get_pluck());
+}
+
+
+#[test]
+fn base_video_works_7_guess() {
+    let board = vec![
+        vec![-1, 2, 1, 0, 0, 0, 0, 0],
+        vec![2, -1, 2, 1, 0, 0, 0, 0],
+        vec![1, 2, -1, 1, 0, 0, 0, 0],
+        vec![0, 1, 1, 1, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let mut video = BaseVideo::<SafeBoard>::new(board, 16);
+    _sleep_ms(60);
+    video.step("lc", (64, 64)).unwrap();
+    video.step("lr", (64, 64)).unwrap();
+    video.step("lc", (16, 0)).unwrap();
+    video.step("lr", (16, 0)).unwrap();
+    video.step("lc", (0, 16)).unwrap();
+    video.step("lr", (0, 16)).unwrap();
+    assert_eq!(video.game_board_state, GameBoardState::Win);
+    println!("pluck：{:?}", video.get_pluck());
+}
+
+
 
 #[test]
 fn base_video_works_set_board() {
@@ -1269,7 +1319,7 @@ fn custom_video_works() {
     assert_eq!(video.data.current_time, -0.0);
     // println!("game_board: {:?}", video.data.get_game_board());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
-    // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
+    // video.data.analyse_for_features(vec!["jump_judge", "pluck"]);
     // video.data.print_comments();
     // video.data.is_valid();
 }

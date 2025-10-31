@@ -1,17 +1,6 @@
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::Rng;
 
-// pub fn laymine_safely(
-//     row: usize,
-//     column: usize,
-//     mine_num: usize,
-//     x0: usize,
-//     y0: usize,
-// ) -> SafeBoard {
-//     let board = laymine(row, column, mine_num, x0, y0);
-//     SafeBoard::new(board)
-// }
-
 #[cfg(any(feature = "py", feature = "rs"))]
 fn encode(v: i32, rng: &mut rand::rngs::ThreadRng) -> (i32, i32, i32) {
     let a = rng.gen_range(-2_0000_0000i32..2_0000_0001);
@@ -134,30 +123,6 @@ impl std::ops::Index<usize> for SafeBoardRow {
     }
 }
 
-// impl std::ops::IndexMut<usize> for SafeBoardRow {
-//     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-//         let t = decode(
-//             self.value_1[index],
-//             self.value_2[index],
-//             self.value_3[index],
-//         ) as usize;
-//         let t = self.table[t];
-//         let (a, b, c) = encode(t, &mut self.rng);
-//             self.value_1[index] = a;
-//             self.value_2[index] = b;
-//             self.value_3[index] = c;
-//         &mut self.value[index]
-//     }
-// }
-
-// impl<'a> IntoIterator for &'a SafeBoardRow {
-//     type Item = i32;
-//     type IntoIter = std::vec::IntoIter<Self::Item>;
-//     fn into_iter(self) -> Self::IntoIter {
-//         self.value_1.clone().into_iter().map()
-//     }
-// }
-
 #[cfg(any(feature = "py", feature = "rs"))]
 impl Iterator for SafeBoardRow {
     type Item = i32;
@@ -204,20 +169,6 @@ impl std::ops::Index<usize> for SafeBoard {
         &self.value[index]
     }
 }
-
-// impl std::ops::IndexMut<usize> for SafeBoard {
-//     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-//         &mut self.value[index]
-//     }
-// }
-
-// impl<'a> IntoIterator for &'a SafeBoard {
-//     type Item = SafeBoardRow;
-//     type IntoIter = std::vec::IntoIter<Self::Item>;
-//     fn into_iter(self) -> Self::IntoIter {
-//         self.value.clone().into_iter()
-//     }
-// }
 
 pub trait BoardSize {
     fn get_row(&self) -> usize;

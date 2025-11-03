@@ -1,4 +1,5 @@
 use crate::videos::{ErrReadVideoReason, EvfVideo, NewSomeVideo, NewSomeVideo2};
+use crate::videos::byte_reader::ByteReader;
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::fs;
 use std::ops::{Index, IndexMut};
@@ -211,82 +212,17 @@ impl Evfs {
     }
 }
 
-impl Evfs {
-    pub fn get_u8(&mut self) -> Result<u8, ErrReadVideoReason> {
-        let t = self.raw_data.get(self.offset);
-        self.offset += 1;
-        match t {
-            Some(x) => Ok(*x),
-            None => Err(ErrReadVideoReason::FileIsTooShort),
-        }
+
+impl ByteReader for Evfs  {
+    fn raw_data(&self) -> &[u8] {
+        &self.raw_data
     }
-    /// 都是大端法
-    pub fn get_u16(&mut self) -> Result<u16, ErrReadVideoReason> {
-        let a = self.get_u8()?;
-        let b = self.get_u8()?;
-        Ok((a as u16) << 8 | (b as u16))
-    }
-    pub fn get_i16(&mut self) -> Result<i16, ErrReadVideoReason> {
-        let a = self.get_u8()?;
-        let b = self.get_u8()?;
-        Ok((a as i16) << 8 | (b as i16))
-    }
-    pub fn get_u24(&mut self) -> Result<u32, ErrReadVideoReason> {
-        let a = self.get_u8()?;
-        let b = self.get_u8()?;
-        let c = self.get_u8()?;
-        Ok((a as u32) << 16 | (b as u32) << 8 | (c as u32))
-    }
-    pub fn get_u32(&mut self) -> Result<u32, ErrReadVideoReason> {
-        let a = self.get_u8()?;
-        let b = self.get_u8()?;
-        let c = self.get_u8()?;
-        let d = self.get_u8()?;
-        Ok((a as u32) << 24 | (b as u32) << 16 | (c as u32) << 8 | (d as u32))
-    }
-    pub fn get_u64(&mut self) -> Result<u64, ErrReadVideoReason> {
-        let a = self.get_u32()?;
-        let b = self.get_u32()?;
-        Ok((a as u64) << 32 | (b as u64))
-    }
-    pub fn get_char(&mut self) -> Result<char, ErrReadVideoReason> {
-        let a = self.get_u8()?;
-        Ok(a as char)
-    }
-    pub fn get_buffer<U>(&mut self, length: U) -> Result<Vec<u8>, ErrReadVideoReason>
-    where
-        U: Into<usize>,
-    {
-        let length = length.into();
-        self.offset += length;
-        self.raw_data
-            .get((self.offset - length)..self.offset)
-            .map(|vv| vv.to_vec())
-            .ok_or(ErrReadVideoReason::FileIsTooShort)
-    }
-    pub fn get_c_buffer(&mut self, end: char) -> Result<Vec<u8>, ErrReadVideoReason> {
-        let mut s = vec![];
-        loop {
-            let the_byte = self.get_char()?;
-            if the_byte == end {
-                break;
-            }
-            s.push(the_byte as u8);
-        }
-        Ok(s)
-    }
-    pub fn get_utf8_string<U>(&mut self, length: U) -> Result<String, ErrReadVideoReason>
-    where
-        U: Into<usize>,
-    {
-        let length = length.into();
-        String::from_utf8(self.get_buffer(length)?).map_err(|_e| ErrReadVideoReason::Utf8Error)
-    }
-    /// 读取以end结尾的合法utf-8字符串
-    pub fn get_utf8_c_string(&mut self, end: char) -> Result<String, ErrReadVideoReason> {
-        String::from_utf8(self.get_c_buffer(end)?).map_err(|_e| ErrReadVideoReason::Utf8Error)
+
+    fn offset_mut(&mut self) -> &mut usize {
+        &mut self.offset
     }
 }
+
 
 #[cfg(any(feature = "py", feature = "rs"))]
 impl Evfs {

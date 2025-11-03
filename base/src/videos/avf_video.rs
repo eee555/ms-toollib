@@ -1,8 +1,8 @@
 // use crate::MouseState;
 // use crate::miscellaneous::s_to_ms;
 // use crate::utils::cal_board_numbers;
-use crate::videos::base_video::NewBaseVideo;
-use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
+use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, Event, VideoActionStateRecorder};
+use crate::videos::base_video::{MouseEvent, NewBaseVideo};
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::videos::NewSomeVideo;
 use crate::videos::NewSomeVideo2;
@@ -309,22 +309,26 @@ impl AvfVideo {
                 .push(VideoActionStateRecorder {
                     time: ((buffer[6] as u16) << 8 | buffer[2] as u16) as f64 - 1.0
                         + (buffer[4] as f64) / 100.0,
-                    mouse: match buffer[0] {
-                        1 => "mv".to_string(),
-                        3 => "lc".to_string(),
-                        5 => "lr".to_string(),
-                        9 => "rc".to_string(),
-                        17 => "rr".to_string(),
-                        33 => "mc".to_string(),
-                        65 => "mr".to_string(),
-                        145 => "rr".to_string(),
-                        193 => "mr".to_string(),
-                        11 => "sc".to_string(), // left_click_with_shift没见过，不清楚用途
-                        21 => "lr".to_string(),
-                        _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
-                    },
-                    x: (buffer[1] as u16) << 8 | buffer[3] as u16,
-                    y: (buffer[5] as u16) << 8 | buffer[7] as u16,
+                    event: Some(Event::Mouse(MouseEvent {
+                        mouse: match buffer[0] {
+                            1 => "mv".to_string(),
+                            3 => "lc".to_string(),
+                            5 => "lr".to_string(),
+                            9 => "rc".to_string(),
+                            17 => "rr".to_string(),
+                            33 => "mc".to_string(),
+                            65 => "mr".to_string(),
+                            145 => "rr".to_string(),
+                            193 => "mr".to_string(),
+                            11 => panic!(),
+                            // left_click_with_shift没见过，不清楚用途
+                            // 11 => "sc".to_string(),
+                            21 => "lr".to_string(),
+                            _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
+                        },
+                        x: (buffer[1] as u16) << 8 | buffer[3] as u16,
+                        y: (buffer[5] as u16) << 8 | buffer[7] as u16,
+                    })),
                     ..VideoActionStateRecorder::default()
                 });
             for i in 0..8 {

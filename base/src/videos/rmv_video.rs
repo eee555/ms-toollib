@@ -1,6 +1,8 @@
 use crate::utils::cal_board_numbers;
 use crate::videos::base_video::NewBaseVideo;
-use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
+use crate::videos::base_video::{
+    BaseVideo, ErrReadVideoReason, Event, MouseEvent, VideoActionStateRecorder,
+};
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::videos::NewSomeVideo;
 use crate::videos::NewSomeVideo2;
@@ -195,9 +197,11 @@ impl RmvVideo {
                 self.data
                     .video_action_state_recorder
                     .push(VideoActionStateRecorder {
-                        mouse: "pf".to_string(),
-                        x: d * 16,
-                        y: c * 16,
+                        event: Some(Event::Mouse(MouseEvent {
+                            mouse: "pf".to_string(),
+                            x: d * 16,
+                            y: c * 16,
+                        })),
                         ..VideoActionStateRecorder::default()
                     });
             }
@@ -235,9 +239,11 @@ impl RmvVideo {
                             .video_action_state_recorder
                             .push(VideoActionStateRecorder {
                                 time: time as f64 / 1000.0,
-                                mouse: "lc".to_string(),
-                                x,
-                                y,
+                                event: Some(Event::Mouse(MouseEvent {
+                                    mouse: "lc".to_string(),
+                                    x,
+                                    y,
+                                })),
                                 ..VideoActionStateRecorder::default()
                             });
                     }
@@ -245,18 +251,20 @@ impl RmvVideo {
                         .video_action_state_recorder
                         .push(VideoActionStateRecorder {
                             time: time as f64 / 1000.0,
-                            mouse: match c {
-                                1 => "mv".to_string(),
-                                2 => "lc".to_string(),
-                                3 => "lr".to_string(),
-                                4 => "rc".to_string(),
-                                5 => "rr".to_string(),
-                                6 => "mc".to_string(),
-                                7 => "mr".to_string(),
-                                _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
-                            },
-                            x,
-                            y,
+                            event: Some(Event::Mouse(MouseEvent {
+                                mouse: match c {
+                                    1 => "mv".to_string(),
+                                    2 => "lc".to_string(),
+                                    3 => "lr".to_string(),
+                                    4 => "rc".to_string(),
+                                    5 => "rr".to_string(),
+                                    6 => "mc".to_string(),
+                                    7 => "mr".to_string(),
+                                    _ => return Err(ErrReadVideoReason::InvalidVideoEvent),
+                                },
+                                x,
+                                y,
+                            })),
                             ..VideoActionStateRecorder::default()
                         });
                 }

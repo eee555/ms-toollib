@@ -1,7 +1,7 @@
 use crate::miscellaneous::s_to_ms;
 use crate::utils::cal_board_numbers;
-use crate::videos::base_video::NewBaseVideo;
 use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
+use crate::videos::base_video::{Event, MouseEvent, NewBaseVideo};
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::videos::NewSomeVideo;
 use crate::videos::NewSomeVideo2;
@@ -197,9 +197,11 @@ impl EvfVideo {
                 .video_action_state_recorder
                 .push(VideoActionStateRecorder {
                     time,
-                    mouse: mouse.to_string(),
-                    x,
-                    y,
+                    event: Some(Event::Mouse(MouseEvent {
+                        mouse: mouse.to_string(),
+                        x,
+                        y,
+                    })),
                     ..VideoActionStateRecorder::default()
                 });
         }
@@ -318,9 +320,11 @@ impl EvfVideo {
                 .video_action_state_recorder
                 .push(VideoActionStateRecorder {
                     time,
-                    mouse: mouse.to_string(),
-                    x,
-                    y,
+                    event: Some(Event::Mouse(MouseEvent {
+                        mouse: mouse.to_string(),
+                        x,
+                        y,
+                    })),
                     ..VideoActionStateRecorder::default()
                 });
         }
@@ -446,9 +450,11 @@ impl EvfVideo {
                 .video_action_state_recorder
                 .push(VideoActionStateRecorder {
                     time,
-                    mouse: mouse.to_string(),
-                    x,
-                    y,
+                    event: Some(Event::Mouse(MouseEvent {
+                        mouse: mouse.to_string(),
+                        x,
+                        y,
+                    })),
                     ..VideoActionStateRecorder::default()
                 });
         }
@@ -533,73 +539,120 @@ impl EvfVideo {
         match byte {
             1 => mouse = "mv",
             2 => mouse = "lc",
-            3 => mouse = "lr",
             4 => mouse = "rc",
-            5 => mouse = "rr",
-            6 => mouse = "mc",
-            7 => mouse = "mr",
             8 => mouse = "pf",
-            9 => mouse = "cc",
-            10 => mouse = "l",
-            11 => mouse = "r",
-            12 => mouse = "m",
-            _ => mouse = "ub", // impossible
+            _ => panic!(), // impossible
         }
         let time = self.data.get_u8()? as f64 / 1000.0;
         let x = self.data.get_u16()?;
         let y = self.data.get_u16()?;
+        let event_0 = MouseEvent {
+            mouse: mouse.to_string(),
+            x,
+            y,
+        };
+        let mut last_mouse_event = event_0.clone();
+        let mut last_mouse_event_time = time;
         self.data
             .video_action_state_recorder
             .push(VideoActionStateRecorder {
                 time,
-                mouse: mouse.to_string(),
-                x,
-                y,
+                event: Some(Event::Mouse(event_0)),
                 ..VideoActionStateRecorder::default()
             });
+        // 累计的暂停时间
         let mut pause_time_ms = 0;
         loop {
             let byte = self.data.get_u8()?;
-            let mouse;
             match byte {
                 0 => {
                     break;
                 }
-                1 => mouse = "mv",
-                2 => mouse = "lc",
-                3 => mouse = "lr",
-                4 => mouse = "rc",
-                5 => mouse = "rr",
-                6 => mouse = "mc",
-                7 => mouse = "mr",
-                8 => mouse = "pf",
-                9 => mouse = "cc",
-                10 => mouse = "l",
-                11 => mouse = "r",
-                12 => mouse = "m",
-                255 => {
-                    let pause_time = self.data.get_u16()?;
-                    pause_time_ms += pause_time as u32;
-                    continue;
+                byte_mouse @ 1..=80 => {
+                    let mouse;
+                    match byte_mouse {
+                        1 => mouse = "mv",
+                        2 => mouse = "lc",
+                        3 => mouse = "lr",
+                        4 => mouse = "rc",
+                        5 => mouse = "rr",
+                        6 => mouse = "mc",
+                        7 => mouse = "mr",
+                        8 => mouse = "pf",
+                        9 => mouse = "cc",
+                        10 => mouse = "l",
+                        11 => mouse = "r",
+                        12 => mouse = "m",
+                        _ => panic!(),
+                    }
+                    let time: u8 = self.data.get_u8()?;
+                    let x = self.data.get_i16()?;
+                    let y = self.data.get_i16()?;
+                    // let last_event = self.data.video_action_state_recorder.last().unwrap();
+                    let event_i = MouseEvent {
+                        mouse: mouse.to_string(),
+                        x: (last_mouse_event.x as i16 + x) as u16,
+                        y: (last_mouse_event.y as i16 + y) as u16,
+                    };
+                    let time_i =
+                        ((time as u32 + pause_time_ms) as f64 + last_mouse_event_time) / 1000.0;
+                    last_mouse_event = event_i.clone();
+                    last_mouse_event_time = time_i;
+                    self.data
+                        .video_action_state_recorder
+                        .push(VideoActionStateRecorder {
+                            time: time_i,
+                            event: Some(Event::Mouse(event_i)),
+                            ..VideoActionStateRecorder::default()
+                        });
+                    pause_time_ms = 0;
                 }
-                _ => {
-                    continue;
-                }
+                b @ 81..=99 => {}
+                b @ 100..=199 => {}
+                b @ 200..=254 => {}
+                255 => {}
             }
-            let time: u8 = self.data.get_u8()?;
-            let x = self.data.get_i16()?;
-            let y = self.data.get_i16()?;
-            let last_event = self.data.video_action_state_recorder.last().unwrap();
-            self.data
-                .video_action_state_recorder
-                .push(VideoActionStateRecorder {
-                    time: (s_to_ms(last_event.time) + time as u32 + pause_time_ms) as f64 / 1000.0,
-                    mouse: mouse.to_string(),
-                    x: (last_event.x as i16 + x) as u16,
-                    y: (last_event.y as i16 + y) as u16,
-                    ..VideoActionStateRecorder::default()
-                });
-            pause_time_ms = 0;
+            // match byte {
+            //     0 => {
+            //         break;
+            //     }
+            //     1 => mouse = "mv",
+            //     2 => mouse = "lc",
+            //     3 => mouse = "lr",
+            //     4 => mouse = "rc",
+            //     5 => mouse = "rr",
+            //     6 => mouse = "mc",
+            //     7 => mouse = "mr",
+            //     8 => mouse = "pf",
+            //     9 => mouse = "cc",
+            //     10 => mouse = "l",
+            //     11 => mouse = "r",
+            //     12 => mouse = "m",
+            //     255 => {
+            //         let pause_time = self.data.get_u16()?;
+            //         pause_time_ms += pause_time as u32;
+            //         continue;
+            //     }
+            //     _ => {
+            //         continue;
+            //     }
+            // }
+            // let time: u8 = self.data.get_u8()?;
+            // let x = self.data.get_i16()?;
+            // let y = self.data.get_i16()?;
+            // let last_event = self.data.video_action_state_recorder.last().unwrap();
+            // self.data
+            //     .video_action_state_recorder
+            //     .push(VideoActionStateRecorder {
+            //         time: (s_to_ms(last_event.time) + time as u32 + pause_time_ms) as f64 / 1000.0,
+            //         event: Some(Event::Mouse(MouseEvent {
+            //             mouse: mouse.to_string(),
+            //             x: (last_event.x as i16 + x) as u16,
+            //             y: (last_event.y as i16 + y) as u16,
+            //         })),
+            //         ..VideoActionStateRecorder::default()
+            //     });
+            // pause_time_ms = 0;
         }
 
         let checksum_length = self.data.get_u16()?;

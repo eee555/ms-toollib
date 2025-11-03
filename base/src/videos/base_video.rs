@@ -26,9 +26,9 @@ use crate::safe_board::SafeBoard;
 use crate::{GameBoardState, MinesweeperBoard, MouseState};
 use encoding_rs::{GB18030, WINDOWS_1252};
 // use tract_onnx::prelude::Op;
-use std::cmp::{min, max};
-use crate::mark_board;
 use crate::algorithms::cal_probability_cells_not_mine;
+use crate::mark_board;
+use std::cmp::{max, min};
 
 /// 读录像文件失败的原因
 #[derive(Debug)]
@@ -46,28 +46,71 @@ pub enum ErrReadVideoReason {
     Utf8Error,
 }
 
-/// 局面活动（点击或移动）
-// pub struct Event {
-//     pub time: f64,
-//     /// 操作类型，这几种："mv", "lc", "lr", "rc", "rr", "mc", "mr", "pf"
-//     pub mouse: String,
-//     /// 距离左端有几像素。
-//     pub x: u16,
-//     /// 距离上端有几像素。
-//     pub y: u16,
-// }
+#[derive(Clone)]
+pub enum Event {
+    Mouse(MouseEvent),
+    GameState(GameStateEvent),
+    Board(BoardEvent),
+    Index(IndexEvent),
+}
+
+/// evf标准中的鼠标事件
+#[derive(Clone)]
+pub struct MouseEvent {
+    /// 操作类型，这几种："mv", "lc", "lr", "rc", "rr", "mc", "mr", "pf", "cc", "l", "r", "m"
+    pub mouse: String,
+    /// 距离左端有几像素。
+    pub x: u16,
+    /// 距离上端有几像素。
+    pub y: u16,
+}
+
+/// evf标准中的游戏状态事件
+#[derive(Clone)]
+pub struct GameStateEvent {
+    /// 操作类型，这几种：{81: "replay", 82: "win", 83: "fail", 99: "error"}
+    pub game_state: String,
+}
+
+/// evf标准中的局面事件
+#[derive(Clone)]
+pub struct BoardEvent {
+    /// 操作类型，这几种：{100: "cell_0", 101: "cell_1", 102: "cell_2", 103: "cell_3", 104: "cell_4",
+    /// 105: "cell_5", 106: "cell_6", 107: "cell_7", 108: "cell_8", 110: "up", 111: "flag",
+    /// 114: "cross mine", 115: "blast", 116: "mine", 118: "pressed", 120: "questionmark",
+    /// 121: "pressed questionmark"}
+    pub board: String,
+    /// 从上往下，从0开始数，第几行
+    pub row_id: u8,
+    /// 从左往右，从0开始数，第几列
+    pub column_id: u8,
+}
+
+#[derive(Clone)]
+enum IndexValue {
+    Number(f64),
+    String(String),
+}
+
+/// evf标准中的指标事件
+#[derive(Clone)]
+pub struct IndexEvent {
+    pub key: String,
+    pub value: IndexValue,
+}
 
 /// 录像里的局面活动（点击或移动）、指标状态(该活动完成后的)、先验后验局面索引
 #[derive(Clone)]
 pub struct VideoActionStateRecorder {
     /// 相对时间，从0开始，大于rtime
     pub time: f64,
+    pub event: Option<Event>,
     /// 操作类型，这几种："mv", "lc", "lr", "rc", "rr", "mc", "mr", "pf"
-    pub mouse: String,
-    /// 距离左端有几像素。
-    pub x: u16,
-    /// 距离上端有几像素。
-    pub y: u16,
+    // pub mouse: String,
+    // /// 距离左端有几像素。
+    // pub x: u16,
+    // /// 距离上端有几像素。
+    // pub y: u16,
     /// 0代表完全没用；
     /// 1代表能仅推进局面但不改变对局面的后验判断，例如标雷和取消标雷；
     /// 2代表改变对局面的后验判断的操作，例如左键点开一个或一片格子，不包括双击；
@@ -93,9 +136,7 @@ impl Default for VideoActionStateRecorder {
     fn default() -> Self {
         VideoActionStateRecorder {
             time: 0.0,
-            mouse: "".to_string(),
-            x: 0,
-            y: 0,
+            event: None,
             useful_level: 0,
             prior_game_board: None,
             next_game_board: None,
@@ -634,72 +675,77 @@ impl BaseVideo<Vec<Vec<i32>>> {
         for ide in 0..self.video_action_state_recorder.len() {
             // 控制svi的生命周期
             let svi = &mut self.video_action_state_recorder[ide];
-            svi.prior_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
-            if svi.mouse != "mv" {
-                let old_state = b.game_board_state;
-                // println!(">>>  {:?}, {:?}", svi.mouse, b.mouse_state);
-                let u_level = b
-                    .step(
-                        &svi.mouse,
-                        (
-                            (svi.y / self.cell_pixel_size as u16) as usize,
-                            (svi.x / self.cell_pixel_size as u16) as usize,
-                        ),
-                    )
-                    .unwrap();
-                // println!("     {:?}, {:?}", svi.mouse, b.mouse_state);
-                svi.useful_level = u_level;
-                if u_level >= 1 {
-                    let mut g_b = GameBoard::new(self.mine_num);
-                    g_b.set_game_board(&b.game_board);
-                    self.game_board_stream.push(Rc::new(RefCell::new(g_b)));
-                    if old_state != GameBoardState::Playing {
-                        self.delta_time = svi.time;
+            if let Some(Event::Mouse(mouse_event)) = &svi.event {
+                svi.prior_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
+                if mouse_event.mouse != "mv" {
+                    let old_state = b.game_board_state;
+                    // println!(">>>  {:?}, {:?}", svi.mouse, b.mouse_state);
+                    let u_level = b
+                        .step(
+                            &mouse_event.mouse,
+                            (
+                                (mouse_event.y / self.cell_pixel_size as u16) as usize,
+                                (mouse_event.x / self.cell_pixel_size as u16) as usize,
+                            ),
+                        )
+                        .unwrap();
+                    // println!("     {:?}, {:?}", svi.mouse, b.mouse_state);
+                    svi.useful_level = u_level;
+                    if u_level >= 1 {
+                        let mut g_b = GameBoard::new(self.mine_num);
+                        g_b.set_game_board(&b.game_board);
+                        self.game_board_stream.push(Rc::new(RefCell::new(g_b)));
+                        if old_state != GameBoardState::Playing {
+                            self.delta_time = svi.time;
+                        }
+                        // println!("{:?}, {:?}", self.game_board_stream.len(), svi.mouse);
                     }
-                    // println!("{:?}, {:?}", self.game_board_stream.len(), svi.mouse);
                 }
-            }
-            svi.next_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
-            svi.mouse_state = b.mouse_state.clone();
-            svi.key_dynamic_params.left = b.left;
-            svi.key_dynamic_params.right = b.right;
-            svi.key_dynamic_params.bbbv_solved = b.bbbv_solved;
-            svi.key_dynamic_params.double = b.double;
-            svi.key_dynamic_params.lce = b.lce;
-            svi.key_dynamic_params.rce = b.rce;
-            svi.key_dynamic_params.dce = b.dce;
-            svi.key_dynamic_params.flag = b.flag;
-            // 这两个很难搞
-            svi.key_dynamic_params.op_solved = 0;
-            svi.key_dynamic_params.isl_solved = 0;
-            let svi = &self.video_action_state_recorder[ide];
-            // 在下述状态中计算path
-            if b.game_board_state == GameBoardState::Playing
-                || b.game_board_state == GameBoardState::Win
-                || b.game_board_state == GameBoardState::Loss
-            {
-                if self.last_in_board_pos == (u16::MAX, u16::MAX) {
-                    // 第一下操作不可能是在局面外的
-                    // 初始化只执行一次
-                    self.last_in_board_pos = (svi.y, svi.x);
-                    self.last_in_board_pos_path = 0.0;
-                }
-                if svi.y >= self.height as u16 * self.cell_pixel_size as u16
-                    && svi.x >= self.width as u16 * self.cell_pixel_size as u16
+                svi.next_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
+                svi.mouse_state = b.mouse_state.clone();
+                svi.key_dynamic_params.left = b.left;
+                svi.key_dynamic_params.right = b.right;
+                svi.key_dynamic_params.bbbv_solved = b.bbbv_solved;
+                svi.key_dynamic_params.double = b.double;
+                svi.key_dynamic_params.lce = b.lce;
+                svi.key_dynamic_params.rce = b.rce;
+                svi.key_dynamic_params.dce = b.dce;
+                svi.key_dynamic_params.flag = b.flag;
+                // 这两个很难搞
+                svi.key_dynamic_params.op_solved = 0;
+                svi.key_dynamic_params.isl_solved = 0;
+                // let svi = &self.video_action_state_recorder[ide];
+                // 在下述状态中计算path
+                if b.game_board_state == GameBoardState::Playing
+                    || b.game_board_state == GameBoardState::Win
+                    || b.game_board_state == GameBoardState::Loss
                 {
-                    self.video_action_state_recorder[ide].path = self.last_in_board_pos_path;
-                    // 也等于self.video_action_state_recorder[ide - 1].path
-                } else {
-                    let svi = &mut self.video_action_state_recorder[ide];
-                    svi.path = self.last_in_board_pos_path
-                        + ((svi.y as f64 - self.last_in_board_pos.0 as f64).powf(2.0)
-                            + (svi.x as f64 - self.last_in_board_pos.1 as f64).powf(2.0))
-                        .powf(0.5)
-                            * 16.0
-                            / (self.cell_pixel_size as f64);
-                    self.last_in_board_pos = (svi.y, svi.x);
-                    self.last_in_board_pos_path = svi.path;
+                    if self.last_in_board_pos == (u16::MAX, u16::MAX) {
+                        // 第一下操作不可能是在局面外的
+                        // 初始化只执行一次
+                        self.last_in_board_pos = (mouse_event.y, mouse_event.x);
+                        self.last_in_board_pos_path = 0.0;
+                    }
+                    if mouse_event.y >= self.height as u16 * self.cell_pixel_size as u16
+                        && mouse_event.x >= self.width as u16 * self.cell_pixel_size as u16
+                    {
+                        self.video_action_state_recorder[ide].path = self.last_in_board_pos_path;
+                        // 也等于self.video_action_state_recorder[ide - 1].path
+                    } else {
+                        // let svi = &mut self.video_action_state_recorder[ide];
+                        svi.path = self.last_in_board_pos_path
+                            + ((mouse_event.y as f64 - self.last_in_board_pos.0 as f64).powf(2.0)
+                                + (mouse_event.x as f64 - self.last_in_board_pos.1 as f64)
+                                    .powf(2.0))
+                            .powf(0.5)
+                                * 16.0
+                                / (self.cell_pixel_size as f64);
+                        self.last_in_board_pos = (mouse_event.y, mouse_event.x);
+                        self.last_in_board_pos_path = svi.path;
+                    }
                 }
+            } else {
+                continue;
             }
         }
         let rtime = self.game_dynamic_params.rtime;
@@ -885,63 +931,65 @@ impl BaseVideo<SafeBoard> {
                     let mut pluck = 0.0;
                     let mut has_begin = false;
                     for vas in self.video_action_state_recorder.iter_mut() {
-                        if vas.useful_level == 2 {
-                            // 有效的左键
-                            if !has_begin {
-                                has_begin = true;
-                                continue;
-                            }
-                            let x = (vas.y / self.cell_pixel_size as u16) as usize;
-                            let y = (vas.x / self.cell_pixel_size as u16) as usize;
-                            // 安全的概率
-                            let p = 1.0
-                                - vas
+                        if let Some(Event::Mouse(e)) = &vas.event {
+                            if vas.useful_level == 2 {
+                                // 有效的左键
+                                if !has_begin {
+                                    has_begin = true;
+                                    continue;
+                                }
+                                let x = (e.y / self.cell_pixel_size as u16) as usize;
+                                let y = (e.x / self.cell_pixel_size as u16) as usize;
+                                // 安全的概率
+                                let p = 1.0
+                                    - vas
+                                        .prior_game_board
+                                        .as_ref()
+                                        .unwrap()
+                                        .borrow_mut()
+                                        .get_poss()[x][y];
+                                if p <= 0.0 {
+                                    return Ok(f64::MAX);
+                                } else if p < 1.0 {
+                                    pluck -= p.log10();
+                                }
+                            } else if vas.useful_level == 3 {
+                                // 有效的双键
+                                let x = (e.y / self.cell_pixel_size as u16) as usize;
+                                let y = (e.x / self.cell_pixel_size as u16) as usize;
+                                let mut game_board_clone = vas
                                     .prior_game_board
                                     .as_ref()
                                     .unwrap()
                                     .borrow_mut()
-                                    .get_poss()[x][y];
-                            if p <= 0.0 {
-                                return Ok(f64::MAX)
-                            } else if p < 1.0 {
-                                pluck -= p.log10();
-                            }
-                        } else if vas.useful_level == 3 {
-                            // 有效的双键
-                            let x = (vas.y / self.cell_pixel_size as u16) as usize;
-                            let y = (vas.x / self.cell_pixel_size as u16) as usize;
-                            let mut game_board_clone = vas
-                                .prior_game_board
-                                .as_ref()
-                                .unwrap()
-                                .borrow_mut()
-                                .game_board
-                                .clone();                    
-                            let mut chording_cells = vec![];
-                            for m in max(1, x) - 1..min(self.height, x + 2) {
-                                for n in max(1, y) - 1..min(self.width, y + 2) {
-                                    if game_board_clone[m][n] == 10 {
-                                        chording_cells.push((m, n));
+                                    .game_board
+                                    .clone();
+                                let mut chording_cells = vec![];
+                                for m in max(1, x) - 1..min(self.height, x + 2) {
+                                    for n in max(1, y) - 1..min(self.width, y + 2) {
+                                        if game_board_clone[m][n] == 10 {
+                                            chording_cells.push((m, n));
+                                        }
                                     }
                                 }
+                                let _ = mark_board(&mut game_board_clone, true).unwrap();
+                                // 安全的概率
+                                let p = cal_probability_cells_not_mine(
+                                    &game_board_clone,
+                                    self.mine_num as f64,
+                                    &chording_cells,
+                                );
+                                if p <= 0.0 {
+                                    return Ok(f64::MAX);
+                                } else if p > 0.0 {
+                                    pluck -= p.log10();
+                                }
+                            } else if vas.useful_level == 4 {
+                                return Ok(f64::MAX);
                             }
-                            let _ = mark_board(&mut game_board_clone, true).unwrap();
-                            // 安全的概率
-                            let p = cal_probability_cells_not_mine(
-                                &game_board_clone,
-                                self.mine_num as f64,
-                                &chording_cells,
-                            );
-                            if p <= 0.0 {
-                                return Ok(f64::MAX)
-                            } else if p > 0.0 {
-                                pluck -= p.log10();
-                            }
-                        }else if vas.useful_level == 4 {
-                            return Ok(f64::MAX)
                         }
                     }
-                    return Ok(pluck)
+                    return Ok(pluck);
                 }
                 Ok(pluck)
             }
@@ -1325,8 +1373,6 @@ impl<T> BaseVideo<T> {
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         // 第一时间获取时间戳
-
-        use core::f64;
         let step_instant = Instant::now();
         let mut time_ms = time_ms_between(step_instant, self.video_start_instant);
         let mut time = time_ms as f64 / 1000.0;
@@ -1380,30 +1426,37 @@ impl<T> BaseVideo<T> {
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_micros() as u64;
-                // 点一下左键可能直接获胜，但不可能直接失败
-                let t_ms = time_ms - self.game_start_ms;
-                self.is_completed = false;
-                // 这是和录像时间成绩有关
-                let t = t_ms as f64 / 1000.0;
-                self.static_params.bbbv = cal_bbbv(&self.board);
-                self.game_dynamic_params.rtime = t;
-                self.game_dynamic_params.rtime_ms = t_ms;
-                self.video_dynamic_params.etime =
-                    t / self.minesweeper_board.bbbv_solved as f64 * self.static_params.bbbv as f64;
-                self.gather_params_after_game(t);
+                // // 点一下左键可能直接获胜，但不可能直接失败
+                // let t_ms = time_ms - self.game_start_ms;
+                // self.is_completed = false;
+                // // 这是和录像时间成绩有关
+                // let t = t_ms as f64 / 1000.0;
+                // self.static_params.bbbv = cal_bbbv(&self.board);
+                // self.game_dynamic_params.rtime = t;
+                // self.game_dynamic_params.rtime_ms = t_ms;
+                // self.video_dynamic_params.etime =
+                //     t / self.minesweeper_board.bbbv_solved as f64 * self.static_params.bbbv as f64;
+                self.gather_params_after_game(
+                    time_ms,
+                    Some(MouseEvent {
+                        mouse: e.to_string(),
+                        x: pos.1 as u16,
+                        y: pos.0 as u16,
+                    }),
+                );
 
-                if self.minesweeper_board.board_changed {
-                    // 此处是解决可猜模式中由于局面更改，扫完后，ce、bbbv_solved等计算不对，需要重来一遍
-                    self.minesweeper_board.reset();
-                    for action_state in &self.video_action_state_recorder {
-                        let x = action_state.y as usize / self.cell_pixel_size as usize;
-                        let y = action_state.x as usize / self.cell_pixel_size as usize;
-                        self.minesweeper_board.step(&action_state.mouse, (x, y))?;
-                    }
-                    let x = pos.0 / self.cell_pixel_size as usize;
-                    let y = pos.1 / self.cell_pixel_size as usize;
-                    self.minesweeper_board.step(e, (x, y))?;
-                }
+                // if self.minesweeper_board.board_changed {
+                //     // 此处是解决可猜模式中由于局面更改，扫完后，ce、bbbv_solved等计算不对，需要重来一遍
+                //     self.minesweeper_board.reset();
+                //     for action_state in &self.video_action_state_recorder {
+                //         let x = action_state.y as usize / self.cell_pixel_size as usize;
+                //         let y = action_state.x as usize / self.cell_pixel_size as usize;
+                //         self.minesweeper_board.step(&action_state.mouse, (x, y))?;
+                //     }
+                //     let x = pos.0 / self.cell_pixel_size as usize;
+                //     let y = pos.1 / self.cell_pixel_size as usize;
+                //     self.minesweeper_board.step(e, (x, y))?;
+                // }
             }
             GameBoardState::Win => {
                 self.end_time = SystemTime::now()
@@ -1414,29 +1467,35 @@ impl<T> BaseVideo<T> {
                     // 点一左键下就直接获胜的情况
                     self.start_time = self.end_time.clone();
                     self.game_start_ms = time_ms;
-                    // println!("334")
                 }
-                let t_ms = time_ms - self.game_start_ms;
-                self.is_completed = true;
-                let t = t_ms as f64 / 1000.0;
-                self.static_params.bbbv = cal_bbbv(&self.board);
-                self.game_dynamic_params.rtime = t;
-                self.game_dynamic_params.rtime_ms = t_ms;
-                self.video_dynamic_params.etime = t;
-                self.gather_params_after_game(t);
+                // let t_ms = time_ms - self.game_start_ms;
+                // self.is_completed = true;
+                // let t = t_ms as f64 / 1000.0;
+                // self.static_params.bbbv = cal_bbbv(&self.board);
+                // self.game_dynamic_params.rtime = t;
+                // self.game_dynamic_params.rtime_ms = t_ms;
+                // self.video_dynamic_params.etime = t;
+                self.gather_params_after_game(
+                    time_ms,
+                    Some(MouseEvent {
+                        mouse: e.to_string(),
+                        x: pos.1 as u16,
+                        y: pos.0 as u16,
+                    }),
+                );
 
-                if self.minesweeper_board.board_changed {
-                    // 此处是解决可猜模式中由于局面更改，扫完后，ce、bbbv_solved等计算不对，需要重来一遍
-                    self.minesweeper_board.reset();
-                    for action_state in &self.video_action_state_recorder {
-                        let x = action_state.y as usize / self.cell_pixel_size as usize;
-                        let y = action_state.x as usize / self.cell_pixel_size as usize;
-                        self.minesweeper_board.step(&action_state.mouse, (x, y))?;
-                    }
-                    let x = pos.0 / self.cell_pixel_size as usize;
-                    let y = pos.1 / self.cell_pixel_size as usize;
-                    self.minesweeper_board.step(e, (x, y))?;
-                }
+                // if self.minesweeper_board.board_changed {
+                //     // 此处是解决可猜模式中由于局面更改，扫完后，ce、bbbv_solved等计算不对，需要重来一遍
+                //     self.minesweeper_board.reset();
+                //     for action_state in &self.video_action_state_recorder {
+                //         let x = action_state.y as usize / self.cell_pixel_size as usize;
+                //         let y = action_state.x as usize / self.cell_pixel_size as usize;
+                //         self.minesweeper_board.step(&action_state.mouse, (x, y))?;
+                //     }
+                //     let x = pos.0 / self.cell_pixel_size as usize;
+                //     let y = pos.1 / self.cell_pixel_size as usize;
+                //     self.minesweeper_board.step(e, (x, y))?;
+                // }
             }
         }
         // 维护path，挺复杂的
@@ -1492,9 +1551,11 @@ impl<T> BaseVideo<T> {
         self.video_action_state_recorder
             .push(VideoActionStateRecorder {
                 time,
-                mouse: e.to_string(),
-                x: pos.1 as u16,
-                y: pos.0 as u16,
+                event: Some(Event::Mouse(MouseEvent {
+                    mouse: e.to_string(),
+                    x: pos.1 as u16,
+                    y: pos.0 as u16,
+                })),
                 next_game_board,
                 prior_game_board,
                 useful_level: a,
@@ -1519,6 +1580,29 @@ impl<T> BaseVideo<T> {
         Ok(0)
     }
 
+    /// 实施游戏状态动作
+    /// 游戏状态事件编码：{81: "replay", 82: "win", 83: "fail", 99: "error"}。
+    #[cfg(any(feature = "py", feature = "rs"))]
+    pub fn step_game_state(&mut self, e: &str) -> Result<u8, ()>
+    where
+        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        let step_instant = Instant::now();
+        let time_ms = time_ms_between(step_instant, self.video_start_instant);
+        match e {
+            "replay" | "fail" => {
+                self.end_time = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_micros() as u64;
+                self.game_board_state = GameBoardState::Loss;
+                self.gather_params_after_game(time_ms, None);
+                Ok(0)
+            }
+            _ => Err(()),
+        }
+    }
     /// 获胜后标上所有的雷，没获胜则返回
     #[cfg(any(feature = "py", feature = "rs"))]
     pub fn win_then_flag_all_mine(&mut self) {
@@ -1556,11 +1640,47 @@ impl<T> BaseVideo<T> {
     }
     /// 游戏结束后，计算一批指标
     #[cfg(any(feature = "py", feature = "rs"))]
-    fn gather_params_after_game(&mut self, t: f64)
+    fn gather_params_after_game(&mut self, time_ms: u32, last_mouse_event: Option<MouseEvent>)
     where
-        T: std::ops::Index<usize> + BoardSize,
+        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
+        assert!(
+            self.game_board_state == GameBoardState::Loss
+                || self.game_board_state == GameBoardState::Win
+        );
+        if self.minesweeper_board.board_changed {
+            // 此处是解决可猜模式中由于局面更改，扫完后，ce、bbbv_solved等计算不对，需要重来一遍
+            self.minesweeper_board.reset();
+            for action_state in &self.video_action_state_recorder {
+                if let Some(Event::Mouse(mouse_event)) = &action_state.event {
+                    let r = mouse_event.y as usize / self.cell_pixel_size as usize;
+                    let c = mouse_event.x as usize / self.cell_pixel_size as usize;
+                    self.minesweeper_board
+                        .step(&mouse_event.mouse, (r, c))
+                        .unwrap();
+                }
+            }
+            let mouse_e = last_mouse_event.unwrap();
+            let r = mouse_e.y as usize / self.cell_pixel_size as usize;
+            let c = mouse_e.x as usize / self.cell_pixel_size as usize;
+            self.minesweeper_board.step(&mouse_e.mouse, (r, c)).unwrap();
+        }
+        // 点一下左键可能直接获胜，但不可能直接失败
+        let t_ms = time_ms - self.game_start_ms;
+        self.is_completed = false;
+        // 这是和录像时间成绩有关
+        let t = t_ms as f64 / 1000.0;
+        self.static_params.bbbv = cal_bbbv(&self.board);
+        self.game_dynamic_params.rtime = t;
+        self.game_dynamic_params.rtime_ms = t_ms;
+        if self.game_board_state == GameBoardState::Loss {
+            self.video_dynamic_params.etime =
+                t / self.minesweeper_board.bbbv_solved as f64 * self.static_params.bbbv as f64;
+        } else {
+            self.video_dynamic_params.etime = t;
+        }
+
         self.game_dynamic_params.left = self.minesweeper_board.left;
         self.game_dynamic_params.right = self.minesweeper_board.right;
         self.game_dynamic_params.double = self.minesweeper_board.double;
@@ -1597,44 +1717,44 @@ impl<T> BaseVideo<T> {
 
     pub fn print_event(&self) {
         let num = 0;
-        for e in &self.video_action_state_recorder {
-            if num < 800 {
-                if e.mouse != "mv" {
-                    println!(
-                        "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
-                        e.time, e.mouse, e.x, e.y, e.useful_level
-                    );
-                }
-            }
-            // println!(
-            //     "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
-            //     e.time, e.mouse, e.x, e.y, e.useful_level
-            // );
-            // if e.mouse != "mv" {
-            //     println!(
-            //         "my_board.step_flow(vec![({:?}, ({:?}, {:?}))]).unwrap();",
-            //         // "video.step({:?}, ({:?}, {:?})).unwrap();",
-            //         e.mouse,
-            //         e.y / self.cell_pixel_size as u16,
-            //         e.x / self.cell_pixel_size as u16
-            //     );
-            // }
-            // num += 1;
-            // if e.mouse != "mv" {
-            //     println!(
-            //         "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
-            //         e.time, e.mouse, e.x, e.y
-            //     );
-            //     e.prior_game_board
-            //         .game_board
-            //         .iter()
-            //         .for_each(|v| println!("{:?}", v));
-            //     e.prior_game_board
-            //         .poss
-            //         .iter()
-            //         .for_each(|v| println!("{:?}", v));
-            // }
-        }
+        // for e in &self.video_action_state_recorder {
+        //     if num < 800 {
+        //         if e.mouse != "mv" {
+        //             println!(
+        //                 "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+        //                 e.time, e.mouse, e.x, e.y, e.useful_level
+        //             );
+        //         }
+        //     }
+        // println!(
+        //     "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+        //     e.time, e.mouse, e.x, e.y, e.useful_level
+        // );
+        // if e.mouse != "mv" {
+        //     println!(
+        //         "my_board.step_flow(vec![({:?}, ({:?}, {:?}))]).unwrap();",
+        //         // "video.step({:?}, ({:?}, {:?})).unwrap();",
+        //         e.mouse,
+        //         e.y / self.cell_pixel_size as u16,
+        //         e.x / self.cell_pixel_size as u16
+        //     );
+        // }
+        // num += 1;
+        // if e.mouse != "mv" {
+        //     println!(
+        //         "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
+        //         e.time, e.mouse, e.x, e.y
+        //     );
+        //     e.prior_game_board
+        //         .game_board
+        //         .iter()
+        //         .for_each(|v| println!("{:?}", v));
+        //     e.prior_game_board
+        //         .poss
+        //         .iter()
+        //         .for_each(|v| println!("{:?}", v));
+        // }
+        // }
     }
     pub fn print_comments(&self) {
         for i in &self.video_action_state_recorder {
@@ -2387,22 +2507,23 @@ impl<T> BaseVideo<T> {
         }
         Ok(self.checksum.clone())
     }
-    // 录像播放时，返回鼠标的坐标
+    /// 录像播放时，返回鼠标的坐标。
+    /// 避开局面外的操作（记为最右下角）
     pub fn get_x_y(&self) -> Result<(u16, u16), ()> {
         if self.game_board_state != GameBoardState::Display {
             return Err(());
         };
         let mut k = 0;
         loop {
-            if self.video_action_state_recorder[self.current_event_id - k].x
-                < self.cell_pixel_size as u16 * self.width as u16
+            if let Some(Event::Mouse(mouse_event)) =
+                &self.video_action_state_recorder[self.current_event_id - k].event
             {
-                return Ok((
-                    (self.video_action_state_recorder[self.current_event_id - k].x as f64
-                        * self.video_playing_pix_size_k) as u16,
-                    (self.video_action_state_recorder[self.current_event_id - k].y as f64
-                        * self.video_playing_pix_size_k) as u16,
-                ));
+                if mouse_event.x < self.cell_pixel_size as u16 * self.width as u16 {
+                    return Ok((
+                        (mouse_event.x as f64 * self.video_playing_pix_size_k) as u16,
+                        (mouse_event.y as f64 * self.video_playing_pix_size_k) as u16,
+                    ));
+                }
             }
             k += 1;
         }
@@ -2513,29 +2634,33 @@ impl<T> BaseVideo<T> {
             self.raw_data.push(byte);
         }
 
-        for event in &self.video_action_state_recorder {
-            // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
-            match event.mouse.as_str() {
-                "mv" => self.raw_data.push(1),
-                "lc" => self.raw_data.push(2),
-                "lr" => self.raw_data.push(3),
-                "rc" => self.raw_data.push(4),
-                "rr" => self.raw_data.push(5),
-                "mc" => self.raw_data.push(6),
-                "mr" => self.raw_data.push(7),
-                "pf" => self.raw_data.push(8),
-                "cc" => self.raw_data.push(9),
-                // 不可能出现，出现再说
-                _ => self.raw_data.push(99),
+        for vas in &self.video_action_state_recorder {
+            if let Some(Event::Mouse(mouse_event)) = &vas.event {
+                // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
+                match mouse_event.mouse.as_str() {
+                    "mv" => self.raw_data.push(1),
+                    "lc" => self.raw_data.push(2),
+                    "lr" => self.raw_data.push(3),
+                    "rc" => self.raw_data.push(4),
+                    "rr" => self.raw_data.push(5),
+                    "mc" => self.raw_data.push(6),
+                    "mr" => self.raw_data.push(7),
+                    "pf" => self.raw_data.push(8),
+                    "cc" => self.raw_data.push(9),
+                    // 不可能出现，出现再说
+                    _ => self.raw_data.push(99),
+                }
+                let t_ms = s_to_ms(vas.time);
+                self.raw_data.push((t_ms >> 16).try_into().unwrap());
+                self.raw_data.push(((t_ms >> 8) % 256).try_into().unwrap());
+                self.raw_data.push((t_ms % 256).try_into().unwrap());
+                self.raw_data.push((mouse_event.x >> 8).try_into().unwrap());
+                self.raw_data
+                    .push((mouse_event.x % 256).try_into().unwrap());
+                self.raw_data.push((mouse_event.y >> 8).try_into().unwrap());
+                self.raw_data
+                    .push((mouse_event.y % 256).try_into().unwrap());
             }
-            let t_ms = s_to_ms(event.time);
-            self.raw_data.push((t_ms >> 16).try_into().unwrap());
-            self.raw_data.push(((t_ms >> 8) % 256).try_into().unwrap());
-            self.raw_data.push((t_ms % 256).try_into().unwrap());
-            self.raw_data.push((event.x >> 8).try_into().unwrap());
-            self.raw_data.push((event.x % 256).try_into().unwrap());
-            self.raw_data.push((event.y >> 8).try_into().unwrap());
-            self.raw_data.push((event.y % 256).try_into().unwrap());
         }
         if !self.checksum.is_empty() {
             self.raw_data.push(0);
@@ -2634,29 +2759,33 @@ impl<T> BaseVideo<T> {
             self.raw_data.push(byte);
         }
 
-        for event in &self.video_action_state_recorder {
-            // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
-            match event.mouse.as_str() {
-                "mv" => self.raw_data.push(1),
-                "lc" => self.raw_data.push(2),
-                "lr" => self.raw_data.push(3),
-                "rc" => self.raw_data.push(4),
-                "rr" => self.raw_data.push(5),
-                "mc" => self.raw_data.push(6),
-                "mr" => self.raw_data.push(7),
-                "pf" => self.raw_data.push(8),
-                "cc" => self.raw_data.push(9),
-                // 不可能出现，出现再说
-                _ => self.raw_data.push(99),
+        for vas in &self.video_action_state_recorder {
+            if let Some(Event::Mouse(mouse_event)) = &vas.event {
+                // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
+                match mouse_event.mouse.as_str() {
+                    "mv" => self.raw_data.push(1),
+                    "lc" => self.raw_data.push(2),
+                    "lr" => self.raw_data.push(3),
+                    "rc" => self.raw_data.push(4),
+                    "rr" => self.raw_data.push(5),
+                    "mc" => self.raw_data.push(6),
+                    "mr" => self.raw_data.push(7),
+                    "pf" => self.raw_data.push(8),
+                    "cc" => self.raw_data.push(9),
+                    // 不可能出现，出现再说
+                    _ => self.raw_data.push(99),
+                }
+                let t_ms = s_to_ms(vas.time);
+                self.raw_data.push((t_ms >> 16).try_into().unwrap());
+                self.raw_data.push(((t_ms >> 8) % 256).try_into().unwrap());
+                self.raw_data.push((t_ms % 256).try_into().unwrap());
+                self.raw_data.push((mouse_event.x >> 8).try_into().unwrap());
+                self.raw_data
+                    .push((mouse_event.x % 256).try_into().unwrap());
+                self.raw_data.push((mouse_event.y >> 8).try_into().unwrap());
+                self.raw_data
+                    .push((mouse_event.y % 256).try_into().unwrap());
             }
-            let t_ms = s_to_ms(event.time);
-            self.raw_data.push((t_ms >> 16).try_into().unwrap());
-            self.raw_data.push(((t_ms >> 8) % 256).try_into().unwrap());
-            self.raw_data.push((t_ms % 256).try_into().unwrap());
-            self.raw_data.push((event.x >> 8).try_into().unwrap());
-            self.raw_data.push((event.x % 256).try_into().unwrap());
-            self.raw_data.push((event.y >> 8).try_into().unwrap());
-            self.raw_data.push((event.y % 256).try_into().unwrap());
         }
         if !self.checksum.is_empty() {
             self.raw_data.push(0);
@@ -2767,29 +2896,33 @@ impl<T> BaseVideo<T> {
             self.raw_data.push(byte);
         }
 
-        for event in &self.video_action_state_recorder {
-            // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
-            match event.mouse.as_str() {
-                "mv" => self.raw_data.push(1),
-                "lc" => self.raw_data.push(2),
-                "lr" => self.raw_data.push(3),
-                "rc" => self.raw_data.push(4),
-                "rr" => self.raw_data.push(5),
-                "mc" => self.raw_data.push(6),
-                "mr" => self.raw_data.push(7),
-                "pf" => self.raw_data.push(8),
-                "cc" => self.raw_data.push(9),
-                // 不可能出现，出现再说
-                _ => self.raw_data.push(99),
+        for vas in &self.video_action_state_recorder {
+            if let Some(Event::Mouse(mouse_event)) = &vas.event {
+                // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
+                match mouse_event.mouse.as_str() {
+                    "mv" => self.raw_data.push(1),
+                    "lc" => self.raw_data.push(2),
+                    "lr" => self.raw_data.push(3),
+                    "rc" => self.raw_data.push(4),
+                    "rr" => self.raw_data.push(5),
+                    "mc" => self.raw_data.push(6),
+                    "mr" => self.raw_data.push(7),
+                    "pf" => self.raw_data.push(8),
+                    "cc" => self.raw_data.push(9),
+                    // 不可能出现，出现再说
+                    _ => self.raw_data.push(99),
+                }
+                let t_ms = s_to_ms(vas.time);
+                self.raw_data.push((t_ms >> 16).try_into().unwrap());
+                self.raw_data.push(((t_ms >> 8) % 256).try_into().unwrap());
+                self.raw_data.push((t_ms % 256).try_into().unwrap());
+                self.raw_data.push((mouse_event.x >> 8).try_into().unwrap());
+                self.raw_data
+                    .push((mouse_event.x % 256).try_into().unwrap());
+                self.raw_data.push((mouse_event.y >> 8).try_into().unwrap());
+                self.raw_data
+                    .push((mouse_event.y % 256).try_into().unwrap());
             }
-            let t_ms = s_to_ms(event.time);
-            self.raw_data.push((t_ms >> 16).try_into().unwrap());
-            self.raw_data.push(((t_ms >> 8) % 256).try_into().unwrap());
-            self.raw_data.push((t_ms % 256).try_into().unwrap());
-            self.raw_data.push((event.x >> 8).try_into().unwrap());
-            self.raw_data.push((event.x % 256).try_into().unwrap());
-            self.raw_data.push((event.y >> 8).try_into().unwrap());
-            self.raw_data.push((event.y % 256).try_into().unwrap());
         }
         if !self.checksum.is_empty() {
             self.raw_data.push(0);
@@ -2915,64 +3048,68 @@ impl<T> BaseVideo<T> {
         // 自定义指标的数量
         self.raw_data.push(0);
         self.raw_data.push(0);
-        let event_0 = &self.video_action_state_recorder[0];
-        match event_0.mouse.as_str() {
-            "mv" => self.raw_data.push(1),
-            "lc" => self.raw_data.push(2),
-            "lr" => self.raw_data.push(3),
-            "rc" => self.raw_data.push(4),
-            "rr" => self.raw_data.push(5),
-            "mc" => self.raw_data.push(6),
-            "mr" => self.raw_data.push(7),
-            "pf" => self.raw_data.push(8),
-            "cc" => self.raw_data.push(9),
-            "l" => self.raw_data.push(10),
-            "r" => self.raw_data.push(11),
-            "m" => self.raw_data.push(12),
-            // 不可能出现，出现再说
-            _ => {}
-        }
-        let t_ms = s_to_ms(event_0.time) as u8;
-        self.raw_data.push((t_ms).try_into().unwrap());
-        self.raw_data.push((event_0.x >> 8).try_into().unwrap());
-        self.raw_data.push((event_0.x % 256).try_into().unwrap());
-        self.raw_data.push((event_0.y >> 8).try_into().unwrap());
-        self.raw_data.push((event_0.y % 256).try_into().unwrap());
-
-        for event_id in 1..self.video_action_state_recorder.len() {
-            let event = &self.video_action_state_recorder[event_id];
-            // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
-            let last_event = &self.video_action_state_recorder[event_id - 1];
-            let mut delta_t = s_to_ms(event.time) - s_to_ms(last_event.time);
-            while delta_t > 255 {
-                self.raw_data.push(255);
-                let pause_time = min(65535 as u32, delta_t) as u16;
-                self.raw_data.extend_from_slice(&pause_time.to_be_bytes());
-                delta_t -= pause_time as u32;
-            }
-            match event.mouse.as_str() {
+        let vas_0 = &self.video_action_state_recorder[0];
+        // 计算鼠标坐标差值使用
+        let mut last_mouse_event;
+        let mut last_mouse_event_time;
+        if let Some(Event::Mouse(event_0)) = &vas_0.event {
+            last_mouse_event = event_0;
+            last_mouse_event_time = vas_0.time;
+            match event_0.mouse.as_str() {
                 "mv" => self.raw_data.push(1),
                 "lc" => self.raw_data.push(2),
-                "lr" => self.raw_data.push(3),
                 "rc" => self.raw_data.push(4),
-                "rr" => self.raw_data.push(5),
-                "mc" => self.raw_data.push(6),
-                "mr" => self.raw_data.push(7),
                 "pf" => self.raw_data.push(8),
-                "cc" => self.raw_data.push(9),
-                "l" => self.raw_data.push(10),
-                "r" => self.raw_data.push(11),
-                "m" => self.raw_data.push(12),
                 // 不可能出现，出现再说
-                _ => {
-                    continue;
-                }
+                _ => panic!(""),
             }
-            self.raw_data.push(delta_t as u8);
-            let delta_x = event.x as i16 - last_event.x as i16;
-            let delta_y = event.y as i16 - last_event.y as i16;
-            self.raw_data.extend_from_slice(&delta_x.to_be_bytes());
-            self.raw_data.extend_from_slice(&delta_y.to_be_bytes());
+            let t_ms = s_to_ms(vas_0.time) as u8;
+            self.raw_data.push((t_ms).try_into().unwrap());
+            self.raw_data.push((event_0.x >> 8).try_into().unwrap());
+            self.raw_data.push((event_0.x % 256).try_into().unwrap());
+            self.raw_data.push((event_0.y >> 8).try_into().unwrap());
+            self.raw_data.push((event_0.y % 256).try_into().unwrap());
+        } else {
+            panic!("");
+        }
+
+        for event_id in 1..self.video_action_state_recorder.len() {
+            let vas = &self.video_action_state_recorder[event_id];
+            if let Some(Event::Mouse(mouse_event)) = &vas.event {
+                // println!("{:?}: '{:?}', ({:?}, {:?})", event.time, event.mouse.as_str(), event.x, event.y);
+                let mut delta_t = s_to_ms(vas.time) - s_to_ms(last_mouse_event_time);
+                while delta_t > 255 {
+                    self.raw_data.push(255);
+                    let pause_time = min(65535 as u32, delta_t) as u16;
+                    self.raw_data.extend_from_slice(&pause_time.to_be_bytes());
+                    delta_t -= pause_time as u32;
+                }
+                match mouse_event.mouse.as_str() {
+                    "mv" => self.raw_data.push(1),
+                    "lc" => self.raw_data.push(2),
+                    "lr" => self.raw_data.push(3),
+                    "rc" => self.raw_data.push(4),
+                    "rr" => self.raw_data.push(5),
+                    "mc" => self.raw_data.push(6),
+                    "mr" => self.raw_data.push(7),
+                    "pf" => self.raw_data.push(8),
+                    "cc" => self.raw_data.push(9),
+                    "l" => self.raw_data.push(10),
+                    "r" => self.raw_data.push(11),
+                    "m" => self.raw_data.push(12),
+                    // 不可能出现，出现再说
+                    _ => {
+                        continue;
+                    }
+                }
+                self.raw_data.push(delta_t as u8);
+                let delta_x = mouse_event.x as i16 - last_mouse_event.x as i16;
+                let delta_y = mouse_event.y as i16 - last_mouse_event.y as i16;
+                self.raw_data.extend_from_slice(&delta_x.to_be_bytes());
+                self.raw_data.extend_from_slice(&delta_y.to_be_bytes());
+                last_mouse_event = mouse_event;
+                last_mouse_event_time = vas.time;
+            }
         }
         self.raw_data.push(0);
         self.raw_data

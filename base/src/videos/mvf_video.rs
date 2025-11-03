@@ -1,6 +1,8 @@
 use crate::utils::cal_board_numbers;
 use crate::videos::base_video::NewBaseVideo;
-use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, VideoActionStateRecorder};
+use crate::videos::base_video::{
+    BaseVideo, ErrReadVideoReason, Event, MouseEvent, VideoActionStateRecorder,
+};
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::videos::NewSomeVideo;
 use crate::videos::NewSomeVideo2;
@@ -284,9 +286,7 @@ impl MvfVideo {
             .video_action_state_recorder
             .push(VideoActionStateRecorder {
                 time: ths as f64 / 1000.0 + sec as f64,
-                mouse,
-                x,
-                y,
+                event: Some(Event::Mouse(MouseEvent { mouse, x, y })),
                 ..VideoActionStateRecorder::default()
             });
         for _ in 0..event_size - 1 {
@@ -327,19 +327,19 @@ impl MvfVideo {
                     .video_action_state_recorder
                     .push(VideoActionStateRecorder {
                         time: ths as f64 / 1000.0 + sec as f64,
-                        mouse,
-                        x,
-                        y,
+                        event: Some(Event::Mouse(MouseEvent { mouse, x, y })),
                         ..VideoActionStateRecorder::default()
                     });
             }
         }
         let mut start_t = 0.0;
         // 计算rtime。如前所述，录像记录的时间是从lc开始的，并不正确
-        for v in &self.data.video_action_state_recorder{
-            if v.mouse == "lr"{
-                start_t = v.time;
-                break;
+        for v in &self.data.video_action_state_recorder {
+            if let Some(Event::Mouse(mouse_event)) = &v.event {
+                if mouse_event.mouse == "lr" {
+                    start_t = v.time;
+                    break;
+                }
             }
         }
         let rtime = self.data.video_action_state_recorder.last().unwrap().time - start_t;

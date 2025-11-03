@@ -450,7 +450,7 @@ impl<T> MinesweeperBoard<T> {
                 "pf" => {
                     assert!(
                         self.game_board[pos.0][pos.1] == 10,
-                        "按定义，pf不能在标雷上执行。请报告这个奇怪的录像。"
+                        ""
                     );
                     self.pre_flag_num += 1;
                     self.game_board_state = GameBoardState::PreFlaging;
@@ -559,7 +559,7 @@ impl<T> MinesweeperBoard<T> {
                 "pf" => {
                     assert!(
                         self.game_board[pos.0][pos.1] == 10,
-                        "按定义，pf不能在标雷上执行。请报告这个奇怪的录像。"
+                        ""
                     );
                     self.pre_flag_num += 1;
                     return self.right_click(pos.0, pos.1);

@@ -1,6 +1,6 @@
 use crate::algorithms::{cal_probability_cells_not_mine, mark_board};
 use crate::utils::is_good_chording;
-use crate::videos::base_video::BaseVideo;
+use crate::videos::base_video::{BaseVideo, Event, MouseEvent};
 use crate::MouseState;
 use std::cmp::{max, min};
 
@@ -19,24 +19,27 @@ use std::cmp::{max, min};
 // suspect: 鼠标移动过快(2)
 // suspect: 笔直的鼠标轨迹(101%)√
 pub fn analyse_high_risk_guess(video: &mut BaseVideo<Vec<Vec<i32>>>) {
-    let mut x;
-    let mut y;
+    let mut r;
+    let mut c;
     for ide in 2..video.video_action_state_recorder.len() {
-        x = (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16) as usize;
-        y = (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16) as usize;
-        if video.video_action_state_recorder[ide].useful_level >= 2 {
-            let p = video.video_action_state_recorder[ide]
-                .prior_game_board
-                .as_ref()
-                .unwrap()
-                .borrow_mut()
-                .get_poss()[x][y];
-            if p >= 0.51 {
-                video.video_action_state_recorder[ide].comments = format!(
-                    "{}{}",
-                    video.video_action_state_recorder[ide].comments,
-                    format!("error: 危险的猜雷(猜对概率{:.3});", 1.0 - p)
-                );
+        let vas = &mut video.video_action_state_recorder[ide];
+        if let Some(Event::Mouse(mouse_event)) = &vas.event {
+            r = (mouse_event.y / video.cell_pixel_size as u16) as usize;
+            c = (mouse_event.x / video.cell_pixel_size as u16) as usize;
+            if vas.useful_level >= 2 {
+                let p = vas
+                    .prior_game_board
+                    .as_ref()
+                    .unwrap()
+                    .borrow_mut()
+                    .get_poss()[r][c];
+                if p >= 0.51 {
+                    vas.comments = format!(
+                        "{}{}",
+                        vas.comments,
+                        format!("error: 危险的猜雷(猜对概率{:.3});", 1.0 - p)
+                    );
+                }
             }
         }
     }
@@ -44,58 +47,57 @@ pub fn analyse_high_risk_guess(video: &mut BaseVideo<Vec<Vec<i32>>>) {
 
 pub fn analyse_jump_judge(video: &mut BaseVideo<Vec<Vec<i32>>>) {
     // 功能：检测左键或右键的跳判
-    let mut x;
-    let mut y;
+    let mut r;
+    let mut c;
     for ide in 2..video.video_action_state_recorder.len() {
-        x = (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16) as usize;
-        y = (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16) as usize;
-        if video.video_action_state_recorder[ide].useful_level >= 2
-            && video.video_action_state_recorder[ide].mouse == "lr"
-        {
-            if !video.video_action_state_recorder[ide]
-                .prior_game_board
-                .as_ref()
-                .unwrap()
-                .borrow_mut()
-                .get_basic_not_mine()
-                .contains(&(x, y))
-                && video.video_action_state_recorder[ide]
+        let vas = &mut video.video_action_state_recorder[ide];
+        if let Some(Event::Mouse(mouse_event)) = &vas.event {
+            r = (mouse_event.y / video.cell_pixel_size as u16) as usize;
+            c = (mouse_event.x / video.cell_pixel_size as u16) as usize;
+            if vas.useful_level >= 2 && mouse_event.mouse == "lr" {
+                if !vas
                     .prior_game_board
                     .as_ref()
                     .unwrap()
                     .borrow_mut()
-                    .get_enum_not_mine()
-                    .contains(&(x, y))
-            {
-                video.video_action_state_recorder[ide].comments = format!(
-                    "{}{}",
-                    video.video_action_state_recorder[ide].comments,
-                    format!("feature: 高难度的判雷(左键);")
-                );
-            }
-        } else if video.video_action_state_recorder[ide].useful_level == 1
-            && video.video_action_state_recorder[ide].mouse == "rc"
-        {
-            if !video.video_action_state_recorder[ide]
-                .prior_game_board
-                .as_ref()
-                .unwrap()
-                .borrow_mut()
-                .get_basic_is_mine()
-                .contains(&(x, y))
-                && video.video_action_state_recorder[ide]
+                    .get_basic_not_mine()
+                    .contains(&(r, c))
+                    && vas
+                        .prior_game_board
+                        .as_ref()
+                        .unwrap()
+                        .borrow_mut()
+                        .get_enum_not_mine()
+                        .contains(&(r, c))
+                {
+                    vas.comments = format!(
+                        "{}{}",
+                        vas.comments,
+                        format!("feature: 高难度的判雷(左键);")
+                    );
+                }
+            } else if vas.useful_level == 1 && mouse_event.mouse == "rc" {
+                if !vas
                     .prior_game_board
                     .as_ref()
                     .unwrap()
                     .borrow_mut()
-                    .get_enum_is_mine()
-                    .contains(&(x, y))
-            {
-                video.video_action_state_recorder[ide].comments = format!(
-                    "{}{}",
-                    video.video_action_state_recorder[ide].comments,
-                    format!("feature: 高难度的判雷(标雷);")
-                );
+                    .get_basic_is_mine()
+                    .contains(&(r, c))
+                    && vas
+                        .prior_game_board
+                        .as_ref()
+                        .unwrap()
+                        .borrow_mut()
+                        .get_enum_is_mine()
+                        .contains(&(r, c))
+                {
+                    vas.comments = format!(
+                        "{}{}",
+                        vas.comments,
+                        format!("feature: 高难度的判雷(标雷);")
+                    );
+                }
             }
         }
     }
@@ -103,46 +105,47 @@ pub fn analyse_jump_judge(video: &mut BaseVideo<Vec<Vec<i32>>>) {
 
 // 猜雷时，假如周围5*5范围内有可判的，引发可以判雷时选择猜雷
 pub fn analyse_needless_guess(video: &mut BaseVideo<Vec<Vec<i32>>>) {
-    let mut x;
-    let mut y;
+    let mut r;
+    let mut c;
     'outer: for ide in 2..video.video_action_state_recorder.len() {
-        if video.video_action_state_recorder[ide].useful_level >= 2
-            && video.video_action_state_recorder[ide].mouse == "lr"
-        {
-            x = (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16) as usize;
-            y = (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16) as usize;
+        let vas = &mut video.video_action_state_recorder[ide];
+        if let Some(Event::Mouse(mouse_event)) = &vas.event {
+            if vas.useful_level >= 2 && mouse_event.mouse == "lr" {
+                r = (mouse_event.y / video.cell_pixel_size as u16) as usize;
+                c = (mouse_event.x / video.cell_pixel_size as u16) as usize;
 
-            if video.video_action_state_recorder[ide]
-                .prior_game_board
-                .as_ref()
-                .unwrap()
-                .borrow_mut()
-                .get_poss()[x][y]
-                > 0.0
-            {
-                for m in max(2, x) - 2..min(video.height, x + 3) {
-                    for n in max(2, y) - 2..min(video.width, y + 3) {
-                        if video.video_action_state_recorder[ide]
-                            .prior_game_board
-                            .as_ref()
-                            .unwrap()
-                            .borrow_mut()
-                            .get_basic_not_mine()
-                            .contains(&(m, n))
-                            || video.video_action_state_recorder[ide]
+                if vas
+                    .prior_game_board
+                    .as_ref()
+                    .unwrap()
+                    .borrow_mut()
+                    .get_poss()[r][c]
+                    > 0.0
+                {
+                    for m in max(2, r) - 2..min(video.height, r + 3) {
+                        for n in max(2, c) - 2..min(video.width, c + 3) {
+                            if vas
                                 .prior_game_board
                                 .as_ref()
                                 .unwrap()
                                 .borrow_mut()
-                                .get_enum_not_mine()
+                                .get_basic_not_mine()
                                 .contains(&(m, n))
-                        {
-                            video.video_action_state_recorder[ide].comments = format!(
-                                "{}{}",
-                                video.video_action_state_recorder[ide].comments,
-                                format!("warning: 可以判雷时选择猜雷;")
-                            );
-                            continue 'outer;
+                                || vas
+                                    .prior_game_board
+                                    .as_ref()
+                                    .unwrap()
+                                    .borrow_mut()
+                                    .get_enum_not_mine()
+                                    .contains(&(m, n))
+                            {
+                                vas.comments = format!(
+                                    "{}{}",
+                                    vas.comments,
+                                    format!("warning: 可以判雷时选择猜雷;")
+                                );
+                                continue 'outer;
+                            }
                         }
                     }
                 }
@@ -151,138 +154,135 @@ pub fn analyse_needless_guess(video: &mut BaseVideo<Vec<Vec<i32>>>) {
     }
 }
 
+/// 检查鼠标轨迹是否弯曲
 pub fn analyse_mouse_trace(video: &mut BaseVideo<Vec<Vec<i32>>>) {
-    let mut click_last = (
-        video.video_action_state_recorder[0].x as f64,
-        video.video_action_state_recorder[0].y as f64,
-    );
+    let Some(Event::Mouse(mut last_click_event)) =
+        video.video_action_state_recorder[0].event.clone()
+    else {
+        panic!("expected mouse event");
+    };
+    let Some(Event::Mouse(mut last_move_event)) =
+        video.video_action_state_recorder[0].event.clone()
+    else {
+        panic!("expected mouse event");
+    };
+    let mut comments = vec![];
     let mut click_last_id = 0;
-    let mut move_last = (
-        video.video_action_state_recorder[0].x as f64,
-        video.video_action_state_recorder[0].y as f64,
-    );
     let mut path = 0.0;
     for ide in 0..video.video_action_state_recorder.len() {
-        let current_x = video.video_action_state_recorder[ide].x as f64;
-        let current_y = video.video_action_state_recorder[ide].y as f64;
-        path += ((move_last.0 - current_x).powf(2.0) + (move_last.1 - current_y).powf(2.0)).sqrt();
-        move_last = (current_x, current_y);
-        if video.video_action_state_recorder[ide].mouse == "lr"
-            || video.video_action_state_recorder[ide].mouse == "rc"
-            || video.video_action_state_recorder[ide].mouse == "rr"
-        {
-            let path_straight = ((click_last.0 - current_x).powf(2.0)
-                + (click_last.1 - current_y).powf(2.0))
+        let vas = &mut video.video_action_state_recorder[ide];
+        if let Some(Event::Mouse(mouse_event)) = &vas.event {
+            let current_x = mouse_event.x as f64;
+            let current_y = mouse_event.y as f64;
+            path += ((last_move_event.x as f64 - current_x).powf(2.0)
+                + (last_move_event.y as f64 - current_y).powf(2.0))
             .sqrt();
-            let k = path / path_straight;
-            if k > 7.0 {
-                video.video_action_state_recorder[click_last_id].comments = format!(
-                    "{}{}",
-                    video.video_action_state_recorder[click_last_id].comments,
-                    format!("error: 过于弯曲的鼠标轨迹({:.0}%);", k * 100.0)
-                );
-                // println!(
-                //     "{:?} => {:?}",
-                //     video.video_action_state_recorder[click_last_id].time, video.video_action_state_recorder[click_last_id].comments
-                // );
-            } else if k > 3.5 {
-                video.video_action_state_recorder[click_last_id].comments = format!(
-                    "{}{}",
-                    video.video_action_state_recorder[click_last_id].comments,
-                    format!("warning: 弯曲的鼠标轨迹({:.0}%);", k * 100.0)
-                );
-                // println!(
-                //     "{:?} => {:?}",
-                //     video.video_action_state_recorder[click_last_id].time, video.video_action_state_recorder[click_last_id].comments
-                // );
-            } else if k < 1.01 {
-                if k > 5.0 {
-                    video.video_action_state_recorder[click_last_id].comments = format!(
-                        "{}{}",
-                        video.video_action_state_recorder[click_last_id].comments,
-                        format!("suspect: 笔直的鼠标轨迹;")
-                    );
-                    // println!(
-                    //     "{:?} => {:?}",
-                    //     video.video_action_state_recorder[click_last_id].time, video.video_action_state_recorder[click_last_id].comments
-                    // );
+            last_move_event = mouse_event.clone();
+            if mouse_event.mouse == "lr" || mouse_event.mouse == "rc" || mouse_event.mouse == "rr" {
+                let path_straight = ((last_click_event.x as f64 - current_x).powf(2.0)
+                    + (last_click_event.y as f64 - current_y).powf(2.0))
+                .sqrt();
+                let k = path / path_straight;
+                if k > 7.0 {
+                    comments.push((
+                        click_last_id,
+                        format!("error: 过于弯曲的鼠标轨迹({:.0}%);", k * 100.0),
+                    ));
+                } else if k > 3.5 {
+                    comments.push((
+                        click_last_id,
+                        format!("warning: 弯曲的鼠标轨迹({:.0}%);", k * 100.0),
+                    ));
+                } else if k < 1.01 {
+                    if k > 5.0 {
+                        comments.push((click_last_id, "suspect: 笔直的鼠标轨迹;".to_owned()));
+                    }
                 }
+                last_click_event = mouse_event.clone();
+                click_last_id = ide;
+                path = 0.0;
             }
-            click_last = (
-                video.video_action_state_recorder[ide].x as f64,
-                video.video_action_state_recorder[ide].y as f64,
-            );
-            click_last_id = ide;
-            path = 0.0;
         }
+    }
+    for comment in comments {
+        video.video_action_state_recorder[comment.0].comments = video.video_action_state_recorder
+            [comment.0]
+            .comments
+            .clone()
+            + &comment.1;
     }
 }
 
 // bug
 pub fn analyse_vision_transfer(video: &mut BaseVideo<Vec<Vec<i32>>>) {
-    let mut click_last = (
-        video.video_action_state_recorder[0].y as f64,
-        video.video_action_state_recorder[0].x as f64,
-    );
-    let mut l_x = (video.video_action_state_recorder[0].y / video.cell_pixel_size as u16) as usize;
-    let mut l_y = (video.video_action_state_recorder[0].x / video.cell_pixel_size as u16) as usize;
+    let Some(Event::Mouse(mut last_click_event)) =
+        video.video_action_state_recorder[0].event.clone()
+    else {
+        panic!("expected mouse event");
+    };
+    let mut comments = vec![];
+    let mut last_c = (last_click_event.y / video.cell_pixel_size as u16) as usize;
+    let mut last_r = (last_click_event.x / video.cell_pixel_size as u16) as usize;
+
     let mut click_last_id = 0;
     for ide in 0..video.video_action_state_recorder.len() {
-        if video.video_action_state_recorder[ide].useful_level >= 2 {
-            // let xx = (video.video_action_state_recorder[ide].y / video.cell_pixel_size) as usize;
-            // let yy = (video.video_action_state_recorder[ide].x / video.cell_pixel_size) as usize;
-            let click_current = (
-                video.video_action_state_recorder[ide].y as f64,
-                video.video_action_state_recorder[ide].x as f64,
-            );
-            if ((click_last.0 - click_current.0).powf(2.0)
-                + (click_last.1 - click_current.1).powf(2.0))
-            .sqrt()
-                / video.cell_pixel_size as f64
-                >= 6.0
-            {
-                let mut flag = false;
-                for &(xxx, yyy) in video.video_action_state_recorder[ide]
-                    .prior_game_board
-                    .as_ref()
-                    .unwrap()
-                    .borrow_mut()
-                    .get_basic_not_mine()
+        let vas = &mut video.video_action_state_recorder[ide];
+        if let Some(Event::Mouse(mouse_event)) = &vas.event {
+            if vas.useful_level >= 2 {
+                if ((last_click_event.x as f64 - mouse_event.x as f64).powf(2.0)
+                    + (last_click_event.y as f64 - mouse_event.y as f64).powf(2.0))
+                .sqrt()
+                    / video.cell_pixel_size as f64
+                    >= 6.0
                 {
-                    if xxx <= l_x + 3 && xxx + 3 >= l_x && yyy <= l_y + 3 && yyy + 3 >= l_y {
-                        flag = true;
+                    let mut flag = false;
+                    for &(xxx, yyy) in vas
+                        .prior_game_board
+                        .as_ref()
+                        .unwrap()
+                        .borrow_mut()
+                        .get_basic_not_mine()
+                    {
+                        if xxx <= last_c + 3
+                            && xxx + 3 >= last_c
+                            && yyy <= last_r + 3
+                            && yyy + 3 >= last_r
+                        {
+                            flag = true;
+                        }
+                    }
+                    for &(xxx, yyy) in vas
+                        .prior_game_board
+                        .as_ref()
+                        .unwrap()
+                        .borrow_mut()
+                        .get_enum_not_mine()
+                    {
+                        if xxx <= last_c + 3
+                            && xxx + 3 >= last_c
+                            && yyy <= last_r + 3
+                            && yyy + 3 >= last_r
+                        {
+                            flag = true;
+                        }
+                    }
+                    if flag {
+                        comments.push((click_last_id, "warning: 可以判雷时视野的转移;"));
                     }
                 }
-                for &(xxx, yyy) in video.video_action_state_recorder[ide]
-                    .prior_game_board
-                    .as_ref()
-                    .unwrap()
-                    .borrow_mut()
-                    .get_enum_not_mine()
-                {
-                    if xxx <= l_x + 3 && xxx + 3 >= l_x && yyy <= l_y + 3 && yyy + 3 >= l_y {
-                        flag = true;
-                    }
-                }
-                if flag {
-                    video.video_action_state_recorder[click_last_id].comments = format!(
-                        "{}{}",
-                        video.video_action_state_recorder[click_last_id].comments,
-                        format!("warning: 可以判雷时视野的转移;")
-                    );
-                    // println!(
-                    //     "{:?} => {:?}",
-                    //     video.video_action_state_recorder[click_last_id].time, video.video_action_state_recorder[click_last_id].comments
-                    // );
-                }
+                last_click_event = mouse_event.clone();
+                last_c = (last_click_event.y / video.cell_pixel_size as u16) as usize;
+                last_r = (last_click_event.x / video.cell_pixel_size as u16) as usize;
+                click_last_id = ide;
             }
-            click_last = click_current;
-            l_x =
-                (video.video_action_state_recorder[ide].y / video.cell_pixel_size as u16) as usize;
-            l_y =
-                (video.video_action_state_recorder[ide].x / video.cell_pixel_size as u16) as usize;
-            click_last_id = ide;
         }
+    }
+    for comment in comments {
+        video.video_action_state_recorder[comment.0].comments = video.video_action_state_recorder
+            [comment.0]
+            .comments
+            .clone()
+            + &comment.1;
     }
 }
 
@@ -291,67 +291,69 @@ pub fn analyse_pluck(video: &mut BaseVideo<Vec<Vec<i32>>>) {
     let mut pluck = 0.0;
     let mut has_begin = false;
     for vas in video.video_action_state_recorder.iter_mut() {
-        if vas.useful_level == 2 {
-            // 有效的左键
-            if !has_begin {
-                has_begin = true;
-                vas.key_dynamic_params.pluck = 0.0;
-                continue;
-            }
-            let x = (vas.y / video.cell_pixel_size as u16) as usize;
-            let y = (vas.x / video.cell_pixel_size as u16) as usize;
-            // 安全的概率
-            let p = 1.0
-                - vas
+        if let Some(Event::Mouse(mouse_event)) = &vas.event {
+            if vas.useful_level == 2 {
+                // 有效的左键
+                if !has_begin {
+                    has_begin = true;
+                    vas.key_dynamic_params.pluck = 0.0;
+                    continue;
+                }
+                let r = (mouse_event.y / video.cell_pixel_size as u16) as usize;
+                let c = (mouse_event.x / video.cell_pixel_size as u16) as usize;
+                // 安全的概率
+                let p = 1.0
+                    - vas
+                        .prior_game_board
+                        .as_ref()
+                        .unwrap()
+                        .borrow_mut()
+                        .get_poss()[r][c];
+                if p <= 0.0 || pluck == f64::MAX {
+                    pluck = f64::MAX;
+                } else if p < 1.0 {
+                    pluck -= p.log10();
+                }
+            } else if vas.useful_level == 3 {
+                // 有效的双键
+                let r = (mouse_event.y / video.cell_pixel_size as u16) as usize;
+                let c = (mouse_event.x / video.cell_pixel_size as u16) as usize;
+                let mut game_board_clone = vas
                     .prior_game_board
                     .as_ref()
                     .unwrap()
                     .borrow_mut()
-                    .get_poss()[x][y];
-            if p <= 0.0 || pluck == f64::MAX {
-                pluck = f64::MAX;
-            } else if p < 1.0 {
-                pluck -= p.log10();
-            }
-        } else if vas.useful_level == 3 {
-            // 有效的双键
-            let x = (vas.y / video.cell_pixel_size as u16) as usize;
-            let y = (vas.x / video.cell_pixel_size as u16) as usize;
-            let mut game_board_clone = vas
-                .prior_game_board
-                .as_ref()
-                .unwrap()
-                .borrow_mut()
-                .game_board
-                .clone();
-            let mut chording_cells = vec![];
-            for m in max(1, x) - 1..min(video.height, x + 2) {
-                for n in max(1, y) - 1..min(video.width, y + 2) {
-                    if game_board_clone[m][n] == 10 {
-                        chording_cells.push((m, n));
+                    .game_board
+                    .clone();
+                let mut chording_cells = vec![];
+                for m in max(1, r) - 1..min(video.height, r + 2) {
+                    for n in max(1, c) - 1..min(video.width, c + 2) {
+                        if game_board_clone[m][n] == 10 {
+                            chording_cells.push((m, n));
+                        }
                     }
                 }
-            }
-            let _ = mark_board(&mut game_board_clone, true).unwrap();
-            // 安全的概率
-            let p = cal_probability_cells_not_mine(
-                &game_board_clone,
-                video.mine_num as f64,
-                &chording_cells,
-            );
-            if p <= 0.0 || pluck == f64::MAX {
+                let _ = mark_board(&mut game_board_clone, true).unwrap();
+                // 安全的概率
+                let p = cal_probability_cells_not_mine(
+                    &game_board_clone,
+                    video.mine_num as f64,
+                    &chording_cells,
+                );
+                if p <= 0.0 || pluck == f64::MAX {
+                    pluck = f64::MAX;
+                } else if p > 0.0 {
+                    pluck -= p.log10();
+                }
+            } else if vas.useful_level == 4 {
                 pluck = f64::MAX;
-            } else if p > 0.0 {
-                pluck -= p.log10();
             }
-        } else if vas.useful_level == 4 {
-            pluck = f64::MAX;
-        }
 
-        if has_begin {
-            vas.key_dynamic_params.pluck = pluck;
-        } else {
-            vas.key_dynamic_params.pluck = 0.0;
+            if has_begin {
+                vas.key_dynamic_params.pluck = pluck;
+            } else {
+                vas.key_dynamic_params.pluck = 0.0;
+            }
         }
     }
     video.video_analyse_params.pluck = pluck;
@@ -366,69 +368,96 @@ pub enum SuperFLState {
     Finish,     // 检测到，结束
 }
 pub fn analyse_super_fl_local(video: &mut BaseVideo<Vec<Vec<i32>>>) {
+    let mut comments = vec![];
     let event_min_num = 5;
     let euclidean_distance = 16;
     let mut anchor = 0;
     let mut counter = 0; //正在标雷、双击超过event_min_num总次数
     let mut state = SuperFLState::NotStart;
     let mut last_rc_num = 0; // 最后有几个右键
-    let mut last_ide = 0;
-    for ide in 1..video.video_action_state_recorder.len() {
-        if video.video_action_state_recorder[ide].mouse == "mv" {
-            continue;
-        }
-        let x = video.video_action_state_recorder[ide].y as usize / video.cell_pixel_size as usize;
-        let y = video.video_action_state_recorder[ide].x as usize / video.cell_pixel_size as usize;
-        let x_1 =
-            video.video_action_state_recorder[last_ide].y as usize / video.cell_pixel_size as usize;
-        let y_1 =
-            video.video_action_state_recorder[last_ide].x as usize / video.cell_pixel_size as usize;
-        // if video.video_action_state_recorder[ide].mouse == "lr" || video.video_action_state_recorder[ide].mouse == "rr"{
-        //     println!("{:?}+++{:?}", video.video_action_state_recorder[last_ide].time, video.video_action_state_recorder[last_ide].mouse_state);
-        //     // println!("---{:?}", video.video_action_state_recorder[ide].useful_level);
-        // }
+                             // let mut last_ide = 0;
+    let Some(Event::Mouse(mut last_event)) = video.video_action_state_recorder[0].event.clone()
+    else {
+        panic!("expected mouse event");
+    };
+    let mut last_event_mouse_state = video.video_action_state_recorder[0].mouse_state;
 
-        if video.video_action_state_recorder[ide].mouse == "rc"
-            && video.video_action_state_recorder[ide]
-                .prior_game_board
-                .as_ref()
-                .unwrap()
-                .borrow()
-                .game_board[x][y]
-                == 10
-            && video.video_action_state_recorder[ide].useful_level == 1
-        {
-            // 正确的标雷
-            match state {
-                SuperFLState::NotStart => {
-                    state = SuperFLState::StartNow;
-                    counter = 1;
-                    last_rc_num = 1;
-                    anchor = ide;
-                    // println!("666");
-                }
-                SuperFLState::StartNow => {
-                    state = SuperFLState::StartNotOk;
-                    counter += 1;
-                    last_rc_num += 1;
-                }
-                SuperFLState::StartNotOk | SuperFLState::IsOk => {
-                    counter += 1;
-                    last_rc_num += 1;
-                }
-                _ => {}
+    for ide in 1..video.video_action_state_recorder.len() {
+        let vas = &mut video.video_action_state_recorder[ide];
+        if let Some(Event::Mouse(mouse_event)) = &vas.event {
+            if mouse_event.mouse == "mv" {
+                continue;
             }
-        } else if video.video_action_state_recorder[ide].useful_level == 3 {
-            // 正确的双击
-            if !is_good_chording(
-                &video.video_action_state_recorder[ide]
-                    .prior_game_board
-                    .as_ref()
-                    .unwrap()
-                    .borrow()
-                    .game_board,
-                (x, y),
-            ) {
+            let x = mouse_event.y as usize / video.cell_pixel_size as usize;
+            let y = mouse_event.x as usize / video.cell_pixel_size as usize;
+            let r_1 = last_event.y as usize / video.cell_pixel_size as usize;
+            let c_1 = last_event.x as usize / video.cell_pixel_size as usize;
+            // if video.video_action_state_recorder[ide].mouse == "lr" || video.video_action_state_recorder[ide].mouse == "rr"{
+            //     println!("{:?}+++{:?}", video.video_action_state_recorder[last_ide].time, video.video_action_state_recorder[last_ide].mouse_state);
+            //     // println!("---{:?}", video.video_action_state_recorder[ide].useful_level);
+            // }
+
+            if mouse_event.mouse == "rc"
+                && vas.prior_game_board.as_ref().unwrap().borrow().game_board[x][y] == 10
+                && vas.useful_level == 1
+            {
+                // 正确的标雷
+                match state {
+                    SuperFLState::NotStart => {
+                        state = SuperFLState::StartNow;
+                        counter = 1;
+                        last_rc_num = 1;
+                        anchor = ide;
+                        // println!("666");
+                    }
+                    SuperFLState::StartNow => {
+                        state = SuperFLState::StartNotOk;
+                        counter += 1;
+                        last_rc_num += 1;
+                    }
+                    SuperFLState::StartNotOk | SuperFLState::IsOk => {
+                        counter += 1;
+                        last_rc_num += 1;
+                    }
+                    _ => {}
+                }
+            } else if vas.useful_level == 3 {
+                // 正确的双击
+                if !is_good_chording(
+                    &vas.prior_game_board.as_ref().unwrap().borrow().game_board,
+                    (x, y),
+                ) {
+                    match state {
+                        SuperFLState::IsOk => {
+                            counter -= last_rc_num;
+                            state = SuperFLState::Finish;
+                        }
+                        _ => {
+                            state = SuperFLState::NotStart;
+                            counter = 0;
+                            last_rc_num = 0;
+                        }
+                    }
+                } else {
+                    match state {
+                        SuperFLState::StartNow => {
+                            state = SuperFLState::StartNotOk;
+                            counter += 1;
+                            last_rc_num = 0;
+                        }
+                        SuperFLState::StartNotOk | SuperFLState::IsOk => {
+                            counter += 1;
+                            last_rc_num = 0;
+                        }
+                        _ => {}
+                    }
+                }
+            } else if mouse_event.mouse == "lr"
+                && (last_event_mouse_state == MouseState::DownUp
+                    || last_event_mouse_state == MouseState::Chording)
+                || mouse_event.mouse == "rr" && last_event_mouse_state == MouseState::Chording
+            {
+                // 左键或错误的右键或错误的双键
                 match state {
                     SuperFLState::IsOk => {
                         counter -= last_rc_num;
@@ -440,76 +469,58 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                         last_rc_num = 0;
                     }
                 }
-            } else {
+            }
+            if (x as i32 - r_1 as i32) * (x as i32 - r_1 as i32)
+                + (y as i32 - c_1 as i32) * (y as i32 - c_1 as i32)
+                > euclidean_distance
+            {
                 match state {
-                    SuperFLState::StartNow => {
-                        state = SuperFLState::StartNotOk;
-                        counter += 1;
+                    SuperFLState::StartNotOk => {
+                        state = SuperFLState::NotStart;
+                        counter = 0;
                         last_rc_num = 0;
                     }
-                    SuperFLState::StartNotOk | SuperFLState::IsOk => {
-                        counter += 1;
-                        last_rc_num = 0;
+                    SuperFLState::IsOk => {
+                        counter -= last_rc_num;
+                        state = SuperFLState::Finish;
                     }
                     _ => {}
                 }
             }
-        } else if video.video_action_state_recorder[ide].mouse == "lr"
-            && (video.video_action_state_recorder[last_ide].mouse_state == MouseState::DownUp
-                || video.video_action_state_recorder[last_ide].mouse_state == MouseState::Chording)
-            || video.video_action_state_recorder[ide].mouse == "rr"
-                && video.video_action_state_recorder[last_ide].mouse_state == MouseState::Chording
-        {
-            // 左键或错误的右键或错误的双键
-            match state {
-                SuperFLState::IsOk => {
-                    counter -= last_rc_num;
-                    state = SuperFLState::Finish;
-                }
-                _ => {
-                    state = SuperFLState::NotStart;
-                    counter = 0;
-                    last_rc_num = 0;
+            if counter - last_rc_num >= event_min_num {
+                match state {
+                    SuperFLState::StartNow | SuperFLState::StartNotOk => {
+                        state = SuperFLState::IsOk;
+                    }
+                    _ => {}
                 }
             }
-        }
-        if (x as i32 - x_1 as i32) * (x as i32 - x_1 as i32)
-            + (y as i32 - y_1 as i32) * (y as i32 - y_1 as i32)
-            > euclidean_distance
-        {
             match state {
-                SuperFLState::StartNotOk => {
+                SuperFLState::Finish => {
+                    comments.push((
+                        anchor,
+                        format!("feature: 教科书式的FL局部(步数{});", counter),
+                    ));
+
+                    // video.video_action_state_recorder[anchor].comments = format!(
+                    //     "{}{}",
+                    //     video.video_action_state_recorder[anchor].comments,
+                    //     format!("feature: 教科书式的FL局部(步数{});", counter)
+                    // );
                     state = SuperFLState::NotStart;
-                    counter = 0;
-                    last_rc_num = 0;
-                }
-                SuperFLState::IsOk => {
-                    counter -= last_rc_num;
-                    state = SuperFLState::Finish;
                 }
                 _ => {}
             }
+            last_event = mouse_event.clone();
+            last_event_mouse_state = vas.mouse_state;
+            // println!("{:?}", video.video_action_state_recorder[last_ide].mouse_state);
         }
-        if counter - last_rc_num >= event_min_num {
-            match state {
-                SuperFLState::StartNow | SuperFLState::StartNotOk => {
-                    state = SuperFLState::IsOk;
-                }
-                _ => {}
-            }
-        }
-        match state {
-            SuperFLState::Finish => {
-                video.video_action_state_recorder[anchor].comments = format!(
-                    "{}{}",
-                    video.video_action_state_recorder[anchor].comments,
-                    format!("feature: 教科书式的FL局部(步数{});", counter)
-                );
-                state = SuperFLState::NotStart;
-            }
-            _ => {}
-        }
-        last_ide = ide;
-        // println!("{:?}", video.video_action_state_recorder[last_ide].mouse_state);
+    }
+    for comment in comments {
+        video.video_action_state_recorder[comment.0].comments = video.video_action_state_recorder
+            [comment.0]
+            .comments
+            .clone()
+            + &comment.1;
     }
 }

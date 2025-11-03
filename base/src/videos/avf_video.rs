@@ -1,8 +1,9 @@
 // use crate::MouseState;
 // use crate::miscellaneous::s_to_ms;
 // use crate::utils::cal_board_numbers;
-use crate::videos::base_video::{BaseVideo, ErrReadVideoReason, Event, VideoActionStateRecorder};
-use crate::videos::base_video::{MouseEvent, NewBaseVideo};
+use crate::videos::base_video::{BaseVideo, NewBaseVideo};
+use crate::videos::types::{ErrReadVideoReason, Event, MouseEvent, VideoActionStateRecorder};
+
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::videos::NewSomeVideo;
 use crate::videos::NewSomeVideo2;

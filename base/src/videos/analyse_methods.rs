@@ -1,6 +1,7 @@
 use crate::algorithms::{cal_probability_cells_not_mine, mark_board};
 use crate::utils::is_good_chording;
-use crate::videos::base_video::{BaseVideo, Event, MouseEvent};
+use crate::videos::base_video::BaseVideo;
+use crate::videos::types::Event;
 use crate::MouseState;
 use std::cmp::{max, min};
 

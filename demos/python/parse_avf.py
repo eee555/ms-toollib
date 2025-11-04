@@ -28,8 +28,8 @@ assert v.path == 6082.352554578606
 print(v.time)  # the time shown on the counter currently
 print(v.rtime) # game time, shown on leaderboard
 print(v.etime) # the estimated time shown on the counter currently
-assert v.start_time == 1666124135660600
-assert v.end_time == 1666124184886800
+assert v.start_time == 1666124135606000
+assert v.end_time == 1666124184868000
 assert v.mode == 0
 assert v.software == "Arbiter"
 assert v.player_identifier == "Wang Jianing G01825"
@@ -41,18 +41,21 @@ print(v.thrp)
 print(v.ioe)
 print(v.is_official)
 print(v.is_fair)
+# 遍历并查看鼠标动作
+for e in v.events:
+    if e.event.is_mouse():
+        e_mouse = e.event.unwrap_mouse()
+        print(e.time, e_mouse.x, e_mouse.y, e_mouse.mouse, e.path, e.comments, e.mouse_state)
+        # left, right, double, lce, rce, dce, flag, bbbv_solved, op_solved, isl_solved
+        print(e.key_dynamic_params.left)
+        ...
 v.analyse_for_features(["high_risk_guess"]) # 用哪些分析方法。分析结果会记录到events.comments里
 for e in v.events:
-    print(e.time, e.x, e.y, e.mouse, e.path, e.comments, e.mouse_state)
-    # left, right, double, lce, rce, dce, flag, bbbv_solved, op_solved, isl_solved
-    print(e.key_dynamic_params.left)
-    ...
-for e in v.events:
     if e.useful_level >= 2:
-        # 该事件发生前的游戏局面在game_board_stream中的id索引
-        prior_game_board_id = e.prior_game_board_id
-        # 内置的游戏局面类
-        builtin_game_board = v.game_board_stream[prior_game_board_id]
+        # 实施鼠标动作前的局面
+        builtin_game_board = e.prior_game_board
+        # 实施鼠标动作后的局面
+        next_game_board = e.next_game_board
         # 内置的游戏局面类的列表类型的游戏局面
         print(builtin_game_board.game_board)
         # 内置的游戏局面类的每格是雷的概率

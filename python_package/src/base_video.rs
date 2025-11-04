@@ -1,7 +1,8 @@
 use crate::PyGameBoard;
-use ms_toollib_original::videos::base_video::{KeyDynamicParams, NewBaseVideo2};
-use ms_toollib_original::{videos::base_video::VideoActionStateRecorder, *};
-use pyo3::prelude::*;
+use ms_toollib_original::videos::base_video::NewBaseVideo2;
+use ms_toollib_original::videos::types::KeyDynamicParams;
+use ms_toollib_original::*;
+use pyo3::{IntoPyObjectExt, prelude::*};
 
 #[pyclass(name = "SafeBoardRow")]
 pub struct PySafeBoardRow {
@@ -94,6 +95,228 @@ impl PyKeyDynamicParams {
     }
 }
 
+#[pyclass(name = "Event", unsendable)]
+#[derive(Clone)]
+pub struct PyEvent {
+    pub core: Event,
+}
+
+#[pymethods]
+impl PyEvent {
+    // ---------- 构造函数 ----------
+    #[staticmethod]
+    pub fn mouse(event: PyMouseEvent) -> Self {
+        Self { core: Event::Mouse(event.core) }
+    }
+
+    #[staticmethod]
+    pub fn game_state(event: PyGameStateEvent) -> Self {
+        Self { core: Event::GameState(event.core) }
+    }
+
+    #[staticmethod]
+    pub fn board(event: PyBoardEvent) -> Self {
+        Self { core: Event::Board(event.core) }
+    }
+
+    #[staticmethod]
+    pub fn index(event: PyIndexEvent) -> Self {
+        Self { core: Event::Index(event.core) }
+    }
+
+    // ---------- 类型判断 ----------
+    pub fn is_mouse(&self) -> bool {
+        matches!(self.core, Event::Mouse(_))
+    }
+
+    pub fn is_game_state(&self) -> bool {
+        matches!(self.core, Event::GameState(_))
+    }
+
+    pub fn is_board(&self) -> bool {
+        matches!(self.core, Event::Board(_))
+    }
+
+    pub fn is_index(&self) -> bool {
+        matches!(self.core, Event::Index(_))
+    }
+
+    // ---------- 解包 ----------
+    pub fn unwrap_mouse(&self) -> Option<PyMouseEvent> {
+        match &self.core {
+            Event::Mouse(e) => Some(PyMouseEvent { core: e.clone() }),
+            _ => None,
+        }
+    }
+
+    pub fn unwrap_board(&self) -> Option<PyBoardEvent> {
+        match &self.core {
+            Event::Board(e) => Some(PyBoardEvent { core: e.clone() }),
+            _ => None,
+        }
+    }
+
+    pub fn unwrap_index(&self) -> Option<PyIndexEvent> {
+        match &self.core {
+            Event::Index(e) => Some(PyIndexEvent { core: e.clone() }),
+            _ => None,
+        }
+    }
+
+    pub fn unwrap_game_state(&self) -> Option<PyGameStateEvent> {
+        match &self.core {
+            Event::GameState(e) => Some(PyGameStateEvent { core: e.clone() }),
+            _ => None,
+        }
+    }
+
+    pub fn __repr__(&self) -> String {
+        match &self.core {
+            Event::Mouse(_) => "Event.Mouse".to_string(),
+            Event::GameState(_) => "Event.GameState".to_string(),
+            Event::Board(_) => "Event.Board".to_string(),
+            Event::Index(_) => "Event.Index".to_string(),
+        }
+    }
+}
+
+
+#[pyclass(name = "MouseEvent", unsendable)]
+#[derive(Clone)]
+pub struct PyMouseEvent {
+    pub core: MouseEvent,
+}
+
+#[pymethods]
+impl PyMouseEvent {
+    #[new]
+    pub fn new(mouse: String, x: u16, y: u16) -> Self {
+        Self { core: MouseEvent { mouse, x, y } }
+    }
+
+    #[getter]
+    pub fn mouse(&self) -> String {
+        self.core.mouse.clone()
+    }
+
+    #[getter]
+    pub fn x(&self) -> u16 {
+        self.core.x
+    }
+
+    #[getter]
+    pub fn y(&self) -> u16 {
+        self.core.y
+    }
+
+    pub fn __repr__(&self) -> String {
+        format!("MouseEvent(mouse='{}', x={}, y={})", self.core.mouse, self.core.x, self.core.y)
+    }
+}
+
+#[pyclass(name = "GameStateEvent", unsendable)]
+#[derive(Clone)]
+pub struct PyGameStateEvent {
+    pub core: GameStateEvent,
+}
+
+#[pymethods]
+impl PyGameStateEvent {
+    #[new]
+    pub fn new(game_state: String) -> Self {
+        Self { core: GameStateEvent { game_state } }
+    }
+
+    #[getter]
+    pub fn game_state(&self) -> String {
+        self.core.game_state.clone()
+    }
+
+    pub fn __repr__(&self) -> String {
+        format!("GameStateEvent(game_state='{}')", self.core.game_state)
+    }
+}
+
+#[pyclass(name = "BoardEvent", unsendable)]
+#[derive(Clone)]
+pub struct PyBoardEvent {
+    pub core: BoardEvent,
+}
+
+#[pymethods]
+impl PyBoardEvent {
+    #[new]
+    pub fn new(board: String, row_id: u8, column_id: u8) -> Self {
+        Self { core: BoardEvent { board, row_id, column_id } }
+    }
+
+    #[getter]
+    pub fn board(&self) -> String {
+        self.core.board.clone()
+    }
+
+    #[getter]
+    pub fn row_id(&self) -> u8 {
+        self.core.row_id
+    }
+
+    #[getter]
+    pub fn column_id(&self) -> u8 {
+        self.core.column_id
+    }
+
+    pub fn __repr__(&self) -> String {
+        format!(
+            "BoardEvent(board='{}', row_id={}, column_id={})",
+            self.core.board, self.core.row_id, self.core.column_id
+        )
+    }
+}
+
+#[pyclass(name = "IndexEvent", unsendable)]
+#[derive(Clone)]
+pub struct PyIndexEvent {
+    pub core: IndexEvent,
+}
+
+#[pymethods]
+impl PyIndexEvent {
+    #[new]
+    pub fn new(key: String, value: Py<PyAny>, py: Python<'_>) -> PyResult<Self> {
+        // 允许 Python 传入 float 或 str
+        if let Ok(v) = value.extract::<f64>(py) {
+            Ok(Self { core: IndexEvent { key, value: IndexValue::Number(v) } })
+        } else if let Ok(v) = value.extract::<String>(py) {
+            Ok(Self { core: IndexEvent { key, value: IndexValue::String(v) } })
+        } else {
+            Err(PyErr::new::<pyo3::exceptions::PyTypeError, _>(
+                "value must be float or str",
+            ))
+        }
+    }
+
+    #[getter]
+    pub fn key(&self) -> String {
+        self.core.key.clone()
+    }
+
+    #[getter]
+    pub fn value(&self, py: Python<'_>) -> Py<PyAny> {
+        match &self.core.value {
+            IndexValue::Number(f) => f.into_py_any(py).unwrap(),
+            IndexValue::String(s) => s.clone().into_py_any(py).unwrap(),
+        }
+    }
+
+    pub fn __repr__(&self) -> String {
+        match &self.core.value {
+            IndexValue::Number(f) => format!("IndexEvent(key='{}', value={})", self.core.key, f),
+            IndexValue::String(s) => format!("IndexEvent(key='{}', value='{}')", self.core.key, s),
+        }
+    }
+}
+
+
 #[pyclass(name = "VideoActionStateRecorder", unsendable)]
 pub struct PyVideoActionStateRecorder {
     pub core: VideoActionStateRecorder,
@@ -106,17 +329,23 @@ impl PyVideoActionStateRecorder {
         Ok(self.core.time)
     }
     #[getter]
-    fn get_x(&self) -> PyResult<u16> {
-        Ok(self.core.x)
+    fn get_event(&self) -> PyResult<PyEvent> {
+        Ok(PyEvent {
+            core: self.core.event.clone().unwrap(),
+        })
     }
-    #[getter]
-    fn get_y(&self) -> PyResult<u16> {
-        Ok(self.core.y)
-    }
-    #[getter]
-    fn get_mouse(&self) -> PyResult<String> {
-        Ok(self.core.mouse.clone())
-    }
+    // #[getter]
+    // fn get_x(&self) -> PyResult<u16> {
+    //     Ok(self.core.x)
+    // }
+    // #[getter]
+    // fn get_y(&self) -> PyResult<u16> {
+    //     Ok(self.core.y)
+    // }
+    // #[getter]
+    // fn get_mouse(&self) -> PyResult<String> {
+    //     Ok(self.core.mouse.clone())
+    // }
     #[getter]
     fn get_useful_level(&self) -> PyResult<u8> {
         Ok(self.core.useful_level)

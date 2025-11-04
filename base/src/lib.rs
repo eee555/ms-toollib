@@ -102,7 +102,9 @@ pub use evfs::{Evfs, EvfsCell};
 pub mod videos;
 pub use videos::{
     valid_time_period, AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MouseState,
-    MvfVideo, RmvVideo,
+    MvfVideo, RmvVideo,BoardEvent, ErrReadVideoReason, Event, GameDynamicParams, GameStateEvent, IndexEvent,
+    IndexValue, KeyDynamicParams, MouseEvent, VideoActionStateRecorder, VideoAnalyseParams,
+    VideoDynamicParams
 };
 
 mod big_number;

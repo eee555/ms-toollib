@@ -1,4 +1,4 @@
-use crate::videos::types::{ErrReadVideoReason};
+use crate::videos::types::ErrReadVideoReason;
 use encoding_rs::{GB18030, WINDOWS_1252};
 // 实现了文件字节读取的 trait，读取各种整数、字符串，解析阿比特时间戳等
 
@@ -57,7 +57,7 @@ pub trait ByteReader {
         let offset = *self.offset_mut();
         *self.offset_mut() += length;
         self.raw_data()
-            .get((offset - length)..offset)
+            .get(offset..(offset + length))
             .map(|vv| vv.to_vec())
             .ok_or(ErrReadVideoReason::FileIsTooShort)
     }
@@ -83,10 +83,7 @@ pub trait ByteReader {
     fn get_utf8_c_string(&mut self, end: char) -> Result<String, ErrReadVideoReason> {
         String::from_utf8(self.get_c_buffer(end)?).map_err(|_e| ErrReadVideoReason::Utf8Error)
     }
-    fn get_unknown_encoding_string<U>(
-        &mut self,
-        length: U,
-    ) -> Result<String, ErrReadVideoReason>
+    fn get_unknown_encoding_string<U>(&mut self, length: U) -> Result<String, ErrReadVideoReason>
     where
         U: Into<usize>,
     {
@@ -105,10 +102,7 @@ pub trait ByteReader {
         Ok(String::from_utf8_lossy(&code).to_string())
     }
     /// 读取以end结尾的未知编码字符串，假如所有编码都失败，返回utf-8乱码
-    fn get_unknown_encoding_c_string(
-        &mut self,
-        end: char,
-    ) -> Result<String, ErrReadVideoReason> {
+    fn get_unknown_encoding_c_string(&mut self, end: char) -> Result<String, ErrReadVideoReason> {
         let code = self.get_c_buffer(end)?;
         if let Ok(s) = String::from_utf8(code.clone()) {
             return Ok(s);
@@ -261,5 +255,3 @@ pub trait ByteReader {
         Ok(microseconds)
     }
 }
-
-

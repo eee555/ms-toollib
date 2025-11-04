@@ -1,8 +1,6 @@
 // 测试录像分析模块
 use ms_toollib::videos::base_video::NewBaseVideo2;
-use ms_toollib::videos::NewSomeVideo;
-use ms_toollib::{BaseVideo, EvfVideo, Evfs, SafeBoard};
-use std::mem::transmute;
+use ms_toollib::{BaseVideo, Evfs, SafeBoard};
 use std::time::Duration;
 use std::{thread, vec};
 

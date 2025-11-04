@@ -81,6 +81,8 @@ video_1: ms.EvfVideo = evfs_reload[0].evf_video
 assert video_1.player_identifier == "name1"
 video_1.analyse()
 for e in video_1.events:
-    print(e.time, e.x, e.y, e.mouse, e.path, e.comments, e.mouse_state)
+    if e.event.is_mouse():
+        e_mouse = e.event.unwrap_mouse()
+        print(e.time, e_mouse.x, e_mouse.y, e_mouse.mouse, e.path, e.comments, e.mouse_state)
 
 

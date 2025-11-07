@@ -452,6 +452,8 @@ impl BaseVideo<Vec<Vec<i32>>> {
                         self.last_in_board_pos_path = svi.path;
                     }
                 }
+            } else if let Some(Event::GameState(game_state_event)) = &svi.event {
+                continue;
             } else {
                 continue;
             }
@@ -657,7 +659,7 @@ impl BaseVideo<SafeBoard> {
                                         .borrow_mut()
                                         .get_poss()[x][y];
                                 if p <= 0.0 {
-                                    return Ok(f64::MAX);
+                                    return Ok(f64::INFINITY);
                                 } else if p < 1.0 {
                                     pluck -= p.log10();
                                 }
@@ -688,12 +690,14 @@ impl BaseVideo<SafeBoard> {
                                     &chording_cells,
                                 );
                                 if p <= 0.0 {
-                                    return Ok(f64::MAX);
+                                    return Ok(f64::INFINITY);
                                 } else if p > 0.0 {
                                     pluck -= p.log10();
                                 }
                             } else if vas.useful_level == 4 {
-                                return Ok(f64::MAX);
+                                use core::f64;
+
+                                return Ok(f64::INFINITY);
                             }
                         }
                     }
@@ -892,6 +896,7 @@ impl<T> BaseVideo<T> {
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_micros() as u64;
+                self.is_completed = false;
                 // 点一下左键可能直接获胜，但不可能直接失败
                 self.gather_params_after_game(
                     time_ms,
@@ -907,6 +912,7 @@ impl<T> BaseVideo<T> {
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_micros() as u64;
+                self.is_completed = true;
                 if old_state == GameBoardState::PreFlaging {
                     // 点一左键下就直接获胜的情况
                     self.start_time = self.end_time.clone();
@@ -928,6 +934,7 @@ impl<T> BaseVideo<T> {
             || self.game_board_state == GameBoardState::Win
             || self.game_board_state == GameBoardState::Loss
         {
+            // 这个值的初始值是max
             if self.last_in_board_pos == (u16::MAX, u16::MAX) {
                 self.last_in_board_pos = (pos.0 as u16, pos.1 as u16);
                 self.last_in_board_pos_path = 0.0;
@@ -1092,7 +1099,6 @@ impl<T> BaseVideo<T> {
         }
         // 点一下左键可能直接获胜，但不可能直接失败
         let t_ms = time_ms - self.game_start_ms;
-        self.is_completed = false;
         // 这是和录像时间成绩有关
         let t = t_ms as f64 / 1000.0;
         self.static_params.bbbv = cal_bbbv(&self.board);

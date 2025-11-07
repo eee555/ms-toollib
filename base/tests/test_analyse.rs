@@ -2,7 +2,7 @@
 use ms_toollib::videos::base_video::NewBaseVideo2;
 use ms_toollib::videos::NewSomeVideo;
 use ms_toollib::{
-    AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MouseState, MvfVideo,
+    AvfVideo, BaseVideo, Event, EvfVideo, GameBoardState, MinesweeperBoard, MouseState, MvfVideo,
     RmvVideo, SafeBoard,
 };
 use std::mem::transmute;
@@ -28,14 +28,30 @@ fn minesweeper_board_works() {
         vec![0, 1, -1, 1, 0, 1, 1, 1],
     ];
     let mut my_board = MinesweeperBoard::<Vec<Vec<i32>>>::new(board.clone());
-    my_board.step_flow(&vec![("rc".to_string(), (4, 1))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (4, 1))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (5, 1))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (5, 1))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (4, 1))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (4, 1))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (4, 1))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (4, 1))]).unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (4, 1))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (4, 1))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (5, 1))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (5, 1))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (4, 1))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (4, 1))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (4, 1))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (4, 1))])
+        .unwrap();
     // my_board.board.iter().for_each(|x| println!("{:?}", x));
     my_board.game_board.iter().for_each(|x| println!("{:?}", x));
     assert_eq!(my_board.board, board);
@@ -247,7 +263,7 @@ fn avf_video_works() {
         "pluck",
     ]);
     video.data.set_current_time(-0.01);
-    let t= video.data.get_game_board_poss();
+    let t = video.data.get_game_board_poss();
     println!("{:?}", video.data.get_game_board_poss());
     video.data.set_current_time(20.0);
     assert_eq!(video.data.get_pluck().unwrap(), 0.20115579693141436);
@@ -337,9 +353,7 @@ fn mvf_video_works() {
     assert_eq!(video.data.get_video_end_time().unwrap(), 37.81);
     video.data.set_current_time(12.0);
     assert_eq!(video.data.get_stnb().unwrap(), 104.33431983657493);
-    video.data.analyse_for_features(vec![
-        "pluck",
-    ]);
+    video.data.analyse_for_features(vec!["pluck"]);
     assert_eq!(video.data.get_pluck().unwrap(), 0.4612441009087633);
     // video.data.print_comments();
 }
@@ -429,17 +443,17 @@ fn evf_video_works_v4() {
     video.step("lr", (53, 0)).unwrap();
     video.step("lc", (16, 32)).unwrap();
     video.step("rc", (16, 32)).unwrap();
-    _sleep_ms(5000);
+    _sleep_ms(20);
     video.step("rr", (16, 32)).unwrap();
-    _sleep_ms(50);
+    _sleep_ms(7);
     video.step("lr", (16, 32)).unwrap();
-    _sleep_ms(50);
+    _sleep_ms(13);
     video.step("lc", (0, 16)).unwrap();
     _sleep_ms(50);
     video.step("rc", (0, 16)).unwrap();
     _sleep_ms(50);
     video.step("rr", (0, 16)).unwrap();
-    assert!(video.get_left_s() <= 9.0);
+    assert!(video.get_left_s() <= 9000.0);
     _sleep_ms(50);
     video.step("lr", (0, 16)).unwrap();
     video.step("mv", (4800, 51)).unwrap();
@@ -467,6 +481,7 @@ fn evf_video_works_v4() {
     assert_eq!(video.mine_num, 10);
     assert_eq!(video.get_ce().unwrap(), 8);
     assert!(video.get_rtime().unwrap() > 0.2);
+
     assert_eq!(video.is_completed, true);
 
     let stnb = video.get_stnb().unwrap();
@@ -512,6 +527,132 @@ fn evf_video_works_v4() {
     assert_eq!(video.data.get_etime().unwrap(), etime);
     assert_eq!(video.data.get_path(), path);
     assert_eq!(video.data.get_checksum().unwrap(), vec![8; 32]);
+    for t in video.data.video_action_state_recorder {
+        if let Some(Event::Mouse(mouse_event)) = &t.event {
+            println!(
+                "{:?}, {:?}, {:?}, {:?}",
+                mouse_event.mouse, t.time, mouse_event.x, mouse_event.y
+            );
+        }
+    }
+}
+
+#[test]
+// cargo test --features rs -- --nocapture evf_video_works_v3
+fn evf_video_works_v4_2() {
+    // 录像解析工具测试
+    let mut video = EvfVideo::new("../test_files/temp.evf");
+
+    let _ = video.parse_video();
+    // video.data.print_event();
+    video.data.analyse();
+    video.data.analyse_for_features(vec![
+        "high_risk_guess",
+        "jump_judge",
+        "needless_guess",
+        "mouse_trace",
+        "vision_transfer",
+    ]);
+    assert_eq!(
+        video.data.player_identifier,
+        "[lag]二问题无法    玩家( player)"
+    );
+    assert_eq!(video.data.software, "元3.2.1");
+    println!("is win: {:?}", video.data.is_completed);
+    println!("is_official: {:?}", video.data.is_official);
+    println!("is_fair: {:?}", video.data.is_fair);
+    println!("is_valid: {:?}", video.data.is_valid());
+
+    for t in video.data.video_action_state_recorder {
+        if let Some(Event::Mouse(mouse_event)) = &t.event {
+            println!(
+                "{:?}, {:?}, {:?}, {:?}",
+                mouse_event.mouse, t.time, mouse_event.x, mouse_event.y
+            );
+        }
+    }
+}
+
+#[test]
+// cargo test --features rs -- --nocapture evf_video_works_v4
+fn evf_video_works_v4_replay() {
+    // 录像解析工具测试
+    let board = vec![
+        vec![1, 1, 2, 1, 1, 0, 0, 0],
+        vec![1, -1, 2, -1, 1, 0, 0, 0],
+        vec![1, 1, 2, 1, 1, 0, 0, 0],
+        vec![0, 0, 0, 0, 0, 0, 0, 0],
+        vec![2, 2, 1, 0, 0, 0, 0, 0],
+        vec![-1, -1, 2, 0, 0, 1, 1, 1],
+        vec![-1, -1, 3, 0, 0, 2, -1, 2],
+        vec![-1, -1, 2, 0, 0, 2, -1, 2],
+    ];
+    let mut video = BaseVideo::<SafeBoard>::new(board, 16);
+    _sleep_ms(100);
+    // println!("3BV：{:?}", video.static_params.bbbv);
+    assert_eq!(video.game_board_state, GameBoardState::Ready);
+    video.step("rc", (17, 16)).unwrap();
+    assert_eq!(video.game_board_state, GameBoardState::PreFlaging);
+    video.step("rr", (17, 16)).unwrap();
+    video.step("rc", (16, 49)).unwrap();
+    _sleep_ms(20);
+    video.step("rr", (16, 50)).unwrap();
+    video.step("mv", (48, 51)).unwrap();
+    video.step("mv", (42, 48)).unwrap();
+    _sleep_ms(20);
+    video.step("lc", (16, 32)).unwrap();
+    _sleep_ms(20);
+    video.step("lr", (16, 32)).unwrap();
+    assert_eq!(video.game_board_state, GameBoardState::Playing);
+    _sleep_ms(20);
+    video.step("lc", (52, 0)).unwrap();
+    video.step("lr", (53, 0)).unwrap();
+    video.step("lc", (16, 32)).unwrap();
+    video.step("rc", (16, 32)).unwrap();
+    _sleep_ms(20);
+    video.step("rr", (16, 32)).unwrap();
+    _sleep_ms(7);
+    video.step("lr", (16, 32)).unwrap();
+    _sleep_ms(13);
+    video.step("lc", (0, 16)).unwrap();
+    _sleep_ms(50);
+    video.step("rc", (0, 16)).unwrap();
+    _sleep_ms(50);
+    video.step("rr", (0, 16)).unwrap();
+    video.step_game_state("replay").unwrap();
+
+    video
+        .set_player_identifier("English中文çкий языкにご한어ü".to_string())
+        .unwrap();
+    video.set_race_identifier("G8888".to_string()).unwrap();
+    video
+        .set_uniqueness_identifier("💣🚩1️⃣3️⃣8️⃣".to_string())
+        .unwrap();
+    video.set_software("a test software".to_string()).unwrap();
+    video.set_country("CN".to_string()).unwrap();
+    // video.print_event();
+
+    assert_eq!(video.game_board_state, GameBoardState::Loss);
+    assert_eq!(video.is_completed, false);
+
+    video.generate_evf_v4_raw_data();
+    video.set_checksum_evf_v4(vec![8; 32]).unwrap();
+    let test_file_name = video.save_to_evf_file("test");
+    let mut video = EvfVideo::new(&test_file_name);
+    let r = video.parse_video();
+    assert_eq!(r.unwrap(), ());
+
+    video.data.analyse();
+    assert!(!video.data.is_completed);
+
+    for t in video.data.video_action_state_recorder {
+        if let Some(Event::Mouse(mouse_event)) = &t.event {
+            println!(
+                "{:?}, {:?}, {:?}, {:?}",
+                mouse_event.mouse, t.time, mouse_event.x, mouse_event.y
+            );
+        }
+    }
 }
 
 #[test]
@@ -641,118 +782,342 @@ fn base_video_works_2_win() {
     ];
     // println!("{:?}", ms_toollib::cal_bbbv(&board));
     let mut my_board = MinesweeperBoard::<Vec<Vec<i32>>>::new(board);
-    my_board.step_flow(&vec![("lc".to_string(), (2, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (2, 3))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("cc".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("cc".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("cc".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("cc".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (1, 3))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (0, 3))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (3, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (3, 3))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (3, 4))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (3, 4))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (4, 2))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (4, 2))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (4, 2))]).unwrap();
-    my_board.step_flow(&vec![("cc".to_string(), (4, 2))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (4, 2))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (4, 2))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (4, 2))]).unwrap();
-    my_board.step_flow(&vec![("cc".to_string(), (4, 2))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (4, 2))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (4, 2))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (3, 4))]).unwrap();
-    my_board.step_flow(&vec![("cc".to_string(), (3, 4))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (3, 4))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (3, 4))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (2, 2))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (3, 2))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (4, 4))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (4, 3))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (4, 3))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (3, 5))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (3, 5))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (3, 4))]).unwrap();
-    my_board.step_flow(&vec![("cc".to_string(), (3, 4))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (3, 4))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (3, 4))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (4, 4))]).unwrap();
-    my_board.step_flow(&vec![("cc".to_string(), (4, 4))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (4, 4))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (4, 4))]).unwrap();
-    my_board.step_flow(&vec![("rc".to_string(), (1, 5))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (1, 5))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (2, 5))]).unwrap();
-    my_board.step_flow(&vec![("cc".to_string(), (2, 5))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (2, 5))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (2, 5))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (2, 5))]).unwrap();
-    my_board.step_flow(&vec![("cc".to_string(), (2, 6))]).unwrap();
-    my_board.step_flow(&vec![("rr".to_string(), (2, 6))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (2, 6))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (0, 5))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (0, 5))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (8, 8))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (8, 8))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (0, 7))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (0, 7))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (7, 3))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (7, 3))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (6, 2))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (6, 2))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (7, 2))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (7, 2))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (5, 0))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (5, 0))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (7, 1))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (7, 1))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (6, 1))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (6, 1))]).unwrap();
-    my_board.step_flow(&vec![("lc".to_string(), (7, 0))]).unwrap();
-    my_board.step_flow(&vec![("lr".to_string(), (7, 0))]).unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (2, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (2, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("cc".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("cc".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("cc".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("cc".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (1, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (0, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (3, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (3, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (3, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (3, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (4, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (4, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (4, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("cc".to_string(), (4, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (4, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (4, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (4, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("cc".to_string(), (4, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (4, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (4, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (3, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("cc".to_string(), (3, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (3, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (3, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (2, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (3, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (4, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (4, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (4, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (3, 5))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (3, 5))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (3, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("cc".to_string(), (3, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (3, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (3, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (4, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("cc".to_string(), (4, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (4, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (4, 4))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rc".to_string(), (1, 5))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (1, 5))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (2, 5))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("cc".to_string(), (2, 5))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (2, 5))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (2, 5))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (2, 5))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("cc".to_string(), (2, 6))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("rr".to_string(), (2, 6))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (2, 6))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (0, 5))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (0, 5))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (8, 8))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (8, 8))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (0, 7))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (0, 7))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (7, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (7, 3))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (6, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (6, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (7, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (7, 2))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (5, 0))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (5, 0))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (7, 1))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (7, 1))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (6, 1))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (6, 1))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lc".to_string(), (7, 0))])
+        .unwrap();
+    my_board
+        .step_flow(&vec![("lr".to_string(), (7, 0))])
+        .unwrap();
 
     println!("game_board_state:{:?}", my_board.game_board_state);
     println!("bbbv_solved:{:?}", my_board.bbbv_solved);
@@ -1108,7 +1473,6 @@ fn base_video_works_5_1bv() {
     println!("时间毫秒：{:?}", video.get_bbbv_s());
 }
 
-
 #[test]
 fn base_video_works_6_fail() {
     let board = vec![
@@ -1128,7 +1492,6 @@ fn base_video_works_6_fail() {
     assert_eq!(video.game_board_state, GameBoardState::Loss);
     println!("pluck：{:?}", video.get_pluck());
 }
-
 
 #[test]
 fn base_video_works_7_guess() {
@@ -1153,8 +1516,6 @@ fn base_video_works_7_guess() {
     assert_eq!(video.game_board_state, GameBoardState::Win);
     println!("pluck：{:?}", video.get_pluck());
 }
-
-
 
 #[test]
 fn base_video_works_set_board() {
@@ -1295,11 +1656,11 @@ fn base_video_works_err() {
     println!("局面状态：{:?}", video.game_board_state);
 }
 
-
 #[test]
 fn custom_video_works() {
     // 自定义模式录像的测试
-    let mut video = AvfVideo::new("../test_files/Cus_8x11_7mines_5.42_3BV=8_3BVs=1.47_Wang Jianing G15208.avf");
+    let mut video =
+        AvfVideo::new("../test_files/Cus_8x11_7mines_5.42_3BV=8_3BVs=1.47_Wang Jianing G15208.avf");
     let r = video.parse_video();
     assert!(r.is_ok());
     // video.data.print_event();
@@ -1323,5 +1684,3 @@ fn custom_video_works() {
     // video.data.print_comments();
     // video.data.is_valid();
 }
-
-

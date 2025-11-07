@@ -24,3 +24,4 @@ node_modules
 *.pyd
 /demos/python/.spyproject
 *.evfs
+test_files/temp.evf

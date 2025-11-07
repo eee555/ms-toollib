@@ -448,10 +448,7 @@ impl<T> MinesweeperBoard<T> {
                     return Ok(0);
                 }
                 "pf" => {
-                    assert!(
-                        self.game_board[pos.0][pos.1] == 10,
-                        ""
-                    );
+                    assert!(self.game_board[pos.0][pos.1] == 10, "");
                     self.pre_flag_num += 1;
                     self.game_board_state = GameBoardState::PreFlaging;
                     return self.right_click(pos.0, pos.1);
@@ -557,10 +554,7 @@ impl<T> MinesweeperBoard<T> {
                     _ => {}
                 },
                 "pf" => {
-                    assert!(
-                        self.game_board[pos.0][pos.1] == 10,
-                        ""
-                    );
+                    assert!(self.game_board[pos.0][pos.1] == 10, "");
                     self.pre_flag_num += 1;
                     return self.right_click(pos.0, pos.1);
                 }
@@ -853,6 +847,20 @@ impl<T> MinesweeperBoard<T> {
             self.step(&op.0, op.1)?;
         }
         Ok(())
+    }
+    /// 实施游戏状态事件
+    pub fn step_game_state(&mut self, e: &str) -> Result<u8, ()>
+    where
+        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        match e {
+            "replay" | "fail" => {
+                self.game_board_state = GameBoardState::Loss;
+                Ok(0)
+            }
+            _ => Err(()),
+        }
     }
     fn is_win(&mut self) -> bool
     where

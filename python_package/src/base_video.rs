@@ -444,6 +444,9 @@ impl PyBaseVideo {
         // println!("{:?}: '{:?}', ({:?}, {:?})", self.core.get_time(), e, pos.0, pos.1);
         self.core.step(e, pos).unwrap();
     }
+    pub fn step_game_state(&mut self, e: &str) {
+        self.core.step_game_state(e).unwrap();
+    }
     pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
         self.core.reset(row, column, pix_size);
     }

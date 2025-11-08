@@ -40,7 +40,7 @@ impl Evfs {
             offset: 0,
         }
     }
-    /// 向末尾追加录像，文件名不要带后缀
+    /// 向末尾追加录像的二进制数据，文件名不要带后缀
     pub fn append(&mut self, data: Vec<u8>, file_name: &str, checksum: Vec<u8>) {
         self.cells.push(EvfsCell {
             evf_video: <EvfVideo as NewSomeVideo2<Vec<u8>, &str>>::new(data, file_name),

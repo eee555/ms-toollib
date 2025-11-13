@@ -79,7 +79,7 @@ fn avf_video_works() {
     let mut video =
         AvfVideo::new("../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jianing G01825.avf");
 
-    let r = video.parse_video();
+    let r = video.parse();
     assert_eq!(r.unwrap(), ());
     // video.data.print_event();
     video.data.analyse();
@@ -162,7 +162,7 @@ fn avf_video_works() {
     assert_eq!(video.data.start_time, 1666124135606000u64);
     assert_eq!(video.data.end_time, 1666124184868000u64);
     assert_eq!(video.data.get_stnb().unwrap(), 0.0);
-    video.data.analyse_for_features(vec![
+    video.data.analyse_for_features(&vec![
         "needless_guess",
         "high_risk_guess",
         "jump_judge",
@@ -256,7 +256,7 @@ fn avf_video_works() {
     assert_eq!(video.data.get_double_s(), 0.28426395939086296);
     video.data.set_current_time(10.0);
     assert_eq!(video.data.get_stnb().unwrap(), 79.47351397906152);
-    video.data.analyse_for_features(vec![
+    video.data.analyse_for_features(&vec![
         "needless_guess",
         "high_risk_guess",
         "jump_judge",
@@ -275,7 +275,7 @@ fn avf_video_works() {
 fn avf_video_works_other_encoding() {
     // 录像解析工具测试
     let mut video = AvfVideo::new("../test_files/beg_chinese_name.avf");
-    let _ = video.parse_video();
+    let _ = video.parse();
     assert!(video.data.player_identifier == "王嘉宁".to_string());
     assert_eq!(video.data.static_params.bbbv, 22);
     assert_eq!(video.data.get_rtime().unwrap(), 9.2);
@@ -288,7 +288,7 @@ fn rmv_video_works() {
     // 录像解析工具测试
     let mut video = RmvVideo::new("../test_files/exp_98763_FL_1738209872.rmv");
 
-    let r = video.parse_video();
+    let r = video.parse();
     // video.data.print_event();
     video.data.analyse();
     let _ = video.data.set_pix_size(60);
@@ -317,7 +317,7 @@ fn mvf_video_works() {
     // 录像解析工具测试
     let mut video = MvfVideo::new("../test_files/Zhang Shen Jia_Exp_38.82(3bv122).mvf");
 
-    let r = video.parse_video();
+    let r = video.parse();
     // video.data.print_event();
     // video.data.analyse_for_features(vec![
     //     "high_risk_guess",
@@ -353,7 +353,7 @@ fn mvf_video_works() {
     assert_eq!(video.data.get_video_end_time().unwrap(), 37.81);
     video.data.set_current_time(12.0);
     assert_eq!(video.data.get_stnb().unwrap(), 104.33431983657493);
-    video.data.analyse_for_features(vec!["pluck"]);
+    video.data.analyse_for_features(&vec!["pluck"]);
     assert_eq!(video.data.get_pluck().unwrap(), 0.4612441009087633);
     // video.data.print_comments();
 }
@@ -365,12 +365,12 @@ fn evf_video_works_v3() {
     let mut video =
         EvfVideo::new("../test_files/b_5_3.796_3BV=3_3BVs=0.790_王嘉宁(元3.1.9_v3).evf");
 
-    let _ = video.parse_video();
+    let _ = video.parse();
     assert_eq!(video.data.board[0], vec![0, 2, -1, 2, 0, 0, 0, 0]);
     assert_eq!(video.data.cell_pixel_size, 20);
     // video.data.print_event();
     video.data.analyse();
-    video.data.analyse_for_features(vec![
+    video.data.analyse_for_features(&vec![
         "high_risk_guess",
         "jump_judge",
         "needless_guess",
@@ -493,11 +493,11 @@ fn evf_video_works_v4() {
     assert_eq!(video.static_params.cell0, 28);
 
     video.generate_evf_v4_raw_data();
-    video.set_checksum_evf_v4(vec![8; 32]).unwrap();
+    video.set_checksum(vec![8; 32]).unwrap();
     let test_file_name = video.save_to_evf_file("test");
     // println!("{:?}", test_file_name);
     let mut video = EvfVideo::new(&test_file_name);
-    let r = video.parse_video();
+    let r = video.parse();
     assert_eq!(r.unwrap(), ());
     // video.data.print_event();
     // video.data.print_raw_data(400);
@@ -522,6 +522,8 @@ fn evf_video_works_v4() {
     println!("start_time：{:?}", video.data.start_time);
     println!("end_time：{:?}", video.data.end_time);
     assert!(video.data.is_completed);
+    assert!(video.data.is_fair);
+    assert!(video.data.is_official);
     video.data.set_current_time(9999.0);
     assert_eq!(video.data.get_stnb().unwrap(), stnb);
     assert_eq!(video.data.get_etime().unwrap(), etime);
@@ -543,10 +545,10 @@ fn evf_video_works_v4_2() {
     // 录像解析工具测试
     let mut video = EvfVideo::new("../test_files/temp.evf");
 
-    let _ = video.parse_video();
+    let _ = video.parse();
     // video.data.print_event();
     video.data.analyse();
-    video.data.analyse_for_features(vec![
+    video.data.analyse_for_features(&vec![
         "high_risk_guess",
         "jump_judge",
         "needless_guess",
@@ -636,10 +638,10 @@ fn evf_video_works_v4_replay() {
     assert_eq!(video.is_completed, false);
 
     video.generate_evf_v4_raw_data();
-    video.set_checksum_evf_v4(vec![8; 32]).unwrap();
+    video.set_checksum(vec![8; 32]).unwrap();
     let test_file_name = video.save_to_evf_file("test");
     let mut video = EvfVideo::new(&test_file_name);
-    let r = video.parse_video();
+    let r = video.parse();
     assert_eq!(r.unwrap(), ());
 
     video.data.analyse();
@@ -734,11 +736,11 @@ fn base_video_works() {
     println!("pluck：{:?}", video.get_pluck());
 
     video.generate_evf_v0_raw_data();
-    video.set_checksum_evf_v3(vec![8; 32]).unwrap();
+    video.set_checksum(vec![8; 32]).unwrap();
     video.save_to_evf_file("test");
 
     let mut video = EvfVideo::new("test.evf");
-    let r = video.parse_video();
+    let r = video.parse();
     video.data.print_event();
     // video.data.print_raw_data(400);
     video.data.analyse();
@@ -1404,11 +1406,11 @@ fn base_video_works_4_win() {
     println!("pluck: {:?}", video.get_pluck());
 
     video.generate_evf_v0_raw_data();
-    video.set_checksum_evf_v3(vec![8; 32]).unwrap();
+    video.set_checksum(vec![8; 32]).unwrap();
     video.save_to_evf_file("test");
 
     let mut video = EvfVideo::new("test.evf");
-    let r = video.parse_video();
+    let r = video.parse();
     video.data.print_event();
     // video.data.print_raw_data(400);
     video.data.analyse();
@@ -1460,7 +1462,7 @@ fn base_video_works_5_1bv() {
     _sleep_ms(200);
     video.step("lr", (32, 49)).unwrap();
     video.generate_evf_v0_raw_data();
-    video.set_checksum_evf_v3(vec![8; 32]).unwrap();
+    video.set_checksum(vec![8; 32]).unwrap();
     video.save_to_evf_file("test");
 
     println!("局面：{:?}", video.get_game_board());
@@ -1661,7 +1663,7 @@ fn custom_video_works() {
     // 自定义模式录像的测试
     let mut video =
         AvfVideo::new("../test_files/Cus_8x11_7mines_5.42_3BV=8_3BVs=1.47_Wang Jianing G15208.avf");
-    let r = video.parse_video();
+    let r = video.parse();
     assert!(r.is_ok());
     // video.data.print_event();
     video.data.analyse();

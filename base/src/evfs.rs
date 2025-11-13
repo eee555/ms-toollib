@@ -41,7 +41,7 @@ impl Evfs {
         }
     }
     /// 向末尾追加录像的二进制数据，文件名不要带后缀
-    pub fn append(&mut self, data: Vec<u8>, file_name: &str, checksum: Vec<u8>) {
+    pub fn push(&mut self, data: Vec<u8>, file_name: &str, checksum: Vec<u8>) {
         self.cells.push(EvfsCell {
             evf_video: <EvfVideo as NewSomeVideo2<Vec<u8>, &str>>::new(data, file_name),
             checksum,
@@ -67,7 +67,7 @@ impl Evfs {
         }
         for cell in self.cells.iter_mut() {
             if !cell.evf_video.data.can_analyse {
-                if cell.evf_video.parse_video().is_err() {
+                if cell.evf_video.parse().is_err() {
                     return false;
                 }
             }
@@ -190,7 +190,23 @@ impl Evfs {
         
         for cell in self.cells.iter_mut() {
             if !cell.evf_video.data.can_analyse {
-                cell.evf_video.parse_video()?;
+                cell.evf_video.parse()?;
+            }
+        }
+        Ok(())
+    }
+    pub fn analyse(&mut self) -> Result<(), ErrReadVideoReason> {
+        for cell in self.cells.iter_mut() {
+            if cell.evf_video.data.can_analyse {
+                cell.evf_video.data.analyse();
+            }
+        }
+        Ok(())
+    }
+    pub fn analyse_for_features(&mut self, controller: &Vec<&str>) -> Result<(), ErrReadVideoReason> {
+        for cell in self.cells.iter_mut() {
+            if cell.evf_video.data.can_analyse {
+                cell.evf_video.data.analyse_for_features(&controller);
             }
         }
         Ok(())

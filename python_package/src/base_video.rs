@@ -825,12 +825,8 @@ impl PyBaseVideo {
         self.core.set_device_uuid(device_uuid).unwrap();
     }
     #[setter]
-    pub fn set_checksum_evf_v3(&mut self, checksum: Vec<u8>) {
-        self.core.set_checksum_evf_v3(checksum).unwrap();
-    }
-    #[setter]
-    pub fn set_checksum_evf_v4(&mut self, checksum: Vec<u8>) {
-        self.core.set_checksum_evf_v4(checksum).unwrap();
+    pub fn set_checksum(&mut self, checksum: Vec<u8>) {
+        self.core.set_checksum(checksum).unwrap();
     }
     #[setter]
     pub fn set_pix_size(&mut self, pix_size: u8) {

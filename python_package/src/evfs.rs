@@ -1,7 +1,7 @@
+use crate::videos::EvfVideo;
 use ms_toollib_original::*;
 use pyo3::prelude::*;
 use pyo3::types::{PyInt, PyList, PySlice};
-use crate::videos::EvfVideo;
 
 #[pyclass(name = "EvfsCell", unsendable)]
 pub struct PyEvfsCell {
@@ -13,7 +13,7 @@ impl PyEvfsCell {
     #[getter]
     pub fn get_evf_video(&self) -> EvfVideo {
         EvfVideo {
-            core: self.core.evf_video.clone()
+            core: self.core.evf_video.clone(),
         }
     }
     #[getter]
@@ -46,8 +46,8 @@ impl PyEvfs {
             }
         }
     }
-    pub fn append(&mut self, data: Vec<u8>, file_name: &str, checksum: Vec<u8>) {
-        self.core.append(data, file_name, checksum);
+    pub fn push(&mut self, data: Vec<u8>, file_name: &str, checksum: Vec<u8>) {
+        self.core.push(data, file_name, checksum);
     }
     pub fn pop(&mut self) {
         self.core.pop();
@@ -85,12 +85,19 @@ impl PyEvfs {
     pub fn parse(&mut self) {
         self.core.parse().unwrap();
     }
+    pub fn analyse(&mut self) {
+        self.core.analyse();
+    }
+    pub fn analyse_for_features(&mut self, controller: Vec<String>) {
+        let controller_slice: &Vec<&str> = &controller.iter().map(|s| s.as_str()).collect::<Vec<_>>();
+        self.core.analyse_for_features(controller_slice);
+    }
     pub fn save_evf_files(&self, dir: &str) {
         self.core.save_evf_files(dir);
     }
     pub fn save_evfs_file(&self, file_name: &str) -> PyResult<String> {
-        self.core.save_evfs_file(file_name);
-        Ok(file_name.to_string())
+        let output_file_name = self.core.save_evfs_file(file_name);
+        Ok(output_file_name)
     }
     pub fn __getitem__(&self, py: Python<'_>, key: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
         // 先尝试当作整数索引（支持负索引）

@@ -11,7 +11,7 @@ use crate::videos::NewSomeVideo2;
 /// - 以下是在python中调用的示例。  
 /// ```python
 /// v = ms.RmvVideo("video_name.rmv") # 第一步，读取文件的二进制内容
-/// v.parse_video() # 第二步，解析文件的二进制内容
+/// v.parse() # 第二步，解析文件的二进制内容
 /// v.analyse() # 第三步，根据解析到的内容，推衍整个局面
 /// video.current_time = 999.999 # set time to the end of the video
 /// print(video.left)
@@ -76,7 +76,7 @@ impl NewSomeVideo2<Vec<u8>, &str> for RmvVideo {
 }
 
 impl RmvVideo {
-    pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
+    pub fn parse(&mut self) -> Result<(), ErrReadVideoReason> {
         match self.data.get_char() {
             Ok('*') => {}
             Ok(_) => return Err(ErrReadVideoReason::FileIsNotRmv),

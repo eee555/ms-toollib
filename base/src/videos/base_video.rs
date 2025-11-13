@@ -372,7 +372,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
         // println!("{:?}, ", self.board);
         assert!(
             self.can_analyse,
-            "调用parse_video或扫完前，不能调用analyse方法"
+            "调用parse或扫完前，不能调用analyse方法"
         );
         // self.minesweeper_board
         let mut b = MinesweeperBoard::<Vec<Vec<i32>>>::new(self.board.clone());
@@ -510,7 +510,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
     /// import ms_toollib as ms
     /// import re
     /// v = ms.AvfVideo("z.avf"); # 用文件名实例化
-    /// v.parse_video()
+    /// v.parse()
     /// v.analyse()
     /// v.analyse_for_features(["super_fl_local"]) # 用哪些分析方法。分析结果会记录到events_comments字段里
     /// for i in range(v.events_len): # 鼠标事件包括鼠标移动、按下、抬起
@@ -529,7 +529,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
     ///                 '第几列：', v.events_x(p)//16)
     ///             p += 1
     /// ```
-    pub fn analyse_for_features(&mut self, controller: Vec<&str>) {
+    pub fn analyse_for_features(&mut self, controller: &Vec<&str>) {
         // 事件分析，返回一个向量，格式是event索引、字符串event的类型
         // error: 高风险的猜雷（猜对概率0.05）
         // feature: 跳判
@@ -544,13 +544,13 @@ impl BaseVideo<Vec<Vec<i32>>> {
         //
         for o in controller {
             match o {
-                "high_risk_guess" => analyse_high_risk_guess(self),
-                "jump_judge" => analyse_jump_judge(self),
-                "needless_guess" => analyse_needless_guess(self),
-                "mouse_trace" => analyse_mouse_trace(self),
-                "vision_transfer" => analyse_vision_transfer(self),
-                "pluck" => analyse_pluck(self),
-                "super_fl_local" => analyse_super_fl_local(self),
+                &"high_risk_guess" => analyse_high_risk_guess(self),
+                &"jump_judge" => analyse_jump_judge(self),
+                &"needless_guess" => analyse_needless_guess(self),
+                &"mouse_trace" => analyse_mouse_trace(self),
+                &"vision_transfer" => analyse_vision_transfer(self),
+                &"pluck" => analyse_pluck(self),
+                &"super_fl_local" => analyse_super_fl_local(self),
                 _ => panic!("not supported analysis feature!"),
             };
         }

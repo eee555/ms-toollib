@@ -11,7 +11,7 @@ use crate::videos::NewSomeVideo2;
 /// - 以下是在python中调用的示例。  
 /// ```python
 /// v = ms.MvfVideo("video_name.mvf") # 第一步，读取文件的二进制内容
-/// v.parse_video() # 第二步，解析文件的二进制内容
+/// v.parse() # 第二步，解析文件的二进制内容
 /// v.analyse() # 第三步，根据解析到的内容，推衍整个局面
 /// video.current_time = 999.999 # set time to the end of the video
 /// print(video.left)
@@ -346,7 +346,7 @@ impl MvfVideo {
 
         Ok(())
     }
-    pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
+    pub fn parse(&mut self) -> Result<(), ErrReadVideoReason> {
         self.data.can_analyse = true;
         let mut c = self.data.get_u8()?;
         let d = self.data.get_u8()?;

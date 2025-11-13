@@ -308,9 +308,23 @@ impl<T> BaseVideo<T> {
         self.device_uuid = device_uuid;
         Ok(0)
     }
+    // 根据raw_data的版本号，自动调用不同的checksum设置方法
+    pub fn set_checksum(&mut self, checksum: Vec<u8>) -> Result<u8, ()> {
+        match self.raw_data.get(0).unwrap() {
+            0..=3 => {
+                return self.set_checksum_evf_v3(checksum);
+            }
+            4 => {
+                return self.set_checksum_evf_v4(checksum);
+            }
+            _ => {
+                return Err(());
+            }
+        }
+    }
     /// 在生成二进制数据后，在raw_data里添加checksum
     /// 按照evf0-3的标准添加，即删除末尾的/255，添加/0、32位checksum
-    pub fn set_checksum_evf_v3(&mut self, checksum: Vec<u8>) -> Result<u8, ()> {
+    fn set_checksum_evf_v3(&mut self, checksum: Vec<u8>) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
@@ -333,7 +347,7 @@ impl<T> BaseVideo<T> {
     }
     /// 在生成二进制数据后，在raw_data里添加checksum
     /// 按照evf4的标准添加，即添加u16的长度、若干位checksum
-    pub fn set_checksum_evf_v4(&mut self, checksum: Vec<u8>) -> Result<u8, ()> {
+    fn set_checksum_evf_v4(&mut self, checksum: Vec<u8>) -> Result<u8, ()> {
         // avf、evfv3、evfv4的典型高级录像体积对比，单位kB
         // 压缩前：64.2，63.9，47.9
         // 压缩后(zip)：25.4，24.6，6.84

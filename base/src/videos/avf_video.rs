@@ -13,7 +13,7 @@ use std::cmp::{max, min};
 /// ```python
 /// import ms_toollib as ms
 /// v = ms.AvfVideo("video_name.avf") # 第一步，读取文件的二进制内容
-/// v.parse_video() # 第二步，解析文件的二进制内容
+/// v.parse() # 第二步，解析文件的二进制内容
 /// v.analyse() # 第三步，根据解析到的内容，推衍整个局面
 /// video.current_time = 999.999 # set time to the end of the video
 /// print(video.left)
@@ -62,7 +62,7 @@ use std::cmp::{max, min};
 ///     def __init__(self, *args, **kargs):
 ///         super(MyVideo, self).__init__()
 ///     def print_something(self):
-///         self.parse_video()
+///         self.parse()
 ///         self.analyse()
 ///         self.current_time = 999999
 ///         print(f"mode: {self.mode}")
@@ -116,7 +116,7 @@ impl NewSomeVideo2<Vec<u8>, &str> for AvfVideo {
 }
 
 impl AvfVideo {
-    pub fn parse_video(&mut self) -> Result<(), ErrReadVideoReason> {
+    pub fn parse(&mut self) -> Result<(), ErrReadVideoReason> {
         // 按源码，第一位是版本号，0.52.3是34
         match self.data.get_u8() {
             Ok(_) => {}

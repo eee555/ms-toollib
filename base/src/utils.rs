@@ -1752,7 +1752,7 @@ pub fn is_good_chording(board_of_game: &Vec<Vec<i32>>, pos: (usize, usize)) -> b
             return false;
         }
     }
-    if pos.1 < column + 1 {
+    if pos.1 + 1 < column {
         if mid_num < surround_cell_num(board_of_game, (pos.0, pos.1 + 1)) {
             return false;
         }

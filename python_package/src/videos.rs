@@ -27,16 +27,16 @@ macro_rules! generate_video {
                     return $name { core: c };
                 }
             }
-            pub fn parse_video(&mut self) {
-                self.core.parse_video().unwrap();
+            pub fn parse(&mut self) {
+                self.core.parse().unwrap();
             }
             pub fn analyse(&mut self) {
                 self.core.data.analyse();
             }
             pub fn analyse_for_features(&mut self, controller: Vec<String>) {
-                self.core
-                    .data
-                    .analyse_for_features(controller.iter().map(|s| s.as_str()).collect());
+                let controller_slice: &Vec<&str> =
+                    &controller.iter().map(|s| s.as_str()).collect::<Vec<_>>();
+                self.core.data.analyse_for_features(controller_slice);
             }
             pub fn generate_evf_v0_raw_data(&mut self) {
                 self.core.data.generate_evf_v0_raw_data();
@@ -50,8 +50,13 @@ macro_rules! generate_video {
             pub fn generate_evf_v4_raw_data(&mut self) {
                 self.core.data.generate_evf_v4_raw_data();
             }
-            pub fn save_to_evf_file(&self, file_name: &str) {
-                self.core.data.save_to_evf_file(file_name);
+            pub fn save_to_evf_file(&self, file_name: &str) -> PyResult<String> {
+                let output_file_name = self.core.data.save_to_evf_file(file_name);
+                Ok(output_file_name)
+            }
+            #[getter]
+            fn get_file_name(&self) -> PyResult<String> {
+                Ok(self.core.file_name.clone())
             }
             #[getter]
             fn get_raw_data(&self) -> PyResult<Vec<u8>> {

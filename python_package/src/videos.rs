@@ -1,7 +1,7 @@
 use crate::{PyGameBoard, PyVideoActionStateRecorder};
 use ms_toollib_original;
 use ms_toollib_original::videos::{NewSomeVideo, NewSomeVideo2};
-use ms_toollib_original::MouseState;
+use ms_toollib_original::{GameBoardState, MouseState};
 use pyo3::prelude::*;
 
 // 定义宏，生成所有类型录像的子类
@@ -345,10 +345,17 @@ macro_rules! generate_video {
                     MouseState::Undefined => Ok(8),
                 }
             }
-            /// 局面状态（录像播放器的局面状态始终等于1，没有ready、win、fail的概念）
+            /// 局面状态（录像播放器的局面状态始终等于6，没有ready、win、fail的概念）
             #[getter]
             pub fn get_game_board_state(&self) -> PyResult<usize> {
-                Ok(1)
+                match self.core.data.game_board_state {
+                    GameBoardState::Ready => Ok(1),
+                    GameBoardState::Playing => Ok(2),
+                    GameBoardState::Win => Ok(3),
+                    GameBoardState::Loss => Ok(4),
+                    GameBoardState::PreFlaging => Ok(5),
+                    GameBoardState::Display => Ok(6),
+                }
             }
             #[getter]
             pub fn get_x_y(&self) -> PyResult<(u16, u16)> {

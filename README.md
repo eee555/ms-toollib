@@ -66,6 +66,10 @@ Julia: 同python
 
 *   找到您想要执行的测试程序，例如minesweeper_board_works这个函数，用鼠标点击#[test]下方的灰色的Run Test按钮，即可打印执行结果！
 
+## 贡献
+
+[CONTRIBUTING.md](https://github.com/eee555/ms_toollib/CONTRIBUTING.md)
+
 
 ### 其他示例项目
 

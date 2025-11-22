@@ -184,7 +184,9 @@ impl<T> MinesweeperBoard<T> {
         self.bbbv_solved = 0;
         self.flaged_list = vec![];
         self.mouse_state = MouseState::UpUp;
-        self.game_board_state = GameBoardState::Ready;
+        if self.game_board_state != GameBoardState::Display {
+            self.game_board_state = GameBoardState::Ready;
+        }
         self.pointer_x = 0;
         self.pointer_y = 0;
         self.middle_hold = false;

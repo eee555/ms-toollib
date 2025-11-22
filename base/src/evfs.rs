@@ -10,6 +10,7 @@ use itertools::Itertools;
 
 /// evfs文件
 pub struct Evfs {
+    pub file_name: String,
     pub raw_data: Vec<u8>,
     pub cells: Vec<EvfsCell>,
     /// 解析raw_data的偏移量
@@ -27,6 +28,7 @@ impl Evfs {
     /// 创建一个空白的evfs文件
     pub fn new() -> Self {
         Evfs {
+            file_name: String::new(),
             raw_data: vec![],
             cells: vec![],
             offset: 0,
@@ -35,6 +37,7 @@ impl Evfs {
     /// 解析已有的evfs文件的二进制数据
     pub fn new_with_data(data: Vec<u8>) -> Self {
         Evfs {
+            file_name: String::new(),
             raw_data: data,
             cells: vec![],
             offset: 0,
@@ -141,6 +144,9 @@ impl Evfs {
         }
         true
     }
+    pub fn get_file_name(&self) -> &str {
+        &self.file_name
+    }
     pub fn get_software(&self) -> &str {
         &self.cells[0].evf_video.data.software
     }
@@ -246,6 +252,7 @@ impl Evfs {
     pub fn new_with_file(filename: &str) -> Self {
         let data = fs::read(filename).unwrap();
         Evfs {
+            file_name: filename.to_string(),
             raw_data: data,
             cells: vec![],
             offset: 0,

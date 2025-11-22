@@ -25,3 +25,5 @@ node_modules
 /demos/python/.spyproject
 *.evfs
 test_files/temp.evf
+demos/python/simulate_play_video.py
+demos/python/temp.py

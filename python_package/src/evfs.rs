@@ -65,15 +65,23 @@ impl PyEvfs {
     pub fn is_valid(&mut self) -> bool {
         self.core.is_valid()
     }
+    #[getter]
+    pub fn get_file_name(&self) -> &str {
+        &self.core.file_name
+    }
+    #[getter]
     pub fn get_software(&self) -> &str {
         &self.core.get_software()
     }
+    #[getter]
     pub fn get_evf_version(&self) -> u8 {
         self.core.get_evf_version()
     }
+    #[getter]
     pub fn get_start_time(&self) -> u64 {
         self.core.get_start_time()
     }
+    #[getter]
     pub fn get_end_time(&self) -> u64 {
         self.core.get_end_time()
     }
@@ -86,11 +94,11 @@ impl PyEvfs {
         self.core.parse().unwrap();
     }
     pub fn analyse(&mut self) {
-        self.core.analyse();
+        self.core.analyse().unwrap();
     }
     pub fn analyse_for_features(&mut self, controller: Vec<String>) {
         let controller_slice: &Vec<&str> = &controller.iter().map(|s| s.as_str()).collect::<Vec<_>>();
-        self.core.analyse_for_features(controller_slice);
+        self.core.analyse_for_features(controller_slice).unwrap();
     }
     pub fn save_evf_files(&self, dir: &str) {
         self.core.save_evf_files(dir);

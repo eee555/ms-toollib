@@ -362,7 +362,9 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.static_params = StaticParams::default();
         self.game_dynamic_params = GameDynamicParams::default();
         self.video_dynamic_params = VideoDynamicParams::default();
-        self.game_board_state = GameBoardState::Ready;
+        if self.game_board_state != GameBoardState::Display {
+            self.game_board_state = GameBoardState::Ready;
+        }
         self.last_in_board_pos = (u16::MAX, u16::MAX);
         self.last_in_board_pos_path = 0.0;
     }

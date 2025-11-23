@@ -72,17 +72,17 @@ Acknowledgments: 13688 (testing), ralokt (suggestions), 9952 (suggestions), 36 (
 The various modes and their names can be further summarized as shown in the following diagram.
 ![](md_pic/mode_en.svg)
 
-### v0.4 (Proposal)
+### v0.4 (meta 3.2.1)
 
 Format Description:
 
 1. Fixed length 1 byte: Version number. In this version, it is '\4'.
 2. Fixed length 1 byte: Summary. In high trust scenarios, it serves to reduce the parsing complexity.
-    - Fixed length 1 bit (2e7): Whether the game is completed. A value of 1 indicates completion. The software attests that the game has ended, meaning no mines were struck and no values (like time) have overflowed. No other conditions are guaranteed.
-    - Fixed length 1 bit (2e6): Whether it is official. A value of 1 indicates it is official. The software verifies that the game is official and definitely completed, including no 3BV filtering by software, no use of auxiliary functions, being in the standard mode, and no value overflow. It doesn't necessarily meet the additional 3BV restrictions of ranking websites. (This flag is useful for minesweeper ranking websites that only support the standard mode.)
-    - Fixed length 1 bit (2e5): Whether it is fairly completed. A value of 1 indicates fair completion. The software shows that the game is fairly finished, definitely completed, for instance, no 3BV filtering by software, no use of auxiliary functions, and no value overflow. The difference between a fairly completed game and an official one is that only the standard game mode can be official, while modes such as upk and guess - free can be fairly completed but not official. If it is official, it must be fairly completed. (This flag is beneficial for minesweeper ranking websites that support multiple modes.)
+    - Fixed length 1 bit (2e7): Whether the replay is completed. `1` indicates completion. The software attests that the game has ended, meaning no mines were struck and no values (like time) have overflowed. No other conditions are guaranteed.
+    - Fixed length 1 bit (2e6): Whether the replay is official. `1` indicates it is official. The software verifies that the game is official and definitely completed, including no 3BV filtering by software, no use of auxiliary functions, being in the standard mode, and no value overflow. It doesn't necessarily meet the additional 3BV restrictions of ranking websites. (This flag is useful for minesweeper ranking websites that only support the standard mode.)
+    - Fixed length 1 bit (2e5): Whether the replay is fairly completed. `1` indicates fair completion. The software guarantees that the game is fairly finished, definitely completed, for instance, no 3BV filtering by software, no use of auxiliary functions, and no value overflow. The difference between a fairly completed game and an official one is that only the standard game mode can be official, while modes such as upk and no-guess can be fairly completed but not official. If it is official, it must be fairly completed. (This flag is beneficial for minesweeper ranking websites that support multiple modes.)
     - Fixed length 1 bit (2e4): Whether it is no flag (NF) sweeping. A value of 1 means it is NF, equivalent to right_eff == 0; 0 otherwise.
-    - Fixed length 1 bit (2e3): Transcoded video flag. A value of 0 means this video is not transcoded; 1 means this video is transcoded, for example, an evf video obtained by transcoding an avf or evf video using Meta Minesweeper.
+    - Fixed length 1 bit (2e3): Transcoded video flag. `0` means this video is not transcoded; `1` means this video is transcoded, for example, an evf video obtained by transcoding an avf or evf video using Meta Minesweeper.
     - The remaining bits are reserved and all set to 0; they can be added according to the requirements of ranking websites and score statistics application developers.
 3. Fixed length 1 byte: Game settings. These settings are designed to offer appropriate convenience (or inconvenience) to players while generally being considered not to affect the formality and fairness of the score.
     - Fixed length 1 bit (2e7): Whether to turn off question marks. A value of 1 means they are turned off.
@@ -100,35 +100,33 @@ Format Description:
 12. Fixed length 8 bytes, uint64: Start timestamp, which is the total number of microseconds from January 1, 1970, in Greenwich Mean Time to the moment of the first left button release on a non-flagged cell.
 13. Fixed length 8 bytes, uint64: End timestamp, which is the total number of microseconds from January 1, 1970, in Greenwich Mean Time to the moment when all non-mine cells are opened.
 14. String ending with '\0', encoded in 'utf-8': The original source of the recording, including the software name and version number. Possible values include "Arbiter", "0.97 beta", "Viennasweeper", "Meta 3.1.9", etc. Ranking websites need to check the source of the recording.
-15. String ending with '\0', encoded in 'utf-8', only present in transcoded replays: Name of the transcoding software, including the software name and version number. Possible values include "Meta 3.1.9", "Meta 3.1.11", "Meta 3.2", etc. If it is empty, it indicates that this recording is directly generated by the software rather than being transcoded.
-16. String ending with '\0', encoded in 'utf-8', only present in transcoded recordings: Possible encoding methods for the user identifier, competition identifier, and unique identifier of the recording. Possible values include 'utf-8', 'utf-16', 'utf-16-be', 'utf-16-le', 'gbk', 'gb2312', 'big5','shift-jis', 'cp932', 'latin-1', 'ascii', 'iso-8859-1', etc. An empty value means it is unknown.
-17. Fixed length 2 bytes, uint16: Number of bytes occupied by the user identifier.
-18. String: User identifier (the user wishes the ranking website/software to display this identifier in the most prominent position).
-19. Fixed length 2 bytes, uint16: Number of bytes occupied by the competition identifier.
-20. String: Competition identifier (the user intends to use this recording as a voucher to participate in a certain competition but does not want the ranking website/software to display this identifier).
-21. Fixed length 2 bytes, uint16: Number of bytes occupied by the unique identifier.
-22. String: Unique identifier (the user wants to distinguish themselves from other users with the same name, such as nickname, Minesweeper network ID, province, email, online name, motto, but does not want the ranking website or software to display this identifier).
-23. String ending with '\0', encoded in 'utf-8': UUID related to device information, preferably 32 bit. Note that developers need to protect user privacy.
-24. Variable length ⌈rows × columns / 8⌉ bytes: 1 represents a mine, 0 represents not a mine. The ***i × columns + j*** - th bit represents whether the *i*-th (starting from 0) row and *j*-th (starting from 0) column is a mine. For example, for the following 3 row, 4 column board (with * representing mines):  
+15. String ending with '\0', encoded in 'utf-8': only present in transcoded replays: Name of the transcoding software, including the software name and version number. Possible values include "Meta 3.1.9", "Meta 3.1.11", "Meta 3.2", etc. If it is empty, it indicates that this recording is directly generated by the software rather than being transcoded.
+16. String ending with '\0', encoded in 'utf-8': only present in transcoded recordings: Possible encoding methods for the user identifier, competition identifier, and unique identifier of the recording. Possible values include 'utf-8', 'utf-16', 'utf-16-be', 'utf-16-le', 'gbk', 'gb2312', 'big5','shift-jis', 'cp932', 'latin-1', 'ascii', 'iso-8859-1', etc. An empty value means it is unknown.
+17. String ending with '\0', encoded in 'utf-8': User identifier (the user wishes the ranking website/software to display this identifier in the most prominent position).
+18. String ending with '\0', encoded in 'utf-8': Competition identifier (the user intends to use this recording as a voucher to participate in a certain competition but does not want the ranking website/software to display this identifier).
+19. String ending with '\0', encoded in 'utf-8': Unique identifier (the user wants to distinguish themselves from other users with the same name, such as nickname, ranking website ID, province, email, online name, motto, but does not want the ranking website or software to display this identifier).
+20. Fixed length 2 bytes, uint16: Length of UUID.
+21. Variable length binary data: UUID related to device information, preferably 32 bit. Note that developers need to protect user privacy.
+22. Variable length ⌈rows × columns / 8⌉ bytes: `1` represents a mine, `0` represents not a mine. The `i × columns + j` - th bit represents whether the `i`-th (starting from 0) row and `j`-th (starting from 0) column is a mine. For example, for the following 3 row, 4 column board (with * representing mines):  
         [[1, 3, *, *],  
          [3, *, *, *],  
          [*, *, *, *]]
     it is recorded as 00110111 11110000.
-25. Fixed length 2 bytes, uint16: Number of custom metrics.
-26. List of custom - metric key names (loop structure):
+23. Fixed length 2 bytes, uint16: Number of custom metrics.
+24. List of custom - metric key names (loop structure):
     - String ending with '\0', encoded in 'utf-8': Key name.
-27. Event list (loop structure):
-    - Fixed length 1 byte: Event type. Events are classified into mouse event, termination event, board event, metric event, and pause event. Mouse event encodings: {1: "mv", 2: "lc", 3: "lr", 4: "rc", 5: "rr", 6: "mc", 7: "mr", 8: "pf", 9: "cc", 10: "l", 11: "r", 12: "m"}. Termination event encodings: {92: "playing", 93: "win", 94: "fail", 99: "other(error)"}. Board event encodings: {100: "cell_0", 101: "cell_1", 102: "cell_2", 103: "cell_3", 104: "cell_4", 105: "cell_5", 106: "cell_6", 107: "cell_7", 108: "cell_8", 110: "up", 111: "flag", 114: "cross mine", 115: "blast", 116: "mine", 118: "pressed", 120: "questionmark", 121: "pressed questionmark"}. Metric event encodings: {200: "set key number value", 201: "set key string value"}. Pause event encoding: {255: "pause"}. The rest are reserved (except '\0').
+25. Event list (loop structure):
+    - Fixed length 1 byte: Event type. Events are classified into mouse event, termination event, board event, metric event, and pause event. Mouse event encodings: {1: "mv", 2: "lc", 3: "lr", 4: "rc", 5: "rr", 6: "mc", 7: "mr", 8: "pf", 9: "cc", 10: "l", 11: "r", 12: "m"}. Termination event encodings: {81: "replay", 82: "win", 83: "fail", 99: "error"}. Board event encodings: {100: "cell_0", 101: "cell_1", 102: "cell_2", 103: "cell_3", 104: "cell_4", 105: "cell_5", 106: "cell_6", 107: "cell_7", 108: "cell_8", 110: "up", 111: "flag", 114: "cross mine", 115: "blast", 116: "mine", 118: "pressed", 120: "questionmark", 121: "pressed questionmark"}. Metric event encodings: {200: "set key number value", 201: "set key string value"}. Pause event encoding: {255: "pause"}. The rest are reserved (except '\0').
     - Mouse - event structure:
         - Fixed length 1 byte, uint8: Increment of the timestamp, in milliseconds. Starting from 0 when the first left - or right click that affects the board occurs, and then it is the difference between the subsequent timestamp and the previous one. That is, the timestamp of the first left button release on a non-flagged cell is not necessarily 0, and the timestamp of the last operation is greater than or equal to the actual time used.
-        - Fixed length 2 bytes, int16: Change in the distance from the left border (in pixels), which is the value of the subsequent operation minus the previous one. The outside board event is recorded as `-32768`.
-        - Fixed length 2 bytes, int16: Change in the distance from the top border (in pixels), which is the value of the subsequent operation minus the previous one. The outside board event is recorded as `-32768`.
+        - Fixed length 2 bytes, int16: Change in the distance from the left border (in pixels), which is the value of the subsequent operation minus the previous one. The outside board event is recorded as the difference with `columns × cell size`.
+        - Fixed length 2 bytes, int16: Change in the distance from the top border (in pixels), which is the value of the subsequent operation minus the previous one. The outside board event is recorded as the difference with `rows × cell size`.
     - Game - state event structure:
         - Fixed length 1 byte, uint8: Increment of the timestamp, in milliseconds.
     - Board - state event structure:
         - Fixed length 1 byte, uint8: Increment of the timestamp, in milliseconds.
-        - Fixed length 2 bytes, int16: Change in the distance from the left border (in pixels), which is the value of the subsequent operation minus the previous one. The distance of an operation outside the board from the left border is recorded as "columns × cell size".
-        - Fixed length 2 bytes, int16: Change in the distance from the top border (in pixels), which is the value of the subsequent operation minus the previous one. The distance of an operation outside the board from the top border is recorded as "rows × cell size".
+        - Fixed length 1 bytes, int16: Change in the distance from the left border (in cells). The operation outside the board from the left border is recorded as "columns".
+        - Fixed length 1 bytes, int16: Change in the distance from the top border (in cells). The distance operation outside the board from the top border is recorded as "rows".
     - Metric - event structure:
         - Fixed length 1 byte, uint8: Increment of the timestamp, in milliseconds.
         - Fixed length 2 bytes, uint16: Index of the metric (starting from 0) + 10000.
@@ -138,11 +136,11 @@ Format Description:
             - String ending with '\0', encoded in 'utf-8': Value of the metric.
     - Pause - event structure:
         - Fixed length 2 bytes, uint16: Increment of the timestamp, in milliseconds.
-28. '\0': End of event list.
-29. Fixed length 2 bytes, uint16: Checksum length.
-30. Variable length binary data: Checksum.
+26. '\0': End of event list.
+27. Fixed length 2 bytes, uint16: Checksum length.
+28. Variable length binary data: Checksum.
 
-### v0.3
+### v0.3 (meta 3.1.9, meta 3.1.11, meta 3.2)
 
 Format Description:
 

@@ -428,7 +428,8 @@ impl<T> MinesweeperBoard<T> {
         // }
         match self.game_board_state {
             GameBoardState::Ready => match e {
-                "mv" => {
+                "mv" | "mc" | "mr" => {
+                    // arbiter这个奇葩，录像可能以中键的按下和抬起开始
                     return Ok(0);
                 }
                 "lc" => {

@@ -1,5 +1,7 @@
 #[cfg(any(feature = "py", feature = "rs"))]
 use rand::Rng;
+// 轻量级的安全局面，防住简单的内存读取攻击。假如不读源码，攻击者需要花一些时间。
+
 
 #[cfg(any(feature = "py", feature = "rs"))]
 fn encode(v: i32, rng: &mut rand::rngs::ThreadRng) -> (i32, i32, i32) {

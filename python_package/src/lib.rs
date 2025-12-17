@@ -400,7 +400,7 @@ fn py_obr_board(data_vec: Vec<usize>, height: usize, width: usize) -> PyResult<V
 #[pyfunction]
 #[pyo3(
     name = "mark_board",
-    signature = (game_board, remark)
+    signature = (game_board, remark = false)
 )]
 fn py_mark_board(mut game_board: Vec<Vec<i32>>, remark: bool) -> PyResult<Vec<Vec<i32>>> {
     mark_board(&mut game_board, remark).unwrap();

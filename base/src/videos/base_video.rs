@@ -29,11 +29,11 @@ use crate::algorithms::cal_probability_cells_not_mine;
 use crate::mark_board;
 use std::cmp::{max, min};
 
+use crate::videos::byte_reader::ByteReader;
 use crate::videos::types::{
     ErrReadVideoReason, Event, GameDynamicParams, KeyDynamicParams, MouseEvent, StaticParams,
     VideoActionStateRecorder, VideoAnalyseParams, VideoDynamicParams,
 };
-use crate::videos::byte_reader::ByteReader;
 /// 扫雷游戏状态机
 /// 功能：整局游戏的全部信息。自动推导局面、计算数据、计时、保存文件等功能。
 /// 以下是在python中调用的示例。
@@ -372,10 +372,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
     /// - 对于avf录像，必须analyse以后才能正确获取是否扫完。
     pub fn analyse(&mut self) {
         // println!("{:?}, ", self.board);
-        assert!(
-            self.can_analyse,
-            "调用parse或扫完前，不能调用analyse方法"
-        );
+        assert!(self.can_analyse, "调用parse或扫完前，不能调用analyse方法");
         // self.minesweeper_board
         let mut b = MinesweeperBoard::<Vec<Vec<i32>>>::new(self.board.clone());
         let mut first_game_board = GameBoard::new(self.mine_num);
@@ -389,7 +386,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
                 svi.prior_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
                 if mouse_event.mouse != "mv" {
                     let old_state = b.game_board_state;
-                    // println!(">>>  {:?}, {:?}", svi.mouse, b.mouse_state);
+                    // println!(">>>  {:?}, {:?}", mouse_event.mouse, b.mouse_state);
                     let u_level = b
                         .step(
                             &mouse_event.mouse,
@@ -712,8 +709,7 @@ impl BaseVideo<SafeBoard> {
     }
 }
 
-
-impl ByteReader for BaseVideo<Vec<Vec<i32>>>  {
+impl ByteReader for BaseVideo<Vec<Vec<i32>>> {
     fn raw_data(&self) -> &[u8] {
         &self.raw_data
     }
@@ -722,7 +718,6 @@ impl ByteReader for BaseVideo<Vec<Vec<i32>>>  {
         &mut self.offset
     }
 }
-
 
 pub trait NewBaseVideo<T> {
     fn new(file_name: T) -> Self;
@@ -1030,6 +1025,7 @@ impl<T> BaseVideo<T> {
                     .unwrap()
                     .as_micros() as u64;
                 self.game_board_state = GameBoardState::Loss;
+                self.is_completed = false;
                 self.gather_params_after_game(time_ms, None);
                 Ok(0)
             }
@@ -1149,44 +1145,52 @@ impl<T> BaseVideo<T> {
 
     pub fn print_event(&self) {
         let num = 0;
-        // for e in &self.video_action_state_recorder {
-        //     if num < 800 {
-        //         if e.mouse != "mv" {
-        //             println!(
-        //                 "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
-        //                 e.time, e.mouse, e.x, e.y, e.useful_level
-        //             );
-        //         }
-        //     }
-        // println!(
-        //     "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
-        //     e.time, e.mouse, e.x, e.y, e.useful_level
-        // );
-        // if e.mouse != "mv" {
-        //     println!(
-        //         "my_board.step_flow(vec![({:?}, ({:?}, {:?}))]).unwrap();",
-        //         // "video.step({:?}, ({:?}, {:?})).unwrap();",
-        //         e.mouse,
-        //         e.y / self.cell_pixel_size as u16,
-        //         e.x / self.cell_pixel_size as u16
-        //     );
-        // }
-        // num += 1;
-        // if e.mouse != "mv" {
-        //     println!(
-        //         "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
-        //         e.time, e.mouse, e.x, e.y
-        //     );
-        //     e.prior_game_board
-        //         .game_board
-        //         .iter()
-        //         .for_each(|v| println!("{:?}", v));
-        //     e.prior_game_board
-        //         .poss
-        //         .iter()
-        //         .for_each(|v| println!("{:?}", v));
-        // }
-        // }
+        for e in &self.video_action_state_recorder {
+            if num < 800 {
+                if let Some(Event::Mouse(mouse_event)) = &e.event {
+                    if mouse_event.mouse != "mv" {
+                        println!(
+                            "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+                            e.time, mouse_event.mouse, mouse_event.x, mouse_event.y, e.useful_level
+                        );
+                    }
+                }
+                // if e.mouse != "mv" {
+                //     println!(
+                //         "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+                //         e.time, e.mouse, e.x, e.y, e.useful_level
+                //     );
+                // }
+            }
+            // println!(
+            //     "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+            //     e.time, e.mouse, e.x, e.y, e.useful_level
+            // );
+            // if e.mouse != "mv" {
+            //     println!(
+            //         "my_board.step_flow(vec![({:?}, ({:?}, {:?}))]).unwrap();",
+            //         // "video.step({:?}, ({:?}, {:?})).unwrap();",
+            //         e.mouse,
+            //         e.y / self.cell_pixel_size as u16,
+            //         e.x / self.cell_pixel_size as u16
+            //     );
+            // }
+            // num += 1;
+            // if e.mouse != "mv" {
+            //     println!(
+            //         "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
+            //         e.time, e.mouse, e.x, e.y
+            //     );
+            //     e.prior_game_board
+            //         .game_board
+            //         .iter()
+            //         .for_each(|v| println!("{:?}", v));
+            //     e.prior_game_board
+            //         .poss
+            //         .iter()
+            //         .for_each(|v| println!("{:?}", v));
+            // }
+        }
     }
     pub fn print_comments(&self) {
         for i in &self.video_action_state_recorder {

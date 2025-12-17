@@ -72,7 +72,7 @@ Acknowledgments: 13688 (testing), ralokt (suggestions), 9952 (suggestions), 36 (
 The various modes and their names can be further summarized as shown in the following diagram.
 ![](md_pic/mode_en.svg)
 
-### v0.4 (meta 3.2.1)
+### v0.4 (Used by Metasweeper 3.2.1)
 
 Format Description:
 
@@ -140,7 +140,7 @@ Format Description:
 27. Fixed length 2 bytes, uint16: Checksum length.
 28. Variable length binary data: Checksum.
 
-### v0.3 (meta 3.1.9, meta 3.1.11, meta 3.2)
+### v0.3 (Used by Metasweeper 3.1.9, Metasweeper 3.1.11, Metasweeper 3.2.0)
 
 Format Description:
 

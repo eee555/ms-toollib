@@ -282,6 +282,26 @@ fn avf_video_works_other_encoding() {
     assert_eq!(video.data.get_rtime_ms().unwrap(), 9200);
 }
 
+
+
+#[test]
+// cargo test --features rs -- --nocapture temp_avf_video_works
+fn temp_avf_video_works() {
+    // 录像解析工具测试
+    let mut video =
+        AvfVideo::new("fff.avf");
+
+    let r = video.parse();
+    assert_eq!(r.unwrap(), ());
+    // video.data.print_event();
+    video.data.analyse();
+    println!("bbbv: {:?}", video.data.static_params.bbbv);
+    video.data.set_current_time(999.99);
+    println!("left: {:?}", video.data.get_left());
+    println!("right: {:?}", video.data.get_right());
+    println!("double: {:?}", video.data.get_double());
+}
+
 #[test]
 // cargo test --features rs -- --nocapture RmvVideo_works
 fn rmv_video_works() {

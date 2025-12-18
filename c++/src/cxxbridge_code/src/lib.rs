@@ -70,7 +70,7 @@ mod ffi {
 
         type AvfVideo;
         fn new_AvfVideo(file_name: &str) -> Box<AvfVideo>;
-        fn parse_video(self: &mut AvfVideo);
+        fn parse(self: &mut AvfVideo);
         fn analyse(self: &mut AvfVideo);
         fn get_row(self: &AvfVideo) -> usize;
         fn get_column(self: &AvfVideo) -> usize;
@@ -183,8 +183,8 @@ fn new_AvfVideo(file_name: &str) -> Box<AvfVideo> {
 }
 
 impl AvfVideo {
-    fn parse_video(&mut self) {
-        self.core.parse_video().unwrap();
+    fn parse(&mut self) {
+        self.core.parse().unwrap();
     }
     fn analyse(&mut self) {
         self.core.analyse();

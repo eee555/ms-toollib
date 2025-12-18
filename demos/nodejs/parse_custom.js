@@ -12,7 +12,7 @@ const data = fs.readFileSync(video_file)
 
 // 使用二进制数据和文件名初始化
 let v = new ms.AvfVideo(data, video_file)
-v.parse_video();
+v.parse();
 v.analyse();
 assert(v.bbbv == 8);
 

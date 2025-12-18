@@ -17,7 +17,7 @@
 int main()
 {
     rust::cxxbridge1::Box<AvfVideo> v = new_AvfVideo("jze.avf");
-    v->parse_video();
+    v->parse();
     v->analyse();
     rust::string player_name = v->get_player();
 

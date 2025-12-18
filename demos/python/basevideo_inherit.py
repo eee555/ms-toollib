@@ -8,7 +8,7 @@ class MyVideo(ms.AvfVideo):
     def __init__(self, *args, **kargs):
         super(MyVideo, self).__init__()
     def print_something(self):
-        self.parse_video()
+        self.parse()
         self.analyse()
         self.current_time = 999999
         print(f"mode: {self.mode}")

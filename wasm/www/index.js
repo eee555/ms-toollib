@@ -34,7 +34,7 @@ const request = new XMLHttpRequest()
 request.onload = () => {
     let r = new Uint8Array(request.response);
     let video = ms.EvfVideo.new(r, "test.evf")
-    video.parse_video()
+    video.parse()
     console.log(video.get_bbbv);
     console.log(video.get_player);
     video.analyse()

@@ -406,8 +406,8 @@ macro_rules! generate_video {
                         core: ms::$some_video::new(data, file_name),
                     }
                 }
-                pub fn parse_video(&mut self) {
-                    self.core.parse_video().unwrap();
+                pub fn parse(&mut self) {
+                    self.core.parse().unwrap();
                 }
                 pub fn analyse(&mut self) {
                     self.core.data.analyse();

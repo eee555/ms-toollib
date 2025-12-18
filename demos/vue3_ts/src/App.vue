@@ -48,7 +48,7 @@ const openFile = async (e: Event) => {
             console.log(uint8Array);
             
             let video = new ms.AvfVideo(uint8Array, "")
-            video.parse_video()
+            video.parse()
             video.analyse()
             video.current_time = 999999.0
             video_info.value.push(`3BV = ${video.bbbv}`);

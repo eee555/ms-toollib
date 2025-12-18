@@ -1,6 +1,6 @@
 [package]
 name = "ms-toollib"
-version = "1.4.19"
+version = "1.5.2"
 authors = ["eee555 <50390200+eee555@users.noreply.github.com>"]
 edition = "2021"
 homepage = "https://github.com/eee555/ms-toollib"

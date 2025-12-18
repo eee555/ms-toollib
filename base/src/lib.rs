@@ -59,7 +59,7 @@
 // cargo doc --features rs --no-deps --open
 // cargo build --release --features py
 // cargo bench
-// cargo publish --features rs
+// cargo publish --features rs --allow-dirty
 // 需要换成官方的源，不能用镜像
 // cargo yank --vers 0.0.1
 mod utils;

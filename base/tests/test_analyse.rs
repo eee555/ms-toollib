@@ -515,7 +515,8 @@ fn evf_video_works_v4() {
     video.generate_evf_v4_raw_data();
     video.set_checksum(vec![8; 32]).unwrap();
     let test_file_name = video.save_to_evf_file("test");
-    // println!("{:?}", test_file_name);
+    println!("{:?}", test_file_name);
+    _sleep_ms(50);
     let mut video = EvfVideo::new(&test_file_name);
     let r = video.parse();
     assert_eq!(r.unwrap(), ());

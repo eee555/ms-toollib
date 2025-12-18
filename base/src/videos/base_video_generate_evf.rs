@@ -3,6 +3,8 @@ use crate::videos::{BaseVideo, Event};
 
 use crate::safe_board::BoardSize;
 use std::cmp::{max, min};
+use std::path::Path;
+use std::thread;
 
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::fs;
@@ -587,37 +589,43 @@ impl<T> BaseVideo<T> {
     //     *self.raw_data.last_mut().unwrap() = 0;
     //     self.raw_data.append(checksum);
     // }
-    /// 存evf文件，自动加后缀，xxx.evf重复变成xxx(2).evf
+    /// 存evf文件，自动加后缀，xxx.evf重复变成xxx(2).evf。后台线程执行，即使对象销毁也不影响。
     pub fn save_to_evf_file(&self, file_name: &str) -> String {
         if self.raw_data.is_empty() {
             panic!(
                 "Raw data is empty. Please generate raw data by `generate_evf_v4_raw_data` first."
             );
         }
-        let file_exist =
-            std::path::Path::new((file_name.to_string() + &(".evf".to_string())).as_str()).exists();
-        if !file_exist {
-            fs::write(
-                (file_name.to_string() + &(".evf".to_string())).as_str(),
-                &self.raw_data,
-            )
-            .unwrap();
-            return (file_name.to_string() + &(".evf".to_string()))
-                .as_str()
-                .to_string();
-        } else {
-            let mut id = 2;
-            let mut format_name;
-            loop {
-                format_name = file_name.to_string() + &(format!("({}).evf", id).to_string());
-                let new_file_name = format_name.as_str();
-                let file_exist = std::path::Path::new(new_file_name).exists();
-                if !file_exist {
-                    fs::write(new_file_name, &self.raw_data).unwrap();
-                    return new_file_name.to_string();
+
+        let base = file_name.to_string();
+        let data = self.raw_data.clone();
+
+        // 先计算文件名（同步，极快）
+        let final_name = {
+            let first = format!("{}.evf", base);
+            if !Path::new(&first).exists() {
+                first
+            } else {
+                let mut id = 2;
+                loop {
+                    let name = format!("{}({}).evf", base, id);
+                    if !Path::new(&name).exists() {
+                        break name;
+                    }
+                    id += 1;
                 }
-                id += 1;
             }
-        }
+        };
+
+        // 后台线程写入文件
+        let write_name = final_name.clone();
+        thread::spawn(move || {
+            if let Err(e) = fs::write(&write_name, data) {
+                eprintln!("Failed to write evf file: {}", e);
+            }
+        });
+
+        // 立刻返回，不阻塞
+        final_name
     }
 }

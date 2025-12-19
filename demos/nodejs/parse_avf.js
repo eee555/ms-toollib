@@ -3,15 +3,16 @@
 // 在ms_toollib\demos\nodejs下npm install
 // npm run test
 
-const ms = require('ms-toollib');
-const fs = require('fs');
-const { assert } = require('console');
+const ms = require("ms-toollib");
+const fs = require("fs");
+const { assert } = require("console");
 
-const video_file = '../../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jianing G01825.avf';
-const data = fs.readFileSync(video_file)
+const video_file =
+  "../../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jianing G01825.avf";
+const data = fs.readFileSync(video_file);
 
 // 使用二进制数据和文件名初始化
-let v = new ms.AvfVideo(data, video_file)
+let v = new ms.AvfVideo(data, video_file);
 v.parse();
 v.analyse();
 assert(v.bbbv == 127);
@@ -25,17 +26,27 @@ assert(v.x_y.y == 38);
 // left click efficiency
 assert(v.lce == 24);
 
-
-const time_period = ms.valid_time_period("Arbiter")
+const time_period = ms.valid_time_period("Arbiter");
 var newDate = new Date();
 console.log(time_period.start_time);
 newDate.setTime(time_period.end_time * 1000);
 console.log("Arbiter video valid time:", newDate.toDateString());
 
 for (e of v.events) {
-    console.log(e.time, e.x, e.y, e.mouse, e.path, e.comments, e.mouse_state);
-    // left, right, double, lce, rce, dce, flag, bbbv_solved, op_solved, isl_solved
-    console.log(e.key_dynamic_params.left);
+  if (e.event.is_mouse()) {
+    let mouse_event = e.event.unwrap_mouse();
+    console.log(
+      e.time,
+      mouse_event.x,
+      mouse_event.y,
+      mouse_event.mouse,
+      e.path,
+      e.comments,
+      e.mouse_state
+    );
+  }
+  // left, right, double, lce, rce, dce, flag, bbbv_solved, op_solved, isl_solved
+  console.log(e.key_dynamic_params.left);
 }
 
 for (e of v.events) {
@@ -58,4 +69,3 @@ for (e of v.events) {
         console.log(next_game_board.enum_is_mine)
     }
 }
-

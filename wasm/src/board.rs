@@ -6,7 +6,6 @@ use ms::videos::NewSomeVideo2;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 
-
 #[wasm_bindgen]
 pub struct Board {
     core: ms::Board,
@@ -68,7 +67,6 @@ impl Board {
         self.core.get_cell8()
     }
 }
-
 
 #[wasm_bindgen]
 pub struct GameBoard {
@@ -276,7 +274,7 @@ impl MinesweeperBoard {
 
 #[wasm_bindgen]
 pub struct KeyDynamicParams {
-    core: ms::videos::base_video::KeyDynamicParams,
+    core: ms::KeyDynamicParams,
 }
 
 #[wasm_bindgen]
@@ -324,15 +322,21 @@ impl KeyDynamicParams {
 }
 
 #[wasm_bindgen]
-pub struct VideoActionStateRecorder {
-    core: ms::videos::base_video::VideoActionStateRecorder,
+pub struct MouseEvent {
+    core: ms::MouseEvent,
 }
 
 #[wasm_bindgen]
-impl VideoActionStateRecorder {
-    #[wasm_bindgen(getter = time)]
-    pub fn get_time(&self) -> f64 {
-        self.core.time
+impl MouseEvent {
+    #[wasm_bindgen(constructor)]
+    pub fn new(mouse: String, x: u16, y: u16) -> Self {
+        Self {
+            core: ms::MouseEvent { mouse, x, y },
+        }
+    }
+    #[wasm_bindgen(getter = mouse)]
+    pub fn get_mouse(&self) -> String {
+        self.core.mouse.clone()
     }
     #[wasm_bindgen(getter = x)]
     pub fn get_x(&self) -> u16 {
@@ -342,9 +346,166 @@ impl VideoActionStateRecorder {
     pub fn get_y(&self) -> u16 {
         self.core.y
     }
-    #[wasm_bindgen(getter = mouse)]
-    pub fn get_mouse(&self) -> String {
-        self.core.mouse.clone()
+}
+
+#[wasm_bindgen]
+pub struct GameStateEvent {
+    core: ms::GameStateEvent,
+}
+
+#[wasm_bindgen]
+impl GameStateEvent {
+    #[wasm_bindgen(constructor)]
+    pub fn new(game_state: String) -> Self {
+        Self {
+            core: ms::GameStateEvent { game_state },
+        }
+    }
+    #[wasm_bindgen(getter = game_state)]
+    pub fn get_game_state(&self) -> String {
+        self.core.game_state.clone()
+    }
+}
+
+#[wasm_bindgen]
+pub struct BoardEvent {
+    core: ms::BoardEvent,
+}
+
+#[wasm_bindgen]
+impl BoardEvent {
+    #[wasm_bindgen(constructor)]
+    pub fn new(board: String, row_id: u8, column_id: u8) -> Self {
+        Self {
+            core: ms::BoardEvent {
+                board,
+                row_id,
+                column_id,
+            },
+        }
+    }
+    #[wasm_bindgen(getter = board)]
+    pub fn get_board(&self) -> String {
+        self.core.board.clone()
+    }
+    #[wasm_bindgen(getter = row_id)]
+    pub fn get_row_id(&self) -> u8 {
+        self.core.row_id
+    }
+    #[wasm_bindgen(getter = column_id)]
+    pub fn get_column_id(&self) -> u8 {
+        self.core.column_id
+    }
+}
+
+#[wasm_bindgen]
+pub struct IndexEvent {
+    core: ms::IndexEvent,
+}
+
+#[wasm_bindgen]
+impl IndexEvent {
+    #[wasm_bindgen(constructor)]
+    pub fn new(key: String, value: JsValue) -> Self {
+        // number
+        if let Some(v) = value.as_f64() {
+            Self {
+                core: ms::IndexEvent {
+                    key,
+                    value: ms::IndexValue::Number(v),
+                },
+            }
+        }
+        // string
+        else if let Some(v) = value.as_string() {
+            Self {
+                core: ms::IndexEvent {
+                    key,
+                    value: ms::IndexValue::String(v),
+                },
+            }
+        } else {
+            panic!("value must be float or str")
+        }
+    }
+    #[wasm_bindgen(getter = key)]
+    pub fn get_key(&self) -> String {
+        self.core.key.clone()
+    }
+
+    #[wasm_bindgen(getter = value)]
+    pub fn get_value(&self) -> JsValue {
+        match &self.core.value {
+            ms::IndexValue::Number(f) => JsValue::from_f64(*f),
+            ms::IndexValue::String(s) => JsValue::from_str(s),
+        }
+    }
+}
+
+#[wasm_bindgen]
+pub struct Event {
+    core: ms::Event,
+}
+
+#[wasm_bindgen]
+impl Event {
+    pub fn is_mouse(&self) -> bool {
+        matches!(self.core, ms::Event::Mouse(_))
+    }
+    pub fn is_game_state(&self) -> bool {
+        matches!(self.core, ms::Event::GameState(_))
+    }
+    pub fn is_board(&self) -> bool {
+        matches!(self.core, ms::Event::Board(_))
+    }
+    pub fn is_index(&self) -> bool {
+        matches!(self.core, ms::Event::Index(_))
+    }
+    pub fn unwrap_mouse(&self) -> MouseEvent {
+        match &self.core {
+            ms::Event::Mouse(e) => MouseEvent { core: e.clone() },
+            _ => panic!("Not a mouse event"),
+        }
+    }
+
+    pub fn unwrap_board(&self) -> BoardEvent {
+        match &self.core {
+            ms::Event::Board(e) => BoardEvent { core: e.clone() },
+            _ => panic!("Not a board event"),
+        }
+    }
+
+    pub fn unwrap_index(&self) -> IndexEvent {
+        match &self.core {
+            ms::Event::Index(e) => IndexEvent { core: e.clone() },
+            _ => panic!("Not an index event"),
+        }
+    }
+
+    pub fn unwrap_game_state(&self) -> GameStateEvent {
+        match &self.core {
+            ms::Event::GameState(e) => GameStateEvent { core: e.clone() },
+            _ => panic!("Not a game state event"),
+        }
+    }
+}
+
+#[wasm_bindgen]
+pub struct VideoActionStateRecorder {
+    core: ms::VideoActionStateRecorder,
+}
+
+#[wasm_bindgen]
+impl VideoActionStateRecorder {
+    #[wasm_bindgen(getter = time)]
+    pub fn get_time(&self) -> f64 {
+        self.core.time
+    }
+    #[wasm_bindgen(getter = event)]
+    pub fn get_event(&self) -> Event {
+        Event {
+            core: self.core.event.clone().unwrap(),
+        }
     }
     #[wasm_bindgen(getter = useful_level)]
     pub fn get_useful_level(&self) -> u8 {

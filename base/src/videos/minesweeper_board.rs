@@ -616,6 +616,13 @@ impl<T> MinesweeperBoard<T> {
                     }
                     return Ok(0);
                 }
+                "mc" => {
+                    // 阿比特中有在预标雷阶段中键按下弹起
+                    self.middle_hold = true;
+                }
+                "mr" => {
+                    self.middle_hold = false;
+                }
                 _ => return Err(()),
             },
             GameBoardState::Playing => {}

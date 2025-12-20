@@ -386,7 +386,16 @@ impl BaseVideo<Vec<Vec<i32>>> {
                 svi.prior_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
                 if mouse_event.mouse != "mv" {
                     let old_state = b.game_board_state;
-                    // println!(">>>  {:?}, {:?}", mouse_event.mouse, b.mouse_state);
+                    // println!(
+                    //     ">>>  {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
+                    //     mouse_event.mouse,
+                    //     b.mouse_state,
+                    //     b.game_board_state,
+                    //     b.left,
+                    //     b.right,
+                    //     b.double,
+                    //     b.bbbv_solved
+                    // );
                     let u_level = b
                         .step(
                             &mouse_event.mouse,

@@ -289,11 +289,11 @@ fn avf_video_works_other_encoding() {
 fn temp_avf_video_works() {
     // 录像解析工具测试
     let mut video =
-        AvfVideo::new("fff.avf");
+        AvfVideo::new("temp.avf");
 
     let r = video.parse();
     assert_eq!(r.unwrap(), ());
-    // video.data.print_event();
+    video.data.print_event();
     video.data.analyse();
     println!("bbbv: {:?}", video.data.static_params.bbbv);
     video.data.set_current_time(999.99);

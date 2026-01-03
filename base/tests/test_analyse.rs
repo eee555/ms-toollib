@@ -1717,6 +1717,8 @@ fn rmv1_utf8_basic() {
     assert_eq!(replay.data.static_params.bbbv, 128);
     replay.data.analyse();
     assert_eq!(replay.data.get_rtime_ms().unwrap(), 34884);
+    assert!(replay.data.is_official);
+    assert!(replay.data.is_fair);
     assert!(replay.data.is_completed);
 }
 

@@ -234,23 +234,16 @@ impl RmvVideo {
         }
         cal_board_numbers(&mut self.data.board);
         // 开始前已经标上的雷
+        let mut preflags_items = vec![];
         if preflags_size > 0 {
             let num_pre_flags = self.data.get_u16()?;
             for _ in 0..num_pre_flags {
                 let c = self.data.get_u8()? as u16;
                 let d = self.data.get_u8()? as u16;
-                self.data
-                    .video_action_state_recorder
-                    .push(VideoActionStateRecorder {
-                        event: Some(Event::Mouse(MouseEvent {
-                            mouse: "pf".to_string(),
-                            x: d * 16,
-                            y: c * 16,
-                        })),
-                        ..VideoActionStateRecorder::default()
-                    });
+                preflags_items.push((c, d));
             }
         }
+        let preflags_items = preflags_items;
 
         let mut square_size = 16u8; // v1 default
         let mut utf8 = true; // v2 default
@@ -333,6 +326,18 @@ impl RmvVideo {
         let xoffset = if format_version == 1 {12} else {0};
         let yoffset = if format_version == 1 {56} else {0};
         let (mut x, mut y, mut time) = (0u16, 0u16, 0u32);
+        for (c, d) in preflags_items {
+            self.data
+                .video_action_state_recorder
+                .push(VideoActionStateRecorder {
+                    event: Some(Event::Mouse(MouseEvent {
+                        mouse: "pf".to_string(),
+                        x: c * self.data.cell_pixel_size as u16,
+                        y: d * self.data.cell_pixel_size as u16,
+                    })),
+                    ..VideoActionStateRecorder::default()
+                });
+        }
         loop {
             let c = self.data.get_u8()?;
             if c == 0 {

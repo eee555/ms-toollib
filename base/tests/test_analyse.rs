@@ -1826,3 +1826,45 @@ fn rmv2_24px() {
     assert_eq!(replay.data.game_dynamic_params.double, 3);
     assert_eq!(replay.data.software, "Viennasweeper".to_string());
 }
+
+#[test]
+fn rmv2_16px_preflags() {
+    // a rmv2 video of a 24px game with preflags
+    let mut replay = RmvVideo::new("tests/assets/test_rmv2_16px_preflags.rmv");
+    replay.parse().expect("parsing should succeed");
+    assert_eq!(replay.data.player_identifier, "Thomas Kolar");
+    assert_eq!(replay.data.static_params.bbbv, 16);
+    assert_eq!(replay.data.get_rtime_ms().unwrap(), 16032);
+    assert!(replay.data.is_official);
+    assert!(replay.data.is_fair);
+    assert!(replay.data.is_completed);
+    assert_eq!(replay.data.cell_pixel_size, 16);
+    replay.data.analyse();
+    assert!(replay.data.is_completed);
+    assert!(replay.data.is_official);
+    assert!(replay.data.is_fair);
+    assert_eq!(replay.data.game_dynamic_params.left, 1337);
+    assert_eq!(replay.data.game_dynamic_params.right, 1337);
+    assert_eq!(replay.data.game_dynamic_params.double, 1337);
+}
+
+#[test]
+fn rmv2_24px_preflags() {
+    // a rmv2 video of a 24px game with preflags
+    let mut replay = RmvVideo::new("tests/assets/test_rmv2_24px_preflags.rmv");
+    replay.parse().expect("parsing should succeed");
+    assert_eq!(replay.data.player_identifier, "Thomas Kolar");
+    assert_eq!(replay.data.static_params.bbbv, 17);
+    assert_eq!(replay.data.get_rtime_ms().unwrap(), 24570);
+    assert!(replay.data.is_official);
+    assert!(replay.data.is_fair);
+    assert!(replay.data.is_completed);
+    assert_eq!(replay.data.cell_pixel_size, 24);
+    replay.data.analyse();
+    assert!(replay.data.is_completed);
+    assert!(replay.data.is_official);
+    assert!(replay.data.is_fair);
+    assert_eq!(replay.data.game_dynamic_params.left, 3);
+    assert_eq!(replay.data.game_dynamic_params.right, 29);
+    assert_eq!(replay.data.game_dynamic_params.double, 13);
+}

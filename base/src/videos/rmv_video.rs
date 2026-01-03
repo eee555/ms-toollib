@@ -347,9 +347,10 @@ impl RmvVideo {
                     y = (self.data.get_u16()?).wrapping_sub(yoffset);
                 }
                 if c >= 1 {
-                    if x >= self.data.width as u16 * 16 || y >= self.data.height as u16 * 16 {
-                        x = self.data.width as u16 * 16;
-                        y = self.data.height as u16 * 16;
+                    if (x >= self.data.width as u16 * self.data.cell_pixel_size as u16
+                        || y >= self.data.height as u16 * self.data.cell_pixel_size as u16) {
+                        x = self.data.width as u16 * self.data.cell_pixel_size as u16;
+                        y = self.data.height as u16 * self.data.cell_pixel_size as u16;
                     }
                     if first_op_flag {
                         first_op_flag = false;

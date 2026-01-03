@@ -158,10 +158,6 @@ impl RmvVideo {
                     Ok(v) => v,
                     Err(_) => return Err(ErrReadVideoReason::InvalidParams),
                 };
-                self.data.is_completed = self.data.static_params.bbbv > 0;
-                // 没有判断是否公正的方法，只能根据是否扫完
-                self.data.is_official = self.data.is_completed;
-                self.data.is_fair = self.data.is_completed;
 
                 self.data.offset += 16;
 
@@ -385,6 +381,7 @@ impl RmvVideo {
             } else if c <= 14 || (c >= 18 && c <= 27) {
                 self.data.offset += 2;
             } else if c <= 17 {
+                self.data.is_completed = c == 16;
                 break;
             } else {
                 return Err(ErrReadVideoReason::InvalidParams);
@@ -398,6 +395,8 @@ impl RmvVideo {
                 self.data.start_time + (self.data.get_rtime_ms().unwrap() as u64) * 1000;
         }
         self.data.software = "Viennasweeper".to_string();
+        self.data.is_official = self.data.is_completed;
+        self.data.is_fair = self.data.is_completed;
         self.data.can_analyse = true;
         return Ok(());
     }

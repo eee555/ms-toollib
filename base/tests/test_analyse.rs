@@ -1743,6 +1743,7 @@ fn rmv2_utf8_basic() {
     assert_eq!(replay.data.game_dynamic_params.left, 1);
     assert_eq!(replay.data.game_dynamic_params.right, 1);
     assert_eq!(replay.data.game_dynamic_params.double, 2);
+    assert_eq!(replay.data.software, "Viennasweeper".to_string());
 }
 
 #[test]

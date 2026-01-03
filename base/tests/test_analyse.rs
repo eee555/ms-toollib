@@ -1715,8 +1715,11 @@ fn rmv1_utf8_basic() {
     replay.parse().expect("parsing should succeed");
     assert_eq!(replay.data.player_identifier, "Thomas Kolar");
     assert_eq!(replay.data.static_params.bbbv, 128);
-    replay.data.analyse();
     assert_eq!(replay.data.get_rtime_ms().unwrap(), 34884);
+    assert!(replay.data.is_official);
+    assert!(replay.data.is_fair);
+    assert!(replay.data.is_completed);
+    replay.data.analyse();
     assert!(replay.data.is_official);
     assert!(replay.data.is_fair);
     assert!(replay.data.is_completed);
@@ -1727,10 +1730,13 @@ fn rmv2_utf8_basic() {
     // a rmv2 video that uses utf-8 by definition, but no non-ASCII chars
     let mut replay = RmvVideo::new("tests/assets/test_rmv2_utf8_basic.rmv");
     replay.parse().expect("parsing should succeed");
-    replay.data.analyse();
     assert_eq!(replay.data.player_identifier, "Thomas Kolar");
-    assert_eq!(replay.data.get_rtime_ms().unwrap(), 670);
     assert_eq!(replay.data.static_params.bbbv, 3);
+    assert_eq!(replay.data.get_rtime_ms().unwrap(), 670);
+    assert!(replay.data.is_official);
+    assert!(replay.data.is_fair);
+    assert!(replay.data.is_completed);
+    replay.data.analyse();
     assert!(replay.data.is_official);
     assert!(replay.data.is_fair);
     assert!(replay.data.is_completed);

@@ -1729,3 +1729,21 @@ fn rmv2_utf8_basic() {
     assert_eq!(replay.data.get_rtime_ms().unwrap(), 670);
     assert!(replay.data.is_completed);
 }
+
+#[test]
+fn rmv1_utf8_invalid() {
+    // a rmv1 video with the utf-8 property set, but invalid utf8
+    let mut replay = RmvVideo::new("tests/assets/test_rmv1_utf8_invalid.rmv");
+    replay.parse().expect_err("parsing should fail");
+    assert!(!replay.data.can_analyse);
+    assert!(!replay.data.is_completed);
+}
+
+#[test]
+fn rmv2_utf8_invalid() {
+    // a rmv2 video with invalid utf8
+    let mut replay = RmvVideo::new("tests/assets/test_rmv2_utf8_invalid.rmv");
+    replay.parse().expect_err("parsing should fail");
+    assert!(!replay.data.can_analyse);
+    assert!(!replay.data.is_completed);
+}

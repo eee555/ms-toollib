@@ -1736,6 +1736,7 @@ fn rmv2_utf8_basic() {
 #[test]
 fn rmv1_utf8_invalid() {
     // a rmv1 video with the utf-8 property set, but invalid utf8
+    // manually edited replay file!
     let mut replay = RmvVideo::new("tests/assets/test_rmv1_utf8_invalid.rmv");
     replay.parse().expect_err("parsing should fail");
     assert!(!replay.data.can_analyse);
@@ -1745,6 +1746,7 @@ fn rmv1_utf8_invalid() {
 #[test]
 fn rmv2_utf8_invalid() {
     // a rmv2 video with invalid utf8
+    // manually edited replay file!
     let mut replay = RmvVideo::new("tests/assets/test_rmv2_utf8_invalid.rmv");
     replay.parse().expect_err("parsing should fail");
     assert!(!replay.data.can_analyse);
@@ -1754,6 +1756,7 @@ fn rmv2_utf8_invalid() {
 #[test]
 fn rmv1_utf8_nonascii() {
     // a rmv1 video with the utf-8 property set, and valid utf8 with non-ASCII chars
+    // manually edited replay file!
     let mut replay = RmvVideo::new("tests/assets/test_rmv1_utf8_nonascii.rmv");
     replay.parse().expect("parsing should succeed");
     assert_eq!(replay.data.player_identifier, "aaȑaa Kolar");
@@ -1766,6 +1769,7 @@ fn rmv1_utf8_nonascii() {
 #[test]
 fn rmv2_utf8_nonascii() {
     // a rmv2 video with valid utf8 with non-ASCII chars
+    // manually edited replay file!
     let mut replay = RmvVideo::new("tests/assets/test_rmv2_utf8_nonascii.rmv");
     replay.parse().expect("parsing should succeed");
     assert_eq!(replay.data.player_identifier, "aaȑaa Kolar");
@@ -1780,6 +1784,7 @@ fn rmv1_noutf8_but_valid_utf8() {
     // a rmv1 video with the utf8 flag not set, but valid utf8 in the player field.
     // this shouldn't try to parse the string as utf8 at all - vsweep never wrote
     // utf8 without setting that flag.
+    // manually edited replay file!
     let mut replay = RmvVideo::new("tests/assets/test_rmv1_noutf8_but_valid_utf8.rmv");
     replay.parse().expect("parsing should succeed");
     assert_eq!(replay.data.player_identifier, "aa葢aa Kolar");

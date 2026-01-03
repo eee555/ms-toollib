@@ -312,9 +312,9 @@ impl RmvVideo {
             let _ = String::from_utf8(token.clone()).map_err(utf8_errfunc)?;
         }
         else {
-            self.data.player_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_encoding_string_from_buf(player_identifier_buffer)?;
-            self.data.uniqueness_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_encoding_string_from_buf(uniqueness_identifier_buffer)?;
-            self.data.country = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_encoding_string_from_buf(country_buffer)?;
+            self.data.player_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(player_identifier_buffer)?;
+            self.data.uniqueness_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(uniqueness_identifier_buffer)?;
+            self.data.country = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(country_buffer)?;
         }
 
         // 是不是第一个操作。录像里省略了第一个左键按下。

@@ -103,6 +103,17 @@ pub trait ByteReader {
         };
         Ok(String::from_utf8_lossy(&code).to_string())
     }
+    fn get_unknown_cp_encoding_string_from_buf(code: Vec<u8>) -> Result<String, ErrReadVideoReason> {
+        let (cow, _, had_errors) = GB18030.decode(&code);
+        if !had_errors {
+            return Ok(cow.into_owned());
+        };
+        let (cow, _, had_errors) = WINDOWS_1252.decode(&code);
+        if !had_errors {
+            return Ok(cow.into_owned());
+        };
+        return Err(ErrReadVideoReason::InvalidParams);
+    }
     /// 读取以end结尾的未知编码字符串，假如所有编码都失败，返回utf-8乱码
     fn get_unknown_encoding_c_string(&mut self, end: char) -> Result<String, ErrReadVideoReason> {
         let code = self.get_c_buffer(end)?;

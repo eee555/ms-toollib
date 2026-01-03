@@ -1803,3 +1803,25 @@ fn rmv1_noutf8_but_valid_utf8() {
     assert_eq!(replay.data.get_rtime_ms().unwrap(), 34884);
     assert!(replay.data.is_completed);
 }
+
+#[test]
+fn rmv2_24px() {
+    // a rmv2 video of a 24px game
+    let mut replay = RmvVideo::new("tests/assets/test_rmv2_24px.rmv");
+    replay.parse().expect("parsing should succeed");
+    assert_eq!(replay.data.player_identifier, "Thomas Kolar");
+    assert_eq!(replay.data.static_params.bbbv, 5);
+    assert_eq!(replay.data.get_rtime_ms().unwrap(), 1849);
+    assert!(replay.data.is_official);
+    assert!(replay.data.is_fair);
+    assert!(replay.data.is_completed);
+    assert_eq!(replay.data.cell_pixel_size, 24);
+    replay.data.analyse();
+    assert!(replay.data.is_completed);
+    assert!(replay.data.is_official);
+    assert!(replay.data.is_fair);
+    assert_eq!(replay.data.game_dynamic_params.left, 3);
+    assert_eq!(replay.data.game_dynamic_params.right, 1);
+    assert_eq!(replay.data.game_dynamic_params.double, 3);
+    assert_eq!(replay.data.software, "Viennasweeper".to_string());
+}

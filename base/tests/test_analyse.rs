@@ -1747,3 +1747,15 @@ fn rmv2_utf8_invalid() {
     assert!(!replay.data.can_analyse);
     assert!(!replay.data.is_completed);
 }
+
+#[test]
+fn rmv1_noutf8_but_valid_utf8() {
+    // a rmv1 video with the utf8 flag not set, but valid utf8 in the player field.
+    // this shouldn't try to parse the string as utf8 at all - vsweep never wrote
+    // utf8 without setting that flag.
+    let mut replay = RmvVideo::new("tests/assets/test_rmv1_noutf8_but_valid_utf8.rmv");
+    replay.parse().expect("parsing should succeed");
+    assert_eq!(replay.data.player_identifier, "aa葢aa Kolar");
+    assert_eq!(replay.data.get_rtime_ms().unwrap(), 34884);
+    assert!(replay.data.is_completed);
+}

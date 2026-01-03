@@ -87,10 +87,20 @@ pub trait ByteReader {
     where
         U: Into<usize>,
     {
-        let code = self.get_buffer(length)?;
+        Self::get_unknown_encoding_string_from_buf(self.get_buffer(length)?)
+    }
+    fn get_unknown_encoding_string_from_buf(code: Vec<u8>) -> Result<String, ErrReadVideoReason> {
         if let Ok(s) = String::from_utf8(code.clone()) {
             return Ok(s);
         }
+        match Self::get_unknown_cp_encoding_string_from_buf(code.clone()) {
+            Ok(str) => Ok(str),
+            Err(_) => Ok(String::from_utf8_lossy(&code).to_string()),
+        }
+    }
+    // won't consider utf-8 at all - useful for replay versions only produced by
+    // clones that never produce utf-8
+    fn get_unknown_cp_encoding_string_from_buf(code: Vec<u8>) -> Result<String, ErrReadVideoReason> {
         let (cow, _, had_errors) = GB18030.decode(&code);
         if !had_errors {
             return Ok(cow.into_owned());
@@ -99,23 +109,12 @@ pub trait ByteReader {
         if !had_errors {
             return Ok(cow.into_owned());
         };
-        Ok(String::from_utf8_lossy(&code).to_string())
+        return Err(ErrReadVideoReason::InvalidParams);
     }
     /// 读取以end结尾的未知编码字符串，假如所有编码都失败，返回utf-8乱码
     fn get_unknown_encoding_c_string(&mut self, end: char) -> Result<String, ErrReadVideoReason> {
         let code = self.get_c_buffer(end)?;
-        if let Ok(s) = String::from_utf8(code.clone()) {
-            return Ok(s);
-        }
-        let (cow, _, had_errors) = GB18030.decode(&code);
-        if !had_errors {
-            return Ok(cow.into_owned());
-        };
-        let (cow, _, had_errors) = WINDOWS_1252.decode(&code);
-        if !had_errors {
-            return Ok(cow.into_owned());
-        };
-        Ok(String::from_utf8_lossy(&code).to_string())
+        Self::get_unknown_encoding_string_from_buf(code)
     }
     // 是否闰年，计算阿比特时间戳
     fn is_leap_year(&self, year: u64) -> bool {

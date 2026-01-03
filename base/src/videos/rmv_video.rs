@@ -106,7 +106,7 @@ impl RmvVideo {
             return Err(ErrReadVideoReason::FileIsNotRmv);
         }
 
-        let _clone_id = if format_version >= 2 {
+        let clone_id = if format_version >= 2 {
             self.data.get_u8()?
         } else { 0 };
 
@@ -282,15 +282,26 @@ impl RmvVideo {
         // ignore remaining properties
         self.data.offset += (properties_size - properties_read) as usize;
 
+        let mut clone_name = None;
         if format_version >= 2 {
             let num_extension_properties = self.data.get_u16()?;
             for _ii in 0..num_extension_properties {
                 let key_size = self.data.get_u8()?;
-                let _key = self.data.get_utf8_string(key_size as usize)?;
+                let key = self.data.get_utf8_string(key_size as usize)?;
                 let value_size = self.data.get_u8()?;
-                let _value = self.data.get_buffer(value_size as usize)?;
+                let value = self.data.get_buffer(value_size as usize)?;
+                if key == "clone_name" {
+                    clone_name = Some(String::from_utf8(value));
+                }
             }
         }
+        let clone_name = match clone_name {
+            None => None,
+            Some(Ok(s)) => Some(s),
+            Some(Err(_)) => {
+                return Err(ErrReadVideoReason::Utf8Error);
+            }
+        };
 
         if utf8 {
             // verify that text fields that we read are valid utf-8 as specified by the RMV spec
@@ -394,7 +405,20 @@ impl RmvVideo {
             self.data.end_time =
                 self.data.start_time + (self.data.get_rtime_ms().unwrap() as u64) * 1000;
         }
-        self.data.software = "Viennasweeper".to_string();
+        self.data.software = if format_version == 1 {
+            "Viennasweeper".to_string()
+        } else {
+            match clone_id {
+                0 => match clone_name {
+                    Some(s) => s,
+                    None => {
+                        return Err(ErrReadVideoReason::InvalidParams)
+                    },
+                },
+                1 => "Viennasweeper".to_string(),
+                _ => "Unknown".to_string(),
+            }
+        };
         self.data.is_official = self.data.is_completed;
         self.data.is_fair = self.data.is_completed;
         self.data.can_analyse = true;

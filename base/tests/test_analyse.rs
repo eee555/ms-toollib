@@ -1787,7 +1787,6 @@ fn rmv2_utf8_nonascii() {
     assert!(replay.data.is_completed);
 }
 
-
 #[test]
 fn rmv1_noutf8_but_valid_utf8() {
     // a rmv1 video with the utf8 flag not set, but valid utf8 in the player field.

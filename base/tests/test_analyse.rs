@@ -1740,6 +1740,9 @@ fn rmv2_utf8_basic() {
     assert!(replay.data.is_official);
     assert!(replay.data.is_fair);
     assert!(replay.data.is_completed);
+    assert_eq!(replay.data.game_dynamic_params.left, 1);
+    assert_eq!(replay.data.game_dynamic_params.right, 1);
+    assert_eq!(replay.data.game_dynamic_params.double, 2);
 }
 
 #[test]

@@ -1709,9 +1709,9 @@ fn custom_video_works() {
 }
 
 #[test]
-fn rmv1_utf8() {
-    // a rmv1 video with the utf-8 property set
-    let mut replay = RmvVideo::new("tests/assets/test_rmv1_utf8.rmv");
+fn rmv1_utf8_basic() {
+    // a rmv1 video with the utf-8 property set, but no non-ASCII chars
+    let mut replay = RmvVideo::new("tests/assets/test_rmv1_utf8_basic.rmv");
     replay.parse().expect("parsing should succeed");
     assert_eq!(replay.data.player_identifier, "Thomas Kolar");
     assert_eq!(replay.data.static_params.bbbv, 128);

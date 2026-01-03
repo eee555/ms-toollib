@@ -1727,6 +1727,7 @@ fn rmv2_utf8_basic() {
     replay.parse().expect("parsing should succeed");
     assert_eq!(replay.data.player_identifier, "Thomas Kolar");
     assert_eq!(replay.data.get_rtime_ms().unwrap(), 670);
+    assert_eq!(replay.data.static_params.bbbv, 3);
     assert!(replay.data.is_completed);
 }
 

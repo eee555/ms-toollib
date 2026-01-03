@@ -268,13 +268,16 @@ impl RmvVideo {
             self.data.static_params.bbbv = bbbv_low + bbbv_high << 8;
             square_size = self.data.get_u8()?;
             properties_read += 3;
-        } else if properties_size > 4 {
-            utf8 = if self.data.get_u8()? == 1 {
-                true
-            } else {
-                false
-            };
-            properties_read += 1;
+        } else {
+            utf8 = false;
+            if properties_size > 4 {
+                utf8 = if self.data.get_u8()? == 1 {
+                    true
+                } else {
+                    false
+                };
+                properties_read += 1;
+            }
         }
         let square_size = square_size;
         let utf8 = utf8;

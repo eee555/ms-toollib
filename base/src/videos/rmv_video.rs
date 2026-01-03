@@ -261,7 +261,7 @@ impl RmvVideo {
         if format_version >= 2 {
             let bbbv_low = self.data.get_u8()? as usize;
             let bbbv_high = self.data.get_u8()? as usize;
-            self.data.static_params.bbbv = bbbv_low + bbbv_high << 8;
+            self.data.static_params.bbbv = bbbv_low + (bbbv_high << 8);
             square_size = self.data.get_u8()?;
             properties_read += 3;
         } else {

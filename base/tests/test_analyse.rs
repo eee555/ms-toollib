@@ -1736,6 +1736,7 @@ fn rmv2_utf8_basic() {
     assert!(replay.data.is_official);
     assert!(replay.data.is_fair);
     assert!(replay.data.is_completed);
+    assert_eq!(replay.data.cell_pixel_size, 16);
     replay.data.analyse();
     assert!(replay.data.is_official);
     assert!(replay.data.is_fair);

@@ -126,10 +126,8 @@ impl RmvVideo {
         // skip board_size
         self.data.offset += 4;
         // self.data.get_unsized_int4()?;
-        // TODO: these byte offsets are no longer universal in RMV2
-        // probably remove the comments?
-        let preflags_size = self.data.get_u16()?; // Gets bytes 18-19
-        let properties_size = self.data.get_u16()?; // Gets bytes 20-21
+        let preflags_size = self.data.get_u16()?;
+        let properties_size = self.data.get_u16()?;
         let _extension_properties_size = if format_version >= 2 {
             self.data.get_u16()?
         } else { 0 };
@@ -139,10 +137,13 @@ impl RmvVideo {
         self.data.offset += 6;
 
         if format_version == 1 {
-            // ignore first byte of result string?
-            // TODO: clarify
+            // ignore leading newline
             self.data.offset += 1;
             if result_string_size > 35 {
+                // full result string
+                // go to 31 before the end, as that is where bbbv will start
+                // this relies on "#NF:?#TIMESTAMP:1234567890#" always having
+                // the same length
                 self.data.offset += (result_string_size - 32) as usize;
                 // 这种录像格式，3BV最多只支持3位数，宽和高支持最大256，雷数最多65536
                 // 注意，3BV如果解析得到0，说明局面没有完成（我认为这种设计并不合理）
@@ -159,6 +160,7 @@ impl RmvVideo {
                     Err(_) => return Err(ErrReadVideoReason::InvalidParams),
                 };
 
+                // "#NF:?#TIMESTAMP:"
                 self.data.offset += 16;
 
                 // 2286-11-21以后，会遇到时间戳溢出
@@ -169,11 +171,15 @@ impl RmvVideo {
                 self.data.start_time *= 1000000;
                 // 2 beta和更早的版本里没有3bv和时间戳
             } else {
+                // reduced result string
+                // doesn't contain bbbv, so just ignore the result string
                 self.data.static_params.bbbv = 0;
+                // -3 for leading newline and trailing #\n
                 for _ in 0..result_string_size - 3 {
                     self.data.get_u8()?;
                 }
             }
+            // trailing "#\n"
             self.data.offset += 2;
         }
         // skip version_info
@@ -208,6 +214,7 @@ impl RmvVideo {
             token = self.data.get_buffer(token_length as usize)?;
         }
 
+        // timestamp_boardgen
         self.data.offset += 4;
 
         self.data.width = self.data.get_u8()?.into();
@@ -282,6 +289,10 @@ impl RmvVideo {
         // ignore remaining properties
         self.data.offset += (properties_size - properties_read) as usize;
 
+        // read extension properties. In the process, also set the clone_name,
+        // if provided.
+        // clone_name is a replacement for clone_id for new clones that don't
+        // have an ID assigned yet.
         let mut clone_name = None;
         if format_version >= 2 {
             let num_extension_properties = self.data.get_u16()?;

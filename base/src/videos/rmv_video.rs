@@ -318,6 +318,9 @@ impl RmvVideo {
         loop {
             let c = self.data.get_u8()?;
             if c == 0 {
+                if format_version >= 2 {
+                    return Err(ErrReadVideoReason::InvalidVideoEvent);
+                }
                 self.data.offset += 4;
             } else if c <= 7 || (format_version >= 2 && c == 28 && !first_op_flag) {
                 if c == 28 {

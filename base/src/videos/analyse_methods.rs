@@ -393,14 +393,14 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo<Vec<Vec<i32>>>) {
             let y = mouse_event.x as usize / video.cell_pixel_size as usize;
             let r_1 = last_event.y as usize / video.cell_pixel_size as usize;
             let c_1 = last_event.x as usize / video.cell_pixel_size as usize;
-            // if video.video_action_state_recorder[ide].mouse == "lr" || video.video_action_state_recorder[ide].mouse == "rr"{
-            //     println!("{:?}+++{:?}", video.video_action_state_recorder[last_ide].time, video.video_action_state_recorder[last_ide].mouse_state);
-            //     // println!("---{:?}", video.video_action_state_recorder[ide].useful_level);
+            // if mouse_event.mouse == "rc" || mouse_event.mouse == "rc"{
+            //     println!("{:?}, {:?}, {:?}, {:?}", vas.time, vas.mouse_state, x, y);
+                // println!("---{:?}", video.video_action_state_recorder[ide].useful_level);
             // }
 
             if mouse_event.mouse == "rc"
-                && vas.prior_game_board.as_ref().unwrap().borrow().game_board[x][y] == 10
                 && vas.useful_level == 1
+                && vas.prior_game_board.as_ref().unwrap().borrow().game_board[x][y] == 10
             {
                 // 正确的标雷
                 match state {

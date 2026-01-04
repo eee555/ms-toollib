@@ -282,14 +282,11 @@ fn avf_video_works_other_encoding() {
     assert_eq!(video.data.get_rtime_ms().unwrap(), 9200);
 }
 
-
-
 #[test]
 // cargo test --features rs -- --nocapture temp_avf_video_works
 fn temp_avf_video_works() {
     // 录像解析工具测试
-    let mut video =
-        AvfVideo::new("temp.avf");
+    let mut video = AvfVideo::new("temp.avf");
 
     let r = video.parse();
     assert_eq!(r.unwrap(), ());
@@ -562,12 +559,13 @@ fn evf_video_works_v4() {
 
 #[test]
 // cargo test --features rs -- --nocapture evf_video_works_v3
-fn evf_video_works_v4_2() {
-    // 录像解析工具测试
+fn evf_video_works_for_temp_video() {
+    // 录像解析工具测试。用于临时测试录像解析功能。
+    // 使用print而不是assert，以便观察更多信息。
     let mut video = EvfVideo::new("../test_files/temp.evf");
 
     let _ = video.parse();
-    // video.data.print_event();
+    video.data.print_event();
     video.data.analyse();
     video.data.analyse_for_features(&vec![
         "high_risk_guess",
@@ -575,12 +573,14 @@ fn evf_video_works_v4_2() {
         "needless_guess",
         "mouse_trace",
         "vision_transfer",
+        "pluck",
+        "super_fl_local",
     ]);
-    assert_eq!(
-        video.data.player_identifier,
-        "[lag]二问题无法    玩家( player)"
-    );
-    assert_eq!(video.data.software, "元3.2.1");
+    // assert_eq!(
+    //     video.data.player_identifier,
+    //     "[lag]二问题无法    玩家( player)"
+    // );
+    // assert_eq!(video.data.software, "元3.2.1");
     println!("is win: {:?}", video.data.is_completed);
     println!("is_official: {:?}", video.data.is_official);
     println!("is_fair: {:?}", video.data.is_fair);

@@ -290,7 +290,7 @@ fn temp_avf_video_works() {
 
     let r = video.parse();
     assert_eq!(r.unwrap(), ());
-    video.data.print_event();
+    video.data.print_event(false);
     video.data.analyse();
     println!("bbbv: {:?}", video.data.static_params.bbbv);
     video.data.set_current_time(999.99);
@@ -565,7 +565,7 @@ fn evf_video_works_for_temp_video() {
     let mut video = EvfVideo::new("../test_files/temp.evf");
 
     let _ = video.parse();
-    video.data.print_event();
+    video.data.print_event(false);
     video.data.analyse();
     video.data.analyse_for_features(&vec![
         "high_risk_guess",
@@ -731,7 +731,7 @@ fn base_video_works() {
     video.set_race_identifier("G8888".to_string()).unwrap();
     video.set_software("a test software".to_string()).unwrap();
     video.set_country("CN".to_string()).unwrap();
-    video.print_event();
+    video.print_event(true);
 
     println!("局面：{:?}", video.get_game_board());
     println!("标识：{:?}", video.player_identifier);
@@ -762,7 +762,7 @@ fn base_video_works() {
 
     let mut video = EvfVideo::new("test.evf");
     let r = video.parse();
-    video.data.print_event();
+    video.data.print_event(true);
     // video.data.print_raw_data(400);
     video.data.analyse();
     // video.data.set_current_time(1.9);
@@ -1404,7 +1404,7 @@ fn base_video_works_4_win() {
     video.set_race_identifier("555".to_string()).unwrap();
     video.set_software("888".to_string()).unwrap();
     video.set_country("666".to_string()).unwrap();
-    video.print_event();
+    video.print_event(true);
 
     println!(
         "3BV：{:?}/{:?}",
@@ -1432,7 +1432,7 @@ fn base_video_works_4_win() {
 
     let mut video = EvfVideo::new("test.evf");
     let r = video.parse();
-    video.data.print_event();
+    video.data.print_event(false);
     // video.data.print_raw_data(400);
     video.data.analyse();
     // video.data.set_current_time(1.9);
@@ -1840,6 +1840,26 @@ fn rmv2_16px_preflags() {
     assert!(replay.data.is_completed);
     assert_eq!(replay.data.cell_pixel_size, 16);
     replay.data.analyse();
+    replay.data.print_event(true);
+    println!("board: {:?}", replay.data.board);
+    // the end of the board:
+    // [1,  1, 0, 0,  1, 10, 1,  0], 
+    // [11, 1, 0, 0,  1, 1,  2,  1], 
+    // [1,  1, 0, 0,  0, 0,  1,  11], 
+    // [1,  1, 1, 1,  2, 1,  2,  1], 
+    // [10, 2, 2, 11, 2, 11, 2,  1], 
+    // [3, 10, 2, 1,  2, 2,  11, 2], 
+    // [10, 2, 1, 0,  0, 10, 10, 11], 
+    // [1,  1, 0, 0,  0, 10, 10, 1]
+    // really board:
+    // [1,  1, 0,  0, 1, -1,  1, 0],
+    // [-1, 1, 0,  0, 1,  1,  2, 1], 
+    // [1,  1, 0,  0, 0,  0,  1, -1], 
+    // [1,  1, 1,  1, 2,  1,  2, 1], 
+    // [-1, 2, 2, -1, 2, -1,  2, 1], 
+    // [3, -1, 2,  1, 2,  2, -1, 2], 
+    // [-1, 2, 1,  0, 0,  1,  2, -1], 
+    // [1,  1, 0,  0, 0,  0,  1, 1]
     assert!(replay.data.is_completed);
     assert!(replay.data.is_official);
     assert!(replay.data.is_fair);

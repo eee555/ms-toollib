@@ -1152,7 +1152,7 @@ impl<T> BaseVideo<T> {
         self.static_params.isl = cal_isl(&self.board);
     }
 
-    pub fn print_event(&self) {
+    pub fn print_event(&self, flag_print_game_board: bool) {
         let num = 0;
         for e in &self.video_action_state_recorder {
             if num < 800 {
@@ -1160,8 +1160,23 @@ impl<T> BaseVideo<T> {
                     if mouse_event.mouse != "mv" {
                         println!(
                             "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
-                            e.time, mouse_event.mouse, mouse_event.x, mouse_event.y, e.useful_level
+                            e.time,
+                            mouse_event.mouse,
+                            mouse_event.x / self.get_pix_size().unwrap() as u16,
+                            mouse_event.y / self.get_pix_size().unwrap() as u16,
+                            e.useful_level
                         );
+                    }
+                    if mouse_event.mouse != "mv" && flag_print_game_board {
+                        println!(
+                            "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
+                            e.time, mouse_event.mouse, mouse_event.x, mouse_event.y
+                        );
+                        e.next_game_board.iter().for_each(|v| println!("{:?}", v));
+                        // e.prior_game_board
+                        //     .poss
+                        //     .iter()
+                        //     .for_each(|v| println!("{:?}", v));
                     }
                 }
                 // if e.mouse != "mv" {
@@ -1185,20 +1200,6 @@ impl<T> BaseVideo<T> {
             //     );
             // }
             // num += 1;
-            // if e.mouse != "mv" {
-            //     println!(
-            //         "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
-            //         e.time, e.mouse, e.x, e.y
-            //     );
-            //     e.prior_game_board
-            //         .game_board
-            //         .iter()
-            //         .for_each(|v| println!("{:?}", v));
-            //     e.prior_game_board
-            //         .poss
-            //         .iter()
-            //         .for_each(|v| println!("{:?}", v));
-            // }
         }
     }
     pub fn print_comments(&self) {

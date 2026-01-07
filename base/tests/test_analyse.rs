@@ -1716,6 +1716,7 @@ fn rmv1_utf8_basic() {
     assert_eq!(replay.data.player_identifier, "Thomas Kolar");
     assert_eq!(replay.data.static_params.bbbv, 128);
     assert_eq!(replay.data.get_rtime_ms().unwrap(), 34884);
+    assert_eq!(replay.data.start_time, 1731621352000000);
     assert!(replay.data.is_official);
     assert!(replay.data.is_fair);
     assert!(replay.data.is_completed);
@@ -1733,6 +1734,7 @@ fn rmv2_utf8_basic() {
     assert_eq!(replay.data.player_identifier, "Thomas Kolar");
     assert_eq!(replay.data.static_params.bbbv, 3);
     assert_eq!(replay.data.get_rtime_ms().unwrap(), 670);
+    assert_eq!(replay.data.start_time, 1750292821000000);
     assert!(replay.data.is_official);
     assert!(replay.data.is_fair);
     assert!(replay.data.is_completed);

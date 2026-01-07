@@ -2,10 +2,9 @@
 use ms_toollib::videos::base_video::NewBaseVideo2;
 use ms_toollib::videos::NewSomeVideo;
 use ms_toollib::{
-    AvfVideo, BaseVideo, Event, EvfVideo, GameBoardState, MinesweeperBoard, MouseState, MvfVideo,
+    AvfVideo, BaseVideo, Event, EvfVideo, GameBoardState, MinesweeperBoard, MvfVideo,
     RmvVideo, SafeBoard,
 };
-use std::mem::transmute;
 use std::thread;
 use std::time::Duration;
 

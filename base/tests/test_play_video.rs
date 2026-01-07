@@ -1,12 +1,7 @@
-use ms_toollib::videos::base_video::NewBaseVideo2;
 use ms_toollib::videos::NewSomeVideo;
 use ms_toollib::{
-    AvfVideo, BaseVideo, EvfVideo, GameBoardState, MinesweeperBoard, MouseState, MvfVideo,
-    RmvVideo, SafeBoard,
+    AvfVideo, EvfVideo,
 };
-use std::mem::transmute;
-use std::thread;
-use std::time::Duration;
 use ms_toollib::Event;
 
 // 测试能正确播放录像

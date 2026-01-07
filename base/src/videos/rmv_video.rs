@@ -215,7 +215,7 @@ impl RmvVideo {
         }
 
         // timestamp_boardgen
-        self.data.offset += 4;
+        let timestamp_boardgen: u32 = self.data.get_u32()?.into();
 
         self.data.width = self.data.get_u8()?.into();
         self.data.height = self.data.get_u8()?.into();
@@ -418,10 +418,11 @@ impl RmvVideo {
         self.data
             .set_rtime(self.data.video_action_state_recorder.last().unwrap().time)
             .unwrap();
-        if result_string_size > 35 {
-            self.data.end_time =
-                self.data.start_time + (self.data.get_rtime_ms().unwrap() as u64) * 1000;
+        if result_string_size <= 35 || format_version >= 2 {
+            self.data.start_time = timestamp_boardgen as u64 * 1000000;
         }
+        self.data.end_time =
+            self.data.start_time + (self.data.get_rtime_ms().unwrap() as u64) * 1000;
         self.data.software = if format_version == 1 {
             "Viennasweeper".to_string()
         } else {

@@ -145,6 +145,8 @@ impl RmvVideo {
                 // go to 31 before the end, as that is where bbbv will start
                 // this relies on "#NF:?#TIMESTAMP:1234567890#" always having
                 // the same length
+                // if the bbbv has less than 3 digits, this will start 1-2 chars
+                // early, but that's OK as they should never be digits
                 self.data.offset += (result_string_size - 32) as usize;
                 // 这种录像格式，3BV最多只支持3位数，宽和高支持最大256，雷数最多65536
                 // 注意，3BV如果解析得到0，说明局面没有完成（我认为这种设计并不合理）

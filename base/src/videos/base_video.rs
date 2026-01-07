@@ -459,7 +459,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
                         self.last_in_board_pos_path = svi.path;
                     }
                 }
-            } else if let Some(Event::GameState(game_state_event)) = &svi.event {
+            } else if let Some(Event::GameState(_game_state_event)) = &svi.event {
                 continue;
             } else {
                 continue;

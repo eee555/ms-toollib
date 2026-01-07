@@ -262,7 +262,7 @@ fn avf_video_works() {
         "pluck",
     ]);
     video.data.set_current_time(-0.01);
-    let t = video.data.get_game_board_poss();
+    let _t = video.data.get_game_board_poss();
     println!("{:?}", video.data.get_game_board_poss());
     video.data.set_current_time(20.0);
     assert_eq!(video.data.get_pluck().unwrap(), 0.20115579693141436);

@@ -644,8 +644,8 @@ impl EvfVideo {
                         });
                     pause_time_ms = 0;
                 }
-                b @ 100..=199 => {}
-                b @ 200..=254 => {}
+                _b @ 100..=199 => {}
+                _b @ 200..=254 => {}
                 // 开始解析停顿事件
                 255 => {
                     let pause_time = self.data.get_u16()?;

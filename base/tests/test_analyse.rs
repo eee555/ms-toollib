@@ -1841,32 +1841,13 @@ fn rmv2_16px_preflags() {
     assert!(replay.data.is_completed);
     assert_eq!(replay.data.cell_pixel_size, 16);
     replay.data.analyse();
-    replay.data.print_event(true);
-    println!("board: {:?}", replay.data.board);
-    // the end of the board:
-    // [1,  1, 0, 0,  1, 10, 1,  0], 
-    // [11, 1, 0, 0,  1, 1,  2,  1], 
-    // [1,  1, 0, 0,  0, 0,  1,  11], 
-    // [1,  1, 1, 1,  2, 1,  2,  1], 
-    // [10, 2, 2, 11, 2, 11, 2,  1], 
-    // [3, 10, 2, 1,  2, 2,  11, 2], 
-    // [10, 2, 1, 0,  0, 10, 10, 11], 
-    // [1,  1, 0, 0,  0, 10, 10, 1]
-    // really board:
-    // [1,  1, 0,  0, 1, -1,  1, 0],
-    // [-1, 1, 0,  0, 1,  1,  2, 1], 
-    // [1,  1, 0,  0, 0,  0,  1, -1], 
-    // [1,  1, 1,  1, 2,  1,  2, 1], 
-    // [-1, 2, 2, -1, 2, -1,  2, 1], 
-    // [3, -1, 2,  1, 2,  2, -1, 2], 
-    // [-1, 2, 1,  0, 0,  1,  2, -1], 
-    // [1,  1, 0,  0, 0,  0,  1, 1]
+    // replay.data.print_event(true);
     assert!(replay.data.is_completed);
     assert!(replay.data.is_official);
     assert!(replay.data.is_fair);
-    assert_eq!(replay.data.game_dynamic_params.left, 1337);
-    assert_eq!(replay.data.game_dynamic_params.right, 1337);
-    assert_eq!(replay.data.game_dynamic_params.double, 1337);
+    assert_eq!(replay.data.game_dynamic_params.left, 7);
+    assert_eq!(replay.data.game_dynamic_params.right, 21);
+    assert_eq!(replay.data.game_dynamic_params.double, 13);
 }
 
 #[test]

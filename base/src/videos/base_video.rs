@@ -1221,7 +1221,7 @@ impl<T> BaseVideo<T> {
     }
 }
 
-/// 软件的合法时间范围。单位为秒。
+/// 软件的合法时间范围。单位为秒。没人用，暂时搁置。
 pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
     match software {
         // 永久

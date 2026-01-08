@@ -283,7 +283,8 @@ impl<T> MinesweeperBoard<T> {
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         self.double += 1;
-        if self.game_board[x][y] == 0 || self.game_board[x][y] >= 8 {
+        // 在8、10、11、12上双击一定不会发生任何事情，但是在0上双击仍然可能有效！
+        if self.game_board[x][y] >= 8 {
             return Ok(0);
         }
         let mut flag_chording_useful = false; // 双击有效的基础上，周围是否有未打开的格子

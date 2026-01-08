@@ -139,11 +139,14 @@ impl RmvVideo {
         if format_version == 1 {
             // ignore leading newline
             self.data.offset += 1;
+            self.data.static_params.bbbv = 0;
             if result_string_size > 35 {
                 // full result string
                 // go to 31 before the end, as that is where bbbv will start
                 // this relies on "#NF:?#TIMESTAMP:1234567890#" always having
                 // the same length
+                // if the bbbv has less than 3 digits, this will start 1-2 chars
+                // early, but that's OK as they should never be digits
                 self.data.offset += (result_string_size - 32) as usize;
                 // 这种录像格式，3BV最多只支持3位数，宽和高支持最大256，雷数最多65536
                 // 注意，3BV如果解析得到0，说明局面没有完成（我认为这种设计并不合理）
@@ -160,24 +163,16 @@ impl RmvVideo {
                     Err(_) => return Err(ErrReadVideoReason::InvalidParams),
                 };
 
-                // "#NF:?#TIMESTAMP:"
-                self.data.offset += 16;
-
-                // 2286-11-21以后，会遇到时间戳溢出
-                let timestamp = self.data.get_utf8_string(10usize)?;
-                self.data.start_time = timestamp
-                    .parse::<u64>()
-                    .map_err(|_| ErrReadVideoReason::InvalidParams)?;
-                self.data.start_time *= 1000000;
-                // 2 beta和更早的版本里没有3bv和时间戳
-            } else {
-                // reduced result string
-                // doesn't contain bbbv, so just ignore the result string
-                self.data.static_params.bbbv = 0;
-                // -3 for leading newline and trailing #\n
-                for _ in 0..result_string_size - 3 {
-                    self.data.get_u8()?;
-                }
+                // "#NF:?#TIMESTAMP:??????????"
+                // no need to parse the timestamp - it is always the same as
+                // timestamp_boardgen if present
+                self.data.offset += 26;
+            } else if result_string_size >= 3 {
+                // this should always be >= 3, but let's be on the safe side
+                // here we have a reduced result string that doesn't contain bbbv
+                // => just ignore the whole result string!
+                // we subtract -3 for leading \n and trailing #\n
+                self.data.offset += result_string_size as usize - 3;
             }
             // trailing "#\n"
             self.data.offset += 2;
@@ -215,7 +210,7 @@ impl RmvVideo {
         }
 
         // timestamp_boardgen
-        self.data.offset += 4;
+        let timestamp_boardgen: u32 = self.data.get_u32()?.into();
 
         self.data.width = self.data.get_u8()?.into();
         self.data.height = self.data.get_u8()?.into();
@@ -418,10 +413,9 @@ impl RmvVideo {
         self.data
             .set_rtime(self.data.video_action_state_recorder.last().unwrap().time)
             .unwrap();
-        if result_string_size > 35 {
-            self.data.end_time =
-                self.data.start_time + (self.data.get_rtime_ms().unwrap() as u64) * 1000;
-        }
+        self.data.start_time = timestamp_boardgen as u64 * 1000000;
+        self.data.end_time =
+            self.data.start_time + (self.data.get_rtime_ms().unwrap() as u64) * 1000;
         self.data.software = if format_version == 1 {
             "Viennasweeper".to_string()
         } else {

@@ -1,5 +1,4 @@
 use crate::GameStateEvent;
-use crate::miscellaneous::s_to_ms;
 use crate::utils::cal_board_numbers;
 use crate::videos::base_video::{BaseVideo, NewBaseVideo};
 use crate::videos::byte_reader::ByteReader;
@@ -645,8 +644,8 @@ impl EvfVideo {
                         });
                     pause_time_ms = 0;
                 }
-                b @ 100..=199 => {}
-                b @ 200..=254 => {}
+                _b @ 100..=199 => {}
+                _b @ 200..=254 => {}
                 // 开始解析停顿事件
                 255 => {
                     let pause_time = self.data.get_u16()?;

@@ -162,5 +162,5 @@ fn evfs_save_works_2() {
         "vision_transfer",
         "pluck",
         "super_fl_local",
-    ]);
+    ]).expect("feature analysis should work!");
 }

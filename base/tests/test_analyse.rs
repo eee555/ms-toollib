@@ -2,10 +2,9 @@
 use ms_toollib::videos::base_video::NewBaseVideo2;
 use ms_toollib::videos::NewSomeVideo;
 use ms_toollib::{
-    AvfVideo, BaseVideo, Event, EvfVideo, GameBoardState, MinesweeperBoard, MouseState, MvfVideo,
+    AvfVideo, BaseVideo, Event, EvfVideo, GameBoardState, MinesweeperBoard, MvfVideo,
     RmvVideo, SafeBoard,
 };
-use std::mem::transmute;
 use std::thread;
 use std::time::Duration;
 
@@ -263,7 +262,7 @@ fn avf_video_works() {
         "pluck",
     ]);
     video.data.set_current_time(-0.01);
-    let t = video.data.get_game_board_poss();
+    let _t = video.data.get_game_board_poss();
     println!("{:?}", video.data.get_game_board_poss());
     video.data.set_current_time(20.0);
     assert_eq!(video.data.get_pluck().unwrap(), 0.20115579693141436);

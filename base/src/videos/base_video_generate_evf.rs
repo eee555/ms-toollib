@@ -2,7 +2,7 @@ use crate::miscellaneous::s_to_ms;
 use crate::videos::{BaseVideo, Event};
 
 use crate::safe_board::BoardSize;
-use std::cmp::{max, min};
+use std::cmp::min;
 use std::path::Path;
 use std::thread;
 

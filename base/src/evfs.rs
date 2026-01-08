@@ -1,4 +1,4 @@
-use crate::videos::{ErrReadVideoReason, EvfVideo, NewSomeVideo, NewSomeVideo2};
+use crate::videos::{ErrReadVideoReason, EvfVideo, NewSomeVideo2};
 use crate::videos::byte_reader::ByteReader;
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::fs;

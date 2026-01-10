@@ -380,6 +380,12 @@ macro_rules! generate_video {
             pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {
                 self.core.data.set_video_playing_pix_size(pix_size);
             }
+            // 读取录像文件后，有可能要转存。此时，例如rmv，录像中的国家信息是用户手动输入的
+            // 需要在外部传入。因为所有国家的文本信息有39k，放在工具箱里不合适
+            #[setter]
+            pub fn set_country(&mut self, country: String) {
+                self.core.data.set_country(country).unwrap();
+            }
         }
     };
 }

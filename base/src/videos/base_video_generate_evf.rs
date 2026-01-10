@@ -450,7 +450,7 @@ impl<T> BaseVideo<T> {
             .push((self.static_params.bbbv % 256).try_into().unwrap());
         self.raw_data
             .extend_from_slice(&self.game_dynamic_params.rtime_ms.to_be_bytes());
-        if self.country.len() < 2 {
+        if self.country.len() != 2 {
             self.raw_data.extend("XX".as_bytes());
         } else {
             let first_char = self.country.chars().nth(0).unwrap();

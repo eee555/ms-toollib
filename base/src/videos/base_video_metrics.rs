@@ -291,8 +291,11 @@ impl<T> BaseVideo<T> {
     //     Ok(0)
     // }
     pub fn set_country(&mut self, country: String) -> Result<u8, ()> {
+        // 读取录像文件后，有可能要转存。此时，例如rmv，录像中的国家信息是用户手动输入的
+        // 需要在外部传入。因为所有国家的文本信息有39k，放在工具箱里不合适
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
+            && self.game_board_state != GameBoardState::Display
         {
             return Err(());
         };

@@ -409,24 +409,21 @@ impl<T> MinesweeperBoard<T> {
     ///     l（左键按下或抬起）, r（右键按下或抬起）, m（中键按下或抬起）。  
     /// ## 注意事项：
     /// - 在理想的鼠标状态机中，有些情况是不可能的，例如右键没有抬起就按下两次，但在阿比特中就观察到这种事情。
-    // 局面外按下的事件，以及连带的释放一律对鼠标状态没有任何影响，UI框架不会激活回调
+    // 无法正确处理局面外按下的事件（lc、rc、mc等），因为局面外按下在局面内释放，
+    // 和局面内按下在局面内释放不一样，前者的释放不起作用，而后者的释放会触发点击。因此，同样是
+    // 左键按下，不能简单用MouseState::DownUp来描述，目前的状态机状态数量不够。
+    // 因此必须在UI层面防止调用，否则会产生意料之外的效果。
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()>
     where
         T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         // println!("e: {:?}", e);
-        // if pos.0 == self.row && pos.1 == self.column {
-        //     // 按理局面外按下的不该进来
-        //     match e {
-        //         "rc" => {
-        //             return Ok(0);
-        //         }
-        //         "lc" => {}
-        //         "cc" => {}
-        //         _ => {}
-        //     }
-        // }
+        assert!(
+            (pos.0 < self.row && pos.1 < self.column)
+                || (pos.0 == self.row && pos.1 == self.column),
+            "pos out of range"
+        );
         match self.game_board_state {
             GameBoardState::Ready => match e {
                 "mv" | "mc" | "mr" => {
@@ -486,7 +483,8 @@ impl<T> MinesweeperBoard<T> {
                     }
                     MouseState::DownUp | MouseState::UpUp => {
                         // 按理进不来
-                        // 局面外按下鼠标（所以没有进入preflag状态），再在局面外松开鼠标
+                        // 局面外按下鼠标（所以没有进入preflag状态），再在局面内松开鼠标时，
+                        // 元扫雷的ui框架都不会有鼠标事件，但是其他扫雷可能有，并且鼠标释放起作用
                         self.mouse_state = MouseState::UpUp;
                         return Ok(0);
                     }

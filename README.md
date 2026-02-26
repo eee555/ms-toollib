@@ -16,13 +16,13 @@ Algorithms for minesweeper, published on various platforms.
 最新版本号统计：  
 版本号越大，代表越新、功能越完善、bug越少。
 
-Python >= 3.7, <= 3.12 (Windows: x86, x64; Linux: x86, x86_64, aarch64, armv7, ppc64le, s390x; macOS: x86_64, aarch64), version 1.5.2
+Python >= 3.7, <= 3.12 (Windows: x86, x64; Linux: x86, x86_64, aarch64, armv7, ppc64le, s390x; macOS: x86_64, aarch64), version 1.5.3
 
-javascript/typescript (webpack等bundler), version 1.5.2
+javascript/typescript (webpack等bundler), version 1.5.3
 
-javascript/typescript (nodejs), version 1.5.2-alpha
+javascript/typescript (nodejs), version 1.5.3-alpha
 
-rust crate, version 1.5.2
+rust crate, version 1.5.3
 
 C(仅windows), version 1.0.0 （没有类，即没有录像解析工具、局面状态机等。调试环境为MSVC。Linux未经测试，但估计可用。没有包管理平台，需要用户用源码自行编译，目前需要安装rust工具链，自行编译得到.lib文件）
 

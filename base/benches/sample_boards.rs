@@ -7,7 +7,7 @@ use bencher::Bencher;
 // cargo bench --bench sample_boards
 fn bench_sample_bbbvs_exp(bencher: &mut Bencher) {
     bencher.iter(|| sample_bbbvs_exp(5, 5, 1000));
-} // 4,241,895 ns/iter
+} // 2,205,087 ns/iter
 
 benchmark_group!(sample_boards, bench_sample_bbbvs_exp);
 benchmark_main!(sample_boards);

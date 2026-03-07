@@ -56,7 +56,11 @@ name = "lay_mine"
 harness = false
 
 [[bench]]
-name = "refresh_matrix"
+name = "refresh_matrix_all"
+harness = false
+
+[[bench]]
+name = "utils_bench"
 harness = false
 
 [profile.release]

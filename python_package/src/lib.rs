@@ -5,7 +5,9 @@ use pyo3::wrap_pyfunction;
 // use pyo3::class::basic::PyObjectProtocol;
 // use std::cmp::{max, min};
 
-// 发布pypi：打tag，工作流直接发布
+// 发布pypi步骤：
+// 1. 修改pyproject.toml版本号
+// 2. 打tag，工作流直接发布
 
 // 开发文档：https://pyo3.rs/latest/
 

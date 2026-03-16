@@ -418,7 +418,6 @@ impl<T> MinesweeperBoard<T> {
         T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
-        // println!("e: {:?}", e);
         assert!(
             (pos.0 < self.row && pos.1 < self.column)
                 || (pos.0 == self.row && pos.1 == self.column),

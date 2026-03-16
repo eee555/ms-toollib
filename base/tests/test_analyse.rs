@@ -374,6 +374,26 @@ fn mvf_video_works() {
     // video.data.print_comments();
 }
 
+
+
+#[test]
+// cargo test --features rs -- --nocapture temp_mvf_video_works
+fn temp_mvf_video_works() {
+    // 录像解析工具测试
+    let mut video = MvfVideo::new("../test_files/temp.mvf");
+
+    let r = video.parse();
+    assert_eq!(r.unwrap(), ());
+    video.data.print_event(false);
+    video.data.analyse();
+    println!("bbbv: {:?}", video.data.static_params.bbbv);
+    video.data.set_current_time(999.99);
+    println!("left: {:?}", video.data.get_left());
+    println!("right: {:?}", video.data.get_right());
+    println!("double: {:?}", video.data.get_double());
+}
+
+
 #[test]
 // cargo test --features rs -- --nocapture evf_video_works_v3
 fn evf_video_works_v3() {

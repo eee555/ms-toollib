@@ -264,6 +264,12 @@ impl MvfVideo {
             x |= self.apply_perm(12 + j, &byte, &bit, &e) << j;
             y |= self.apply_perm(3 + j, &byte, &bit, &e) << j;
         }
+        // clone的录像，局面外的坐标不是在右下角，似乎是在最后出界的位置。
+        // 此处主动修改为右下角。
+        if x >= self.data.height as u16 || y >= self.data.width as u16 {
+            x = self.data.height as u16;
+            y = self.data.width as u16;
+        }
         for j in 0..7 {
             ths |= self.apply_perm(21 + j, &byte, &bit, &e) << j;
         }
@@ -305,6 +311,12 @@ impl MvfVideo {
             for j in 0..9 {
                 x |= self.apply_perm(12 + j, &byte, &bit, &e) << j;
                 y |= self.apply_perm(3 + j, &byte, &bit, &e) << j;
+            }
+            // clone的录像，局面外的坐标不是在右下角，似乎是在最后出界的位置。
+            // 此处主动修改为右下角。
+            if x >= self.data.height as u16 || y >= self.data.width as u16 {
+                x = self.data.height as u16;
+                y = self.data.width as u16;
             }
             for j in 0..7 {
                 ths |= self.apply_perm(21 + j, &byte, &bit, &e) << j;

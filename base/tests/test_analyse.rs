@@ -391,6 +391,7 @@ fn temp_mvf_video_works() {
     println!("left: {:?}", video.data.get_left());
     println!("right: {:?}", video.data.get_right());
     println!("double: {:?}", video.data.get_double());
+    println!("ce: {:?}", video.data.get_ce());
 }
 
 

@@ -264,12 +264,6 @@ impl MvfVideo {
             x |= self.apply_perm(12 + j, &byte, &bit, &e) << j;
             y |= self.apply_perm(3 + j, &byte, &bit, &e) << j;
         }
-        // clone的录像，局面外的坐标不是在右下角，似乎是在最后出界的位置。
-        // 此处主动修改为右下角。
-        if x >= self.data.height as u16 || y >= self.data.width as u16 {
-            x = self.data.height as u16;
-            y = self.data.width as u16;
-        }
         for j in 0..7 {
             ths |= self.apply_perm(21 + j, &byte, &bit, &e) << j;
         }
@@ -286,6 +280,13 @@ impl MvfVideo {
             mouse = "lc".to_string()
         } else {
             mouse = "mv".to_string()
+        }
+
+        // clone的录像，局面外的坐标不是在右下角，似乎是在最后出界的位置。
+        // 此处主动修改为右下角。
+        if x >= self.data.width as u16 * 16 || y >= self.data.height as u16 * 16 {
+            x = self.data.width as u16 * 16;
+            y = self.data.height as u16 * 16;
         }
         self.data
             .video_action_state_recorder
@@ -312,12 +313,6 @@ impl MvfVideo {
                 x |= self.apply_perm(12 + j, &byte, &bit, &e) << j;
                 y |= self.apply_perm(3 + j, &byte, &bit, &e) << j;
             }
-            // clone的录像，局面外的坐标不是在右下角，似乎是在最后出界的位置。
-            // 此处主动修改为右下角。
-            if x >= self.data.height as u16 || y >= self.data.width as u16 {
-                x = self.data.height as u16;
-                y = self.data.width as u16;
-            }
             for j in 0..7 {
                 ths |= self.apply_perm(21 + j, &byte, &bit, &e) << j;
             }
@@ -332,6 +327,13 @@ impl MvfVideo {
             prev_lb = lb;
             prev_rb = rb;
             prev_mb = mb;
+
+            // clone的录像，局面外的坐标不是在右下角，似乎是在最后出界的位置。
+            // 此处主动修改为右下角。
+            if x >= self.data.width as u16 * 16 || y >= self.data.height as u16 * 16 {
+                x = self.data.width as u16 * 16;
+                y = self.data.height as u16 * 16;
+            }
 
             for mouse in mouse_s {
                 self.data

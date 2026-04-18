@@ -71,6 +71,8 @@ build-backend = "maturin"
 # bindings = "cffi"
 # compatibility = "linux"
 
-
+[tool.maturin]
+bindings = "pyo3"
+include = ["**/*.pyi"]
 
 

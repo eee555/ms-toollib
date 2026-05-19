@@ -673,10 +673,13 @@ impl<T> BaseVideo<T> {
     }
     pub fn get_ce_s(&self) -> Result<f64, ()> {
         let ce = self.get_ce()?;
-        if self.current_time < 0.00099 {
-            return Ok(0.0);
+        if self.game_board_state == GameBoardState::Display {
+            if self.current_time < 0.00099 {
+                return Ok(0.0);
+            }
+            return Ok(ce as f64 / self.current_time);
         }
-        Ok(ce as f64 / self.current_time)
+        Ok(ce as f64 / self.game_dynamic_params.rtime)
     }
     pub fn get_corr(&self) -> Result<f64, ()> {
         let ce = self.get_ce()?;

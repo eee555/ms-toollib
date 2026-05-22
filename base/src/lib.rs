@@ -107,6 +107,9 @@ pub use videos::{
     VideoDynamicParams
 };
 
+mod zini;
+pub use zini::cal_zini;
+
 mod big_number;
 
 #[cfg(any(feature = "py", feature = "rs"))]

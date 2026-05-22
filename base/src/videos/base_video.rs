@@ -1,6 +1,7 @@
 // 录像相关的类，局面在board
 use crate::board::GameBoard;
 use crate::cal_cell_nums;
+use crate::cal_zini;
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::miscellaneous::time_ms_between;
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -1131,7 +1132,7 @@ impl<T> BaseVideo<T> {
         self.game_dynamic_params.cl_s = self.game_dynamic_params.cl as f64 / t;
         self.cal_static_params();
     }
-    // 计算除fps以外的静态指标
+    // 计算除fps、bbbv以外的静态指标。因为bbbv是计算动态指标的基础
     fn cal_static_params(&mut self)
     where
         T: std::ops::Index<usize> + BoardSize,
@@ -1149,6 +1150,7 @@ impl<T> BaseVideo<T> {
         self.static_params.cell8 = cell_nums[8];
         self.static_params.op = cal_op(&self.board);
         self.static_params.isl = cal_isl(&self.board);
+        self.static_params.zini = cal_zini(&self.board, 100);
     }
 
     pub fn print_event(&self, flag_print_game_board: bool) {

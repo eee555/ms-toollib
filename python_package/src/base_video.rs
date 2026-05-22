@@ -521,6 +521,10 @@ impl PyBaseVideo {
         Ok(self.core.static_params.bbbv)
     }
     #[getter]
+    fn get_zini(&self) -> PyResult<usize> {
+        Ok(self.core.static_params.zini)
+    }
+    #[getter]
     fn get_start_time(&self) -> PyResult<u64> {
         Ok(self.core.start_time)
     }
@@ -535,10 +539,6 @@ impl PyBaseVideo {
     #[getter]
     fn get_isl(&self) -> PyResult<usize> {
         Ok(self.core.static_params.isl)
-    }
-    #[getter]
-    fn get_hizi(&self) -> PyResult<usize> {
-        Ok(self.core.static_params.hizi)
     }
     #[getter]
     fn get_cell0(&self) -> PyResult<usize> {

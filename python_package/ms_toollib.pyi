@@ -10,6 +10,7 @@ def __getattr__(name: str) -> Any: ...
 
 def cal_all_solution(a: List[List[int]], b: List[int]) -> List[List[int]]: ...
 def cal_bbbv(board: List[List[int]]) -> int: ...
+def cal_zini(board: List[List[int]], loop_count: int) -> int: ...
 def cal_board_numbers(board: List[List[int]]) -> List[List[int]]: ...
 def cal_op(board: List[List[int]]) -> int: ...
 
@@ -161,7 +162,7 @@ class AvfVideo:
     end_time: int
     op: int
     isl: int
-    hizi: int
+    zini: int
     cell0: int
     cell1: int
     cell2: int
@@ -234,7 +235,7 @@ class BaseVideo:
     end_time: int
     op: int
     isl: int
-    hizi: int
+    zini: int
     cell0: int
     cell1: int
     cell2: int
@@ -344,7 +345,7 @@ class EvfVideo:
     end_time: int
     op: int
     isl: int
-    hizi: int
+    zini: int
     cell0: int
     cell1: int
     cell2: int
@@ -504,7 +505,7 @@ class MvfVideo:
     end_time: int
     op: int
     isl: int
-    hizi: int
+    zini: int
     cell0: int
     cell1: int
     cell2: int
@@ -579,7 +580,7 @@ class RmvVideo:
     end_time: int
     op: int
     isl: int
-    hizi: int
+    zini: int
     cell0: int
     cell1: int
     cell2: int

@@ -126,6 +126,15 @@ fn py_cal_bbbv(board: Vec<Vec<i32>>) -> PyResult<usize> {
 }
 
 #[pyfunction]
+#[pyo3(
+    name = "cal_zini",
+    signature = (board, loop_count)
+)]
+fn py_cal_zini(board: Vec<Vec<i32>>, loop_count: usize) -> PyResult<usize> {
+    Ok(cal_zini(&board, loop_count))
+}
+
+#[pyfunction]
 #[pyo3(name = "solve_minus")]
 fn py_solve_minus(
     mut a_mats: Vec<Vec<Vec<i32>>>,
@@ -475,6 +484,7 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_refresh_matrixses, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_op, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_bbbv, m)?)?;
+    m.add_function(wrap_pyfunction!(py_cal_zini, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine, m)?)?;
     m.add_function(wrap_pyfunction!(py_get_all_not_and_is_mine_on_board, m)?)?;

@@ -495,13 +495,13 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.video_dynamic_params.rqp = rtime * rtime / bbbv;
         if self.height == 8 && self.width == 8 && self.mine_num == 10 {
             self.video_dynamic_params.stnb =
-                47.22 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
+                36.0 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
         } else if self.height == 16 && self.width == 16 && self.mine_num == 40 {
             self.video_dynamic_params.stnb =
-                153.73 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
+                162.0 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
         } else if self.height == 16 && self.width == 30 && self.mine_num == 99 {
             self.video_dynamic_params.stnb =
-                435.001 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
+                435.0 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
         } // 凡自定义的stnb都等于0
         self.video_dynamic_params.ioe = b.bbbv_solved as f64 / self.game_dynamic_params.cl as f64;
         self.video_dynamic_params.corr =

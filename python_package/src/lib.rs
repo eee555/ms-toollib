@@ -128,7 +128,7 @@ fn py_cal_bbbv(board: Vec<Vec<i32>>) -> PyResult<usize> {
 #[pyfunction]
 #[pyo3(
     name = "cal_zini",
-    signature = (board, loop_count)
+    signature = (board, loop_count = 100)
 )]
 fn py_cal_zini(board: Vec<Vec<i32>>, loop_count: usize) -> PyResult<usize> {
     Ok(cal_zini(&board, loop_count))

@@ -1153,7 +1153,7 @@ impl<T> BaseVideo<T> {
         self.static_params.cell8 = cell_nums[8];
         self.static_params.op = cal_op(&self.board);
         self.static_params.isl = cal_isl(&self.board);
-        self.static_params.zini = cal_zini(&self.board, 100);
+        self.static_params.zini = cal_zini(&self.board);
     }
 
     pub fn print_event(&self, flag_print_game_board: bool) {

@@ -207,7 +207,7 @@ impl Board {
         if let Some(value) = self.zini {
             return value;
         }
-        self.zini = Some(cal_zini(&self.board, 100));
+        self.zini = Some(cal_zini(&self.board));
         return self.zini.unwrap();
     }
     pub fn get_op(&mut self) -> usize {

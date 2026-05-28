@@ -586,9 +586,7 @@ fn evf_video_works_for_temp_video() {
 
     let _ = video.parse();
     video.data.print_event(false);
-    println!("667");
     video.data.analyse();
-    println!("865");
     video.data.analyse_for_features(&vec![
         "high_risk_guess",
         "jump_judge",
@@ -608,14 +606,14 @@ fn evf_video_works_for_temp_video() {
     println!("is_fair: {:?}", video.data.is_fair);
     println!("is_valid: {:?}", video.data.is_valid());
 
-    for t in video.data.video_action_state_recorder {
-        if let Some(Event::Mouse(mouse_event)) = &t.event {
-            println!(
-                "{:?}, {:?}, {:?}, {:?}",
-                mouse_event.mouse, t.time, mouse_event.x, mouse_event.y
-            );
-        }
-    }
+    // for t in video.data.video_action_state_recorder {
+    //     if let Some(Event::Mouse(mouse_event)) = &t.event {
+    //         println!(
+    //             "{:?}, {:?}, {:?}, {:?}",
+    //             mouse_event.mouse, t.time, mouse_event.x, mouse_event.y
+    //         );
+    //     }
+    // }
 }
 
 #[test]

@@ -437,8 +437,8 @@ impl PyBaseVideo {
     pub fn generate_evf_v4_raw_data(&mut self) {
         self.core.generate_evf_v4_raw_data();
     }
-    pub fn save_to_evf_file(&self, file_name: &str) {
-        self.core.save_to_evf_file(file_name);
+    pub fn save_to_evf_file(&self, file_name: &str) -> PyResult<String> {
+        Ok(self.core.save_to_evf_file(file_name))
     }
     pub fn step(&mut self, e: &str, pos: (usize, usize)) {
         // println!("{:?}: '{:?}', ({:?}, {:?})", self.core.get_time(), e, pos.0, pos.1);

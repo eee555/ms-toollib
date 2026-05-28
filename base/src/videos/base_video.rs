@@ -1,7 +1,6 @@
 // 录像相关的类，局面在board
 use crate::board::GameBoard;
 use crate::cal_cell_nums;
-use crate::{cal_zini, cal_hzini};
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::miscellaneous::time_ms_between;
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -11,6 +10,7 @@ use crate::videos::analyse_methods::{
     analyse_high_risk_guess, analyse_jump_judge, analyse_mouse_trace, analyse_needless_guess,
     analyse_pluck, analyse_super_fl_local, analyse_vision_transfer,
 };
+use crate::{cal_hzini, cal_zini};
 use core::panic;
 use std::cell::RefCell;
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -551,6 +551,10 @@ impl BaseVideo<Vec<Vec<i32>>> {
         // suspect: 点击速度过快(0.01)
         // suspect: 鼠标移动过快(2)
         //
+
+        if self.height > 36 || self.width > 36 {
+            return
+        }
         for o in controller {
             match o {
                 &"high_risk_guess" => analyse_high_risk_guess(self),

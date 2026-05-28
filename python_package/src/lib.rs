@@ -128,10 +128,28 @@ fn py_cal_bbbv(board: Vec<Vec<i32>>) -> PyResult<usize> {
 #[pyfunction]
 #[pyo3(
     name = "cal_zini",
+    signature = (board)
+)]
+fn py_cal_zini(board: Vec<Vec<i32>>) -> PyResult<usize> {
+    Ok(cal_zini(&board))
+}
+
+#[pyfunction]
+#[pyo3(
+    name = "cal_hzini",
+    signature = (board)
+)]
+fn py_cal_hzini(board: Vec<Vec<i32>>) -> PyResult<usize> {
+    Ok(cal_hzini(&board))
+}
+
+#[pyfunction]
+#[pyo3(
+    name = "cal_rzini",
     signature = (board, loop_count = 100)
 )]
-fn py_cal_zini(board: Vec<Vec<i32>>, loop_count: usize) -> PyResult<usize> {
-    Ok(cal_zini(&board, loop_count))
+fn py_cal_rzini(board: Vec<Vec<i32>>, loop_count: usize) -> PyResult<usize> {
+    Ok(cal_rzini(&board, loop_count))
 }
 
 #[pyfunction]
@@ -485,6 +503,8 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_cal_op, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_bbbv, m)?)?;
     m.add_function(wrap_pyfunction!(py_cal_zini, m)?)?;
+    m.add_function(wrap_pyfunction!(py_cal_hzini, m)?)?;
+    m.add_function(wrap_pyfunction!(py_cal_rzini, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_board, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine, m)?)?;
     m.add_function(wrap_pyfunction!(py_get_all_not_and_is_mine_on_board, m)?)?;

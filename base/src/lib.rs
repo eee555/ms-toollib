@@ -108,7 +108,7 @@ pub use videos::{
 };
 
 mod zini;
-pub use zini::cal_zini;
+pub use zini::{cal_zini, cal_hzini, cal_rzini};
 
 mod big_number;
 

@@ -71,6 +71,10 @@ impl PyBoard {
         Ok(self.core.get_zini())
     }
     #[getter]
+    fn get_hzini(&mut self) -> PyResult<usize> {
+        Ok(self.core.get_hzini())
+    }
+    #[getter]
     fn get_op(&mut self) -> PyResult<usize> {
         Ok(self.core.get_op())
     }

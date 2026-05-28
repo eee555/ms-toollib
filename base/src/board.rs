@@ -1,7 +1,7 @@
 ﻿// 局面相关的类，录像在video
 use crate::algorithms::{cal_probability_onboard, solve_direct, solve_enumerate, solve_minus};
 use crate::utils::{cal_bbbv_on_island, cal_cell_nums, cal_isl, cal_op, refresh_matrixs};
-use crate::cal_zini;
+use crate::{cal_zini, cal_hzini, cal_rzini};
 
 /// 静态游戏局面的包装类。  
 /// 所有计算过的属性都会保存在这里。缓存计算结果的局面。  
@@ -162,6 +162,7 @@ pub struct Board {
     pub board: Vec<Vec<i32>>,
     bbbv: Option<usize>,
     zini: Option<usize>,
+    hzini: Option<usize>,
     openings: Option<usize>,
     islands: Option<usize>,
     cell0: usize,
@@ -182,6 +183,7 @@ impl Board {
             board,
             bbbv: None,
             zini: None,
+            hzini: None,
             openings: None,
             islands: None,
             cell0: 0,
@@ -209,6 +211,13 @@ impl Board {
         }
         self.zini = Some(cal_zini(&self.board));
         return self.zini.unwrap();
+    }
+    pub fn get_hzini(&mut self) -> usize {
+        if let Some(value) = self.hzini {
+            return value;
+        }
+        self.hzini = Some(cal_hzini(&self.board));
+        return self.hzini.unwrap();
     }
     pub fn get_op(&mut self) -> usize {
         *self.openings.get_or_insert_with(|| cal_op(&self.board))

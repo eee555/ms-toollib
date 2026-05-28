@@ -143,6 +143,10 @@ macro_rules! generate_video {
                 Ok(self.core.data.static_params.zini)
             }
             #[getter]
+            fn get_hzini(&self) -> PyResult<usize> {
+                Ok(self.core.data.static_params.hzini)
+            }
+            #[getter]
             fn get_cell0(&self) -> PyResult<usize> {
                 Ok(self.core.data.static_params.cell0)
             }

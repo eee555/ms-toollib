@@ -525,6 +525,10 @@ impl PyBaseVideo {
         Ok(self.core.static_params.zini)
     }
     #[getter]
+    fn get_hzini(&self) -> PyResult<usize> {
+        Ok(self.core.static_params.hzini)
+    }
+    #[getter]
     fn get_start_time(&self) -> PyResult<u64> {
         Ok(self.core.start_time)
     }

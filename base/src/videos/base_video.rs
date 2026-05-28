@@ -1,7 +1,7 @@
 // 录像相关的类，局面在board
 use crate::board::GameBoard;
 use crate::cal_cell_nums;
-use crate::cal_zini;
+use crate::{cal_zini, cal_hzini};
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::miscellaneous::time_ms_between;
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -1154,6 +1154,7 @@ impl<T> BaseVideo<T> {
         self.static_params.op = cal_op(&self.board);
         self.static_params.isl = cal_isl(&self.board);
         self.static_params.zini = cal_zini(&self.board);
+        self.static_params.hzini = cal_hzini(&self.board);
     }
 
     pub fn print_event(&self, flag_print_game_board: bool) {

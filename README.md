@@ -16,7 +16,7 @@ Algorithms for minesweeper, published on various platforms.
 最新版本号统计：  
 版本号越大，代表越新、功能越完善、bug越少。
 
-Python >= 3.7, <= 3.12 (Windows: x86, x64; Linux: x86, x86_64, aarch64, armv7, ppc64le, s390x; macOS: x86_64, aarch64), version 1.5.7
+Python >= 3.7, <= 3.12 (Windows: x86, x64; Linux: x86, x86_64, aarch64, armv7, ppc64le, s390x; macOS: x86_64, aarch64), version 1.5.8
 
 javascript/typescript (webpack等bundler), version 1.5.6
 

@@ -1,10 +1,10 @@
 [project]
 name = "ms_toollib"
-version = "1.5.7"
+version = "1.5.8"
 description = "Algorithms for minesweeper."
 readme = "readme.md"
 requires-python = ">=3.7"
-keywords = ["minesweeper", "sweeper", "probability", "solver", "3BV"]
+keywords = ["minesweeper", "metasweeper", "probability", "solver", "3BV"]
 authors = [
   {email = "wangjianing@88.com"},
   {name = "Wang Jianing"}

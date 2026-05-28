@@ -615,4 +615,22 @@ mod tests {
         // 但还可能点中间，所以保守断言
         assert!(z >= 2);
     }
+    #[test]
+    fn test_cal_zini_from_avf() {
+        use crate::videos::NewSomeVideo;
+        use crate::AvfVideo;
+
+        let mut video = AvfVideo::new("../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jianing G01825.avf");
+        let r = video.parse();
+        assert_eq!(r.unwrap(), ());
+        video.data.analyse();
+        let board = video.data.board.clone();
+
+        // small loop_count to keep test fast; this verifies cal_zini runs without panic
+        let b = cal_bbbv(&board);
+        let z = cal_zini(&board, 100);
+        println!("ZiNi from AVF board = {}", z);
+        println!("3BV from AVF board = {}", b);
+        assert!(z > 0);
+    }
 }

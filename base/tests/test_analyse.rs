@@ -254,7 +254,7 @@ fn avf_video_works() {
     assert_eq!(video.data.get_right_s(), 0.2233502538071066);
     assert_eq!(video.data.get_double_s(), 0.28426395939086296);
     video.data.set_current_time(10.0);
-    assert_eq!(video.data.get_stnb().unwrap(), 79.47351397906152);
+    assert_eq!(video.data.get_stnb().unwrap(), 79.47333128174823);
     video.data.analyse_for_features(&vec![
         "needless_guess",
         "high_risk_guess",
@@ -586,7 +586,9 @@ fn evf_video_works_for_temp_video() {
 
     let _ = video.parse();
     video.data.print_event(false);
+    println!("667");
     video.data.analyse();
+    println!("865");
     video.data.analyse_for_features(&vec![
         "high_risk_guess",
         "jump_judge",

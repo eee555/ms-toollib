@@ -31,8 +31,8 @@ use std::cmp::{max, min};
 
 use crate::videos::byte_reader::ByteReader;
 use crate::videos::types::{
-    Event, GameDynamicParams, KeyDynamicParams, MouseEvent, StaticParams,
-    VideoActionStateRecorder, VideoAnalyseParams, VideoDynamicParams,
+    Event, GameDynamicParams, KeyDynamicParams, MouseEvent, StaticParams, VideoActionStateRecorder,
+    VideoAnalyseParams, VideoDynamicParams,
 };
 /// 扫雷游戏状态机
 /// 功能：整局游戏的全部信息。自动推导局面、计算数据、计时、保存文件等功能。
@@ -387,7 +387,8 @@ impl BaseVideo<Vec<Vec<i32>>> {
                 if mouse_event.mouse != "mv" {
                     let old_state = b.game_board_state;
                     // println!(
-                    //     ">>>  {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
+                    //     ">>>  {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
+                    //     svi.time,
                     //     mouse_event.mouse,
                     //     b.mouse_state,
                     //     b.game_board_state,
@@ -1099,10 +1100,12 @@ impl<T> BaseVideo<T> {
                         .unwrap();
                 }
             }
-            let mouse_e = last_mouse_event.unwrap();
-            let r = mouse_e.y as usize / self.cell_pixel_size as usize;
-            let c = mouse_e.x as usize / self.cell_pixel_size as usize;
-            self.minesweeper_board.step(&mouse_e.mouse, (r, c)).unwrap();
+            // 可猜模式中，假如局面发生过修改，且以点脸等reset方式结束游戏，就没有最后一步鼠标操作
+            if let Some(mouse_e) = last_mouse_event {
+                let r = mouse_e.y as usize / self.cell_pixel_size as usize;
+                let c = mouse_e.x as usize / self.cell_pixel_size as usize;
+                self.minesweeper_board.step(&mouse_e.mouse, (r, c)).unwrap();
+            }
         }
         // 点一下左键可能直接获胜，但不可能直接失败
         let t_ms = time_ms - self.game_start_ms;
@@ -1160,7 +1163,7 @@ impl<T> BaseVideo<T> {
                 if let Some(Event::Mouse(mouse_event)) = &e.event {
                     if mouse_event.mouse != "mv" {
                         println!(
-                            "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
+                            "》time = {:?}, mouse = {:?}, x = {:?}, y = {:?}, level = {:?}",
                             e.time,
                             mouse_event.mouse,
                             mouse_event.x / self.get_pix_size().unwrap() as u16,
@@ -1170,7 +1173,7 @@ impl<T> BaseVideo<T> {
                     }
                     if mouse_event.mouse != "mv" && flag_print_game_board {
                         println!(
-                            "time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
+                            "《time = {:?}, mouse = {:?}, x = {:?}, y = {:?}",
                             e.time, mouse_event.mouse, mouse_event.x, mouse_event.y
                         );
                         e.next_game_board.iter().for_each(|v| println!("{:?}", v));

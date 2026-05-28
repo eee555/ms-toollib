@@ -569,7 +569,7 @@ impl EvfVideo {
             });
         // 累计的暂停时间
         let mut pause_time_ms = 0;
-        // for i in 0..200{
+        // for i in 0..2000{
         //     print!("{:?}, ", self.data.get_u8()?);
         // }
         loop {

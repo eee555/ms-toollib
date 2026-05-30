@@ -503,7 +503,7 @@ fn evf_video_works_v4() {
         .unwrap();
     video.set_race_identifier("G8888".to_string()).unwrap();
     video
-        .set_uniqueness_identifier("💣🚩1️⃣3️⃣8️⃣".to_string())
+        .set_unique_identifier("💣🚩1️⃣3️⃣8️⃣".to_string())
         .unwrap();
     video.set_software("a test software".to_string()).unwrap();
     video.set_country("CN".to_string()).unwrap();
@@ -549,7 +549,7 @@ fn evf_video_works_v4() {
     assert_eq!(video.data.game_board_state, GameBoardState::Display);
     assert_eq!(video.data.software, "a test software");
     assert_eq!(video.data.country, "CN");
-    assert_eq!(video.data.uniqueness_identifier, "💣🚩1️⃣3️⃣8️⃣");
+    assert_eq!(video.data.unique_identifier, "💣🚩1️⃣3️⃣8️⃣");
     assert_eq!(video.data.race_identifier, "G8888");
     assert_eq!(
         video.data.player_identifier,
@@ -669,7 +669,7 @@ fn evf_video_works_v4_replay() {
         .unwrap();
     video.set_race_identifier("G8888".to_string()).unwrap();
     video
-        .set_uniqueness_identifier("💣🚩1️⃣3️⃣8️⃣".to_string())
+        .set_unique_identifier("💣🚩1️⃣3️⃣8️⃣".to_string())
         .unwrap();
     video.set_software("a test software".to_string()).unwrap();
     video.set_country("CN".to_string()).unwrap();

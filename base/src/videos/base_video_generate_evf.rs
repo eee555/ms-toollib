@@ -67,7 +67,7 @@ impl<T> BaseVideo<T> {
             .append(&mut self.race_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.uniqueness_identifier.clone().into_bytes());
+            .append(&mut self.unique_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
             .append(&mut self.start_time.to_string().into_bytes());
@@ -190,7 +190,7 @@ impl<T> BaseVideo<T> {
             .append(&mut self.race_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.uniqueness_identifier.clone().into_bytes());
+            .append(&mut self.unique_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
             .append(&mut self.start_time.to_string().into_bytes());
@@ -327,7 +327,7 @@ impl<T> BaseVideo<T> {
             .append(&mut self.race_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.uniqueness_identifier.clone().into_bytes());
+            .append(&mut self.unique_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
             .append(&mut self.start_time.to_string().into_bytes());
@@ -484,7 +484,7 @@ impl<T> BaseVideo<T> {
             .append(&mut self.race_identifier.clone().into_bytes());
         self.raw_data.push(0);
         self.raw_data
-            .append(&mut self.uniqueness_identifier.clone().into_bytes());
+            .append(&mut self.unique_identifier.clone().into_bytes());
         self.raw_data.push(0);
         let device_uuid_length = self.device_uuid.len() as u16;
         self.raw_data

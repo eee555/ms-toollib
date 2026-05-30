@@ -100,7 +100,7 @@ use crate::videos::types::{
 /// game.mode = 0
 /// game.player_identifier = "赵大锤"
 /// game.race_identifier = "G1234"
-/// game.uniqueness_identifier = "contact us with QQ 2234208506"
+/// game.unique_identifier = "contact us with QQ 2234208506"
 /// game.country = "CN"
 /// game.device_uuid = "2ds2ge6rg5165g1r32ererrrtgrefd6we54"
 /// game.generate_evf_v3_raw_data()
@@ -181,7 +181,7 @@ pub struct BaseVideo<T> {
     /// 比赛标识。仅支持元扫雷和维也纳。对于不支持的版本，返回空字符串。
     pub race_identifier: String,
     /// 唯一性标识
-    pub uniqueness_identifier: String,
+    pub unique_identifier: String,
     /// 游戏起始时间，单位为微秒的时间戳。
     /// 实际数值为游戏起始时间与 1970-01-01 00:00:00 的差值。对于元扫雷和维也纳，后者(1970-01-01)为UTC；对于阿比特，后者时区为生成录像时的系统时区。
     ///
@@ -269,7 +269,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             original_encoding: String::new(),
             player_identifier: String::new(),
             race_identifier: String::new(),
-            uniqueness_identifier: String::new(),
+            unique_identifier: String::new(),
             start_time: 0,
             end_time: 0,
             country: String::new(),
@@ -325,7 +325,7 @@ impl Default for BaseVideo<SafeBoard> {
             original_encoding: String::new(),
             player_identifier: String::new(),
             race_identifier: String::new(),
-            uniqueness_identifier: String::new(),
+            unique_identifier: String::new(),
             start_time: 0,
             end_time: 0,
             country: String::new(),

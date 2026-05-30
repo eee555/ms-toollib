@@ -188,7 +188,7 @@ impl RmvVideo {
         // we need to store these in a buffer first, as how we parse them needs
         // to depend on the utf8 property
         let mut player_identifier_buffer = vec![];
-        let mut uniqueness_identifier_buffer = vec![];
+        let mut unique_identifier_buffer = vec![];
         let mut country_buffer = vec![];
         if num_player_info > 0 {
             let name_length = self.data.get_u8()?;
@@ -197,7 +197,7 @@ impl RmvVideo {
         // 昵称不解析
         if num_player_info > 1 {
             let nick_length = self.data.get_u8()?;
-            uniqueness_identifier_buffer = self.data.get_buffer(nick_length)?;
+            unique_identifier_buffer = self.data.get_buffer(nick_length)?;
         }
         if num_player_info > 2 {
             let country_length = self.data.get_u8()?;
@@ -306,13 +306,13 @@ impl RmvVideo {
             // verify that text fields that we read are valid utf-8 as specified by the RMV spec
             let utf8_errfunc = |_e| ErrReadVideoReason::Utf8Error;
             self.data.player_identifier = String::from_utf8(player_identifier_buffer).map_err(utf8_errfunc)?;
-            self.data.uniqueness_identifier = String::from_utf8(uniqueness_identifier_buffer).map_err(utf8_errfunc)?;
+            self.data.unique_identifier = String::from_utf8(unique_identifier_buffer).map_err(utf8_errfunc)?;
             self.data.country = String::from_utf8(country_buffer).map_err(utf8_errfunc)?;
             let _ = String::from_utf8(token.clone()).map_err(utf8_errfunc)?;
         }
         else {
             self.data.player_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(player_identifier_buffer)?;
-            self.data.uniqueness_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(uniqueness_identifier_buffer)?;
+            self.data.unique_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(unique_identifier_buffer)?;
             self.data.country = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(country_buffer)?;
         }
 

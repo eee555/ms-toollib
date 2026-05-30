@@ -155,7 +155,7 @@ class AvfVideo:
     mine_num: int
     player_identifier: str
     race_identifier: str
-    uniqueness_identifier: str
+    unique_identifier: str
     country: str
     bbbv: int
     start_time: int
@@ -228,7 +228,7 @@ class BaseVideo:
     mine_num: int
     player_identifier: str
     race_identifier: str
-    uniqueness_identifier: str
+    unique_identifier: str
     country: str
     bbbv: int
     start_time: int
@@ -338,7 +338,7 @@ class EvfVideo:
     mine_num: int
     player_identifier: str
     race_identifier: str
-    uniqueness_identifier: str
+    unique_identifier: str
     country: str
     bbbv: int
     start_time: int
@@ -498,7 +498,7 @@ class MvfVideo:
     mine_num: int
     player_identifier: str
     race_identifier: str
-    uniqueness_identifier: str
+    unique_identifier: str
     country: str
     bbbv: int
     start_time: int
@@ -573,7 +573,7 @@ class RmvVideo:
     mine_num: int
     player_identifier: str
     race_identifier: str
-    uniqueness_identifier: str
+    unique_identifier: str
     country: str
     bbbv: int
     start_time: int

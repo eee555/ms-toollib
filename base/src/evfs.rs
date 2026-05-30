@@ -113,7 +113,7 @@ impl Evfs {
         if !self
             .cells
             .iter()
-            .map(|c| &c.evf_video.data.uniqueness_identifier)
+            .map(|c| &c.evf_video.data.unique_identifier)
             .all_equal()
         {
             return false;

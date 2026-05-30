@@ -509,8 +509,8 @@ impl PyBaseVideo {
         Ok(self.core.race_identifier.clone())
     }
     #[getter]
-    fn get_uniqueness_identifier(&self) -> PyResult<String> {
-        Ok(self.core.uniqueness_identifier.clone())
+    fn get_unique_identifier(&self) -> PyResult<String> {
+        Ok(self.core.unique_identifier.clone())
     }
     #[getter]
     fn get_country(&self) -> PyResult<String> {
@@ -815,9 +815,9 @@ impl PyBaseVideo {
         self.core.set_race_identifier(race_identifier).unwrap();
     }
     #[setter]
-    pub fn set_uniqueness_identifier(&mut self, uniqueness_identifier: String) {
+    pub fn set_unique_identifier(&mut self, unique_identifier: String) {
         self.core
-            .set_uniqueness_identifier(uniqueness_identifier)
+            .set_unique_identifier(unique_identifier)
             .unwrap();
     }
     #[setter]

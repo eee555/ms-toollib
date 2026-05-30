@@ -127,7 +127,7 @@ impl EvfVideo {
         self.data.translated = !self.data.software.starts_with("元");
         self.data.player_identifier = self.data.get_unknown_encoding_c_string('\0')?;
         self.data.race_identifier = self.data.get_unknown_encoding_c_string('\0')?;
-        self.data.uniqueness_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        self.data.unique_identifier = self.data.get_unknown_encoding_c_string('\0')?;
         let start_time = self.data.get_utf8_c_string('\0')?;
         let end_time = self.data.get_utf8_c_string('\0')?;
         match self.data.software.as_str() {
@@ -249,7 +249,7 @@ impl EvfVideo {
         self.data.translated = !self.data.software.starts_with("元");
         self.data.player_identifier = self.data.get_unknown_encoding_c_string('\0')?;
         self.data.race_identifier = self.data.get_unknown_encoding_c_string('\0')?;
-        self.data.uniqueness_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        self.data.unique_identifier = self.data.get_unknown_encoding_c_string('\0')?;
         let start_time = self.data.get_utf8_c_string('\0')?;
         let end_time = self.data.get_utf8_c_string('\0')?;
         match self.data.software.as_str() {
@@ -376,7 +376,7 @@ impl EvfVideo {
         self.data.translated = !self.data.software.starts_with("元");
         self.data.player_identifier = self.data.get_unknown_encoding_c_string('\0')?;
         self.data.race_identifier = self.data.get_unknown_encoding_c_string('\0')?;
-        self.data.uniqueness_identifier = self.data.get_unknown_encoding_c_string('\0')?;
+        self.data.unique_identifier = self.data.get_unknown_encoding_c_string('\0')?;
         let start_time = self.data.get_utf8_c_string('\0')?;
         let end_time = self.data.get_utf8_c_string('\0')?;
         match self.data.software.as_str() {
@@ -512,7 +512,7 @@ impl EvfVideo {
         }
         self.data.player_identifier = self.data.get_utf8_c_string('\0')?;
         self.data.race_identifier = self.data.get_utf8_c_string('\0')?;
-        self.data.uniqueness_identifier = self.data.get_utf8_c_string('\0')?;
+        self.data.unique_identifier = self.data.get_utf8_c_string('\0')?;
         let device_uuid_length = self.data.get_u16()?;
         self.data.device_uuid = self.data.get_buffer(device_uuid_length)?;
         self.data.board = vec![vec![0; self.data.width]; self.data.height];

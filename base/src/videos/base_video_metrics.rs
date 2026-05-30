@@ -261,13 +261,13 @@ impl<T> BaseVideo<T> {
         self.race_identifier = race_identifier;
         Ok(0)
     }
-    pub fn set_uniqueness_identifier(&mut self, uniqueness_identifier: String) -> Result<u8, ()> {
+    pub fn set_unique_identifier(&mut self, unique_identifier: String) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
         {
             return Err(());
         };
-        self.uniqueness_identifier = uniqueness_identifier;
+        self.unique_identifier = unique_identifier;
         Ok(0)
     }
     /// 拟弃用，会自动记录

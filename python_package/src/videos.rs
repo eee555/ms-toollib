@@ -111,8 +111,8 @@ macro_rules! generate_video {
                 Ok(self.core.data.race_identifier.clone())
             }
             #[getter]
-            fn get_uniqueness_identifier(&self) -> PyResult<String> {
-                Ok(self.core.data.uniqueness_identifier.clone())
+            fn get_unique_identifier(&self) -> PyResult<String> {
+                Ok(self.core.data.unique_identifier.clone())
             }
             #[getter]
             fn get_country(&self) -> PyResult<String> {

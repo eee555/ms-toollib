@@ -143,6 +143,7 @@ class AvfVideo:
 
     file_name: str
     raw_data: List[int]
+    board: List[List[int]]
     time: float
     software: str
     row: int
@@ -326,6 +327,7 @@ class EvfVideo:
 
     file_name: str
     raw_data: List[int]
+    board: List[List[int]]
     time: float
     software: str
     row: int
@@ -486,6 +488,7 @@ class MvfVideo:
 
     file_name: str
     raw_data: List[int]
+    board: List[List[int]]
     time: float
     software: str
     row: int
@@ -561,6 +564,7 @@ class RmvVideo:
 
     file_name: str
     raw_data: List[int]
+    board: List[List[int]]
     time: float
     software: str
     row: int

@@ -584,7 +584,7 @@ fn evf_video_works_for_temp_video() {
     // 使用print而不是assert，以便观察更多信息。
     let mut video = EvfVideo::new("../test_files/temp.evf");
 
-    let _ = video.parse();
+    let v = video.parse();
     video.data.print_event(false);
     video.data.analyse();
     video.data.analyse_for_features(&vec![

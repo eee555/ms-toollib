@@ -63,6 +63,10 @@ macro_rules! generate_video {
                 Ok(self.core.data.get_raw_data().unwrap())
             }
             #[getter]
+            fn get_board(&self) -> PyResult<Vec<Vec<i32>>> {
+                Ok(self.core.data.board.clone())
+            }
+            #[getter]
             fn get_time(&self) -> PyResult<f64> {
                 Ok(self.core.data.get_time())
             }

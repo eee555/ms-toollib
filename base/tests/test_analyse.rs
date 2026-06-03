@@ -392,6 +392,8 @@ fn temp_mvf_video_works() {
     println!("right: {:?}", video.data.get_right());
     println!("double: {:?}", video.data.get_double());
     println!("ce: {:?}", video.data.get_ce());
+    println!("video start time: {:?}", video.data.start_time);
+    println!("video end time: {:?}", video.data.end_time);
 }
 
 

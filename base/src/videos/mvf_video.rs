@@ -143,12 +143,15 @@ impl MvfVideo {
         let mut bit = [0u8; 40];
         let mut e = [0u8; 5];
 
-        let _month = self.data.get_u8()?;
-        let _day = self.data.get_u8()?;
-        let _year = self.data.get_u16()?;
-        let _hour = self.data.get_u8()?;
-        let _minute = self.data.get_u8()?;
-        let _second = self.data.get_u8()?;
+        let month = self.data.get_u8()? as u64;
+        let day = self.data.get_u8()? as u64;
+        let year = self.data.get_u16()? as u64;
+        let hour = self.data.get_u8()? as u64;
+        let minute = self.data.get_u8()? as u64;
+        let second = self.data.get_u8()? as u64;
+        let days = self.data.days_since_epoch(year, month, day);
+        let total_seconds = days * 86400 + hour * 3600 + minute * 60 + second;
+        self.data.start_time = total_seconds * 1_000_000;
 
         // //Next 2 bytes are Level and Mode
         self.data.level = self.data.get_u8()? + 2;
@@ -357,6 +360,7 @@ impl MvfVideo {
         }
         let rtime = self.data.video_action_state_recorder.last().unwrap().time - start_t;
         self.data.set_rtime(rtime).unwrap();
+        self.data.end_time = self.data.start_time + (self.data.get_rtime_ms().unwrap_or(0) as u64) * 1000;
 
         Ok(())
     }

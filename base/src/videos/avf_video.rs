@@ -211,9 +211,13 @@ impl AvfVideo {
         // 关问号：'\u{6}', '\u{a0}', 'È', '\u{8f}', '¡', '\u{97}', 'Ñ', '\u{7}', '\u{8}', '\u{b}', '\n', '\u{7f}', '9', '[', '3', '|', 'W', '8'
         // 关问号：'\u{6}', '\u{a0}', 'È', '\u{8f}', '¡', '\u{97}', 'Ñ', '\u{7}', '\u{8}', '\u{b}', '\n', '\u{7f}', '<', '[', '3', '|', 'W', '1', '2'
         // 开问号：'\u{6}', '\u{a0}', 'È', '\u{8f}', '¡', '\u{97}', 'Ñ', '\u{7}', '\u{8}', '\u{b}', '\n', '\u{11}', '=', '[', '3', '|', 'W', '1', '7',
+
+        // let mut buf = String::with_capacity(300);
         // for _ in 0..300 {
-        //     print!("{:?}, ", self.data.get_char()?);
+        //     buf.push(self.data.get_char()?);
         // }
+        // print!("{}", buf);
+
         loop {
             buffer[0] = buffer[1];
             buffer[1] = buffer[2];
@@ -258,6 +262,9 @@ impl AvfVideo {
         // 自定义：[3|W8H11M7|3.9.2025.17:00:08:6660|3.17:00:14:081|B8T6.42]
         // 异常情况举例：
         // 高级：[2|17.7.2012.12:08:03:3338|17.12:09:44:6697B248T102.34]
+
+        // Wang_Jia_Ning_Beg_15.523bv24.avf这局录像证明，avf的T后面的rtime并不一定正确(下称T后值)。这局录像的此数值是3.61，而实际rtime为14.52
+        // [0|24.8.2024.16:38:59:6687|24.16:39:14:2213|B24T3.61]
         let mut end_time = String::new();
         let mut buffer: [char; 2];
         loop {
@@ -289,8 +296,8 @@ impl AvfVideo {
         };
         let mut s = self.data.get_utf8_c_string(']')?;
         s = str::replace(&s, ",", "."); // 有些录像小数点是逗号
-        match s.parse::<f64>() {
-            Ok(v) => self.data.set_rtime(v - 1.0).unwrap(),
+        let _time_from_header = match s.parse::<f64>() {
+            Ok(v) => v - 1.0,
             Err(_) => return Err(ErrReadVideoReason::InvalidParams),
         };
         let mut buffer = [0u8; 8];
@@ -336,6 +343,23 @@ impl AvfVideo {
             }
             if buffer[2] == 0 && buffer[6] == 0 {
                 break;
+            }
+        }
+        // 一共计算了两种rtime，T后值和事件值。理论上两者应该相等，实际上，T后值有极小可能不准，Wang_Jia_Ning_Beg_15.523bv24.avf证明了了这一点。事件值计算复杂，因为不能简单拿最后一次事件的时间作为rtime，avf录像有可能不以lc开头，这一点只能凭借印象，暂时无法举例说明。
+        if let Some(last) = self.data.video_action_state_recorder.last() {
+            if _time_from_header + 1e-6 < last.time {
+                let last_time = last.time;
+                let mut lr_time = 0.0;
+                for record in self.data.video_action_state_recorder.iter_mut().rev() {
+                    if let Some(Event::Mouse(mouse_event)) = &record.event {
+                        if mouse_event.mouse == "lr" {
+                            lr_time = record.time;
+                        }
+                    }
+                }
+                self.data.set_rtime(last_time - lr_time).unwrap();
+            } else {
+                self.data.set_rtime(_time_from_header).unwrap();
             }
         }
         // 标识符

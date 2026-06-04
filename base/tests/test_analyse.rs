@@ -285,17 +285,23 @@ fn avf_video_works_other_encoding() {
 // cargo test --features rs -- --nocapture temp_avf_video_works
 fn temp_avf_video_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("../test_files/temp.avf");
+    let mut video = AvfVideo::new("../test_files/Wang_Jia_Ning_Beg_15.523bv24.avf");
 
     let r = video.parse();
     assert_eq!(r.unwrap(), ());
     video.data.print_event(false);
     video.data.analyse();
+    println!("rtime: {:?}", video.data.get_rtime());
     println!("bbbv: {:?}", video.data.static_params.bbbv);
     video.data.set_current_time(999.99);
+    println!("bbbv_s: {:?}", video.data.get_bbbv_s());
+    println!("current_time: {:?}", video.data.current_time);
+    println!("bbbv_solved: {:?}", video.data.get_bbbv_solved());
     println!("left: {:?}", video.data.get_left());
     println!("right: {:?}", video.data.get_right());
     println!("double: {:?}", video.data.get_double());
+    println!("start_time: {:?}", video.data.start_time);
+    println!("end_time: {:?}", video.data.end_time);
 }
 
 #[test]

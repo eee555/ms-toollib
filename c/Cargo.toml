@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-libc = "0.2.0"
+libc = "0.2.143"
 ms_toollib = { path = "../base", features = ["rs"] }
 
 [lib]

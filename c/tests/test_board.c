@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
-# include "ms_toollib.h"
 #include <malloc.h>
+#include "ms_toollib/ms_toollib.h"
 
 #pragma comment(lib,"ws2_32.lib")
 #pragma comment (lib,"Advapi32.lib")
@@ -11,24 +11,17 @@
 #pragma comment(lib, "userenv.lib")
 #pragma comment(lib, "bcrypt.lib")
 #pragma comment(lib, "ntdll.lib")
-
-#pragma comment(lib, "./target/release/ms_toollib.lib")
-
-// 编译命令
-// cargo build --release
-// cl /EHsc test.c
-// ./test
-
+#pragma comment(lib, "target/release/ms_toollib.lib")
 
 int main(void) {
 
-    int32_t test_beg_board[8][8] = {{1, 1, 1, 1, 1, 2, 2, 2}, 
-    {1, -1, 1, 2, -1, 3, -1, -1}, 
-    {1, 1, 1, 3, -1, 5, 3, 3}, 
-    {0, 0, 0, 2, -1, 3, -1, 1}, 
-    {0, 0, 0, 1, 1, 3, 2, 2}, 
-    {0, 0, 0, 0, 0, 2, -1, 2}, 
-    {0, 1, 1, 1, 0, 2, -1, 2}, 
+    int32_t test_beg_board[8][8] = {{1, 1, 1, 1, 1, 2, 2, 2},
+    {1, -1, 1, 2, -1, 3, -1, -1},
+    {1, 1, 1, 3, -1, 5, 3, 3},
+    {0, 0, 0, 2, -1, 3, -1, 1},
+    {0, 0, 0, 1, 1, 3, 2, 2},
+    {0, 0, 0, 0, 0, 2, -1, 2},
+    {0, 1, 1, 1, 0, 2, -1, 2},
     {0, 1, -1, 1, 0, 1, 1, 1}};
     struct Row *rows_ = (struct Row *)malloc(8 * sizeof(struct Row));
     int32_t *cells_;
@@ -42,14 +35,18 @@ int main(void) {
         };
     };
     size_t bbbv = cal_bbbv(a_test_beg_board);
-    printf("3BV of the beg board is: %zu", bbbv);
+    printf("3BV of the beg board is: %zu\n", bbbv);
+    size_t zini = cal_zini(a_test_beg_board);
+    size_t hzini = cal_hzini(a_test_beg_board);
+    size_t isl = cal_isl(a_test_beg_board);
+    size_t op = cal_op(a_test_beg_board);
+    printf("ZiNi: %zu, HZiNi: %zu, Isl: %zu, Op: %zu\n", zini, hzini, isl, op);
+    size_t rzini = cal_rzini(a_test_beg_board, 50);
+    printf("RZiNi(50): %zu\n", rzini);
     for(int i = 0; i < 8; i++) {
         free((int32_t *)a_test_beg_board.rows[i].cells);
     };
     free(rows_);
-
-
-
 
     struct Board board_exp = laymine(16, 30, 99, 0, 0);
     printf("\n\nPrint the exp board:\n");
@@ -59,19 +56,15 @@ int main(void) {
         }
         printf("\n");
     }
-    free_board(board_exp); // must dealloc
+    free_board(board_exp);
 
-
-
-
-
-    int32_t test_beg_game_board[8][8] = {{0, 0, 1, 10, 10, 10, 10, 10}, 
-    {0, 0, 2, 10, 10, 10, 10, 10}, 
-    {1, 1, 3, 11, 10, 10, 10, 10}, 
-    {10, 10, 4, 10, 10, 10, 10, 10}, 
-    {10, 10, 10, 10, 10, 10, 10, 10}, 
-    {10, 10, 10, 10, 10, 10, 10, 10}, 
-    {10, 10, 10, 10, 10, 10, 10, 10}, 
+    int32_t test_beg_game_board[8][8] = {{0, 0, 1, 10, 10, 10, 10, 10},
+    {0, 0, 2, 10, 10, 10, 10, 10},
+    {1, 1, 3, 11, 10, 10, 10, 10},
+    {10, 10, 4, 10, 10, 10, 10, 10},
+    {10, 10, 10, 10, 10, 10, 10, 10},
+    {10, 10, 10, 10, 10, 10, 10, 10},
+    {10, 10, 10, 10, 10, 10, 10, 10},
     {10, 10, 10, 10, 10, 10, 10, 10}};
     struct Row *rows__ = (struct Row *)malloc(8 * sizeof(struct Row));
     int32_t *cells__;
@@ -92,15 +85,6 @@ int main(void) {
         }
         printf("\n");
     }
-    free_board_poss(board_poss_return); // must dealloc
-
-
-
+    free_board_poss(board_poss_return);
 
 }
-
-
-
-
-
-

@@ -19,7 +19,7 @@
 // npm config set registry https://registry.npmmirror.com/
 // npm config set registry https://registry.npm.taobao.org/
 // npm config set registry https://registry.npmjs.org/
-// 2025.12.9以后的发布步骤：
+// 2025.12.9以后的发布步骤（已废弃）：
 // 1. (若令牌失效)登录https://www.npmjs.com/settings/eee555/tokens/
 // 2. (若令牌失效)创建令牌，勾选 “Bypass two-factor authentication”
 // 3. (若令牌失效)复制令牌内容例如“npm_0aKF......lBSi”，修改C:\Users\username\.npmrc文件，添加一行内容：
@@ -30,6 +30,10 @@
 // 6. 修改版本号，末尾添加“-alpha”
 // 7. wasm-pack build --target nodejs
 // 8. wasm-pack publish --target nodejs --tag alpha
+// 2026.6.4及以后的发布步骤：
+// 1. 检查版本号，修改Cargo.toml文件
+// 2. 直接打tag发布，如“1.5.10”
+// 
 
 
 use js_sys::Array;

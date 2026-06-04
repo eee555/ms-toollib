@@ -1,6 +1,11 @@
 extern crate libc;
 use ms_toollib::cal_bbbv as rs_cal_bbbv;
+use ms_toollib::cal_hzini as rs_cal_hzini;
+use ms_toollib::cal_isl as rs_cal_isl;
+use ms_toollib::cal_op as rs_cal_op;
 use ms_toollib::cal_probability_onboard as rs_cal_probability_onboard;
+use ms_toollib::cal_zini as rs_cal_zini;
+use ms_toollib::cal_rzini as rs_cal_rzini;
 use ms_toollib::laymine as rs_laymine;
 use std::alloc::{dealloc, Layout};
 use std::mem;
@@ -198,6 +203,31 @@ pub extern "C" fn cal_probability_onboard(board_of_game: Board, mine_num: f64) -
         mine_num: c[1],
         max_mine_num: c[2],
     }
+}
+
+#[no_mangle]
+pub extern "C" fn cal_zini(board: Board) -> usize {
+    rs_cal_zini(&struct_board_to_vec_board(board))
+}
+
+#[no_mangle]
+pub extern "C" fn cal_hzini(board: Board) -> usize {
+    rs_cal_hzini(&struct_board_to_vec_board(board))
+}
+
+#[no_mangle]
+pub extern "C" fn cal_rzini(board: Board, n_iter: usize) -> usize {
+    rs_cal_rzini(&struct_board_to_vec_board(board), n_iter)
+}
+
+#[no_mangle]
+pub extern "C" fn cal_isl(board: Board) -> usize {
+    rs_cal_isl(&struct_board_to_vec_board(board))
+}
+
+#[no_mangle]
+pub extern "C" fn cal_op(board: Board) -> usize {
+    rs_cal_op(&struct_board_to_vec_board(board))
 }
 
 #[no_mangle]

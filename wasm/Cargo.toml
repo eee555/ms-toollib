@@ -4,6 +4,7 @@ version = "1.5.10"
 authors = ["eee555 <50390200+eee555@users.noreply.github.com>"]
 edition = "2021"
 homepage = "https://github.com/eee555/ms-toollib"
+repository = "https://github.com/eee555/ms-toollib"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

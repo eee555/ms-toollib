@@ -1,86 +1,250 @@
-# ms_toollib、EVF Format
+[English](./README.en.md) | 中文
 
-[![ms_toollib](https://img.shields.io/badge/ms_toollib-v1.4.17-brightgreen.svg)](https://github.com/eee555/ms_toollib)
+# ms_toollib & EVF Format
 
-史上唯一专门的、跨平台、跨语言的扫雷算法工具箱。已发布到：
+[![ms_toollib](https://img.shields.io/badge/ms_toollib-v1.5.10-brightgreen.svg)](https://github.com/eee555/ms_toollib)
+[![crates.io](https://img.shields.io/crates/v/ms_toollib)](https://crates.io/crates/ms_toollib)
+[![npm](https://img.shields.io/npm/v/ms-toollib)](https://www.npmjs.com/package/ms-toollib)
+[![PyPI](https://img.shields.io/pypi/v/ms-toollib)](https://pypi.org/project/ms-toollib/)
 
-- crates.io
-- pypi.org
-- npmjs.com
+扫雷算法工具箱 — 跨平台、多语言绑定的扫雷核心算法库。
 
-可在Rust、Python(Windows、Linux)、Javascript(bundler、nodejs)、Typescript(bundler、nodejs)、C(Windows)、C++(Linux)、julia等语言/平台中使用，并提供案例，可快速上手。项目呈比较成熟阶段，相关技术问题可以提供一对一交流解决。欢迎star、pull request、fork、issue（提需求、报bug等）
+API 文档：[docs.rs/ms_toollib](https://docs.rs/ms_toollib)
 
-Algorithms for minesweeper, published on various platforms.
+---
 
-- 目前主要文档见[https://docs.rs/ms_toollib](https://docs.rs/ms_toollib)。
-最新版本号统计：  
-版本号越大，代表越新、功能越完善、bug越少。
+## 总览 Architecture
 
-Python >= 3.7, <= 3.12 (Windows: x86, x64; Linux: x86, x86_64, aarch64, armv7, ppc64le, s390x; macOS: x86_64, aarch64), version 1.5.10
-
-javascript/typescript (webpack等bundler), version 1.5.10
-
-javascript/typescript (nodejs), version 1.5.10-alpha
-
-rust crate, version 1.5.10
-
-C(仅windows), version 1.0.0 （没有类，即没有录像解析工具、局面状态机等。调试环境为MSVC。Linux未经测试，但估计可用。没有包管理平台，需要用户用源码自行编译，目前需要安装rust工具链，自行编译得到.lib文件）
-
-C++(仅Linux), version 1.0.0
-（采用Cmake构建、没有包管理平台，需要用户用源码自行编译，需要安装rust工具链。）
-
-Julia: 同python
-
-
-### 核心功能
-
-- **埋雷**：无猜埋雷，包括筛选法埋雷（雷密度极高时无法成功、成功时保证无猜）、调整法埋雷（百分百成功、成功时概率有猜）。
-
-- **扫雷状态机**：接受用户的鼠标点击为输入，自动计时、推衍局面变化、计算指标数据。
-
-- **光学局面识别**：输入局面的彩色图片数据，智能识别局面。
-
-- **概率计算**：输入局面、总雷数，计算各位置是雷的概率。
-
-- **录像处理**：avf、evf、mvf、rmv等扫雷录像格式的读取；将局面状态机中的数据保存或另存为evf录像。
-
-### 如何调试源码
-
-在编译之前，请确保自己拥有：
-
-*   Rust工具链(rustup -V能够打印版本号、cargo -V能够打印版本号)
-*   Visual Studio Code及对应插件(例如rust-analyzer)
-*   会用Powershell或者其它命令行工具的能力
-*   安装完全部环境以后，还剩余至少6G的硬盘容量
-
-以下为调试步骤：
-
-*   克隆这个仓库到本地
-```sh
-    git clone https://github.com/eee555/ms_toollib.git
+```
+base/          — 核心算法（纯 Rust）
+  ├── c/       — C FFI 绑定（MSVC）
+  ├── java/    — Java JNI 绑定（JDK ≥ 21）
+  ├── wasm/    — WASM 绑定（wasm-pack → npm）
+  └── python_package/ — Python 绑定（maturin → PyPI）
 ```
 
-*   用Visual Studio Code打开base文件夹
+各绑定层将 `base/` 编译为对应语言的 native 库，零运行时开销。
 
-*   编辑器打开需要执行的测试程序文件，例如tests/test_analyse.rs
+---
 
-*   找到您想要执行的测试程序，例如minesweeper_board_works这个函数，用鼠标点击#[test]下方的灰色的Run Test按钮，即可打印执行结果！
+## 快速上手 Quick Start
 
-## 贡献
+### Rust
 
-[CONTRIBUTING.md](https://github.com/eee555/ms_toollib/CONTRIBUTING.md)
+```toml
+[dependencies]
+ms_toollib = "1.5"
+```
 
+```rust
+use ms_toollib::{laymine, cal_bbbv};
 
-### 其他示例项目
+let board = laymine(16, 30, 99, 0, 0);
+println!("3BV: {}", cal_bbbv(&board));
+```
 
-- [https://github.com/eee555/Metasweeper](https://github.com/eee555/Metasweeper)：元扫雷，win10/11平台的开源专业扫雷。具有全部6种无猜扫雷模式+标准+win7，演示了本仓库的埋雷、局面状态机、光学局面识别、概率计算、录像保存播放等功能。
+### Python
 
-- [https://github.com/eee555/saolei_website](https://github.com/eee555/saolei_website)：开源扫雷网，前后端均开源的的扫雷纪录排名网站。演示了本仓库在前后端用于录像校验、数据计算功能。
+```bash
+pip install ms-toollib
+```
 
-- [https://apps.apple.com/cn/app/益智扫雷/id6748243595?uo=4](https://apps.apple.com/cn/app/益智扫雷/id6748243595?uo=4)：益智扫雷，App Store上的无猜扫雷软件。使用了本仓库的埋雷算法，有条件可以体验。
+```python
+from ms_toollib import laymine, cal_bbbv
 
+board = laymine(16, 30, 99)
+print("3BV:", cal_bbbv(board))
+```
 
+### JavaScript / TypeScript (bundler)
 
+```bash
+npm install ms-toollib
+```
 
+```js
+import { laymine, calBBBV } from "ms-toollib";
 
+const board = laymine(16, 30, 99, 0, 0);
+console.log("3BV:", calBBBV(board));
+```
 
+### Node.js
+
+```bash
+npm install ms-toollib@alpha
+```
+
+### C (Windows, MSVC)
+
+```bash
+cd c && cargo build --release
+# 示例见 demos/c/
+```
+
+### Java (JDK ≥ 21)
+
+```bash
+cd java && build.bat "C:\Path\to\jdk-21"
+```
+
+```java
+import ms_toollib.*;
+
+var board = MsToollib.laymine(16, 30, 99, 0, 0);
+System.out.println("3BV: " + MsToollib.cal3BV(board));
+
+try (var video = new EvfVideo("replay.evf")) {
+    video.parse();
+    var data = video.getData();
+    System.out.println(data.getPlayer() + " " + data.getRtime());
+}
+```
+
+### C++ (Linux, CMake + Corrosion)
+
+```bash
+cd c++ && cmake -B build . && make -C build -j4
+```
+
+```cpp
+#include "cxxbridge_code/src/lib.rs.h"
+
+int main() {
+    rust::Box<AvfVideo> v = new_AvfVideo("replay.avf");
+    v->parse();
+    v->analyse();
+    std::cout << "player: " << v->get_player() << std::endl;
+    std::cout << "3BV: " << v->get_bbbv() << std::endl;
+}
+```
+
+### Julia（通过 Python 绑定）
+
+```bash
+pip install ms-toollib
+```
+
+```julia
+using PyCall
+ms = @pyimport ms_toollib
+
+board = ms.laymine(16, 30, 99)
+println("3BV: ", ms.cal_bbbv(board))
+
+v = ms.AvfVideo("replay.avf")
+v.parse()
+v.analyse()
+println(v.player_identifier)
+```
+
+```bash
+julia demos/julia/callms_toollib.jl
+```
+
+---
+
+## 功能 Features
+
+| 功能 | 说明 |
+|------|------|
+| **埋雷** | 无猜埋雷（筛选法 + 调整法） |
+| **指标计算** | 3BV / ZiNi / ISL / OP |
+| **概率计算** | 基于当前局面的逐格雷概率 |
+| **状态机** | 逐步骤推衍局面变化 |
+| **录像解析** | 支持 AVF / EVF / MVF / RMV 格式 |
+| **局面识别** | 图片输入 → 识别局面（需 `rs` 或 `py` feature） |
+| **录像分析** | 效率指标、pluck 检测、跳判检测 |
+
+---
+
+## 版本号
+
+| 平台 | 最新版本 | 发布渠道 |
+|------|----------|----------|
+| Rust crate | 1.5.10 | [crates.io](https://crates.io/crates/ms_toollib) |
+| Python | 1.5.10 | `pip install ms-toollib` |
+| WASM (bundler) | 1.5.10 | `npm install ms-toollib` |
+| WASM (Node.js) | 1.5.10-alpha | `npm install ms-toollib@alpha` |
+| C | 0.1.0 | 源码编译 |
+| C++ | 0.1.0 | 源码编译（Corrosion + CXX） |
+| Java | 1.5.10 | 源码编译（JNI） |
+
+### Python 支持平台
+
+Python >= 3.7, <= 3.12:
+- Windows: x86, x64
+- Linux: x86, x86_64, aarch64, armv7, ppc64le, s390x
+- macOS: x86_64, aarch64
+
+---
+
+## 构建依赖
+
+| 目标 | 运行时 | 构建工具 |
+|------|--------|----------|
+| Rust | 无 | `rustup` + `cargo` |
+| Python | 无 | `maturin`（pip 安装） |
+| WASM | 无 | `wasm-pack`（cargo install） |
+| C (Windows) | 无 | MSVC（VS 2022）+ `cargo` |
+| Java | 无 | JDK ≥ 21（含 `jni.h`）+ MSVC + `cargo` |
+
+所有平台都需 Rust 工具链编译核心库。Python / JS / WASM 有预编译包可直接 `pip` / `npm install`。
+
+---
+
+## 目录说明
+
+```
+├── base/              # 核心库（features: rs, py, js）
+│   ├── src/
+│   │   ├── algorithms/   # 求解、概率、OCR
+│   │   ├── videos/       # 录像解析 + 状态机
+│   │   └── ...
+│   └── tests/
+├── c/                 # C FFI（staticlib）
+│   ├── include/ms_toollib/  # C 头文件
+│   ├── src/lib.rs          # extern "C" 桥接
+│   └── tests/
+├── java/              # Java JNI 绑定
+│   ├── src/main/java/ms_toollib/  # Java 类
+│   └── src/main/c/jni_wrapper.c   # JNI 胶水
+├── wasm/              # WASM 绑定（wasm-bindgen）
+├── python_package/    # Python 绑定（pyo3 / maturin）
+├── demos/             # 各语言示例
+│   ├── c/
+│   ├── java/
+│   └── ...
+└── test_files/        # 示例录像文件
+```
+
+---
+
+## 开发
+
+```bash
+git clone https://github.com/eee555/ms_toollib.git
+cd base
+
+# 运行测试
+cargo test --features rs
+
+# 构建 C 绑定
+cd ../c && cargo build --release
+```
+
+详细见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+
+---
+
+## 相关项目
+
+- [Metasweeper](https://github.com/eee555/Metasweeper) — Win10/11 开源无猜扫雷
+- [Saolei Website](https://github.com/eee555/saolei_website) — 开源扫雷排名网
+- [益智扫雷](https://apps.apple.com/cn/app/益智扫雷/id6748243595?uo=4) — App Store 无猜扫雷
+
+---
+
+## License
+
+MIT

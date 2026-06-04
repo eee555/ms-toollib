@@ -1,7 +1,5 @@
-use rand::rngs::StdRng;
-use rand::Rng;
-use rand::SeedableRng;
 use crate::safe_board;
+use getrandom::getrandom;
 
 // 本模块实现了三种 ZiNi 计算方法，均为原版算法。可用于大型局面，例如255*255以下。
 // 帖子在[此处](https://minesweepergame.com/forum/viewtopic.php?f=15&t=70)
@@ -66,9 +64,23 @@ where
     zinialg(&mut cells, width, height, true, true)
 }
 
+fn rand_range(limit: usize) -> usize {
+    if limit <= 1 {
+        return 0;
+    }
+    let mut buf = [0u8; 4];
+    loop {
+        getrandom(&mut buf).unwrap();
+        let t = u32::from_le_bytes(buf) as usize;
+        let max = usize::MAX - (usize::MAX % limit);
+        if t < max {
+            return t % limit;
+        }
+    }
+}
+
 /// Random ZiNi（随机化算法）。  
-/// 多轮迭代，每轮在 premium 最高值对应的格子中随机选择，返回所有轮次的最小值。  
-/// 棋盘数据通过哈希种子保证不同轮次产生不同随机序列。
+/// 多轮迭代，每轮在 premium 最高值对应的格子中随机选择，返回所有轮次的最小值。
 pub fn cal_rzini<T>(board: &T, n_iter: usize) -> usize
 where
     T: std::ops::Index<usize> + safe_board::BoardSize,
@@ -82,13 +94,11 @@ where
             vboard[r][c] = board[r][c];
         }
     }
-    let seed = board_to_seed_ref(&vboard, height, width);
     let mut min_zini = usize::MAX;
-    for i in 0..n_iter {
+    for _i in 0..n_iter {
         let mut cells = build_cells_ref(&vboard, height, width);
         initboard(&mut cells, width, height);
-        let mut rng: StdRng = SeedableRng::seed_from_u64(seed.wrapping_add(i as u64));
-        let z = zinialg_rng(&mut cells, width, height, false, false, &mut rng);
+        let z = zinialg_rng(&mut cells, width, height, false, false);
         if z < min_zini {
             min_zini = z;
         }
@@ -119,16 +129,6 @@ fn build_cells_ref(board: &[Vec<i32>], height: usize, width: usize) -> Vec<Zcell
         }
     }
     cells
-}
-
-fn board_to_seed_ref(board: &[Vec<i32>], height: usize, width: usize) -> u64 {
-    let mut seed: u64 = 0;
-    for r in 0..height {
-        for c in 0..width {
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(board[r][c] as u64);
-        }
-    }
-    seed
 }
 
 fn getnumber(cells: &[Zcell], height: usize, index: usize) -> i32 {
@@ -368,7 +368,6 @@ fn apply_zini_rng(
     closed_cells: &mut usize,
     human: bool,
     maxpr: &mut Vec<usize>,
-    rng: &mut StdRng,
 ) -> Option<usize> {
     let size = cells.len();
     let mut maxp = -1i32;
@@ -388,7 +387,7 @@ fn apply_zini_rng(
     }
 
     if maxp >= 0 {
-        let idx = maxpr[rng.gen_range(0..curi_len)];
+        let idx = maxpr[rand_range(curi_len)];
         if !cells[idx].opened {
             click(cells, height, zini, closed_cells, idx);
         }
@@ -406,7 +405,7 @@ fn apply_zini_rng(
             }
         }
         if fb_count > 0 {
-            let pick = maxpr[rng.gen_range(0..fb_count)];
+            let pick = maxpr[rand_range(fb_count)];
             click(cells, height, zini, closed_cells, pick);
             Some(pick)
         } else {
@@ -450,7 +449,6 @@ fn zinialg_rng(
     height: usize,
     human: bool,
     hitops: bool,
-    rng: &mut StdRng,
 ) -> usize {
     let size = width * height;
     let mut mines = 0usize;
@@ -468,7 +466,7 @@ fn zinialg_rng(
     }
 
     while closed_cells > mines {
-        if apply_zini_rng(cells, height, &mut zini, &mut closed_cells, human, &mut maxpr, rng).is_none() {
+        if apply_zini_rng(cells, height, &mut zini, &mut closed_cells, human, &mut maxpr).is_none() {
             break;
         }
     }

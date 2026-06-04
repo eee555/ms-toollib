@@ -621,9 +621,9 @@ macro_rules! generate_video {
                 pub fn get_race_identifier(&self) -> String {
                     self.core.data.race_identifier.clone()
                 }
-                #[wasm_bindgen(getter = uniqueness_identifier)]
-                pub fn get_uniqueness_identifier(&self) -> String {
-                    self.core.data.uniqueness_identifier.clone()
+                #[wasm_bindgen(getter = unique_identifier)]
+                pub fn get_unique_identifier(&self) -> String {
+                    self.core.data.unique_identifier.clone()
                 }
                 #[wasm_bindgen(getter = country)]
                 pub fn get_country(&self) -> String {
@@ -653,9 +653,13 @@ macro_rules! generate_video {
                 pub fn get_isl(&self) -> usize {
                     self.core.data.static_params.isl
                 }
-                #[wasm_bindgen(getter = hizi)]
-                pub fn get_hizi(&self) -> usize {
-                    self.core.data.static_params.hizi
+                #[wasm_bindgen(getter = zini)]
+                pub fn get_zini(&self) -> usize {
+                    self.core.data.static_params.zini
+                }
+                #[wasm_bindgen(getter = hzini)]
+                pub fn get_hzini(&self) -> usize {
+                    self.core.data.static_params.hzini
                 }
                 #[wasm_bindgen(getter = cell0)]
                 pub fn get_cell0(&self) -> usize {

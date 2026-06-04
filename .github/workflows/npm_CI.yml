@@ -25,15 +25,26 @@ jobs:
         env:
           RUSTFLAGS: ""
       - run: |
-          echo "node: $(node --version)"
-          echo "npm: $(npm --version)"
-          echo "OIDC token set: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN != '' }}"
-          cat package.json
-        working-directory: wasm/pkg
-      - run: npm publish --access public --dry-run
+          echo "==== OIDC ===="
+          echo "TOKEN chars: ${#ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
+          echo "URL chars: ${#ACTIONS_ID_TOKEN_REQUEST_URL}"
+
+          echo "==== PACKAGE ===="
+          npm pkg get name
+          npm pkg get version
+
+          echo "==== WHOAMI ===="
+          npm whoami || true
+
+          echo "==== CONFIG ===="
+          npm config get registry
+          echo "==== .npmrc ===="
+          cat "$NPM_CONFIG_USERCONFIG"
         working-directory: wasm/pkg
       - run: npm publish --access public
         working-directory: wasm/pkg
+        env:
+          NODE_AUTH_TOKEN: ""
       - run: wasm-pack build --target nodejs --out-dir pkg-nodejs
         working-directory: wasm
         env:

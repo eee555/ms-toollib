@@ -5,23 +5,26 @@ on:
     tags: ['*']
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   publish:
-    permissions:
-      id-token: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
+          registry-url: https://registry.npmjs.org
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - run: cargo install wasm-pack
       - run: wasm-pack build --out-dir pkg
         working-directory: wasm
         env:
           RUSTFLAGS: ""
-      - run: npm publish --provenance --access public
+      - run: npm publish --access public
         working-directory: wasm/pkg
       - run: wasm-pack build --target nodejs --out-dir pkg-nodejs
         working-directory: wasm

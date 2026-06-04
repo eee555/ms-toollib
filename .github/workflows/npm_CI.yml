@@ -1,22 +1,24 @@
-
 name: npm_CI
 
 on:
   push:
-    tags: ["*"]
+    tags: ['*']
+  workflow_dispatch:
 
 jobs:
   publish:
     permissions:
-      id-token: write   # 必须，让 OIDC 工作
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: jetli/wasm-pack-action@v0.4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - run: cargo install wasm-pack
       - run: wasm-pack build --out-dir pkg
-      - run: cd pkg && npm publish --provenance --access public
+      - run: npm publish --provenance --access public
+        working-directory: pkg
       - run: wasm-pack build --target nodejs --out-dir pkg-nodejs
       - run: |
-          cd pkg-nodejs
           jq '.version += "-alpha"' package.json > tmp.json && mv tmp.json package.json
           npm publish --tag alpha
+        working-directory: pkg-nodejs

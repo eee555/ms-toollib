@@ -1,6 +1,9 @@
+
+name: npm_CI
+
 on:
   push:
-    tags: ["v*"]
+    tags: ["*"]
 
 jobs:
   publish:

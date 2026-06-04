@@ -16,10 +16,14 @@ jobs:
       - run: cargo install wasm-pack
       - run: wasm-pack build --out-dir pkg
         working-directory: wasm
+        env:
+          RUSTFLAGS: ""
       - run: npm publish --provenance --access public
         working-directory: wasm/pkg
       - run: wasm-pack build --target nodejs --out-dir pkg-nodejs
         working-directory: wasm
+        env:
+          RUSTFLAGS: ""
       - run: |
           jq '.version += "-alpha"' package.json > tmp.json && mv tmp.json package.json
           npm publish --tag alpha

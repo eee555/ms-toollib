@@ -308,6 +308,8 @@ class Board:
     def __init__(self, board: List[List[int]]) -> None: ...
 
     bbbv: int
+    zini: int
+    hzini: int
     op: int
     isl: int
     cell0: int

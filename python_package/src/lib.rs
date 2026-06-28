@@ -568,3 +568,5 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyEvfsCell>()?;
     Ok(())
 }
+
+// cp .\target\release\ms_toollib.dll ..\..\Solvable-Minesweeper\src\ms_toollib.pyd

@@ -396,7 +396,7 @@ pub fn cal_probability_csp(
     Ok((
         result,
         p_off,
-        [mine_min, total_mines + flagged_mines, min(total_unopened, mine_max + off_edge)],
+        [mine_min + flagged_mines, total_mines, min(total_unopened, mine_max + off_edge)],
         0,
     ))
 }

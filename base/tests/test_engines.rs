@@ -371,18 +371,28 @@ fn cal_probability_onboard_5_works() {
 fn cal_probability_onboard_7_works() {
     // 测试概率计算引擎
     let mut game_board = vec![
-        vec![10, 1, 0, 0, 0, 0, 0, 0],
-        vec![10, 1, 0, 0, 0, 0, 0, 0],
-        vec![10, 1, 0, 0, 0, 1, 1, 1],
-        vec![10, 1, 1, 1, 1, 2, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
-        vec![10, 10, 10, 10, 10, 7, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
     ];
-    let _ = mark_board(&mut game_board, true);
-    // let ans = cal_probability_onboard(&game_board, 30.0);
-    // print!("{:?}", ans);
+    let ans = mark_board(&mut game_board, true);
+    
+    println!("{:?}", game_board);
+    let ans = cal_probability_csp(&game_board, 0.0);
+    println!("csp: {:?}", ans);
+    if let Ok((ref _v, _p, ref range, _)) = ans {
+        println!(" | range: {:?}", range);
+    }
+    let ans_enum = cal_probability_enum(&game_board, 0.0);
+    println!(" | enum: {:?}", ans_enum);
+    if let Ok((ref _v, _p, ref range, _)) = ans_enum {
+        println!(" | enum_range: {:?}", range);
+    }
 }
 
 #[test]

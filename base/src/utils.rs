@@ -1351,97 +1351,136 @@ pub fn chunk_matrixes(
     *matrix_bs = bbs;
 }
 
-// 重新分块一个矩阵
+/// 按列（未知格）连通性将系数矩阵拆分为独立子块。
+///
+/// 将矩阵视为行（方程）与列（未知格）的二分图：
+/// `A[i][j] >= 1` 表示行 `i` 与列 `j` 之间有边。从一未处理列出发 BFS，
+/// 将连通行列提取为一个子块，重复直到所有列处理完毕。
+/// 不与任何列相连的孤立行各自独立成块（通常表示矛盾）。
+///
+/// 拆分后各子块可独立求解，大幅降低组合枚举的复杂度。
+///
+/// # 参数
+/// - `matrix_a`：系数矩阵，`A[i][j] = 1` 表示方程 i 涉及未知格 j
+/// - `matrix_x`：列索引 → 棋盘坐标，`x[j] = (row, col)`
+/// - `matrix_b`：方程右端项，`b[i]` 是方程 i 约束的雷数
+///
+/// # 返回
+/// `(matrix_as, matrix_xs, matrix_bs)` — 各子块的系数矩阵、坐标映射、右端项
+///
+/// # 测试例
+/// ```
+/// // 两独立子块：行 {0,2} 共享列 {0,1}，行 {1,3} 共享列 {2,3}
+/// let a = vec![
+///     vec![1, 1, 0, 0],
+///     vec![0, 0, 1, 1],
+///     vec![0, 1, 0, 0],
+///     vec![0, 0, 0, 1],
+/// ];
+/// let x = vec![(1, 2), (3, 4), (5, 6), (7, 8)];
+/// let b = vec![1, 2, 3, 4];
+/// let (aa, xx, bb) = chunk_matrix(a, x, b);
+/// assert_eq!(aa.len(), 2);
+/// assert_eq!(aa[0].len(), 2);      // 子块 0：2 行
+/// assert_eq!(aa[0][0].len(), 2);   // 子块 0：2 列
+/// assert_eq!(aa[1].len(), 2);      // 子块 1：2 行
+/// assert_eq!(aa[1][0].len(), 2);   // 子块 1：2 列
+/// // 列按降序排列（因 BFS 中 reverse 处理）
+/// assert_eq!(xx[0], vec![(3, 4), (1, 2)]);
+/// assert_eq!(xx[1], vec![(7, 8), (5, 6)]);
+/// assert_eq!(bb[0], vec![3, 1]);
+/// assert_eq!(bb[1], vec![4, 2]);
+/// ```
 pub fn chunk_matrix(
-    mut matrix_a: Vec<Vec<i32>>,
-    mut matrix_x: Vec<(usize, usize)>,
-    mut matrix_b: Vec<i32>,
+    matrix_a: Vec<Vec<i32>>,
+    matrix_x: Vec<(usize, usize)>,
+    matrix_b: Vec<i32>,
 ) -> (Vec<Vec<Vec<i32>>>, Vec<Vec<(usize, usize)>>, Vec<Vec<i32>>) {
-    println!("{:?}, {:?}, {:?}", matrix_a, matrix_x, matrix_b);
-    let mut block_id = 0;
+    if matrix_a.is_empty() || matrix_x.is_empty() {
+        return (vec![], vec![], vec![]);
+    }
+
+    let cols = matrix_x.len();
+    let rows = matrix_a.len();
+
+    // 预计算列 → 行的邻接表，避免 BFS 中反复遍历全矩阵
+    let mut col_rows: Vec<Vec<usize>> = vec![vec![]; cols];
+    for r in 0..rows {
+        for c in 0..cols {
+            if matrix_a[r][c] >= 1 {
+                col_rows[c].push(r);
+            }
+        }
+    }
+
+    let mut col_done = vec![false; cols];
+    let mut row_done = vec![false; rows];
     let mut matrix_as = vec![];
     let mut matrix_xs = vec![];
     let mut matrix_bs = vec![];
 
     loop {
-        let row_num = matrix_a.len();
-        let column_num = matrix_a[0].len();
-        let mut current_rows_bool = vec![false; row_num];
-        let mut current_columns_bool = vec![false; column_num];
-        current_columns_bool[0] = true;
-        let mut column_buffer = vec![0];
-        loop {
-            let mut row_buffer = vec![];
-            if column_buffer.is_empty() {
-                break;
-            }
-            for i in &column_buffer {
-                for idr in 0..matrix_a.len() {
-                    if matrix_a[idr][*i] >= 1 && !current_rows_bool[idr] {
-                        row_buffer.push(idr);
-                        current_rows_bool[idr] = true;
+        let start = match col_done.iter().position(|&d| !d) {
+            Some(c) => c,
+            None => break,
+        };
+
+        let mut comp_cols = vec![];
+        let mut comp_rows = vec![];
+        let mut stack = vec![start];
+        col_done[start] = true;
+
+        while let Some(c) = stack.pop() {
+            comp_cols.push(c);
+            for &r in &col_rows[c] {
+                if row_done[r] {
+                    continue;
+                }
+                row_done[r] = true;
+                comp_rows.push(r);
+                for (c2, &v) in matrix_a[r].iter().enumerate() {
+                    if v >= 1 && !col_done[c2] {
+                        col_done[c2] = true;
+                        stack.push(c2);
                     }
                 }
             }
-            column_buffer.clear();
-            if row_buffer.is_empty() {
-                break;
-            }
-            for i in row_buffer {
-                for (idc, &c) in matrix_a[i].iter().enumerate() {
-                    if c >= 1 && !current_columns_bool[idc] {
-                        column_buffer.push(idc);
-                        current_columns_bool[idc] = true;
-                    }
-                }
-            }
-        }
-        let mut current_rows = vec![];
-        let mut current_columns = vec![];
-        for (idx, &x) in current_columns_bool.iter().enumerate() {
-            if x {
-                current_columns.push(idx)
-            }
-        }
-        for (idx, &x) in current_rows_bool.iter().enumerate() {
-            if x {
-                current_rows.push(idx)
-            }
-        }
-        current_rows.sort_by(|a, b| b.cmp(a));
-        current_rows.dedup();
-        current_columns.sort_by(|a, b| b.cmp(a));
-        current_columns.dedup();
-        matrix_as.push(vec![vec![0; current_columns.len()]; current_rows.len()]);
-        matrix_bs.push(vec![0; current_rows.len()]);
-        matrix_xs.push(vec![(0, 0); current_columns.len()]);
-        for (idx, x) in current_rows.iter().enumerate() {
-            for (idy, y) in current_columns.iter().enumerate() {
-                matrix_as[block_id][idx][idy] = matrix_a[*x][*y];
-            }
-        }
-        for (idx, x) in current_rows.iter().enumerate() {
-            matrix_bs[block_id][idx] = matrix_b[*x];
-        }
-        for (idy, y) in current_columns.iter().enumerate() {
-            matrix_xs[block_id][idy] = matrix_x[*y];
-        }
-        for i in current_rows {
-            matrix_a.remove(i);
-            matrix_b.remove(i);
-        }
-        for j in current_columns {
-            for k in 0..matrix_a.len() {
-                matrix_a[k].remove(j);
-            }
-            matrix_x.remove(j);
         }
 
-        if matrix_b.is_empty() {
-            break;
+        if comp_rows.is_empty() {
+            continue; // 全零列，无关联方程
         }
-        block_id += 1;
+
+        comp_cols.sort_unstable_by(|a, b| b.cmp(a));
+        comp_cols.dedup();
+        comp_rows.sort_unstable_by(|a, b| b.cmp(a));
+        comp_rows.dedup();
+
+        let bid = matrix_as.len();
+        matrix_as.push(vec![vec![0; comp_cols.len()]; comp_rows.len()]);
+        matrix_bs.push(vec![0; comp_rows.len()]);
+        matrix_xs.push(vec![(0, 0); comp_cols.len()]);
+
+        for (ir, &r) in comp_rows.iter().enumerate() {
+            for (ic, &c) in comp_cols.iter().enumerate() {
+                matrix_as[bid][ir][ic] = matrix_a[r][c];
+            }
+            matrix_bs[bid][ir] = matrix_b[r];
+        }
+        for (ic, &c) in comp_cols.iter().enumerate() {
+            matrix_xs[bid][ic] = matrix_x[c];
+        }
     }
+
+    // 孤立行：不与任何列相连的全零行，各自独立成块
+    for r in 0..rows {
+        if !row_done[r] {
+            matrix_as.push(vec![vec![]]);
+            matrix_bs.push(vec![matrix_b[r]]);
+            matrix_xs.push(vec![]);
+        }
+    }
+
     (matrix_as, matrix_xs, matrix_bs)
 }
 
@@ -1455,8 +1494,16 @@ fn chunk_matrix_works() {
     ];
     let x = vec![(1, 2), (3, 4), (5, 6), (7, 8)];
     let b = vec![1, 2, 3, 4];
-    let (_aa, xx, _bb) = chunk_matrix(a, x, b);
-    println!("{:?}", xx);
+    let (aa, xx, bb) = chunk_matrix(a, x, b);
+    assert_eq!(aa.len(), 2);
+    assert_eq!(aa[0].len(), 2);
+    assert_eq!(aa[0][0].len(), 2);
+    assert_eq!(aa[1].len(), 2);
+    assert_eq!(aa[1][0].len(), 2);
+    assert_eq!(xx[0], vec![(3, 4), (1, 2)]);
+    assert_eq!(xx[1], vec![(7, 8), (5, 6)]);
+    assert_eq!(bb[0], vec![3, 1]);
+    assert_eq!(bb[1], vec![4, 2]);
 }
 
 // 找局面中间的格子的所在块的任意一个边界的格子。(可能不严格)

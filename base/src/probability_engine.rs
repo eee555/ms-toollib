@@ -101,7 +101,7 @@ pub fn cal_probability_csp(
         }
     }
 
-    if total_mines > total_unopened {
+    if total_mines > total_unopened || total_mines < flagged_mines {
         return Err(3);
     }
 
@@ -197,7 +197,7 @@ pub fn cal_probability_csp(
 
     // Calculate min/max mines for each box
     for b in boxes.iter_mut() {
-        b.max_mines = min(b.tiles.len(), total_mines);
+        b.max_mines = b.tiles.len();
         b.min_mines = 0;
         for &wi in &b.witnesses {
             if witnesses[wi].mines_to_find < b.max_mines {
@@ -238,7 +238,7 @@ pub fn cal_probability_csp(
                 Some(nw) => nw,
                 None => {
                     // End of current independent set
-                    store_independent_set(&mut held, &mut working, &boxes, &mask, total_mines);
+                    store_independent_set(&mut held, &mut working, &boxes, &mask, total_unopened);
                     if witnesses.iter().all(|w| w.processed) {
                         break;
                     }
@@ -302,12 +302,13 @@ pub fn cal_probability_csp(
     }
 
     // Final store if any working probs remain
-    store_independent_set(&mut held, &mut working, &boxes, &mask, total_mines);
+    store_independent_set(&mut held, &mut working, &boxes, &mask, total_unopened);
 
     // After store_independent_set, working is consumed (taken) if small,
     // or left intact if large. Handle remaining.
     if !working.is_empty() {
-        filter_lines(&mut working, &boxes, total_mines);
+        let all_boxes: Vec<bool> = vec![true; boxes.len()];
+        filter_lines(&mut working, &boxes, &all_boxes, total_unopened);
         if !working.is_empty() {
             let crunched = if working.len() > 50 {
                 let bound = find_boundary(&boxes, &mask);
@@ -318,7 +319,7 @@ pub fn cal_probability_csp(
             if held.is_empty() {
                 held = crunched;
             } else if !crunched.is_empty() {
-                held = convolve(&held, &crunched, total_mines);
+                held = convolve(&held, &crunched, total_unopened);
             }
         }
     }
@@ -328,38 +329,47 @@ pub fn cal_probability_csp(
     }
 
     // Compute min/max possible mines in witnessed area
-    let mut mine_min = total_mines;
+    let mut mine_min = usize::MAX;
     let mut mine_max: usize = 0;
-    let mut has_valid = false;
+
+    for pl in &held {
+        mine_min = min(mine_min, pl.mine_count);
+        mine_max = max(mine_max, pl.mine_count);
+    }
+
+
+    // Clamp total_mines to feasible range for tally computation
+    let min_possible = mine_min + flagged_mines;
+    let max_possible = min(total_unopened, mine_max + off_edge);
+    let cur_mines = min(max(total_mines, min_possible), max_possible);
 
     // Expand with off-edge and compute probabilities
-    let min_total = if total_mines > off_edge { total_mines - off_edge } else { 0 };
+    let min_witnessed = if cur_mines > off_edge { cur_mines - off_edge } else { 0 };
 
     let mut tally = vec![BigNumber { a: 0.0, b: 0 }; box_count];
     let mut total_tally = BigNumber { a: 0.0, b: 0 };
     let mut outside_tally = BigNumber { a: 0.0, b: 0 };
+    let mut has_valid = false;
 
     for pl in &held {
-        if pl.mine_count >= min_total {
-            let rem = total_mines - pl.mine_count;
-            if rem > off_edge { continue; }
-            has_valid = true;
-            mine_min = min(mine_min, pl.mine_count);
-            mine_max = max(mine_max, pl.mine_count);
-            let mult = comb_val(off_edge, rem);
-            let new_sol = &mult * &pl.solution_count;
-            total_tally += &new_sol;
-            if off_edge > 0 {
-                let oc = comb_val(off_edge, rem);
-                let tmp1 = &oc * &BigNumber { a: rem as f64, b: 0 };
-                outside_tally += &(&tmp1 * &pl.solution_count);
-            }
-            for j in 0..box_count {
-                let nt = boxes[j].tiles.len();
-                if nt > 0 {
-                    let tmp2 = &mult * &pl.mine_box_count[j];
-                    tally[j] += &(&tmp2 / &BigNumber { a: nt as f64, b: 0 });
-                }
+        if pl.mine_count < min_witnessed { continue; }
+        if pl.mine_count + flagged_mines > cur_mines { continue; }
+        let rem = cur_mines - pl.mine_count - flagged_mines;
+        if rem > off_edge { continue; }
+        has_valid = true;
+        let mult = comb_val(off_edge, rem);
+        let new_sol = &mult * &pl.solution_count;
+        total_tally += &new_sol;
+        if off_edge > 0 {
+            let oc = comb_val(off_edge, rem);
+            let tmp1 = &oc * &BigNumber { a: rem as f64, b: 0 };
+            outside_tally += &(&tmp1 * &pl.solution_count);
+        }
+        for j in 0..box_count {
+            let nt = boxes[j].tiles.len();
+            if nt > 0 {
+                let tmp2 = &mult * &pl.mine_box_count[j];
+                tally[j] += &(&tmp2 / &BigNumber { a: nt as f64, b: 0 });
             }
         }
     }
@@ -396,7 +406,7 @@ pub fn cal_probability_csp(
     Ok((
         result,
         p_off,
-        [mine_min + flagged_mines, total_mines, min(total_unopened, mine_max + off_edge)],
+        [mine_min + flagged_mines, cur_mines, min(total_unopened, mine_max + off_edge)],
         0,
     ))
 }
@@ -418,7 +428,7 @@ fn fallback_pure_binomial(
         }
     }
     let p = if total_unopened > 0 { total_mines as f64 / total_unopened as f64 } else { f64::NAN };
-    Ok((result, p, [total_unopened, total_mines, total_unopened], 0))
+    Ok((result, p, [0, total_mines, total_unopened], 0))
 }
 
 fn get_boundary_witness(
@@ -441,16 +451,15 @@ fn get_first_unprocessed(witnesses: &[BoxWitness]) -> Option<usize> {
     witnesses.iter().position(|w| !w.processed)
 }
 
-fn filter_lines(lines: &mut Vec<ProbabilityLine>, boxes: &[Box], total_mines: usize) {
-    let total_min: usize = boxes.iter().map(|b| b.min_mines).sum();
-    let total_max: usize = boxes.iter().map(|b| b.max_mines).sum();
+fn filter_lines(lines: &mut Vec<ProbabilityLine>, boxes: &[Box], mask: &[bool], _total_mines: usize) {
     lines.retain(|line| {
         for (j, b) in boxes.iter().enumerate() {
+            if j < mask.len() && !mask[j] { continue; }
             if line.allocated_mines[j] < b.min_mines || line.allocated_mines[j] > b.max_mines {
                 return false;
             }
         }
-        line.mine_count >= total_min && line.mine_count <= total_max && line.mine_count <= total_mines
+        true
     });
 }
 
@@ -459,10 +468,10 @@ fn store_independent_set(
     working: &mut Vec<ProbabilityLine>,
     boxes: &[Box],
     mask: &[bool],
-    total_mines: usize,
+    max_possible: usize,
 ) {
     if working.is_empty() { return; }
-    filter_lines(working, boxes, total_mines);
+    filter_lines(working, boxes, mask, max_possible);
     if working.is_empty() { return; }
     let crunched = if working.len() > 50 {
         let bound = find_boundary(boxes, mask);
@@ -474,7 +483,7 @@ fn store_independent_set(
     if held.is_empty() {
         *held = crunched;
     } else {
-        *held = convolve(held, &crunched, total_mines);
+        *held = convolve(held, &crunched, max_possible);
     }
 }
 

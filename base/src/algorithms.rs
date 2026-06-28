@@ -230,6 +230,14 @@ pub fn cal_probability_enum(
     // 例如：[[[17, 18, 19, 20, 21, 22, 23, 24], [48, 2144, 16872, 49568, 68975, 48960, 16608, 2046]]]
     let (mut matrix_a_s, mut matrix_x_s, mut matrix_b_s, mut inside_cell, is_minenum) =
         refresh_matrixs(&board_of_game);
+    let raw_total = if minenum < 1.0 {
+        ((board_of_game.len() * board_of_game[0].len()) as f64 * minenum) as usize
+    } else {
+        minenum as usize
+    };
+    if raw_total < is_minenum {
+        return Err(3);
+    }
     for i in (0..matrix_a_s.len()).rev() {
         let matrix_x_s_len = matrix_x_s[i].len();
         if matrix_x_s_len > exceed_len {
@@ -280,6 +288,7 @@ pub fn cal_probability_enum(
         min_minenum += table_minenum_s[i][0].iter().min().unwrap();
         max_minenum += table_minenum_s[i][0].iter().max().unwrap();
     }
+    let max_minenum_uncapped = max_minenum;
     let minenum = if minenum < 1.0 {
         let mn = ((board_of_game.len() * board_of_game[0].len()) as f64 * minenum) as usize;
         min(max(mn - is_minenum, min_minenum), max_minenum + inside_cell)
@@ -395,7 +404,7 @@ pub fn cal_probability_enum(
         [
             min_minenum + is_minenum,
             minenum + is_minenum,
-            max_minenum + is_minenum + inside_cell,
+            max_minenum_uncapped + is_minenum + inside_cell,
         ],
         exceed_len,
     ))

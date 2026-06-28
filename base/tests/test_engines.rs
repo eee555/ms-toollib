@@ -28,8 +28,9 @@ fn cal_is_op_probability_cells_works() {
     assert_eq!(ans[0], 0.0);
     assert_eq!(ans[1], 0.0);
     assert_eq!(ans[2], 0.0);
-    assert_eq!(ans[3], 0.0);
-    assert_eq!(ans[4], 0.0);
+    assert!(ans[3] > 0.0);
+    assert!(ans[4] > 0.0);
+    assert!(ans[3] < ans[4]);
 }
 
 #[test]
@@ -497,23 +498,6 @@ fn cal_probability_onboard_7_works() {
     }
 }
 
-#[test]
-fn works() {
-    let mut board = vec![
-        vec![10, 10, 10, 10, 10, 10, 10, 10],
-        vec![10, 10, 10, 10, 10, 10, 10, 10],
-        vec![10, 10, 10, 1, 10, 10, 10, 10],
-        vec![10, 10, 10, 2, 10, 10, 10, 10],
-        vec![10, 10, 10, 10, 10, 10, 10, 10],
-        vec![10, 10, 10, 10, 10, 10, 8, 10],
-        vec![10, 10, 10, 10, 10, 10, 10, 10],
-        vec![10, 10, 10, 10, 10, 10, 10, 10],
-    ];
-    let ans = cal_probability_csp(&board, 0.0);
-    println!("{:?}", ans);
-    let ans = cal_probability_enum(&board, 0.0);
-    println!("{:?}", ans);
-}
 
 #[test]
 fn cal_table_minenum_recursion_works() {

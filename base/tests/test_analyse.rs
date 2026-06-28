@@ -161,6 +161,7 @@ fn avf_video_works() {
     assert_eq!(video.data.start_time, 1666124135606000u64);
     assert_eq!(video.data.end_time, 1666124184868000u64);
     assert_eq!(video.data.get_stnb().unwrap(), 0.0);
+    assert_eq!(video.data.get_left_s(), 0.0);
     video.data.analyse_for_features(&vec![
         "needless_guess",
         "high_risk_guess",

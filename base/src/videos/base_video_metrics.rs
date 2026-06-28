@@ -424,7 +424,7 @@ impl<T> BaseVideo<T> {
     pub fn get_left_s(&self) -> f64 {
         match self.game_board_state {
             GameBoardState::Display => {
-                if self.current_time < 0.00099 {
+                if self.get_left() == 0 {
                     return 0.0;
                 }
                 self.get_left() as f64 / self.current_time
@@ -445,7 +445,7 @@ impl<T> BaseVideo<T> {
     pub fn get_right_s(&self) -> f64 {
         match self.game_board_state {
             GameBoardState::Display => {
-                if self.current_time < 0.00099 {
+                if self.get_right() == 0 {
                     return 0.0;
                 }
                 self.get_right() as f64 / self.current_time
@@ -466,7 +466,7 @@ impl<T> BaseVideo<T> {
     pub fn get_double_s(&self) -> f64 {
         match self.game_board_state {
             GameBoardState::Display => {
-                if self.current_time < 0.00099 {
+                if self.get_double() == 0 {
                     return 0.0;
                 }
                 self.get_double() as f64 / self.current_time
@@ -487,7 +487,7 @@ impl<T> BaseVideo<T> {
     pub fn get_cl_s(&self) -> f64 {
         match self.game_board_state {
             GameBoardState::Display => {
-                if self.current_time < 0.00099 {
+                if self.get_cl() == 0 {
                     return 0.0;
                 }
                 self.get_cl() as f64 / self.current_time
@@ -508,7 +508,7 @@ impl<T> BaseVideo<T> {
     pub fn get_flag_s(&self) -> f64 {
         match self.game_board_state {
             GameBoardState::Display => {
-                if self.current_time < 0.00099 {
+                if self.get_flag() == 0 {
                     return 0.0;
                 }
                 self.get_flag() as f64 / self.current_time
@@ -538,10 +538,13 @@ impl<T> BaseVideo<T> {
     }
     pub fn get_etime(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
-        if bbbv_solved == 0 {
-            return Ok(0.0);
-        }
         if self.game_board_state == GameBoardState::Display {
+            if self.current_time == 0.0 {
+                return Ok(0.0);
+            }
+            if bbbv_solved == 0 {
+                return Ok(f64::INFINITY);
+            }
             Ok(self.current_time / bbbv_solved as f64 * self.static_params.bbbv as f64)
         } else {
             let t = self.game_dynamic_params.rtime;
@@ -551,8 +554,12 @@ impl<T> BaseVideo<T> {
     pub fn get_bbbv_s(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
         if self.game_board_state == GameBoardState::Display {
-            if self.current_time < 0.00099 {
-                return Ok(0.0);
+            if self.current_time == 0.0 {
+                if bbbv_solved == 0 {
+                    return Ok(0.0);
+                } else {
+                    return Ok(f64::INFINITY);
+                }
             }
             return Ok(bbbv_solved as f64 / self.current_time);
         }
@@ -577,7 +584,7 @@ impl<T> BaseVideo<T> {
     }
     pub fn get_stnb(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
-        if self.game_board_state == GameBoardState::Display && self.current_time < 0.00099 {
+        if bbbv_solved == 0 {
             return Ok(0.0);
         }
         let c;
@@ -604,7 +611,7 @@ impl<T> BaseVideo<T> {
             return Ok(f64::INFINITY);
         }
         if self.game_board_state == GameBoardState::Display {
-            return Ok(self.game_dynamic_params.rtime.powf(2.0) / bbbv_solved as f64)
+            return Ok(self.game_dynamic_params.rtime.powf(2.0) / bbbv_solved as f64);
         }
         Ok(self.game_dynamic_params.rtime.powf(2.0) / bbbv_solved as f64)
     }
@@ -614,7 +621,7 @@ impl<T> BaseVideo<T> {
             return Ok(f64::INFINITY);
         }
         if self.game_board_state == GameBoardState::Display {
-            return Ok(self.current_time.powf(1.7) / bbbv_solved as f64)
+            return Ok(self.current_time.powf(1.7) / bbbv_solved as f64);
         }
         Ok(self.game_dynamic_params.rtime.powf(1.7) / bbbv_solved as f64)
     }
@@ -680,7 +687,7 @@ impl<T> BaseVideo<T> {
     pub fn get_ce_s(&self) -> Result<f64, ()> {
         let ce = self.get_ce()?;
         if self.game_board_state == GameBoardState::Display {
-            if self.current_time < 0.00099 {
+            if ce == 0 {
                 return Ok(0.0);
             }
             return Ok(ce as f64 / self.current_time);

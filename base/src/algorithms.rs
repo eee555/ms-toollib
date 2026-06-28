@@ -214,7 +214,7 @@ pub fn solve_direct(
 /// - 返回：所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数（未知雷数 = 总雷数 - 已经标出的雷）的范围、上述“所需的枚举长度”。  
 /// - 注意：若没有内部未知区域，“内部未知格子是雷的概率”返回NaN。
 /// - 局限：不能将所有矛盾的局面都检查出来。例如空中间出现一个数字，这种错误的局面，不能检查出来。
-pub fn cal_probability(
+pub fn cal_probability_enum(
     board_of_game: &Vec<Vec<i32>>,
     minenum: f64,
 ) -> Result<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize), usize> {
@@ -419,9 +419,9 @@ pub fn cal_probability(
 ///     vec![10, 10, 10, 10, 10, 10, 10, 10],
 ///     vec![10, 10, 10, 10, 10, 10, 10, 10],
 /// ];
-/// let ans = cal_probability(&game_board, 10.0);
+/// let ans = cal_probability_enum(&game_board, 10.0);
 /// print!("设置雷数为10，概率计算引擎的结果为：{:?}", ans);
-/// let ans = cal_probability(&game_board, 0.15625);
+/// let ans = cal_probability_enum(&game_board, 0.15625);
 /// print!("设置雷的比例为15.625%，概率计算引擎的结果为：{:?}", ans);
 /// // 对局面预标记，以加速计算
 /// mark_board(&mut game_board);
@@ -442,9 +442,9 @@ pub fn cal_probability(
 ///     [10, 10, 10, 10, 10, 10, 10, 10],
 ///     [10, 10, 10, 10, 10, 10, 10, 10],
 ///     ];
-/// ans = ms.cal_probability(game_board, 10);
+/// ans = ms.cal_probability_enum(game_board, 10);
 /// print("设置雷数为10，概率计算引擎的结果为：", ans);
-/// ans = ms.cal_probability(game_board, 0.15625);
+/// ans = ms.cal_probability_enum(game_board, 0.15625);
 /// print("设置雷的比例为15.625%，概率计算引擎的结果为：", ans);
 /// # 对局面预标记，以加速计算
 /// ms.mark_board(game_board);
@@ -456,7 +456,7 @@ pub fn cal_probability_onboard(
     minenum: f64,
 ) -> Result<(Vec<Vec<f64>>, [usize; 3]), usize> {
     let mut p = vec![vec![-1.0; board_of_game[0].len()]; board_of_game.len()];
-    let pp = cal_probability(&board_of_game, minenum)?;
+    let pp = cal_probability_csp(&board_of_game, minenum)?;
     for i in pp.0 {
         p[i.0 .0][i.0 .1] = i.1;
     }
@@ -474,6 +474,17 @@ pub fn cal_probability_onboard(
         }
     }
     Ok((p, pp.2))
+}
+
+/// JSMinesweeper 概率引擎移植版。  
+/// - 输入：局面、总雷数。  
+/// - 返回：所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数范围、枚举状态数（始终返回0）。  
+/// - 错误码：0=正常, 1=盘面矛盾, 2=枚举过长, 3=输入参数非法。  
+pub fn cal_probability_csp(
+    board_of_game: &Vec<Vec<i32>>,
+    minenum: f64,
+) -> Result<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize), usize> {
+    crate::probability_engine::cal_probability_csp(board_of_game, minenum)
 }
 
 /// 计算开空概率算法。  
@@ -1401,7 +1412,7 @@ fn obr_cell(
 /// lena = (np.reshape(lena, -1) * 255).astype(np.uint32)
 /// board = ms_toollib.obr_board(lena, height, width)
 /// print(np.array(board))# 打印识别出的局面
-/// poss = ms_toollib.cal_probability(board, 99)
+/// poss = ms_toollib.cal_probability_enum(board, 99)
 /// print(poss)# 用雷的总数计算概率
 /// poss_onboard = ms_toollib.cal_probability_onboard(board, 99)
 /// print(poss_onboard)# 用雷的总数计算概率，输出局面对应的位置

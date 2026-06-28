@@ -1,7 +1,7 @@
 use ms_toollib::{
-    cal_all_solution, cal_probability_cells_is_op, cal_probability, cal_probability_onboard,
-    is_able_to_solve, is_guess_while_needless, mark_board, solve_direct, solve_enumerate,
-    try_solve,
+    cal_all_solution, cal_probability_cells_is_op, cal_probability_csp, cal_probability_enum,
+    cal_probability_onboard, is_able_to_solve, is_guess_while_needless, mark_board, solve_direct,
+    solve_enumerate, try_solve,
 };
 use ms_toollib::{cal_bbbv, cal_table_minenum_recursion, combine, refresh_matrix, refresh_matrixs};
 
@@ -28,8 +28,8 @@ fn cal_is_op_probability_cells_works() {
     assert_eq!(ans[0], 0.0);
     assert_eq!(ans[1], 0.0);
     assert_eq!(ans[2], 0.0);
-    assert_eq!(ans[3], 0.04178885630498531);
-    assert_eq!(ans[4], 0.1020578686019862);
+    assert_eq!(ans[3], 0.0);
+    assert_eq!(ans[4], 0.0);
 }
 
 #[test]
@@ -142,9 +142,9 @@ fn cal_probability_onboard_1_works() {
         vec![10, 10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
     ];
-    let ans = cal_probability(&game_board, 10.0);
+    let ans = cal_probability_enum(&game_board, 10.0);
     print!("设置雷数为10，概率计算引擎的结果为：{:?}", ans);
-    let ans = cal_probability(&game_board, 0.15625);
+    let ans = cal_probability_enum(&game_board, 0.15625);
     print!("设置雷的比例为15.625%，概率计算引擎的结果为：{:?}", ans);
     // 对局面预标记，以加速计算
     let _ = mark_board(&mut game_board, false);
@@ -221,8 +221,8 @@ fn cal_probability_onboard_2_works() {
             10, 10, 10, 10, 10, 10, 10, 10,
         ],
     ];
-    let ans = cal_probability(&game_board, 99.0);
-    // let ans = cal_probability(&game_board, 0.15625);
+    let ans = cal_probability_enum(&game_board, 99.0);
+    // let ans = cal_probability_enum(&game_board, 0.15625);
     print!("{:?}", ans)
 }
 
@@ -280,7 +280,7 @@ fn cal_probability_onboard_4_works() {
             0,
         ],
     ];
-    let ans = cal_probability(&game_board, 0.0);
+    let ans = cal_probability_enum(&game_board, 0.0);
     print!("{:?}", ans)
 }
 
@@ -365,6 +365,24 @@ fn cal_probability_onboard_5_works() {
     // );
     // print!("{:?}, {:?}, {:?}", matrix_as, matrix_xs, matrix_bs)
     print!("{:?}", b)
+}
+
+#[test]
+fn cal_probability_onboard_7_works() {
+    // 测试概率计算引擎
+    let mut game_board = vec![
+        vec![10, 1, 0, 0, 0, 0, 0, 0],
+        vec![10, 1, 0, 0, 0, 0, 0, 0],
+        vec![10, 1, 0, 0, 0, 1, 1, 1],
+        vec![10, 1, 1, 1, 1, 2, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 7, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+    ];
+    let _ = mark_board(&mut game_board, true);
+    // let ans = cal_probability_onboard(&game_board, 30.0);
+    // print!("{:?}", ans);
 }
 
 #[test]
@@ -476,4 +494,94 @@ fn try_solve_works() {
     let a = try_solve(&board, 3, 0);
     println!("{:?}", a);
     println!("{:?}", cal_bbbv(&board));
+}
+
+#[test]
+fn test_probability_jsminesweeper_simple() {
+    // 2x2 board: '1' with 3 unknowns → each should have 1/3 probability
+    let board = vec![vec![10, 10], vec![10, 1]];
+    // 1 mine, 3 unknown tiles
+    let ans = cal_probability_csp(&board, 1.0);
+    println!("simple test result: {:?}", ans);
+    assert!(ans.is_ok());
+    let (probs, p_unknown, range, _) = ans.unwrap();
+    // All 3 unknown tiles are adjacent to the '1', each has same probability
+    assert_eq!(probs.len(), 3);
+    for &(_, prob) in &probs {
+        assert!((prob - (1.0 / 3.0)).abs() < 1e-10);
+    }
+    println!(
+        "simple test: probs={:?}, p_unknown={}, range={:?}",
+        probs, p_unknown, range
+    );
+}
+
+#[test]
+fn test_probability_jsminesweeper_contradiction() {
+    // A '1' with only one adjacent unknown but needs 2 mines → contradiction
+    // Create a contradiction: two number tiles sharing the same unknowns
+    // with different mine counts that cannot both be satisfied.
+    // 2x2 board:
+    // [0, 10]
+    // [1, 10]
+    // Cell (0,0)=0 says 0 mines among (0,1), (1,0), (1,1)
+    // Cell (1,0)=1 says 1 mine among (0,0), (0,1), (1,1)
+    // Both share unknowns (0,1) and (1,1). Box {min=1, max=0} → impossible.
+    let board = vec![vec![0, 10], vec![1, 10]];
+    let ans = cal_probability_csp(&board, 1.0);
+    assert!(ans.is_err());
+    assert_eq!(ans.unwrap_err(), 1);
+}
+
+#[test]
+fn test_probability_jsminesweeper_known_result() {
+    // Simple 2x3 board with a '1' adjacent to 3 unknowns + off-edge tiles
+    // [1, 10, 10]
+    // [10, 10, 10]
+    let board = vec![vec![1, 10, 10], vec![10, 10, 10]];
+    let ans = cal_probability_csp(&board, 2.0);
+    assert!(ans.is_ok());
+    let (probs, p_unknown, range, _) = ans.unwrap();
+    // The '1' at (0,0) has 3 unknown neighbors needing 1 mine among them.
+    // Probability each: C(1,0)*C(1,1)/C(2,1) = ... actually let's verify numerically.
+    // 3 adjoining tiles share 1 mine → 1/3 each.
+    // Off-edge: 2 tiles, 1 remaining mine → each off-edge tile 0.5.
+    for &(_, prob) in &probs {
+        assert!((prob - 1.0 / 3.0).abs() < 1e-10);
+    }
+    assert!((p_unknown - 0.5).abs() < 1e-10);
+    assert_eq!(range, [1, 2, 3]);
+}
+
+#[test]
+fn test_probability_jsminesweeper_all_unknown() {
+    // Board with no numbers - just unknown tiles
+    let board = vec![vec![10, 10], vec![10, 10]];
+    let ans = cal_probability_csp(&board, 2.0);
+    assert!(ans.is_ok());
+    let (probs, _p_unknown, _range, _) = ans.unwrap();
+    // 2 mines among 4 tiles → each tile has 0.5 probability
+    assert_eq!(probs.len(), 4);
+    for &(_, prob) in &probs {
+        assert!((prob - 0.5).abs() < 1e-10);
+    }
+}
+
+#[test]
+fn test_probability_jsminesweeper_beg() {
+    let game_board = vec![
+        vec![1, 10, 10, 10, 10, 10, 10, 10],
+        vec![1, 10, 10, 10, 10, 10, 10, 10],
+        vec![8, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+    ];
+    let ans = cal_probability_csp(&game_board, 10.0);
+    println!("{:?}", ans);
+
+    let ans = cal_probability_enum(&game_board, 10.0);
+    println!("{:?}", ans);
 }

@@ -337,10 +337,10 @@ pub fn py_laymine_solvable_adjust(
 
 #[pyfunction]
 #[pyo3(
-    name = "cal_probability",
+    name = "cal_probability_enum",
     signature = (game_board, mine_num)
 )]
-fn py_cal_probability(
+fn py_cal_probability_enum(
     mut game_board: Vec<Vec<i32>>,
     mine_num: f64,
 ) -> PyResult<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize)> {
@@ -348,12 +348,34 @@ fn py_cal_probability(
     // 还返回局面中雷数的范围
     mark_board(&mut game_board, true)
         .map_err(|_| PyErr::new::<PyRuntimeError, _>("标记阶段无解的局面"))?;
-    match cal_probability(&game_board, mine_num) {
+    match cal_probability_enum(&game_board, mine_num) {
         Ok(t) => return Ok(t),
         Err(1) => return Err(PyErr::new::<PyRuntimeError, _>("枚举阶段无解的局面")),
         _ => return Err(PyErr::new::<PyRuntimeError, _>("未知的错误")),
     };
 }
+
+
+#[pyfunction]
+#[pyo3(
+    name = "cal_probability_csp",
+    signature = (game_board, mine_num)
+)]
+fn py_cal_probability_csp(
+    mut game_board: Vec<Vec<i32>>,
+    mine_num: f64,
+) -> PyResult<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize)> {
+    // mine_num为局面中雷的总数，不管有没有标
+    // 还返回局面中雷数的范围
+    mark_board(&mut game_board, true)
+        .map_err(|_| PyErr::new::<PyRuntimeError, _>("标记阶段无解的局面"))?;
+    match cal_probability_csp(&game_board, mine_num) {
+        Ok(t) => return Ok(t),
+        Err(1) => return Err(PyErr::new::<PyRuntimeError, _>("枚举阶段无解的局面")),
+        _ => return Err(PyErr::new::<PyRuntimeError, _>("未知的错误")),
+    };
+}
+
 
 /// 计算局面中各位置是雷的概率，按照所在的位置返回。
 ///
@@ -517,7 +539,8 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_laymine_solvable, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine_solvable_thread, m)?)?;
     m.add_function(wrap_pyfunction!(py_laymine_solvable_adjust, m)?)?;
-    m.add_function(wrap_pyfunction!(py_cal_probability, m)?)?;
+    m.add_function(wrap_pyfunction!(py_cal_probability_enum, m)?)?;
+    m.add_function(wrap_pyfunction!(py_cal_probability_csp, m)?)?;
     m.add_function(wrap_pyfunction!(py_sample_bbbvs_exp, m)?)?;
     m.add_function(wrap_pyfunction!(py_obr_board, m)?)?;
     // m.add_function(wrap_pyfunction!(py_obr_board_old, m)?)?;

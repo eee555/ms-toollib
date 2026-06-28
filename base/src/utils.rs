@@ -1357,6 +1357,7 @@ pub fn chunk_matrix(
     mut matrix_x: Vec<(usize, usize)>,
     mut matrix_b: Vec<i32>,
 ) -> (Vec<Vec<Vec<i32>>>, Vec<Vec<(usize, usize)>>, Vec<Vec<i32>>) {
+    println!("{:?}, {:?}, {:?}", matrix_a, matrix_x, matrix_b);
     let mut block_id = 0;
     let mut matrix_as = vec![];
     let mut matrix_xs = vec![];

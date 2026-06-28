@@ -219,6 +219,10 @@ macro_rules! generate_video {
                 Ok(self.core.data.get_rqp().unwrap())
             }
             #[getter]
+            fn get_qg(&self) -> PyResult<f64> {
+                Ok(self.core.data.get_qg().unwrap())
+            }
+            #[getter]
             fn get_left(&self) -> PyResult<usize> {
                 Ok(self.core.data.get_left())
             }

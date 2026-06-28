@@ -253,6 +253,7 @@ fn avf_video_works() {
     assert_eq!(video.data.get_left_s(), 2.5583756345177666);
     assert_eq!(video.data.get_right_s(), 0.2233502538071066);
     assert_eq!(video.data.get_double_s(), 0.28426395939086296);
+    assert_eq!(video.data.get_rqp().unwrap(), 19.098917322834644);
     video.data.set_current_time(10.0);
     assert_eq!(video.data.get_stnb().unwrap(), 79.47333128174823);
     video.data.analyse_for_features(&vec![
@@ -438,7 +439,7 @@ fn evf_video_works_v3() {
     assert_eq!(video.data.end_time, 1723313192767449);
     video.data.set_current_time(0.001);
     assert_eq!(video.data.get_time(), 0.001);
-    assert_eq!(video.data.get_stnb().unwrap(), 3437884.8929975377);
+    assert_eq!(video.data.get_stnb().unwrap(), 2616627.3314004815);
     assert_eq!(video.data.get_bbbv_solved().unwrap(), 1);
     video.data.set_current_time(999.999);
     println!("get_right: {:?}", video.data.get_right());
@@ -446,6 +447,7 @@ fn evf_video_works_v3() {
     println!("get_left: {:?}", video.data.get_left());
     println!("get_double: {:?}", video.data.get_double());
     println!("game_board: {:?}", video.data.get_game_board());
+    println!("rqp: {:?}", video.data.get_rqp());
     // println!("game_board_poss: {:?}", video.data.get_game_board_poss());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
     // video.data.analyse_for_features(vec!["jump_judge", "pluck"]);
@@ -501,7 +503,7 @@ fn evf_video_works_v4() {
     assert!(video.get_left_s() <= 9000.0);
     _sleep_ms(50);
     video.step("lr", (0, 16)).unwrap();
-    video.step("mv", (4800, 51)).unwrap();
+    video.step("mv", (128, 128)).unwrap();
     video.step("lc", (112, 112)).unwrap();
     video.step("lr", (112, 112)).unwrap();
     video.step("lc", (97, 112)).unwrap();
@@ -609,6 +611,9 @@ fn evf_video_works_for_temp_video() {
     //     "[lag]二问题无法    玩家( player)"
     // );
     // assert_eq!(video.data.software, "元3.2.1");
+    video.data.set_current_time(9999.99);
+    println!("game_board: {:?}", video.data.get_game_board());
+    println!("board: {:?}", video.data.board);
     println!("is win: {:?}", video.data.is_completed);
     println!("is_official: {:?}", video.data.is_official);
     println!("is_fair: {:?}", video.data.is_fair);

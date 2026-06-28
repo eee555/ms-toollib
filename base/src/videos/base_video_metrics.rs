@@ -601,16 +601,22 @@ impl<T> BaseVideo<T> {
     pub fn get_rqp(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
         if bbbv_solved == 0 {
-            return Ok(0.0);
+            return Ok(f64::INFINITY);
         }
-        Ok(self.current_time.powf(2.0) / bbbv_solved as f64)
+        if self.game_board_state == GameBoardState::Display {
+            return Ok(self.game_dynamic_params.rtime.powf(2.0) / bbbv_solved as f64)
+        }
+        Ok(self.game_dynamic_params.rtime.powf(2.0) / bbbv_solved as f64)
     }
     pub fn get_qg(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
         if bbbv_solved == 0 {
-            return Ok(0.0);
+            return Ok(f64::INFINITY);
         }
-        Ok(self.current_time.powf(1.7) / bbbv_solved as f64)
+        if self.game_board_state == GameBoardState::Display {
+            return Ok(self.current_time.powf(1.7) / bbbv_solved as f64)
+        }
+        Ok(self.game_dynamic_params.rtime.powf(1.7) / bbbv_solved as f64)
     }
     pub fn get_lce(&self) -> Result<usize, ()> {
         match self.game_board_state {

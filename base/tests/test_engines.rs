@@ -369,30 +369,150 @@ fn cal_probability_onboard_5_works() {
 
 #[test]
 fn cal_probability_onboard_7_works() {
-    // 测试概率计算引擎
-    let mut game_board = vec![
+    // 测试1: 全10局面，0雷
+    {
+        let mut board = vec![
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+        ];
+        let _ = mark_board(&mut board, true);
+        // CSP: 无数字→fallback，0雷→[0,0,64]
+        if let Ok((_, _, ref range, _)) = cal_probability_csp(&board, 0.0) {
+            assert_eq!(range, &[0usize, 0, 64]);
+        } else {
+            panic!("csp(0) on all-10s should be Ok");
+        }
+        // enum: 0雷→[0,0,64]
+        if let Ok((_, _, ref range, _)) = cal_probability_enum(&board, 0.0) {
+            assert_eq!(range, &[0usize, 0, 64]);
+        } else {
+            panic!("enum(0) on all-10s should be Ok");
+        }
+    }
+
+    // 测试2: 全10局面，45雷
+    {
+        let mut board = vec![
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+            vec![10, 10, 10, 10, 10, 10, 10, 10],
+        ];
+        let _ = mark_board(&mut board, true);
+        // CSP fallback: 未标记雷，但总雷数45→[0,45,64]
+        if let Ok((_, p, ref range, _)) = cal_probability_csp(&board, 45.0) {
+            assert_eq!(range, &[0usize, 45, 64]);
+            assert!((p - 45.0 / 64.0).abs() < 1e-10);
+        } else {
+            panic!("csp(45) on all-10s should be Ok");
+        }
+        if let Ok((_, _, ref range, _)) = cal_probability_enum(&board, 45.0) {
+            assert_eq!(range, &[0usize, 45, 64]);
+        } else {
+            panic!("enum(45) on all-10s should be Ok");
+        }
+    }
+
+    // 测试3: 原始数字局面，0雷 →判断矛盾
+    {
+        let mut board = vec![
+            vec![10, 10, 10, 10, 10, 10, 3, 10],
+            vec![10, 10, 10, 10, 10, 10, 4, 10],
+            vec![10, 10, 10, 10, 10, 10, 3, 10],
+            vec![10, 10, 10, 10, 10, 10, 3, 10],
+            vec![10, 10, 10, 10, 10, 10, 3, 10],
+            vec![10, 10, 10, 10, 1, 1, 4, 10],
+            vec![10, 10, 10, 10, 10, 10, 5, 10],
+            vec![10, 10, 10, 10, 10, 10, 4, 10],
+        ];
+        let _ = mark_board(&mut board, true);
+        assert!(cal_probability_csp(&board, 0.0).is_err());
+        assert!(cal_probability_enum(&board, 0.0).is_err());
+    }
+
+    // 测试4: 原始数字局面，45雷
+    {
+        let mut board = vec![
+            vec![10, 10, 10, 10, 10, 10, 3, 10],
+            vec![10, 10, 10, 10, 10, 10, 4, 10],
+            vec![10, 10, 10, 10, 10, 10, 3, 10],
+            vec![10, 10, 10, 10, 10, 10, 3, 10],
+            vec![10, 10, 10, 10, 10, 10, 3, 10],
+            vec![10, 10, 10, 10, 1, 1, 4, 10],
+            vec![10, 10, 10, 10, 10, 10, 5, 10],
+            vec![10, 10, 10, 10, 10, 10, 4, 10],
+        ];
+        let _ = mark_board(&mut board, true);
+        // CSP: 边界约束确定5雷，标记6雷，内部34全雷→[11,45,45]
+        if let Ok((ref probs, p, ref range, _)) = cal_probability_csp(&board, 45.0) {
+            assert_eq!(range, &[11usize, 45, 45]);
+            assert!((p - 1.0).abs() < 1e-6);
+            // 验证边界概率
+            let mut prob_map = std::collections::HashMap::new();
+            for &(pos, prob) in probs {
+                prob_map.insert(pos, prob);
+            }
+            // (0,5)和(0,7)必须是雷
+            assert!((prob_map[&(0, 5)] - 1.0).abs() < 1e-6);
+            assert!((prob_map[&(0, 7)] - 1.0).abs() < 1e-6);
+            // 其他盒各0.5
+            assert!((prob_map[&(1, 5)] - 0.5).abs() < 1e-6);
+            assert!((prob_map[&(1, 7)] - 0.5).abs() < 1e-6);
+            assert!((prob_map[&(2, 5)] - 0.5).abs() < 1e-6);
+            assert!((prob_map[&(2, 7)] - 0.5).abs() < 1e-6);
+            assert!((prob_map[&(3, 5)] - 0.5).abs() < 1e-6);
+            assert!((prob_map[&(3, 7)] - 0.5).abs() < 1e-6);
+            // 确认安全格(12)为0
+            assert!((prob_map[&(4, 3)] - 0.0).abs() < 1e-6);
+            assert!((prob_map[&(4, 4)] - 0.0).abs() < 1e-6);
+            assert!((prob_map[&(4, 5)] - 0.0).abs() < 1e-6);
+        } else {
+            panic!("csp(45) should be Ok");
+        }
+        // enum: 同样范围
+        if let Ok((_, _, ref range, _)) = cal_probability_enum(&board, 45.0) {
+            assert_eq!(range, &[11usize, 45, 45]);
+        } else {
+            panic!("enum(45) should be Ok");
+        }
+    }
+
+    // 测试5: 极小矛盾局面
+    {
+        let board = vec![vec![10, 1, 10], vec![10, 10, 10]];
+        let ans = cal_probability_csp(&board, 0.0);
+        assert!(ans.is_err());
+        let ans = cal_probability_enum(&board, 0.0);
+        assert!(ans.is_err());
+    }
+}
+
+#[test]
+fn works() {
+    let mut board = vec![
         vec![10, 10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 1, 10, 10, 10, 10],
+        vec![10, 10, 10, 2, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
-        vec![10, 10, 10, 10, 10, 10, 10, 10],
-        vec![10, 10, 10, 10, 10, 10, 10, 10],
-        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 8, 10],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
         vec![10, 10, 10, 10, 10, 10, 10, 10],
     ];
-    let ans = mark_board(&mut game_board, true);
-    
-    println!("{:?}", game_board);
-    let ans = cal_probability_csp(&game_board, 0.0);
-    println!("csp: {:?}", ans);
-    if let Ok((ref _v, _p, ref range, _)) = ans {
-        println!(" | range: {:?}", range);
-    }
-    let ans_enum = cal_probability_enum(&game_board, 0.0);
-    println!(" | enum: {:?}", ans_enum);
-    if let Ok((ref _v, _p, ref range, _)) = ans_enum {
-        println!(" | enum_range: {:?}", range);
-    }
+    let ans = cal_probability_csp(&board, 0.0);
+    println!("{:?}", ans);
+    let ans = cal_probability_enum(&board, 0.0);
+    println!("{:?}", ans);
 }
 
 #[test]

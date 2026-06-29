@@ -219,6 +219,8 @@ pub fn cal_probability_csp(
     }];
     let mut mask = vec![false; box_count];
     let mut is_first_set = true;
+    let mut max_set_boxes = 0usize;
+    let mut max_set_tiles = 0usize;
 
     loop {
         // Find next witness to process
@@ -239,6 +241,10 @@ pub fn cal_probability_csp(
                 None => {
                     // End of current independent set
                     store_independent_set(&mut held, &mut working, &boxes, &mask, total_unopened);
+                    let set_boxes = mask.iter().filter(|&&m| m).count();
+                    if set_boxes > max_set_boxes { max_set_boxes = set_boxes; }
+                    let set_tiles: usize = boxes.iter().enumerate().filter(|(i, _)| mask[*i]).map(|(_, b)| b.tiles.len()).sum();
+                    if set_tiles > max_set_tiles { max_set_tiles = set_tiles; }
                     if witnesses.iter().all(|w| w.processed) {
                         break;
                     }
@@ -303,6 +309,10 @@ pub fn cal_probability_csp(
 
     // Final store if any working probs remain
     store_independent_set(&mut held, &mut working, &boxes, &mask, total_unopened);
+    let set_boxes = mask.iter().filter(|&&m| m).count();
+    if set_boxes > max_set_boxes { max_set_boxes = set_boxes; }
+    let set_tiles: usize = boxes.iter().enumerate().filter(|(i, _)| mask[*i]).map(|(_, b)| b.tiles.len()).sum();
+    if set_tiles > max_set_tiles { max_set_tiles = set_tiles; }
 
     // After store_independent_set, working is consumed (taken) if small,
     // or left intact if large. Handle remaining.
@@ -398,7 +408,7 @@ pub fn cal_probability_csp(
         result,
         p_off,
         [mine_min + flagged_mines, cur_mines + flagged_mines, min(total_unopened, mine_max + off_edge) + flagged_mines],
-        0,
+        max_set_tiles,
     ))
 }
 

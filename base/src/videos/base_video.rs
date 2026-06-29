@@ -552,9 +552,9 @@ impl BaseVideo<Vec<Vec<i32>>> {
         // suspect: 鼠标移动过快(2)
         //
 
-        if self.height > 36 || self.width > 36 {
-            return
-        }
+        //         if self.height > 36 || self.width > 36 {
+        //     return
+        // }
         for o in controller {
             match o {
                 &"high_risk_guess" => analyse_high_risk_guess(self),

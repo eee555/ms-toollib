@@ -239,3 +239,134 @@ fn board_9_works() {
     println!("{:?}", ans);
     assert_eq!(ans.2, [2, 12, 57]);
 }
+
+#[test]
+fn board_10_works() {
+    // 11标记（标雷）→ CSP当未知处理，不参与witness约束调整
+    let mut board = vec![
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 2, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+    ];
+    // 把一个邻居标雷
+    board[3][2] = 11;
+    let ans = cal_probability_csp(&board, 10.0).unwrap();
+    println!("{:?}", ans);
+    // 11视为已知雷→排除(3,2)，其余7格p=1/7
+    assert!(!ans.0.iter().any(|&(pos, _)| pos == (3, 2)));
+    assert_eq!(ans.0.len(), 7);
+    for (_, p) in &ans.0 {
+        assert!((p - 1.0 / 7.0).abs() < 1e-10);
+    }
+    assert_eq!(ans.2, [2, 10, 57]);
+    let ans = cal_probability_enum(&board, 10.0).unwrap();
+    println!("{:?}", ans);
+    // ENUM: 11计入is_minenum，不在枚举结果中
+    for (pos, p) in &ans.0 {
+        assert_ne!(pos, &(3, 2));
+    }
+    assert_eq!(ans.0.len(), 7);
+    assert_eq!(ans.2, [2, 10, 57]);
+}
+
+#[test]
+fn board_11_works() {
+    // 12标记（已知安全）→ CSP排除该格，不加入witness邻接
+    let mut board = vec![
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 2, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+    ];
+    // 把一个邻居标安全
+    board[3][2] = 12;
+    let ans = cal_probability_csp(&board, 10.0).unwrap();
+    println!("{:?}", ans);
+    // 12格不在结果中
+    assert!(!ans.0.iter().any(|&(pos, _)| pos == (3, 2)));
+    // 剩余7格，2雷 → 2/7
+    assert_eq!(ans.0.len(), 7);
+    for (_, p) in &ans.0 {
+        assert!((p - 2.0 / 7.0).abs() < 1e-10);
+    }
+    assert_eq!(ans.2, [2, 10, 57]);
+    let ans = cal_probability_enum(&board, 10.0).unwrap();
+    println!("{:?}", ans);
+    assert!(!ans.0.iter().any(|&(pos, _)| pos == (3, 2)));
+    assert_eq!(ans.0.len(), 7);
+    for (_, p) in &ans.0 {
+        assert!((p - 2.0 / 7.0).abs() < 1e-10);
+    }
+    assert_eq!(ans.2, [2, 10, 57]);
+}
+
+#[test]
+fn board_12_works() {
+    // 全10+12标记 → fallback应排除12格
+    let mut board = vec![
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+    ];
+    board[0][0] = 12;
+    board[7][7] = 12;
+    let ans = cal_probability_csp(&board, 10.0).unwrap();
+    println!("{:?}", ans);
+    // 12格不在结果中
+    assert!(!ans.0.iter().any(|&(pos, _)| pos == (0, 0)));
+    assert!(!ans.0.iter().any(|&(pos, _)| pos == (7, 7)));
+    // 剩余62格，10雷 → 10/62
+    assert_eq!(ans.0.len(), 62);
+    for (_, p) in &ans.0 {
+        assert!((p - 10.0 / 62.0).abs() < 1e-10);
+    }
+    assert_eq!(ans.2, [0, 10, 62]);
+    let ans = cal_probability_enum(&board, 10.0).unwrap();
+    println!("{:?}", ans);
+    // ENUM: 全10无witness → ans.0为空，概率通过p_unknow返回
+    assert_eq!(ans.0.len(), 0);
+    assert!((ans.1 - 10.0 / 62.0).abs() < 1e-10);
+    assert_eq!(ans.2, [0, 10, 62]);
+}
+
+
+#[test]
+fn board_13_works() {
+    // 11标记（标雷）→ CSP当未知处理，不参与witness约束调整
+    let mut board = vec![
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 2, 10, 10, 10, 10],
+        vec![10, 10, 10, 3, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+    ];
+    // 把一个邻居标雷
+    board[3][2] = 11;
+    board[0][0] = 11;
+    board[3][1] = 11;
+    board[6][6] = 12;
+    board[6][6] = 12;
+    board[7][0] = 12;
+    let ans = cal_probability_csp(&board, 10.0).unwrap();
+    println!("{:?}", ans);
+    // 11视为已知雷→排除(3,2)，其余7格p=1/7
+    let ans = cal_probability_enum(&board, 10.0).unwrap();
+    println!("{:?}", ans);
+}

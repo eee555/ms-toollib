@@ -695,7 +695,7 @@ impl BaseVideo<SafeBoard> {
                                         }
                                     }
                                 }
-                                let _ = mark_board(&mut game_board_clone, true).unwrap();
+                                // let _ = mark_board(&mut game_board_clone, true).unwrap();
                                 // 安全的概率
                                 let p = cal_probability_cells_not_mine(
                                     &game_board_clone,

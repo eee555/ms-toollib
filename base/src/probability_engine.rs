@@ -83,22 +83,26 @@ pub fn cal_probability_csp(
     let cols = board_of_game[0].len();
     let total_cells = rows * cols;
 
-    let total_mines = if minenum < 1.0 {
+    let total_mines_input = if minenum < 1.0 {
         (total_cells as f64 * minenum) as usize
     } else {
         minenum as usize
     };
 
     let mut total_unopened = 0usize;
+    let mut flagged_mines = 0usize;
     for r in 0..rows {
         for c in 0..cols {
-            if board_of_game[r][c] >= 10 {
-                total_unopened += 1;
+            match board_of_game[r][c] {
+                10 => total_unopened += 1,
+                11 => flagged_mines += 1,
+                _ => {}
             }
         }
     }
 
-    let total_mines = min(total_mines, total_unopened);
+    let total_mines = min(max(total_mines_input, flagged_mines), total_unopened + flagged_mines);
+    let adjusted_mines = total_mines - flagged_mines;
 
     // Build witnesses from number tiles
     let mut witnesses: Vec<BoxWitness> = Vec::new();
@@ -109,6 +113,7 @@ pub fn cal_probability_csp(
                 continue;
             }
             let mut adj_unknown = Vec::new();
+            let mut flag_count = 0usize;
             for dr in -1i32..=1 {
                 for dc in -1i32..=1 {
                     if dr == 0 && dc == 0 { continue; }
@@ -116,20 +121,23 @@ pub fn cal_probability_csp(
                     let nc = c as i32 + dc;
                     if nr < 0 || nr >= rows as i32 || nc < 0 || nc >= cols as i32 { continue; }
                     let (nr, nc) = (nr as usize, nc as usize);
-                    if board_of_game[nr][nc] >= 10 {
+                    if board_of_game[nr][nc] == 10 {
                         adj_unknown.push((nr, nc));
                     }
+                    if board_of_game[nr][nc] == 11 {
+                        flag_count += 1;
+                    }
                 }
+            }
+            let mines_to_find = val as usize;
+            if mines_to_find < flag_count || mines_to_find - flag_count > adj_unknown.len() {
+                return Err(1);
             }
             if adj_unknown.is_empty() {
                 continue;
             }
-            let mines_to_find = val;
-            if mines_to_find < 0 || mines_to_find > adj_unknown.len() as i32 {
-                return Err(1);
-            }
             witnesses.push(BoxWitness {
-                mines_to_find: mines_to_find as usize,
+                mines_to_find: mines_to_find - flag_count,
                 tiles: adj_unknown,
                 boxes: Vec::new(),
                 processed: false,
@@ -138,7 +146,7 @@ pub fn cal_probability_csp(
     }
 
     if witnesses.is_empty() {
-        return fallback_pure_binomial(board_of_game, total_mines, total_unopened);
+        return fallback_pure_binomial(board_of_game, total_mines, total_unopened, flagged_mines);
     }
 
     // Collect all witnessed tiles
@@ -333,7 +341,7 @@ pub fn cal_probability_csp(
     // Clamp total_mines to feasible range for tally computation
     let min_possible = mine_min;
     let max_possible = min(total_unopened, mine_max + off_edge);
-    let cur_mines = min(max(total_mines, min_possible), max_possible);
+    let cur_mines = min(max(adjusted_mines, min_possible), max_possible);
 
     // Expand with off-edge and compute probabilities
     let min_witnessed = if cur_mines > off_edge { cur_mines - off_edge } else { 0 };
@@ -389,7 +397,7 @@ pub fn cal_probability_csp(
     Ok((
         result,
         p_off,
-        [mine_min, cur_mines, min(total_unopened, mine_max + off_edge)],
+        [mine_min + flagged_mines, cur_mines + flagged_mines, min(total_unopened, mine_max + off_edge) + flagged_mines],
         0,
     ))
 }
@@ -398,18 +406,20 @@ fn fallback_pure_binomial(
     board_of_game: &Vec<Vec<i32>>,
     total_mines: usize,
     total_unopened: usize,
+    flagged_mines: usize,
 ) -> Result<(Vec<((usize, usize), f64)>, f64, [usize; 3], usize), usize> {
+    let adjusted = total_mines - flagged_mines;
+    let prob = if total_unopened > 0 { adjusted as f64 / total_unopened as f64 } else { 0.0 };
     let mut result = Vec::new();
     for r in 0..board_of_game.len() {
         for c in 0..board_of_game[0].len() {
-            if board_of_game[r][c] >= 10 {
-                let prob = if total_unopened > 0 { total_mines as f64 / total_unopened as f64 } else { 0.0 };
+            if board_of_game[r][c] == 10 {
                 result.push(((r, c), prob));
             }
         }
     }
-    let p = if total_unopened > 0 { total_mines as f64 / total_unopened as f64 } else { f64::NAN };
-    Ok((result, p, [0, total_mines, total_unopened], 0))
+    let p = if total_unopened > 0 { adjusted as f64 / total_unopened as f64 } else { f64::NAN };
+    Ok((result, p, [flagged_mines, total_mines, total_unopened + flagged_mines], 0))
 }
 
 fn get_boundary_witness(

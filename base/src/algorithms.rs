@@ -489,6 +489,7 @@ pub fn cal_probability_onboard(
 /// - 输入：局面、总雷数。  
 /// - 返回：所有边缘格子是雷的概率、内部未知格子是雷的概率、局面中总未知雷数范围、枚举状态数（始终返回0）。  
 /// - 错误码：0=正常, 1=盘面矛盾, 2=枚举过长, 3=输入参数非法。  
+/// cal_probability_csp算法不兼容11、12标记。可以有这些标记，但对结果毫无影响
 pub fn cal_probability_csp(
     board_of_game: &Vec<Vec<i32>>,
     minenum: f64,

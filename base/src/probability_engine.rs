@@ -89,19 +89,16 @@ pub fn cal_probability_csp(
         minenum as usize
     };
 
-    let mut flagged_mines = 0usize;
     let mut total_unopened = 0usize;
     for r in 0..rows {
         for c in 0..cols {
-            match board_of_game[r][c] {
-                10 => total_unopened += 1,
-                11 => { total_unopened += 1; flagged_mines += 1; }
-                _ => {}
+            if board_of_game[r][c] >= 10 {
+                total_unopened += 1;
             }
         }
     }
 
-    if total_mines > total_unopened || total_mines < flagged_mines {
+    if total_mines > total_unopened {
         return Err(3);
     }
 
@@ -114,7 +111,6 @@ pub fn cal_probability_csp(
                 continue;
             }
             let mut adj_unknown = Vec::new();
-            let mut mines_found = 0i32;
             for dr in -1i32..=1 {
                 for dc in -1i32..=1 {
                     if dr == 0 && dc == 0 { continue; }
@@ -122,17 +118,15 @@ pub fn cal_probability_csp(
                     let nc = c as i32 + dc;
                     if nr < 0 || nr >= rows as i32 || nc < 0 || nc >= cols as i32 { continue; }
                     let (nr, nc) = (nr as usize, nc as usize);
-                    match board_of_game[nr][nc] {
-                        10 => adj_unknown.push((nr, nc)),
-                        11 => mines_found += 1,
-                        _ => {}
+                    if board_of_game[nr][nc] >= 10 {
+                        adj_unknown.push((nr, nc));
                     }
                 }
             }
             if adj_unknown.is_empty() {
                 continue;
             }
-            let mines_to_find = val - mines_found;
+            let mines_to_find = val;
             if mines_to_find < 0 || mines_to_find > adj_unknown.len() as i32 {
                 return Err(1);
             }
@@ -339,7 +333,7 @@ pub fn cal_probability_csp(
 
 
     // Clamp total_mines to feasible range for tally computation
-    let min_possible = mine_min + flagged_mines;
+    let min_possible = mine_min;
     let max_possible = min(total_unopened, mine_max + off_edge);
     let cur_mines = min(max(total_mines, min_possible), max_possible);
 
@@ -353,8 +347,8 @@ pub fn cal_probability_csp(
 
     for pl in &held {
         if pl.mine_count < min_witnessed { continue; }
-        if pl.mine_count + flagged_mines > cur_mines { continue; }
-        let rem = cur_mines - pl.mine_count - flagged_mines;
+        if pl.mine_count > cur_mines { continue; }
+        let rem = cur_mines - pl.mine_count;
         if rem > off_edge { continue; }
         has_valid = true;
         let mult = comb_val(off_edge, rem);
@@ -386,15 +380,6 @@ pub fn cal_probability_csp(
         }
     }
 
-    // Add flagged-safe (12) tiles with probability 0
-    for r in 0..rows {
-        for c in 0..cols {
-            if board_of_game[r][c] == 12 {
-                result.push(((r, c), 0.0));
-            }
-        }
-    }
-
     let p_off = if off_edge > 0 {
         let tmp3 = &total_tally * &BigNumber { a: off_edge as f64, b: 0 };
         let ratio: f64 = (&outside_tally / &tmp3).into();
@@ -406,7 +391,7 @@ pub fn cal_probability_csp(
     Ok((
         result,
         p_off,
-        [mine_min + flagged_mines, cur_mines, min(total_unopened, mine_max + off_edge)],
+        [mine_min, cur_mines, min(total_unopened, mine_max + off_edge)],
         0,
     ))
 }
@@ -419,11 +404,9 @@ fn fallback_pure_binomial(
     let mut result = Vec::new();
     for r in 0..board_of_game.len() {
         for c in 0..board_of_game[0].len() {
-            if board_of_game[r][c] == 10 {
+            if board_of_game[r][c] >= 10 {
                 let prob = if total_unopened > 0 { total_mines as f64 / total_unopened as f64 } else { 0.0 };
                 result.push(((r, c), prob));
-            } else if board_of_game[r][c] == 12 {
-                result.push(((r, c), 0.0));
             }
         }
     }

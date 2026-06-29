@@ -148,3 +148,94 @@ fn board_5_works() {
     println!("{:?}", board);
     println!("{:?}", ans);
 }
+
+#[test]
+fn board_6_works() {
+    // 全10局面，传入比例0.2 → 钳位为12雷 → fallback
+    let board = vec![
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+    ];
+    let ans = cal_probability_csp(&board, 0.2).unwrap();
+    println!("{:?}", ans);
+    assert_eq!(ans.2, [0, 12, 64]);
+    let ans = cal_probability_enum(&board, 0.2).unwrap();
+    println!("{:?}", ans);
+    assert_eq!(ans.2, [0, 12, 64]);
+}
+
+#[test]
+fn board_7_works() {
+    // 全10局面，雷数超上限 → 自动钳位到total_unopened
+    let board = vec![
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+    ];
+    let ans = cal_probability_csp(&board, 100.0).unwrap();
+    println!("{:?}", ans);
+    assert_eq!(ans.2, [0, 64, 64]);
+    let ans = cal_probability_enum(&board, 100.0).unwrap();
+    println!("{:?}", ans);
+    assert_eq!(ans.2, [0, 64, 64]);
+}
+
+#[test]
+fn board_8_works() {
+    // 有约束局面，雷数不足下限 → 自动钳位到mine_min
+    let board = vec![
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 2, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+    ];
+    let ans = cal_probability_csp(&board, 1.0).unwrap();
+    println!("{:?}", ans);
+    assert_eq!(ans.2, [2, 2, 57]);
+    let ans = cal_probability_csp(&board, 100.0).unwrap();
+    println!("{:?}", ans);
+    assert_eq!(ans.2, [2, 57, 57]);
+    let ans = cal_probability_enum(&board, 1.0).unwrap();
+    println!("{:?}", ans);
+    assert_eq!(ans.2, [2, 2, 57]);
+    let ans = cal_probability_enum(&board, 100.0).unwrap();
+    println!("{:?}", ans);
+    assert_eq!(ans.2, [2, 57, 57]);
+}
+
+#[test]
+fn board_9_works() {
+    // 有约束局面，传入比例 → 自动换算为雷数
+    let board = vec![
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 2, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+        vec![10, 10, 10, 10, 10, 10, 10, 10],
+    ];
+    // 0.2 → 12雷
+    let ans = cal_probability_csp(&board, 0.2).unwrap();
+    println!("{:?}", ans);
+    assert_eq!(ans.2, [2, 12, 57]);
+    let ans = cal_probability_enum(&board, 0.2).unwrap();
+    println!("{:?}", ans);
+    assert_eq!(ans.2, [2, 12, 57]);
+}

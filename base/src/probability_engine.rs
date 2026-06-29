@@ -98,9 +98,7 @@ pub fn cal_probability_csp(
         }
     }
 
-    if total_mines > total_unopened {
-        return Err(3);
-    }
+    let total_mines = min(total_mines, total_unopened);
 
     // Build witnesses from number tiles
     let mut witnesses: Vec<BoxWitness> = Vec::new();

@@ -295,7 +295,7 @@ pub fn cal_probability_enum(
     } else {
         let mm = (minenum as usize).overflowing_sub(is_minenum);
         match mm.1 {
-            false => mm.0,
+            false => min(max(mm.0, min_minenum), max_minenum + inside_cell),
             // 标雷环节没有查出错误，而且标了很多雷，算概率环节会返回17
             true => return Err(17),
         }

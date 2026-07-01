@@ -2451,17 +2451,14 @@ pub fn cal_probability_csp(
         } else {
             remaining_mines as f64 / squares_left as f64
         };
-        let edge_probs = base_board
-            .tiles
-            .iter()
-            .filter(|t| t.is_covered() && !t.is_solver_found_bomb())
-            .map(|t| ((t.y, t.x), mine_prob))
-            .collect();
+        // No edge/witness cells: for API consistency with cal_probability_enum,
+        // return an empty edge_probs Vec and provide the interior probability
+        // via the second return value (`mine_prob`). Complexity is 0.
         return Ok((
-            edge_probs,
+            Vec::new(),
             mine_prob,
             [min_possible, total_mines, max_possible],
-            squares_left,
+            0,
         ));
     }
 

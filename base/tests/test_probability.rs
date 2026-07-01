@@ -165,6 +165,7 @@ fn board_6_works() {
     ];
     let ans = cal_probability_csp(&board, 0.2).unwrap();
     println!("{:?}", ans);
+    assert!(ans.0.is_empty());
     assert_eq!(ans.2, [0, 12, 64]);
     let ans = cal_probability_enum(&board, 0.2).unwrap();
     println!("{:?}", ans);

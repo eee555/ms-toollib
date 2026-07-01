@@ -112,6 +112,8 @@ pub use zini::{cal_zini, cal_hzini, cal_rzini};
 
 mod big_number;
 
+mod tile;
+mod binomial;
 mod probability_engine;
 
 #[cfg(any(feature = "py", feature = "rs"))]

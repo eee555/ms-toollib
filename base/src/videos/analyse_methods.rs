@@ -319,7 +319,7 @@ pub fn analyse_pluck(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                 // 有效的双键
                 let r = (mouse_event.y / video.cell_pixel_size as u16) as usize;
                 let c = (mouse_event.x / video.cell_pixel_size as u16) as usize;
-                let mut game_board_clone = vas
+                let mut game_board_clone_clean = vas
                     .prior_game_board
                     .as_ref()
                     .unwrap()
@@ -329,18 +329,20 @@ pub fn analyse_pluck(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                 let mut chording_cells = vec![];
                 for m in max(1, r) - 1..min(video.height, r + 2) {
                     for n in max(1, c) - 1..min(video.width, c + 2) {
-                        if game_board_clone[m][n] == 10 {
+                        if game_board_clone_clean[m][n] == 10 {
                             chording_cells.push((m, n));
                         }
                     }
                 }
-                let _ = mark_board(&mut game_board_clone, true).unwrap();
+
+                let _ = mark_board(&mut game_board_clone_clean, true).unwrap();
                 // 安全的概率
                 let p = cal_probability_cells_not_mine(
-                    &game_board_clone,
+                    &game_board_clone_clean,
                     video.mine_num as f64,
                     &chording_cells,
                 );
+
                 if p <= 0.0 || pluck == f64::MAX {
                     pluck = f64::MAX;
                 } else if p > 0.0 {
@@ -395,7 +397,7 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo<Vec<Vec<i32>>>) {
             let c_1 = last_event.x as usize / video.cell_pixel_size as usize;
             // if mouse_event.mouse == "rc" || mouse_event.mouse == "rc"{
             //     println!("{:?}, {:?}, {:?}, {:?}", vas.time, vas.mouse_state, x, y);
-                // println!("---{:?}", video.video_action_state_recorder[ide].useful_level);
+            // println!("---{:?}", video.video_action_state_recorder[ide].useful_level);
             // }
 
             if mouse_event.mouse == "rc"

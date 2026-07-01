@@ -171,7 +171,6 @@ pub struct Binomial {
 
 impl Binomial {
     pub fn new(max: usize, lookup: usize) -> Self {
-        let start = std::time::Instant::now();
         let ps = PrimeSieve::new(max);
         let lookup_limit = if lookup < 10 { 10 } else { lookup };
         let lookup2 = lookup_limit / 2;
@@ -187,12 +186,6 @@ impl Binomial {
             }
             binomial_lookup.push(row);
         }
-
-        eprintln!(
-            "Binomial lookup table generated, limit {}, max {}",
-            lookup_limit, max
-        );
-        eprintln!("Took {} ms", start.elapsed().as_millis());
 
         Binomial {
             max,

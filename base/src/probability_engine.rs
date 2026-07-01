@@ -639,6 +639,7 @@ impl Cruncher {
     }
 
     pub fn crunch(&mut self, board: &dyn Board, iterator: &mut WitnessWebIterator) -> usize {
+        #[cfg(not(target_arch = "wasm32"))]
         let start = std::time::Instant::now();
         let mut candidates = 0;
         while let Some(sample) = iterator.get_sample() {
@@ -646,7 +647,8 @@ impl Cruncher {
                 candidates += 1;
             }
         }
-        self.duration = start.elapsed().as_millis() as u64;
+        #[cfg(not(target_arch = "wasm32"))]
+        { self.duration = start.elapsed().as_millis() as u64; }
         candidates
     }
 
@@ -1527,6 +1529,7 @@ impl ProbabilityEngine {
             self.clear_count = 0;
             return;
         }
+        #[cfg(not(target_arch = "wasm32"))]
         let pe_start = std::time::Instant::now();
         self.mask = vec![false; self.boxes.len()];
         self.get_candidate_dead_locations();
@@ -1551,7 +1554,8 @@ impl ProbabilityEngine {
         } else {
             self.write_to_console("Probability engine did truncated analysis - probability data not available", false);
         }
-        self.duration = pe_start.elapsed().as_millis() as u64;
+        #[cfg(not(target_arch = "wasm32"))]
+        { self.duration = pe_start.elapsed().as_millis() as u64; }
     }
 
     pub fn process_edge_constraints_only(&mut self) {

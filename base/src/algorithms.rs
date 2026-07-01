@@ -415,6 +415,7 @@ pub fn cal_probability_enum(
 /// - 返回：
 ///     - Vec<Vec<f64>>，按照局面中的位置所有格子是雷的概率
 ///     - [usize; 3]，局面中总未知雷数（未知雷数 = 总雷数 - 已经标出的雷）的范围（最小值、当前值、最大值）。  
+/// 不可以接受脏局面（标错雷的局面）。
 /// # Example
 /// - 用rust调用时的示例：
 /// ```rust
@@ -553,7 +554,7 @@ pub fn cal_probability_cells_is_op(
 
 // 效率不高。最好应该从底层枚举的位置开始
 /// 多个格子同时不是雷的概率。和pluck参数的计算有关
-/// 雷数必须在合法范围内
+/// 雷数必须在合法范围内。不接受脏局面
 /// 输入：局面，总雷数，位置
 pub fn cal_probability_cells_not_mine(
     game_board: &Vec<Vec<i32>>,

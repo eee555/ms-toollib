@@ -88,7 +88,7 @@ pub use algorithms::{
     cal_probability_cells_is_op, cal_probability_enum, cal_probability_csp,
     cal_probability_onboard, get_all_not_and_is_mine_on_board, is_able_to_solve,
     is_guess_while_needless, is_solvable, laymine_solvable, laymine_solvable_adjust, mark_board,
-    solve_direct, solve_enumerate, solve_minus, try_solve,
+    solve_direct, solve_enumerate, solve_minus, try_solve, cal_probability_cells_not_mine
 };
 // #[cfg(any(feature = "rs"))]
 // pub use algorithms::{mark_board, solve_direct, solve_enumerate, solve_minus};

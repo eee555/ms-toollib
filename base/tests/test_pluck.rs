@@ -11,5 +11,5 @@ fn pluck_works_1() {
     video.data.set_current_time(99999.9);
 
     // ENUM: 3.961835438041647
-    assert_eq!(video.data.get_pluck().unwrap(), 4.65781553494747);
+    assert_eq!(video.data.get_pluck().unwrap(), 3.9618354380416467);
 }

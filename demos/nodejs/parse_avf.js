@@ -16,9 +16,13 @@ let v = new ms.AvfVideo(data, video_file);
 v.parse();
 v.analyse();
 assert(v.bbbv == 127);
+v.analyse_for_features(["pluck"]);
 
 // 时间切到10.0秒
 v.current_time = 10.0;
+
+assert(v.pluck == 0.20115579693141436);
+
 // 此时的x坐标，单位为像素
 assert(v.x_y.x == 136);
 // 此时的y坐标，单位为像素

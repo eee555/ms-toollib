@@ -573,6 +573,14 @@ macro_rules! generate_video {
                 pub fn analyse(&mut self) {
                     self.core.data.analyse();
                 }
+                pub fn analyse_for_features(&mut self, f: Vec<String>) {
+                    let refs: Vec<&str> = f.iter().map(|s| s.as_str()).collect();
+                    self.core.data.analyse_for_features(&refs);
+                }
+                #[wasm_bindgen(getter = pluck)]
+                pub fn get_pluck(&mut self) -> f64 {
+                    self.core.data.get_pluck().unwrap()
+                }
                 #[wasm_bindgen(getter = raw_data)]
                 pub fn get_raw_data(&self) -> Vec<u8> {
                     self.core.data.get_raw_data().unwrap()

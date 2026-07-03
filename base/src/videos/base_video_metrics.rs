@@ -598,6 +598,8 @@ impl<T> BaseVideo<T> {
         if self.game_board_state == GameBoardState::Display {
             Ok(c * bbbv_solved as f64 / self.current_time.powf(1.7)
                 * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5))
+            // Ok(c * self.static_params.bbbv as f64 / self.get_etime()?.powf(1.7)
+            //     * (bbbv_solved as f64 / self.static_params.bbbv as f64).powf(0.5))
         } else {
             Ok(
                 c * bbbv_solved as f64 / self.game_dynamic_params.rtime.powf(1.7)

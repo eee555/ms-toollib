@@ -43,6 +43,11 @@ mod board;
 mod transfor;
 use transfor::{js_value_to_vec_vec, vec_vec_to_js_value};
 
+#[wasm_bindgen(start)]
+pub fn init() {
+    console_error_panic_hook::set_once();
+}
+
 #[wasm_bindgen]
 pub fn cal_bbbv(js_board: JsValue) -> usize {
     let board = js_value_to_vec_vec(js_board);

@@ -449,6 +449,7 @@ fn evf_video_works_v3() {
     println!("get_double: {:?}", video.data.get_double());
     println!("game_board: {:?}", video.data.get_game_board());
     println!("rqp: {:?}", video.data.get_rqp());
+    println!("is_valid: {:?}", video.data.is_valid());
     // println!("game_board_poss: {:?}", video.data.get_game_board_poss());
     // video.analyse_for_features(vec!["super_fl_local", "mouse_trace"]);
     // video.data.analyse_for_features(vec!["jump_judge", "pluck"]);

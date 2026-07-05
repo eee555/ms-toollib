@@ -102,6 +102,24 @@ game_mode: classic
 
 解析逻辑是每行第一个":"用于分割，后续value中可以出现":"。未知字段应被忽略，不应导致解析失败。
 
+`game_mode` 的可选值：
+
+| 值 | 含义 |
+|------|------|
+| classic | 经典（标准 NF） |
+| win7 | Windows 7 规则 |
+| classic_no_guess | 经典无猜 |
+| strong_no_guess | 强无猜 |
+| weak_no_guess | 弱无猜 |
+| quasi_no_guess | 准无猜 |
+| strong_guessable | 强可猜 |
+| weak_guessable | 弱可猜 |
+| upk | UPK |
+| cheat | 作弊模式 |
+| density | 密度模式 |
+
+实现必须能解析上述所有值，未知值不应导致解析失败。
+
 ---
 
 ## 5. real Board

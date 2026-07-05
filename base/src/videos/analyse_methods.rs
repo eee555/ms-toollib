@@ -8,7 +8,7 @@ use std::cmp::{max, min};
 // 录像的事件分析。参与分析的录像必须已经计算出对应的数据。
 // error: 高风险的猜雷（猜对概率0.05）√
 // feature: 高难度的判雷√
-// warning: 可以判雷时视野的转移√
+// warning:vision_transfer√
 // feature: 双线操作
 // feature: 破空（成功率0.98）
 // feature: 教科书式的FL局部(步数4)√
@@ -18,7 +18,7 @@ use std::cmp::{max, min};
 // warning: 没有作用的操作
 // suspect: 点击速度过快(0.01)
 // suspect: 鼠标移动过快(2)
-// suspect: 笔直的鼠标轨迹(101%)√
+// suspect:mouse_trace_straight(101%)√
 pub fn analyse_high_risk_guess(video: &mut BaseVideo<Vec<Vec<i32>>>) {
     let mut r;
     let mut c;
@@ -38,7 +38,7 @@ pub fn analyse_high_risk_guess(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                     vas.comments = format!(
                         "{}{}",
                         vas.comments,
-                        format!("error: 危险的猜雷(猜对概率{:.3});", 1.0 - p)
+                        format!("error:high_risk_guess:{:?};", 1.0 - p)
                     );
                 }
             }
@@ -74,7 +74,7 @@ pub fn analyse_jump_judge(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                     vas.comments = format!(
                         "{}{}",
                         vas.comments,
-                        format!("feature: 高难度的判雷(左键);")
+                        format!("feature:hard_judgment:left;")
                     );
                 }
             } else if vas.useful_level == 1 && mouse_event.mouse == "rc" {
@@ -96,7 +96,7 @@ pub fn analyse_jump_judge(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                     vas.comments = format!(
                         "{}{}",
                         vas.comments,
-                        format!("feature: 高难度的判雷(标雷);")
+                        format!("feature:hard_judgment:flag;")
                     );
                 }
             }
@@ -143,7 +143,7 @@ pub fn analyse_needless_guess(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                                 vas.comments = format!(
                                     "{}{}",
                                     vas.comments,
-                                    format!("warning: 可以判雷时选择猜雷;")
+                                    format!("warning:needless_guess;")
                                 );
                                 continue 'outer;
                             }
@@ -187,16 +187,16 @@ pub fn analyse_mouse_trace(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                 if k > 7.0 {
                     comments.push((
                         click_last_id,
-                        format!("error: 过于弯曲的鼠标轨迹({:.0}%);", k * 100.0),
+                        format!("error:mouse_trace_too_curved:{:?};", k * 100.0),
                     ));
                 } else if k > 3.5 {
                     comments.push((
                         click_last_id,
-                        format!("warning: 弯曲的鼠标轨迹({:.0}%);", k * 100.0),
+                        format!("warning:mouse_trace_curved:{:?};", k * 100.0),
                     ));
                 } else if k < 1.01 {
                     if k > 5.0 {
-                        comments.push((click_last_id, "suspect: 笔直的鼠标轨迹;".to_owned()));
+                        comments.push((click_last_id, "suspect:mouse_trace_straight;".to_owned()));
                     }
                 }
                 last_click_event = mouse_event.clone();
@@ -268,7 +268,7 @@ pub fn analyse_vision_transfer(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                         }
                     }
                     if flag {
-                        comments.push((click_last_id, "warning: 可以判雷时视野的转移;"));
+                        comments.push((click_last_id, "warning:vision_transfer;"));
                     }
                 }
                 last_click_event = mouse_event.clone();
@@ -502,13 +502,13 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                 SuperFLState::Finish => {
                     comments.push((
                         anchor,
-                        format!("feature: 教科书式的FL局部(步数{});", counter),
+                        format!("feature:fl_local:{};", counter),
                     ));
 
                     // video.video_action_state_recorder[anchor].comments = format!(
                     //     "{}{}",
                     //     video.video_action_state_recorder[anchor].comments,
-                    //     format!("feature: 教科书式的FL局部(步数{});", counter)
+                    //     format!("feature:fl_local:{};", counter)
                     // );
                     state = SuperFLState::NotStart;
                 }

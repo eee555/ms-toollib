@@ -71,11 +71,8 @@ pub fn analyse_jump_judge(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                         .get_enum_not_mine()
                         .contains(&(r, c))
                 {
-                    vas.comments = format!(
-                        "{}{}",
-                        vas.comments,
-                        format!("feature:hard_judgment:left;")
-                    );
+                    vas.comments =
+                        format!("{}{}", vas.comments, format!("feature:hard_judgment:left;"));
                 }
             } else if vas.useful_level == 1 && mouse_event.mouse == "rc" {
                 if !vas
@@ -93,11 +90,8 @@ pub fn analyse_jump_judge(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                         .get_enum_is_mine()
                         .contains(&(r, c))
                 {
-                    vas.comments = format!(
-                        "{}{}",
-                        vas.comments,
-                        format!("feature:hard_judgment:flag;")
-                    );
+                    vas.comments =
+                        format!("{}{}", vas.comments, format!("feature:hard_judgment:flag;"));
                 }
             }
         }
@@ -184,20 +178,18 @@ pub fn analyse_mouse_trace(video: &mut BaseVideo<Vec<Vec<i32>>>) {
                     + (last_click_event.y as f64 - current_y).powf(2.0))
                 .sqrt();
                 let k = path / path_straight;
-                if k > 7.0 {
+                if k > 20.0 {
                     comments.push((
                         click_last_id,
                         format!("error:mouse_trace_too_curved:{:?};", k * 100.0),
                     ));
-                } else if k > 3.5 {
+                } else if k > 10.0 {
                     comments.push((
                         click_last_id,
                         format!("warning:mouse_trace_curved:{:?};", k * 100.0),
                     ));
                 } else if k < 1.01 {
-                    if k > 5.0 {
-                        comments.push((click_last_id, "suspect:mouse_trace_straight;".to_owned()));
-                    }
+                    comments.push((click_last_id, "suspect:mouse_trace_straight;".to_owned()));
                 }
                 last_click_event = mouse_event.clone();
                 click_last_id = ide;
@@ -500,10 +492,7 @@ pub fn analyse_super_fl_local(video: &mut BaseVideo<Vec<Vec<i32>>>) {
             }
             match state {
                 SuperFLState::Finish => {
-                    comments.push((
-                        anchor,
-                        format!("feature:fl_local:{};", counter),
-                    ));
+                    comments.push((anchor, format!("feature:fl_local:{};", counter)));
 
                     // video.video_action_state_recorder[anchor].comments = format!(
                     //     "{}{}",

@@ -72,3 +72,48 @@ fn laymine_op_works() {
     print!("{:?}", laymine_op(8, 8, 43, 0, 0));
     print!("{:?}", laymine_op(3, 5, 3, 1, 4));
 }
+
+#[test]
+#[ignore]
+fn laymine_solvable_adjust_high_density() {
+    const ROW: usize = 16;
+    const COL: usize = 30;
+    const MINES: usize = 320;
+    const X0: usize = 7;
+    const Y0: usize = 8;
+    const ITERATIONS: usize = 100;
+
+    let mut success_count = 0;
+    let mut total_mines_correct = 0;
+    let mut start_safe = 0;
+
+    for i in 0..ITERATIONS {
+        println!("第{}次", i);
+        let (board, flag) = laymine_solvable_adjust(ROW, COL, MINES, X0, Y0);
+
+        if board[X0][Y0] != -1 {
+            start_safe += 1;
+        } else {
+            println!("第{}次: 起手位置是雷！", i);
+        }
+
+        let mine_count = board.iter().flatten().filter(|&&v| v == -1).count();
+        if mine_count == MINES {
+            total_mines_correct += 1;
+        } else {
+            println!("第{}次: 雷数不对 {} != {}", i, mine_count, MINES);
+        }
+
+        if flag && is_solvable(&board, X0, Y0) {
+            success_count += 1;
+        }
+    }
+
+    println!(
+        "高密度测试结果: 起手安全 {}/{}, 雷数正确 {}/{}, 无猜通过 {}/{}",
+        start_safe, ITERATIONS, total_mines_correct, ITERATIONS, success_count, ITERATIONS
+    );
+
+    assert_eq!(start_safe, ITERATIONS, "起手位置不应为雷");
+    assert_eq!(total_mines_correct, ITERATIONS, "总雷数必须等于传入值");
+}

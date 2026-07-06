@@ -955,7 +955,6 @@ pub fn laymine_solvable_adjust(
     y0: usize,
 ) -> (Vec<Vec<i32>>, bool) {
     // 利用局面调整算法，无猜埋雷
-    let mut board;
     let mut area_op = 9;
     if x0 == 0 || y0 == 0 || x0 == row - 1 || y0 == column - 1 {
         if x0 == 0 && y0 == 0
@@ -981,57 +980,67 @@ pub fn laymine_solvable_adjust(
         return (laymine_op(row, column, minenum, x0, y0), true);
     }
 
-    board = vec![vec![-10; column]; row];
-    let mut board_of_game = vec![vec![10; column]; row];
-    board_of_game[x0][y0] = 0;
-    let remain_minenum = minenum;
-    let remain_not_minenum = row * column - area_op - minenum;
-    let mut cells_plan_to_click = vec![];
-    // 初始化第一步计划点开的格子
-    for j in max(1, x0) - 1..min(row, x0 + 2) {
-        for k in max(1, y0) - 1..min(column, y0 + 2) {
-            board[j][k] = 0;
-            board_of_game[j][k] = 0;
-            if j != x0 || k != y0 {
-                cells_plan_to_click.push((j, k));
+    // 重试循环：adjust_step失败或有猜时重新调整，最多10次
+    let max_retries = 10;
+    for retry in 0..max_retries {
+        let max_depth = ((row as f64 * column as f64).sqrt() * 40.0) as usize;
+        let max_depth = max_depth.clamp(100, 10000);
+        let max_total_calls = row * column * 100;
+
+        let mut board = vec![vec![-10; column]; row];
+        let mut board_of_game = vec![vec![10; column]; row];
+        board_of_game[x0][y0] = 0;
+        let remain_minenum = minenum;
+        let remain_not_minenum = row * column - area_op - minenum;
+        for j in max(1, x0) - 1..min(row, x0 + 2) {
+            for k in max(1, y0) - 1..min(column, y0 + 2) {
+                board[j][k] = 0;
+                board_of_game[j][k] = 0;
             }
         }
-    }
-    // 开始递归求解
-    let (mut b, flag) = adjust_step(
-        &board,
-        &board_of_game,
-        // &cells_plan_to_click,
-        remain_minenum,
-        remain_not_minenum,
-        remain_not_minenum,
-        0,
-    );
-    if !flag || b.is_empty() {
-        return (laymine_op(row, column, minenum, x0, y0), false);
-    }
-    for i in 0..row {
-        for j in 0..column {
-            if b[i][j] == -10 {
-                b[i][j] = -1;
+
+        let mut total_calls = 0;
+        let (mut b, flag, _terminal) = adjust_step(
+            &board,
+            &board_of_game,
+            remain_minenum,
+            remain_not_minenum,
+            remain_not_minenum,
+            0,
+            max_depth,
+            &mut total_calls,
+            max_total_calls,
+            x0,
+            y0,
+        );
+        if !flag || b.is_empty() {
+            continue;
+        }
+        for i in 0..row {
+            for j in 0..column {
+                if b[i][j] == -10 {
+                    b[i][j] = -1;
+                }
             }
         }
-    }
-    // 最后，算数字
-    for i in 0..row {
-        for j in 0..column {
-            if b[i][j] == -1 {
-                for m in max(1, i) - 1..min(row, i + 2) {
-                    for n in max(1, j) - 1..min(column, j + 2) {
-                        if b[m][n] >= 0 {
-                            b[m][n] += 1;
+        for i in 0..row {
+            for j in 0..column {
+                if b[i][j] == -1 {
+                    for m in max(1, i) - 1..min(row, i + 2) {
+                        for n in max(1, j) - 1..min(column, j + 2) {
+                            if b[m][n] >= 0 {
+                                b[m][n] += 1;
+                            }
                         }
                     }
                 }
             }
         }
+        if is_solvable(&b, x0, y0) {
+            return (b, true);
+        }
     }
-    (b, flag)
+    (laymine_op(row, column, minenum, x0, y0), false)
 }
 
 // fn print_positions(matrix: &Vec<Vec<i32>>, num: i32) {
@@ -1060,37 +1069,43 @@ pub fn laymine_solvable_adjust(
 // }
 
 // 调整法的递归部分。注意空间复杂度为局面面积乘求解步数。
-// 返回没有计算数字的局面和是否成功。
+// 返回(没有计算数字的局面, 是否成功, 是否终局失败不可重试).
 fn adjust_step(
     board: &Vec<Vec<i32>>,         // 当前的board，数字没有计算，只有0，-1，-10
     board_of_game: &Vec<Vec<i32>>, // 当前的board_of_game，只有10，1（没有计算的数字），11，0（起手位置）
-    // plan_click: &Vec<(usize, usize)>, // 当前计划点开的格子，递归部分要保证点开后，局面是有解开的可能的
     remain_minenum: usize,     // 当前还要埋的雷数
     remain_not_minenum: usize, // 当前还要埋的非雷数
     remain_not_open: usize,    // 当前game_board上还要成功点开雷数，为0才是成功
     depth: usize,
-) -> (Vec<Vec<i32>>, bool) {
-    // dbg!(depth);
-    // println!(
-    //     "remain_minenum: {:?}, remain_not_minenum: {:?}, remain_not_open: {:?}",
-    //     remain_minenum, remain_not_minenum, remain_not_open
-    // );
-    // print_matrix(board);
-    // print_matrix(board_of_game);
-    let mut board_clone = board.clone(); // 克隆一个board的备份
-    let mut game_board_clone = board_of_game.clone(); // 克隆一个board_of_game的备份
+    max_depth: usize,
+    total_calls: &mut usize,
+    max_total_calls: usize,
+    x0: usize,
+    y0: usize,
+) -> (Vec<Vec<i32>>, bool, bool) {
+    *total_calls += 1;
+    if *total_calls > max_total_calls || depth >= max_depth {
+        return (vec![], false, true);
+    }
+
+    let mut board_clone = board.clone();
+    let mut game_board_clone = board_of_game.clone();
 
     let (a_matses, xses, bses) = refresh_matrixses(&game_board_clone);
 
     if a_matses.is_empty() {
-        return (vec![], false);
+        return (vec![], false, true);
     }
 
-    // 剩余需要埋的非雷数量为0，此时若干死猜主导全局，使得算法不容易结束。
-    // 则重新将前沿周围的雷和非雷都重摆。但可能出现死猜。
     if remain_not_minenum == 0 {
         let row = board.len();
         let column = board[0].len();
+        let mut safe_zone = std::collections::HashSet::new();
+        for i in max(1, x0) - 1..min(row, x0 + 2) {
+            for j in max(1, y0) - 1..min(column, y0 + 2) {
+                safe_zone.insert((i, j));
+            }
+        }
         let mut delta_remain_minenum = 0;
         let mut delta_remain_not_minenum = 0;
         let mut delta_remain_not_open = 0;
@@ -1098,6 +1113,7 @@ fn adjust_step(
         for &(x, y) in xses.iter().flatten().flatten() {
             for m in max(1, x) - 1..min(row, x + 2) {
                 for n in max(1, y) - 1..min(column, y + 2) {
+                    if safe_zone.contains(&(m, n)) { continue; }
                     if board_clone[m][n] == -1 && game_board_clone[m][n] != 10 {
                         board_clone[m][n] = -10;
                         board_mod.push((m, n));
@@ -1115,6 +1131,7 @@ fn adjust_step(
             }
         }
         for &(x, y) in xses.iter().flatten().flatten() {
+            if safe_zone.contains(&(x, y)) { continue; }
             if board_clone[x][y] == -1 {
                 board_clone[x][y] = -10;
                 delta_remain_minenum += 1;
@@ -1124,20 +1141,9 @@ fn adjust_step(
                 delta_remain_not_minenum += 1;
             }
         }
-
-        // for &(x, y) in board_mod.iter() {
-        //     for m in max(1, x) - 1..min(row, x + 2) {
-        //         for n in max(1, y) - 1..min(column, y + 2) {
-        //             if game_board_clone[m][n] == 11 {
-        //                 game_board_clone[m][n] = 10;
-        //             }
-        //             if game_board_clone[m][n] == 1 {
-        //                 game_board_clone[m][n] = 10;
-        //                 delta_remain_not_open += 1;
-        //             }
-        //         }
-        //     }
-        // }
+        if delta_remain_not_minenum == 0 {
+            return (vec![], false, true);
+        }
         return adjust_step(
             &board_clone,
             &game_board_clone,
@@ -1145,19 +1151,20 @@ fn adjust_step(
             remain_not_minenum + delta_remain_not_minenum,
             remain_not_open + delta_remain_not_open,
             depth + 1,
+            max_depth,
+            total_calls,
+            max_total_calls,
+            x0,
+            y0,
         );
     }
 
     let mut front_xs_0: Vec<(usize, usize)> =
         xses.clone().into_iter().flatten().flatten().collect();
-    // board中的-10表示还没有埋雷
-    // 保留第一块中每一段的尚未埋雷的格子，即前沿
     front_xs_0.retain(|x| board_clone[x.0][x.1] == -10);
     if front_xs_0.is_empty() {
-        return (vec![], false);
+        return (vec![], false, true);
     }
-    // 前沿格子————此格子在边缘，且是没有埋过雷的。xs_cell_num必然>0
-    // let xs_cell_num = front_xs_0.iter().fold(0, |acc, x| acc + x.len());
     let xs_cell_num = front_xs_0.len();
     let mut minenum_except = (xs_cell_num as f64 * remain_minenum as f64
         / (remain_not_minenum + remain_minenum) as f64) as usize;
@@ -1175,8 +1182,6 @@ fn adjust_step(
     } else {
         xs_cell_num - remain_not_minenum
     };
-    // 对不同雷数循环
-    // 此处的优化其实不重要，delta、minenum_min、minenum_max、loop_time等不敏感
     let delta: [isize; 15] = [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -6, 6, -7, 7];
     let mut first_loop_flag = true;
     for minenum in delta.iter().filter_map(|m| {
@@ -1191,11 +1196,9 @@ fn adjust_step(
             None
         }
     }) {
-        // 对每种雷数，重复尝试5次。
         let loop_time = if first_loop_flag { 5 } else { 1 };
         for _ in 0..loop_time {
             adjust_the_area_on_board(&mut board_clone, &front_xs_0, minenum);
-            // 以下的循环用来修正b向量
             let mut not_mine = vec![];
             let mut is_mine = vec![];
             for (i, mut b_s) in bses.clone().into_iter().enumerate() {
@@ -1204,10 +1207,8 @@ fn adjust_step(
 
                 for bb in 0..b_s.len() {
                     for ss in 0..b_s[bb].len() {
-                        // ss是第几个方程
                         b_s[bb][ss] = 0;
                         for aa in 0..a_s[bb][0].len() {
-                            // aa是第几个格子
                             if a_s[bb][ss][aa] == 1 {
                                 if board_clone[x_s[bb][aa].0][x_s[bb][aa].1] == -1
                                     && game_board_clone[x_s[bb][aa].0][x_s[bb][aa].1] != 11
@@ -1222,18 +1223,15 @@ fn adjust_step(
                     &mut a_s.clone(),
                     &mut x_s.clone(),
                     &mut b_s.clone(),
-                    // 此处拷贝一份，防止被篡改
                     &mut game_board_clone.clone(),
                 );
                 not_mine.append(&mut _not_mine);
                 is_mine.append(&mut _is_mine);
             }
 
-            // 如果有非雷，进入下一层。否则再换雷数重复循环。
             if not_mine.len() > 0 {
                 not_mine.iter().for_each(|x| game_board_clone[x.0][x.1] = 1);
                 is_mine.iter().for_each(|x| game_board_clone[x.0][x.1] = 11);
-                // dbg!(not_mine.clone(), is_mine);
                 if remain_not_open <= not_mine.len() {
                     board_clone.iter_mut().for_each(|x| {
                         x.iter_mut().for_each(|i| {
@@ -1242,21 +1240,28 @@ fn adjust_step(
                             }
                         })
                     });
-                    return (board_clone, true);
+                    return (board_clone, true, false);
                 }
 
-                let a = adjust_step(
+                let (a_board, a_ok, a_terminal) = adjust_step(
                     &board_clone,
                     &game_board_clone,
                     remain_minenum - minenum,
                     remain_not_minenum + minenum - xs_cell_num,
                     remain_not_open - not_mine.len(),
                     depth + 1,
+                    max_depth,
+                    total_calls,
+                    max_total_calls,
+                    x0,
+                    y0,
                 );
-                if a.1 {
-                    if !a.0.is_empty() {
-                        return (a.0, true);
+                if a_ok {
+                    if !a_board.is_empty() {
+                        return (a_board, true, false);
                     }
+                } else if a_terminal {
+                    return (vec![], false, true);
                 } else {
                     board_clone = board.clone();
                     game_board_clone = board_of_game.clone();
@@ -1266,7 +1271,7 @@ fn adjust_step(
         }
         first_loop_flag = false;
     }
-    return (vec![], false);
+    return (vec![], false, false);
 }
 
 // 在指定的局部（area_current_adjust）埋雷，不刷新board上的数字

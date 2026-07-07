@@ -597,8 +597,8 @@ fn evf_video_works_for_temp_video() {
     let mut video = EvfVideo::new("../test_files/temp.evf");
 
     let v = video.parse();
-    video.data.print_event(false);
     video.data.analyse();
+    video.data.print_event(false);
     video.data.analyse_for_features(&vec![
         "high_risk_guess",
         "jump_judge",
@@ -620,6 +620,7 @@ fn evf_video_works_for_temp_video() {
     println!("is_official: {:?}", video.data.is_official);
     println!("is_fair: {:?}", video.data.is_fair);
     println!("is_valid: {:?}", video.data.is_valid());
+    println!("pluck: {:?}", video.data.get_pluck());
 
     // for t in video.data.video_action_state_recorder {
     //     if let Some(Event::Mouse(mouse_event)) = &t.event {

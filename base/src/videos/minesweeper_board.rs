@@ -324,6 +324,9 @@ impl<T> MinesweeperBoard<T> {
             if self.is_win() {
                 self.game_board_state = GameBoardState::Win;
             }
+            if self.game_board_state == GameBoardState::Loss{
+                return Ok(4)
+            }
             Ok(3)
         } else {
             Ok(0)

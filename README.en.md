@@ -147,8 +147,8 @@ try (var video = new EvfVideo("replay.evf")) {
 | Platform | Latest | Channel |
 |----------|--------|---------|
 | Rust crate | 1.5.10 | [crates.io](https://crates.io/crates/ms_toollib) |
-| Python | 1.5.12 | `pip install ms-toollib` |
-| WASM (bundler) | 1.5.12 | `npm install ms-toollib` |
+| Python | 1.5.15 | `pip install ms-toollib` |
+| WASM (bundler) | 1.5.15 | `npm install ms-toollib` |
 | WASM (Node.js) | 1.5.10-alpha | `npm install ms-toollib@alpha` |
 | C | 0.2.0 | source build |
 | C++ | 0.2.0 | source build (Corrosion + CXX) |

@@ -163,8 +163,8 @@ julia demos/julia/callms_toollib.jl
 | 平台 | 最新版本 | 发布渠道 |
 |------|----------|----------|
 | Rust crate | 1.5.10 | [crates.io](https://crates.io/crates/ms_toollib) |
-| Python | 1.5.14 | `pip install ms-toollib` |
-| WASM (bundler) | 1.5.14 | `npm install ms-toollib` |
+| Python | 1.5.15 | `pip install ms-toollib` |
+| WASM (bundler) | 1.5.15 | `npm install ms-toollib` |
 | WASM (Node.js) | 1.5.10-alpha | `npm install ms-toollib@alpha` |
 | C | 0.2.0 | 源码编译 |
 | C++ | 0.2.0 | 源码编译（Corrosion + CXX） |

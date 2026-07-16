@@ -41,7 +41,7 @@ impl<T> BaseVideo<T> {
                 }
                 if id == 0 {
                     let p = self.mine_num as f64 / (self.height * self.width) as f64;
-                    return vec![vec![p; self.height]; self.width];
+                    return vec![vec![p; self.width]; self.height];
                 }
             } else {
                 // println!("{:?}, {:?}",self.current_event_id, self.video_action_state_recorder.len());

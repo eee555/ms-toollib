@@ -265,11 +265,13 @@ fn avf_video_works() {
     ]);
     video.data.set_current_time(-0.01);
     let _t = video.data.get_game_board_poss();
+    assert_eq!(_t.len(), 16);
+    assert_eq!(_t[0].len(), 30);
     println!("{:?}", video.data.get_game_board_poss());
     video.data.set_current_time(20.0);
     assert_eq!(video.data.get_pluck().unwrap(), 0.20115579693141436);
     video.data.set_current_time(999.999);
-    assert_eq!(video.data.get_pluck().unwrap(), 0.3772470559870956);
+    assert_eq!(video.data.get_pluck().unwrap(), 0.3772470559870955);
 }
 
 #[test]

@@ -1306,8 +1306,8 @@ impl<T> BaseVideo<T> {
                 return 3;
             }
         } else {
-            // 仅限如上三种软件。不可能执行到此。
-            panic!("");
+            // 其他版本都不合法
+            return 1;
         }
 
         if self.video_action_state_recorder.len() as f64 / (self.static_params.bbbv as f64) < 10.0 {

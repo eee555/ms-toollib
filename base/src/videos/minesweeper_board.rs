@@ -916,6 +916,15 @@ impl<T> MinesweeperBoard<T> {
 }
 
 /// 鼠标状态
+/// 做ffi传递时作如下约定：
+/// UpUp => 1
+/// UpDown => 2
+/// UpDownNotFlag => 3
+/// DownUp => 4
+/// Chording => 5
+/// ChordingNotFlag => 6
+/// DownUpAfterChording => 7
+/// Undefined => 8,
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum MouseState {
     UpUp,
@@ -934,14 +943,21 @@ pub enum MouseState {
 }
 
 /// 游戏局面状态
+/// 做ffi传递时作如下约定：
+/// Ready => 1
+/// Playing => 2
+/// Win => 3
+/// Loss => 4
+/// PreFlaging => 5
+/// Display => 6,
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum GameBoardState {
     Ready,
-    /// 游戏开始，埋雷前标雷，将被记录到录像里。
-    PreFlaging,
     Playing,
-    Loss,
     Win,
+    Loss,
+    /// 对界面有任何影响的操作（左键按下、标雷）发生后、第一次左键在未打开格子上弹起前的状态。此阶段将被记录到录像里
+    PreFlaging,
     /// 局面作为录像在被播放
     Display,
 }

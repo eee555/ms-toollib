@@ -905,3 +905,422 @@ macro_rules! generate_video {
     };
 }
 generate_video!(AvfVideo, EvfVideo, MvfVideo, RmvVideo);
+
+#[wasm_bindgen]
+pub struct BaseVideo {
+    core: ms::BaseVideo<Vec<Vec<i32>>>,
+}
+
+#[wasm_bindgen]
+impl BaseVideo {
+    #[wasm_bindgen(constructor)]
+    pub fn new(board: JsValue, cell_pixel_size: u8) -> BaseVideo {
+        let board_vec = js_value_to_vec_vec(board);
+        let bbbv = ms::cal_bbbv(&board_vec);
+        let mine_num = board_vec.iter().fold(0, |y, row| {
+            y + row
+                .iter()
+                .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
+        });
+        let mb = ms::MinesweeperBoard::<Vec<Vec<i32>>>::new(board_vec.clone());
+        let mut core = ms::BaseVideo::<Vec<Vec<i32>>>::default();
+        core.width = board_vec[0].len();
+        core.height = board_vec.len();
+        core.mine_num = mine_num;
+        core.cell_pixel_size = cell_pixel_size;
+        core.board = board_vec;
+        core.minesweeper_board = mb;
+        core.game_board_state = ms::GameBoardState::Ready;
+        core.static_params.bbbv = bbbv;
+        BaseVideo { core }
+    }
+    pub fn step(&mut self, e: &str, x: usize, y: usize) {
+        self.core.step(e, (x, y)).unwrap();
+    }
+    pub fn step_game_state(&mut self, e: &str) {
+        self.core.step_game_state(e).unwrap();
+    }
+    pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
+        self.core.reset(row, column, pix_size);
+    }
+    pub fn win_then_flag_all_mine(&mut self) {
+        self.core.win_then_flag_all_mine();
+    }
+    pub fn loss_then_open_all_mine(&mut self) {
+        self.core.loss_then_open_all_mine();
+    }
+    pub fn is_valid(&self) -> u8 {
+        self.core.is_valid()
+    }
+    // ---------- getters ----------
+    #[wasm_bindgen(getter = raw_data)]
+    pub fn get_raw_data(&self) -> Vec<u8> {
+        self.core.get_raw_data().unwrap()
+    }
+    #[wasm_bindgen(getter = time)]
+    pub fn get_time(&self) -> f64 {
+        self.core.get_time()
+    }
+    #[wasm_bindgen(getter = software)]
+    pub fn get_software(&self) -> String {
+        self.core.software.clone()
+    }
+    #[wasm_bindgen(getter = row)]
+    pub fn get_row(&self) -> usize {
+        self.core.height
+    }
+    #[wasm_bindgen(getter = column)]
+    pub fn get_column(&self) -> usize {
+        self.core.width
+    }
+    #[wasm_bindgen(getter = level)]
+    pub fn get_level(&self) -> u8 {
+        self.core.level
+    }
+    #[wasm_bindgen(getter = mode)]
+    pub fn get_mode(&self) -> u16 {
+        self.core.mode
+    }
+    #[wasm_bindgen(getter = is_completed)]
+    pub fn get_is_completed(&self) -> bool {
+        self.core.is_completed
+    }
+    #[wasm_bindgen(getter = is_official)]
+    pub fn get_is_official(&self) -> bool {
+        self.core.is_official
+    }
+    #[wasm_bindgen(getter = is_fair)]
+    pub fn get_is_fair(&self) -> bool {
+        self.core.is_fair
+    }
+    #[wasm_bindgen(getter = mine_num)]
+    pub fn get_mine_num(&self) -> usize {
+        self.core.mine_num
+    }
+    #[wasm_bindgen(getter = player_identifier)]
+    pub fn get_player_identifier(&self) -> String {
+        self.core.player_identifier.clone()
+    }
+    #[wasm_bindgen(getter = race_identifier)]
+    pub fn get_race_identifier(&self) -> String {
+        self.core.race_identifier.clone()
+    }
+    #[wasm_bindgen(getter = unique_identifier)]
+    pub fn get_unique_identifier(&self) -> String {
+        self.core.unique_identifier.clone()
+    }
+    #[wasm_bindgen(getter = country)]
+    pub fn get_country(&self) -> String {
+        self.core.country.clone()
+    }
+    #[wasm_bindgen(getter = bbbv)]
+    pub fn get_bbbv(&self) -> usize {
+        self.core.static_params.bbbv
+    }
+    #[wasm_bindgen(getter = zini)]
+    pub fn get_zini(&self) -> usize {
+        self.core.static_params.zini
+    }
+    #[wasm_bindgen(getter = hzini)]
+    pub fn get_hzini(&self) -> usize {
+        self.core.static_params.hzini
+    }
+    #[wasm_bindgen(getter = start_time)]
+    pub fn get_start_time(&self) -> u64 {
+        self.core.start_time
+    }
+    #[wasm_bindgen(getter = end_time)]
+    pub fn get_end_time(&self) -> u64 {
+        self.core.end_time
+    }
+    #[wasm_bindgen(getter = op)]
+    pub fn get_op(&self) -> usize {
+        self.core.static_params.op
+    }
+    #[wasm_bindgen(getter = isl)]
+    pub fn get_isl(&self) -> usize {
+        self.core.static_params.isl
+    }
+    #[wasm_bindgen(getter = cell0)]
+    pub fn get_cell0(&self) -> usize {
+        self.core.static_params.cell0
+    }
+    #[wasm_bindgen(getter = cell1)]
+    pub fn get_cell1(&self) -> usize {
+        self.core.static_params.cell1
+    }
+    #[wasm_bindgen(getter = cell2)]
+    pub fn get_cell2(&self) -> usize {
+        self.core.static_params.cell2
+    }
+    #[wasm_bindgen(getter = cell3)]
+    pub fn get_cell3(&self) -> usize {
+        self.core.static_params.cell3
+    }
+    #[wasm_bindgen(getter = cell4)]
+    pub fn get_cell4(&self) -> usize {
+        self.core.static_params.cell4
+    }
+    #[wasm_bindgen(getter = cell5)]
+    pub fn get_cell5(&self) -> usize {
+        self.core.static_params.cell5
+    }
+    #[wasm_bindgen(getter = cell6)]
+    pub fn get_cell6(&self) -> usize {
+        self.core.static_params.cell6
+    }
+    #[wasm_bindgen(getter = cell7)]
+    pub fn get_cell7(&self) -> usize {
+        self.core.static_params.cell7
+    }
+    #[wasm_bindgen(getter = cell8)]
+    pub fn get_cell8(&self) -> usize {
+        self.core.static_params.cell8
+    }
+    #[wasm_bindgen(getter = rtime)]
+    pub fn get_rtime(&self) -> f64 {
+        self.core.get_rtime().unwrap()
+    }
+    #[wasm_bindgen(getter = rtime_ms)]
+    pub fn get_rtime_ms(&self) -> u32 {
+        self.core.get_rtime_ms().unwrap()
+    }
+    #[wasm_bindgen(getter = etime)]
+    pub fn get_etime(&self) -> f64 {
+        self.core.get_etime().unwrap()
+    }
+    #[wasm_bindgen(getter = video_start_time)]
+    pub fn get_video_start_time(&self) -> f64 {
+        self.core.get_video_start_time().unwrap()
+    }
+    #[wasm_bindgen(getter = video_end_time)]
+    pub fn get_video_end_time(&self) -> f64 {
+        self.core.get_video_end_time().unwrap()
+    }
+    #[wasm_bindgen(getter = bbbv_s)]
+    pub fn get_bbbv_s(&self) -> f64 {
+        self.core.get_bbbv_s().unwrap()
+    }
+    #[wasm_bindgen(getter = stnb)]
+    pub fn get_stnb(&self) -> f64 {
+        self.core.get_stnb().unwrap()
+    }
+    #[wasm_bindgen(getter = rqp)]
+    pub fn get_rqp(&self) -> f64 {
+        self.core.get_rqp().unwrap()
+    }
+    #[wasm_bindgen(getter = qg)]
+    pub fn get_qg(&self) -> f64 {
+        self.core.get_qg().unwrap()
+    }
+    #[wasm_bindgen(getter = left)]
+    pub fn get_left(&self) -> usize {
+        self.core.get_left()
+    }
+    #[wasm_bindgen(getter = right)]
+    pub fn get_right(&self) -> usize {
+        self.core.get_right()
+    }
+    #[wasm_bindgen(getter = double)]
+    pub fn get_double(&self) -> usize {
+        self.core.get_double()
+    }
+    #[wasm_bindgen(getter = cl)]
+    pub fn get_cl(&self) -> usize {
+        self.core.get_cl()
+    }
+    #[wasm_bindgen(getter = flag)]
+    pub fn get_flag(&self) -> usize {
+        self.core.get_flag()
+    }
+    #[wasm_bindgen(getter = bbbv_solved)]
+    pub fn get_bbbv_solved(&self) -> usize {
+        self.core.get_bbbv_solved().unwrap()
+    }
+    #[wasm_bindgen(getter = lce)]
+    pub fn get_lce(&self) -> usize {
+        self.core.get_lce().unwrap()
+    }
+    #[wasm_bindgen(getter = rce)]
+    pub fn get_rce(&self) -> usize {
+        self.core.get_rce().unwrap()
+    }
+    #[wasm_bindgen(getter = dce)]
+    pub fn get_dce(&self) -> usize {
+        self.core.get_dce().unwrap()
+    }
+    #[wasm_bindgen(getter = ce)]
+    pub fn get_ce(&self) -> usize {
+        self.core.get_ce().unwrap()
+    }
+    #[wasm_bindgen(getter = left_s)]
+    pub fn get_left_s(&self) -> f64 {
+        self.core.get_left_s()
+    }
+    #[wasm_bindgen(getter = right_s)]
+    pub fn get_right_s(&self) -> f64 {
+        self.core.get_right_s()
+    }
+    #[wasm_bindgen(getter = double_s)]
+    pub fn get_double_s(&self) -> f64 {
+        self.core.get_double_s()
+    }
+    #[wasm_bindgen(getter = cl_s)]
+    pub fn get_cl_s(&self) -> f64 {
+        self.core.get_cl_s()
+    }
+    #[wasm_bindgen(getter = flag_s)]
+    pub fn get_flag_s(&self) -> f64 {
+        self.core.get_flag_s()
+    }
+    #[wasm_bindgen(getter = path)]
+    pub fn get_path(&self) -> f64 {
+        self.core.get_path()
+    }
+    #[wasm_bindgen(getter = ce_s)]
+    pub fn get_ce_s(&self) -> f64 {
+        self.core.get_ce_s().unwrap()
+    }
+    #[wasm_bindgen(getter = ioe)]
+    pub fn get_ioe(&self) -> f64 {
+        self.core.get_ioe().unwrap()
+    }
+    #[wasm_bindgen(getter = thrp)]
+    pub fn get_thrp(&self) -> f64 {
+        self.core.get_thrp().unwrap()
+    }
+    #[wasm_bindgen(getter = corr)]
+    pub fn get_corr(&self) -> f64 {
+        self.core.get_corr().unwrap()
+    }
+    #[wasm_bindgen(getter = pluck)]
+    pub fn get_pluck(&mut self) -> f64 {
+        self.core.get_pluck().unwrap()
+    }
+    #[wasm_bindgen(getter = events)]
+    pub fn get_events(&self) -> JsValue {
+        let array = Array::new();
+        for i in &self.core.video_action_state_recorder {
+            let v = VideoActionStateRecorder { core: i.clone() };
+            array.push(&JsValue::from(v));
+        }
+        array.into()
+    }
+    #[wasm_bindgen(getter = current_event_id)]
+    pub fn get_current_event_id(&self) -> usize {
+        self.core.current_event_id
+    }
+    #[wasm_bindgen(getter = game_board)]
+    pub fn get_game_board(&self) -> JsValue {
+        vec_vec_to_js_value(self.core.get_game_board())
+    }
+    #[wasm_bindgen(getter = game_board_poss)]
+    pub fn get_game_board_poss(&mut self) -> JsValue {
+        vec_vec_to_js_value(self.core.get_game_board_poss())
+    }
+    #[wasm_bindgen(getter = mouse_state)]
+    pub fn get_mouse_state(&self) -> u32 {
+        self.core.get_mouse_state() as u32
+    }
+    #[wasm_bindgen(getter = game_board_state)]
+    pub fn get_game_board_state(&self) -> usize {
+        match self.core.game_board_state {
+            ms::GameBoardState::Ready => 1,
+            ms::GameBoardState::Playing => 2,
+            ms::GameBoardState::Win => 3,
+            ms::GameBoardState::Loss => 4,
+            ms::GameBoardState::PreFlaging => 5,
+            ms::GameBoardState::Display => 6,
+        }
+    }
+    #[wasm_bindgen(getter = x_y)]
+    pub fn get_x_y(&self) -> CursorPos {
+        let (x, y) = self.core.get_x_y().unwrap();
+        CursorPos { x, y }
+    }
+    #[wasm_bindgen(getter = checksum)]
+    pub fn get_checksum(&self) -> Vec<u8> {
+        self.core.get_checksum().unwrap()
+    }
+    #[wasm_bindgen(getter = pix_size)]
+    pub fn get_pix_size(&self) -> u8 {
+        self.core.get_pix_size().unwrap()
+    }
+    // ---------- setters ----------
+    #[wasm_bindgen(setter = current_event_id)]
+    pub fn set_current_event_id(&mut self, id: usize) {
+        let _ = self.core.set_current_event_id(id);
+    }
+    #[wasm_bindgen(setter = current_time)]
+    pub fn set_current_time(&mut self, time: f64) {
+        self.core.set_current_time(time);
+    }
+    #[wasm_bindgen(setter = software)]
+    pub fn set_software(&mut self, software: String) {
+        let _ = self.core.set_software(software);
+    }
+    #[wasm_bindgen(setter = player_identifier)]
+    pub fn set_player_identifier(&mut self, player_identifier: String) {
+        let _ = self.core.set_player_identifier(player_identifier);
+    }
+    #[wasm_bindgen(setter = race_identifier)]
+    pub fn set_race_identifier(&mut self, race_identifier: String) {
+        let _ = self.core.set_race_identifier(race_identifier);
+    }
+    #[wasm_bindgen(setter = unique_identifier)]
+    pub fn set_unique_identifier(&mut self, unique_identifier: String) {
+        let _ = self.core.set_unique_identifier(unique_identifier);
+    }
+    #[wasm_bindgen(setter = country)]
+    pub fn set_country(&mut self, country: String) {
+        let _ = self.core.set_country(country);
+    }
+    #[wasm_bindgen(setter = device_uuid)]
+    pub fn set_device_uuid(&mut self, device_uuid: Vec<u8>) {
+        let _ = self.core.set_device_uuid(device_uuid);
+    }
+    #[wasm_bindgen(setter = checksum)]
+    pub fn set_checksum(&mut self, checksum: Vec<u8>) {
+        let _ = self.core.set_checksum(checksum);
+    }
+    #[wasm_bindgen(setter = pix_size)]
+    pub fn set_pix_size(&mut self, pix_size: u8) {
+        let _ = self.core.set_pix_size(pix_size);
+    }
+    #[wasm_bindgen(setter = video_playing_pix_size)]
+    pub fn set_video_playing_pix_size(&mut self, pix_size: u8) {
+        self.core.set_video_playing_pix_size(pix_size);
+    }
+    #[wasm_bindgen(setter = use_question)]
+    pub fn set_use_question(&mut self, use_question: bool) {
+        let _ = self.core.set_use_question(use_question);
+    }
+    #[wasm_bindgen(setter = use_cursor_pos_lim)]
+    pub fn set_use_cursor_pos_lim(&mut self, use_cursor_pos_lim: bool) {
+        let _ = self.core.set_use_cursor_pos_lim(use_cursor_pos_lim);
+    }
+    #[wasm_bindgen(setter = use_auto_replay)]
+    pub fn set_use_auto_replay(&mut self, use_auto_replay: bool) {
+        let _ = self.core.set_use_auto_replay(use_auto_replay);
+    }
+    #[wasm_bindgen(setter = is_official)]
+    pub fn set_is_official(&mut self, is_official: bool) {
+        let _ = self.core.set_is_official(is_official);
+    }
+    #[wasm_bindgen(setter = is_fair)]
+    pub fn set_is_fair(&mut self, is_fair: bool) {
+        let _ = self.core.set_is_fair(is_fair);
+    }
+    #[wasm_bindgen(setter = mode)]
+    pub fn set_mode(&mut self, mode: u16) {
+        let _ = self.core.set_mode(mode);
+    }
+}
+
+
+
+
+
+
+
+

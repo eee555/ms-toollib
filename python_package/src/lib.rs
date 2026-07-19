@@ -570,3 +570,4 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
 }
 
 // cp .\target\release\ms_toollib.dll ..\..\Solvable-Minesweeper\src\ms_toollib.pyd
+// cp .\target\release\ms_toollib.dll ..\demos\python\ms_toollib.pyd

@@ -1,8 +1,7 @@
 use crate::miscellaneous::s_to_ms;
 use crate::videos::{BaseVideo, Event};
 use crate::{GameBoardState, MouseState};
-#[cfg(any(feature = "py", feature = "rs"))]
-use std::time::Instant;
+use web_time::Instant;
 // BaseVideo指标计算和获取的方法
 
 impl<T> BaseVideo<T> {
@@ -71,7 +70,6 @@ impl<T> BaseVideo<T> {
         Ok(0)
     }
     /// 用于(游戏时)计数器上显示的时间,和arbiter一致
-    #[cfg(any(feature = "py", feature = "rs"))]
     pub fn get_time(&self) -> f64 {
         match self.game_board_state {
             GameBoardState::Playing => {
@@ -431,15 +429,11 @@ impl<T> BaseVideo<T> {
             }
             GameBoardState::Loss | GameBoardState::Win => self.game_dynamic_params.left_s,
             GameBoardState::PreFlaging | GameBoardState::Ready => 0.0,
-            #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_left() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
-            #[allow(unreachable_patterns)]
-            #[cfg(any(feature = "js"))]
-            GameBoardState::Playing => 0.0,
         }
     }
     pub fn get_right_s(&self) -> f64 {
@@ -452,15 +446,11 @@ impl<T> BaseVideo<T> {
             }
             GameBoardState::Loss | GameBoardState::Win => self.game_dynamic_params.right_s,
             GameBoardState::PreFlaging | GameBoardState::Ready => 0.0,
-            #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_right() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
-            #[allow(unreachable_patterns)]
-            #[cfg(any(feature = "js"))]
-            GameBoardState::Playing => 0.0,
         }
     }
     pub fn get_double_s(&self) -> f64 {
@@ -473,15 +463,11 @@ impl<T> BaseVideo<T> {
             }
             GameBoardState::Loss | GameBoardState::Win => self.game_dynamic_params.double_s,
             GameBoardState::PreFlaging | GameBoardState::Ready => 0.0,
-            #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_double() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
-            #[allow(unreachable_patterns)]
-            #[cfg(any(feature = "js"))]
-            GameBoardState::Playing => 0.0,
         }
     }
     pub fn get_cl_s(&self) -> f64 {
@@ -494,15 +480,11 @@ impl<T> BaseVideo<T> {
             }
             GameBoardState::Loss | GameBoardState::Win => self.game_dynamic_params.cl_s,
             GameBoardState::PreFlaging | GameBoardState::Ready => 0.0,
-            #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_cl() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
-            #[allow(unreachable_patterns)]
-            #[cfg(any(feature = "js"))]
-            GameBoardState::Playing => 0.0,
         }
     }
     pub fn get_flag_s(&self) -> f64 {
@@ -515,15 +497,11 @@ impl<T> BaseVideo<T> {
             }
             GameBoardState::Loss | GameBoardState::Win => self.game_dynamic_params.flag_s,
             GameBoardState::PreFlaging | GameBoardState::Ready => 0.0,
-            #[cfg(any(feature = "py", feature = "rs"))]
             GameBoardState::Playing => {
                 let now = Instant::now();
                 let t_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
                 self.get_flag() as f64 * 1000.0 / (t_ms - self.game_start_ms) as f64
             }
-            #[allow(unreachable_patterns)]
-            #[cfg(any(feature = "js"))]
-            GameBoardState::Playing => 0.0,
         }
     }
     pub fn get_path(&self) -> f64 {

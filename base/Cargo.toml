@@ -12,8 +12,8 @@ authors = ["Wang Jianing <wangjianing@88.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["rs"]
-js = ["web-sys"]
+default = ["js"]
+js = ["web-time"]
 py = ["rand", "tract-onnx"]
 rs = ["rand", "tract-onnx"]
 
@@ -25,9 +25,8 @@ optional  = true
 version = "0.2.3"
 features = ["js"]
 
-[dependencies.web-sys]
-version = "0.3.4"
-features = ['console']
+[dependencies.web-time]
+version = "1"
 optional  = true
 
 [dependencies.tract-onnx]

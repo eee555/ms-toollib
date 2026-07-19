@@ -1,9 +1,7 @@
 // 录像相关的类，局面在board
 use crate::board::GameBoard;
 use crate::cal_cell_nums;
-#[cfg(any(feature = "py", feature = "rs"))]
 use crate::miscellaneous::time_ms_between;
-#[cfg(any(feature = "py", feature = "rs"))]
 use crate::utils::cal_bbbv;
 use crate::utils::{cal_isl, cal_op};
 use crate::videos::analyse_methods::{
@@ -16,8 +14,7 @@ use std::cell::RefCell;
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::fs;
 use std::rc::Rc;
-#[cfg(any(feature = "py", feature = "rs"))]
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use web_time::{Instant, SystemTime, UNIX_EPOCH};
 
 use crate::safe_board::BoardSize;
 #[cfg(any(feature = "py", feature = "rs"))]
@@ -161,11 +158,8 @@ pub struct BaseVideo<T> {
     /// 游戏局面流，从一开始没有打开任何格子（包含玩家游戏前的标雷过程），到最后打开了所有
     game_board_stream: Vec<Rc<RefCell<GameBoard>>>,
     /// 录像开始的时间（区别于游戏开始的时间），由计时器控制，仅游戏时用
-    #[cfg(any(feature = "py", feature = "rs"))]
     pub video_start_instant: Instant,
     /// 第一次有效的左键抬起的时间，由计时器控制，仅游戏时用, new_before_game方法里用到，真正开始的时间
-    #[cfg(any(feature = "py", feature = "rs"))]
-    // pub game_start_instant: Instant,
     pub game_start_ms: u32,
     /// 第一次有效的左键抬起的时间，格式不同，只在录像播放模式用到
     pub delta_time: f64,
@@ -259,9 +253,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             game_board_state: GameBoardState::Display,
             video_action_state_recorder: vec![],
             game_board_stream: vec![],
-            #[cfg(any(feature = "py", feature = "rs"))]
             video_start_instant: Instant::now(),
-            #[cfg(any(feature = "py", feature = "rs"))]
             game_start_ms: 0,
             delta_time: 0.0,
             current_time: 0.0,
@@ -847,7 +839,6 @@ impl<T> BaseVideo<T> {
     /// 实施鼠标动作
     /// - pos的单位是像素，(距离上方，距离左侧)
     /// - 如果操作发生在界外，要求转换成pos=(row*pixsize, column*pixsize)
-    #[cfg(any(feature = "py", feature = "rs"))]
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()>
     where
         T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
@@ -1024,7 +1015,6 @@ impl<T> BaseVideo<T> {
 
     /// 实施游戏状态动作
     /// 游戏状态事件编码：{81: "replay", 82: "win", 83: "fail", 99: "error"}。
-    #[cfg(any(feature = "py", feature = "rs"))]
     pub fn step_game_state(&mut self, e: &str) -> Result<u8, ()>
     where
         T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
@@ -1047,7 +1037,6 @@ impl<T> BaseVideo<T> {
         }
     }
     /// 获胜后标上所有的雷，没获胜则返回
-    #[cfg(any(feature = "py", feature = "rs"))]
     pub fn win_then_flag_all_mine(&mut self) {
         if self.minesweeper_board.game_board_state != GameBoardState::Win {
             return;
@@ -1062,7 +1051,6 @@ impl<T> BaseVideo<T> {
     }
     /// 失败后展示所有的雷，没失败则返回
     /// 这件事状态机不会自动做，因为有些模式失败后不标出所有的雷，如强无猜
-    #[cfg(any(feature = "py", feature = "rs"))]
     pub fn loss_then_open_all_mine(&mut self)
     where
         T: std::ops::Index<usize> + BoardSize,
@@ -1082,7 +1070,6 @@ impl<T> BaseVideo<T> {
         }
     }
     /// 游戏结束后，计算一批指标
-    #[cfg(any(feature = "py", feature = "rs"))]
     fn gather_params_after_game(&mut self, time_ms: u32, last_mouse_event: Option<MouseEvent>)
     where
         T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,

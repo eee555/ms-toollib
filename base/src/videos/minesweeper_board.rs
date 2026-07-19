@@ -192,6 +192,39 @@ impl<T> MinesweeperBoard<T> {
         self.middle_hold = false;
         self.board_changed = false;
     }
+    pub fn new_from_board(row: usize, column: usize) -> Self
+    where
+        T: From<Vec<Vec<i32>>>,
+    {
+        MinesweeperBoard {
+            board: T::from(vec![vec![0; column]; row]),
+            game_board: vec![vec![10; column]; row],
+            flaged_list: vec![],
+            left: 0,
+            right: 0,
+            double: 0,
+            lce: 0,
+            rce: 0,
+            dce: 0,
+            flag: 0,
+            bbbv_solved: 0,
+            row,
+            column,
+            mouse_state: MouseState::UpUp,
+            game_board_state: GameBoardState::Ready,
+            pointer_x: 0,
+            pointer_y: 0,
+            pre_flag_num: 0,
+            middle_hold: false,
+            board_changed: false,
+        }
+    }
+    pub fn replace_board(&mut self, board: T) {
+        self.board = board;
+        self.pointer_x = 0;
+        self.pointer_y = 0;
+        self.board_changed = true;
+    }
     /// Playing状态下的左击，没有按下抬起之分
     fn left_click(&mut self, x: usize, y: usize) -> Result<u8, ()>
     where

@@ -341,25 +341,6 @@ impl Default for BaseVideo<SafeBoard> {
 }
 
 impl BaseVideo<Vec<Vec<i32>>> {
-    /// 重置游戏状态等，不重置标识等很多局都不会变的数据。点脸等，重开。
-    pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
-        self.game_board_stream.clear();
-        self.minesweeper_board = MinesweeperBoard::<Vec<Vec<i32>>>::new(vec![vec![0; column]; row]);
-        self.width = column;
-        self.height = row;
-        self.cell_pixel_size = pix_size;
-        self.video_action_state_recorder.clear();
-        self.game_board_stream.clear();
-        self.raw_data.clear();
-        self.static_params = StaticParams::default();
-        self.game_dynamic_params = GameDynamicParams::default();
-        self.video_dynamic_params = VideoDynamicParams::default();
-        if self.game_board_state != GameBoardState::Display {
-            self.game_board_state = GameBoardState::Ready;
-        }
-        self.last_in_board_pos = (u16::MAX, u16::MAX);
-        self.last_in_board_pos_path = 0.0;
-    }
     /// 进行局面的推衍，计算基本的局面参数，记录所有中间过程。不包含概率计算。
     /// - 对于avf录像，必须analyse以后才能正确获取是否扫完。
     pub fn analyse(&mut self) {
@@ -560,159 +541,6 @@ impl BaseVideo<Vec<Vec<i32>>> {
             };
         }
     }
-    // 播放阶段计算pluck，必须先手动调用analyse_pluck
-    pub fn get_pluck(&self) -> Result<f64, ()> {
-        match self.game_board_state {
-            GameBoardState::Display => Ok(self.video_action_state_recorder[self.current_event_id]
-                .key_dynamic_params
-                .pluck),
-            _ => Err(()),
-        }
-    }
-}
-
-#[cfg(any(feature = "py", feature = "rs"))]
-impl BaseVideo<SafeBoard> {
-    /// 重置游戏状态等，不重置标识等很多局都不会变的数据。点脸等，重开。
-    pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
-        self.game_board_stream.clear();
-        self.minesweeper_board =
-            MinesweeperBoard::<SafeBoard>::new(SafeBoard::new(vec![vec![0; column]; row]));
-        self.width = column;
-        self.height = row;
-        self.cell_pixel_size = pix_size;
-        self.video_action_state_recorder.clear();
-        self.game_board_stream.clear();
-        self.raw_data.clear();
-        self.static_params = StaticParams::default();
-        self.game_dynamic_params = GameDynamicParams::default();
-        self.video_dynamic_params = VideoDynamicParams::default();
-        self.game_board_state = GameBoardState::Ready;
-        self.last_in_board_pos = (u16::MAX, u16::MAX);
-        self.last_in_board_pos_path = 0.0;
-    }
-    /// 两种情况调用：游戏开始前、可猜模式（尺寸相等，雷数不检查）
-    pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()> {
-        assert!(!board.is_empty());
-        match self.game_board_state {
-            GameBoardState::Ready | GameBoardState::PreFlaging => {
-                if self.width != board[0].len() || self.height != board.len() {
-                    return Err(());
-                }
-            }
-            GameBoardState::Playing => {
-                // 不再限制模式，以防过于严格。
-                // if self.mode != 6 && self.mode != 7 && self.mode != 8 && self.mode != 9 && self.mode != 10 {
-                //     return Err(());
-                // }
-                if self.width != board[0].len() || self.height != board.len() {
-                    return Err(());
-                }
-            }
-            GameBoardState::Display | GameBoardState::Win | GameBoardState::Loss => return Err(()),
-        }
-        self.mine_num = board.iter().fold(0, |y, row| {
-            y + row
-                .iter()
-                .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
-        });
-        self.height = board.len();
-        self.width = board[0].len();
-        if self.height == 8 && self.width == 8 && self.mine_num == 10 {
-            self.level = 3;
-        } else if self.height == 16 && self.width == 16 && self.mine_num == 40 {
-            self.level = 4;
-        } else if self.height == 16 && self.width == 30 && self.mine_num == 99 {
-            self.level = 5;
-        } else {
-            self.level = 6;
-        }
-        self.board = SafeBoard::new(board.clone());
-
-        if self.game_board_state == GameBoardState::Playing {
-            self.minesweeper_board.set_board(self.board.clone());
-        } else {
-            self.minesweeper_board.board = self.board.clone();
-        }
-
-        Ok(0)
-    }
-    // 游戏阶段（结束后）计算pluck，不必手动调用analyse_pluck
-    pub fn get_pluck(&mut self) -> Result<f64, ()> {
-        match self.game_board_state {
-            GameBoardState::Win | GameBoardState::Loss => {
-                let pluck = self.video_analyse_params.pluck;
-                if pluck.is_nan() {
-                    let mut pluck = 0.0;
-                    let mut has_begin = false;
-                    for vas in self.video_action_state_recorder.iter_mut() {
-                        if let Some(Event::Mouse(e)) = &vas.event {
-                            if vas.useful_level == 2 {
-                                // 有效的左键
-                                if !has_begin {
-                                    has_begin = true;
-                                    continue;
-                                }
-                                let x = (e.y / self.cell_pixel_size as u16) as usize;
-                                let y = (e.x / self.cell_pixel_size as u16) as usize;
-                                // 安全的概率
-                                let p = 1.0
-                                    - vas
-                                        .prior_game_board
-                                        .as_ref()
-                                        .unwrap()
-                                        .borrow_mut()
-                                        .get_poss()[x][y];
-                                if p <= 0.0 {
-                                    return Ok(f64::INFINITY);
-                                } else if p < 1.0 {
-                                    pluck -= p.log10();
-                                }
-                            } else if vas.useful_level == 3 {
-                                // 有效的双键
-                                let x = (e.y / self.cell_pixel_size as u16) as usize;
-                                let y = (e.x / self.cell_pixel_size as u16) as usize;
-                                let mut game_board_clone = vas
-                                    .prior_game_board
-                                    .as_ref()
-                                    .unwrap()
-                                    .borrow_mut()
-                                    .game_board
-                                    .clone();
-                                let mut chording_cells = vec![];
-                                for m in max(1, x) - 1..min(self.height, x + 2) {
-                                    for n in max(1, y) - 1..min(self.width, y + 2) {
-                                        if game_board_clone[m][n] == 10 {
-                                            chording_cells.push((m, n));
-                                        }
-                                    }
-                                }
-                                // let _ = mark_board(&mut game_board_clone, true).unwrap();
-                                // 安全的概率
-                                let p = cal_probability_cells_not_mine(
-                                    &game_board_clone,
-                                    self.mine_num as f64,
-                                    &chording_cells,
-                                );
-                                if p <= 0.0 {
-                                    return Ok(f64::INFINITY);
-                                } else if p > 0.0 {
-                                    pluck -= p.log10();
-                                }
-                            } else if vas.useful_level == 4 {
-                                use core::f64;
-
-                                return Ok(f64::INFINITY);
-                            }
-                        }
-                    }
-                    return Ok(pluck);
-                }
-                Ok(pluck)
-            }
-            _ => Err(()),
-        }
-    }
 }
 
 impl ByteReader for BaseVideo<Vec<Vec<i32>>> {
@@ -836,6 +664,142 @@ impl<T> BaseVideo<T> {
     //         ..BaseVideo::default()
     //     }
     // }
+    /// 重置游戏状态等，不重置标识等很多局都不会变的数据。点脸等，重开。
+    pub fn reset(&mut self, row: usize, column: usize, pix_size: u8)
+    where
+        T: From<Vec<Vec<i32>>>,
+    {
+        self.game_board_stream.clear();
+        self.minesweeper_board = MinesweeperBoard::<T>::new_from_board(row, column);
+        self.width = column;
+        self.height = row;
+        self.cell_pixel_size = pix_size;
+        self.video_action_state_recorder.clear();
+        self.raw_data.clear();
+        self.static_params = StaticParams::default();
+        self.game_dynamic_params = GameDynamicParams::default();
+        self.video_dynamic_params = VideoDynamicParams::default();
+        if self.game_board_state != GameBoardState::Display {
+            self.game_board_state = GameBoardState::Ready;
+        }
+        self.last_in_board_pos = (u16::MAX, u16::MAX);
+        self.last_in_board_pos_path = 0.0;
+    }
+    /// 两种情况调用：游戏开始前、可猜模式（尺寸相等，雷数不检查）
+    pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()>
+    where
+        T: From<Vec<Vec<i32>>> + Clone,
+    {
+        assert!(!board.is_empty());
+        match self.game_board_state {
+            GameBoardState::Ready | GameBoardState::PreFlaging => {
+                if self.width != board[0].len() || self.height != board.len() {
+                    return Err(());
+                }
+            }
+            GameBoardState::Playing => {
+                if self.width != board[0].len() || self.height != board.len() {
+                    return Err(());
+                }
+            }
+            GameBoardState::Display | GameBoardState::Win | GameBoardState::Loss => return Err(()),
+        }
+        self.mine_num = board.iter().fold(0, |y, row| {
+            y + row
+                .iter()
+                .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
+        });
+        self.height = board.len();
+        self.width = board[0].len();
+        if self.height == 8 && self.width == 8 && self.mine_num == 10 {
+            self.level = 3;
+        } else if self.height == 16 && self.width == 16 && self.mine_num == 40 {
+            self.level = 4;
+        } else if self.height == 16 && self.width == 30 && self.mine_num == 99 {
+            self.level = 5;
+        } else {
+            self.level = 6;
+        }
+        self.board = T::from(board.clone());
+        if self.game_board_state == GameBoardState::Playing {
+            self.minesweeper_board.replace_board(self.board.clone());
+        } else {
+            self.minesweeper_board.board = self.board.clone();
+        }
+        Ok(0)
+    }
+    // 播放阶段计算pluck。Display阶段返回缓存值，Win/Loss阶段实时计算。
+    pub fn get_pluck(&mut self) -> Result<f64, ()> {
+        match self.game_board_state {
+            GameBoardState::Display => Ok(self.video_action_state_recorder[self.current_event_id]
+                .key_dynamic_params
+                .pluck),
+            GameBoardState::Win | GameBoardState::Loss => {
+                let pluck = self.video_analyse_params.pluck;
+                if pluck.is_nan() {
+                    let mut pluck = 0.0;
+                    let mut has_begin = false;
+                    for vas in self.video_action_state_recorder.iter_mut() {
+                        if let Some(Event::Mouse(e)) = &vas.event {
+                            if vas.useful_level == 2 {
+                                if !has_begin {
+                                    has_begin = true;
+                                    continue;
+                                }
+                                let x = (e.y / self.cell_pixel_size as u16) as usize;
+                                let y = (e.x / self.cell_pixel_size as u16) as usize;
+                                let p = 1.0
+                                    - vas
+                                        .prior_game_board
+                                        .as_ref()
+                                        .unwrap()
+                                        .borrow_mut()
+                                        .get_poss()[x][y];
+                                if p <= 0.0 {
+                                    return Ok(f64::INFINITY);
+                                } else if p < 1.0 {
+                                    pluck -= p.log10();
+                                }
+                            } else if vas.useful_level == 3 {
+                                let x = (e.y / self.cell_pixel_size as u16) as usize;
+                                let y = (e.x / self.cell_pixel_size as u16) as usize;
+                                let mut game_board_clone = vas
+                                    .prior_game_board
+                                    .as_ref()
+                                    .unwrap()
+                                    .borrow_mut()
+                                    .game_board
+                                    .clone();
+                                let mut chording_cells = vec![];
+                                for m in max(1, x) - 1..min(self.height, x + 2) {
+                                    for n in max(1, y) - 1..min(self.width, y + 2) {
+                                        if game_board_clone[m][n] == 10 {
+                                            chording_cells.push((m, n));
+                                        }
+                                    }
+                                }
+                                let p = cal_probability_cells_not_mine(
+                                    &game_board_clone,
+                                    self.mine_num as f64,
+                                    &chording_cells,
+                                );
+                                if p <= 0.0 {
+                                    return Ok(f64::INFINITY);
+                                } else if p > 0.0 {
+                                    pluck -= p.log10();
+                                }
+                            } else if vas.useful_level == 4 {
+                                return Ok(f64::INFINITY);
+                            }
+                        }
+                    }
+                    return Ok(pluck);
+                }
+                Ok(pluck)
+            }
+            _ => Err(()),
+        }
+    }
     /// 实施鼠标动作
     /// - pos的单位是像素，(距离上方，距离左侧)
     /// - 如果操作发生在界外，要求转换成pos=(row*pixsize, column*pixsize)

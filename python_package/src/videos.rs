@@ -303,7 +303,7 @@ macro_rules! generate_video {
                 Ok(self.core.data.get_corr().unwrap())
             }
             #[getter]
-            fn get_pluck(&self) -> PyResult<f64> {
+            fn get_pluck(&mut self) -> PyResult<f64> {
                 Ok(self.core.data.get_pluck().unwrap())
             }
             #[getter]

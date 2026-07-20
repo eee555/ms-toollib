@@ -7,11 +7,13 @@
     </div>
     <input type="file" @change="openFile">
     <div v-for="v of video_info">{{ v }}</div>
+    <hr>
+    <MinesweeperGame />
 </template>
 
 <script setup lang="ts">
-
-import { defineComponent, ref, reactive, toRef, onMounted } from "vue";
+import { ref } from "vue";
+import MinesweeperGame from "./components/MinesweeperGame.vue";
 
 let board = ref<number[][]>([[0]]);
 let bbbv = ref(0);
@@ -57,10 +59,5 @@ const openFile = async (e: Event) => {
         };
         reader.readAsArrayBuffer(file);
     }
-
-    
-
 }
-
-
 </script>

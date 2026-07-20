@@ -940,6 +940,10 @@ impl BaseVideo {
     pub fn step_game_state(&mut self, e: &str) {
         self.core.step_game_state(e).unwrap();
     }
+    pub fn set_board(&mut self, board: JsValue) {
+        let board_vec = js_value_to_vec_vec(board);
+        self.core.set_board(board_vec).unwrap();
+    }
     pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
         self.core.reset(row, column, pix_size);
     }

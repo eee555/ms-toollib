@@ -1606,6 +1606,8 @@ fn base_video_works_set_board() {
     video.set_mode(9).unwrap();
     video.step("lc", (163, 210)).unwrap();
     video.step("lr", (163, 210)).unwrap();
+    // 安全性检查
+    assert!(video.static_params.bbbv == 0);
     video.step("rc", (113, 99)).unwrap();
     video.step("rr", (115, 86)).unwrap();
     video.step("rc", (321, 133)).unwrap();

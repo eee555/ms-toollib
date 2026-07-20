@@ -177,12 +177,29 @@ pub trait BoardSize {
     fn get_column(&self) -> usize;
 }
 
+pub trait EmptyBoard: Sized {
+    fn empty_board(row: usize, column: usize) -> Self;
+}
+
 impl BoardSize for Vec<Vec<i32>> {
     fn get_row(&self) -> usize {
         self.len()
     }
     fn get_column(&self) -> usize {
         self[0].len()
+    }
+}
+
+#[cfg(any(feature = "py", feature = "rs"))]
+impl From<Vec<Vec<i32>>> for SafeBoard {
+    fn from(v: Vec<Vec<i32>>) -> Self {
+        SafeBoard::new(v)
+    }
+}
+
+impl EmptyBoard for Vec<Vec<i32>> {
+    fn empty_board(row: usize, column: usize) -> Self {
+        vec![vec![0; column]; row]
     }
 }
 
@@ -202,6 +219,13 @@ impl BoardSize for SafeBoard {
     }
     fn get_column(&self) -> usize {
         self.value[0].len()
+    }
+}
+
+#[cfg(any(feature = "py", feature = "rs"))]
+impl EmptyBoard for SafeBoard {
+    fn empty_board(row: usize, column: usize) -> Self {
+        SafeBoard::new(vec![vec![0; column]; row])
     }
 }
 

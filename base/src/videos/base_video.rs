@@ -16,7 +16,7 @@ use std::fs;
 use std::rc::Rc;
 use web_time::{Instant, SystemTime, UNIX_EPOCH};
 
-use crate::safe_board::BoardSize;
+use crate::safe_board::{BoardSize, EmptyBoard};
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::safe_board::SafeBoard;
 
@@ -668,7 +668,8 @@ impl<T> BaseVideo<T> {
     /// 重置游戏状态等，不重置标识等很多局都不会变的数据。点脸等，重开。
     pub fn reset(&mut self, row: usize, column: usize, pix_size: u8)
     where
-        T: From<Vec<Vec<i32>>>,
+        T: std::ops::Index<usize> + BoardSize + EmptyBoard,
+        T::Output: std::ops::Index<usize, Output = i32>,
     {
         self.game_board_stream.clear();
         self.minesweeper_board = MinesweeperBoard::<T>::new_from_board(row, column);
@@ -689,7 +690,8 @@ impl<T> BaseVideo<T> {
     /// 两种情况调用：游戏开始前、可猜模式（尺寸相等，雷数不检查）
     pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()>
     where
-        T: From<Vec<Vec<i32>>> + Clone,
+        T: std::ops::Index<usize> + BoardSize + From<Vec<Vec<i32>>> + Clone,
+        T::Output: std::ops::Index<usize, Output = i32>,
     {
         assert!(!board.is_empty());
         match self.game_board_state {

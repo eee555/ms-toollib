@@ -3,7 +3,7 @@ use crate::utils::refresh_board;
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::safe_board::SafeBoard;
 
-use crate::safe_board::BoardSize;
+use crate::safe_board::{BoardSize, EmptyBoard};
 
 use std::cmp::{max, min};
 
@@ -159,12 +159,32 @@ impl MinesweeperBoard<SafeBoard> {
             ..MinesweeperBoard::<SafeBoard>::default()
         }
     }
-    /// 可猜模式改局面
-    pub fn set_board(&mut self, board: SafeBoard) {
-        self.board = board;
-        self.pointer_x = 0;
-        self.pointer_y = 0;
-        self.board_changed = true;
+}
+
+impl<T: EmptyBoard> MinesweeperBoard<T> {
+    pub fn new_from_board(row: usize, column: usize) -> Self {
+        MinesweeperBoard {
+            board: T::empty_board(row, column),
+            game_board: vec![vec![10; column]; row],
+            flaged_list: vec![],
+            left: 0,
+            right: 0,
+            double: 0,
+            lce: 0,
+            rce: 0,
+            dce: 0,
+            flag: 0,
+            bbbv_solved: 0,
+            row,
+            column,
+            mouse_state: MouseState::UpUp,
+            game_board_state: GameBoardState::Ready,
+            pointer_x: 0,
+            pointer_y: 0,
+            pre_flag_num: 0,
+            middle_hold: false,
+            board_changed: false,
+        }
     }
 }
 
@@ -192,32 +212,12 @@ impl<T> MinesweeperBoard<T> {
         self.middle_hold = false;
         self.board_changed = false;
     }
-    pub fn new_from_board(row: usize, column: usize) -> Self
-    where
-        T: From<Vec<Vec<i32>>>,
-    {
-        MinesweeperBoard {
-            board: T::from(vec![vec![0; column]; row]),
-            game_board: vec![vec![10; column]; row],
-            flaged_list: vec![],
-            left: 0,
-            right: 0,
-            double: 0,
-            lce: 0,
-            rce: 0,
-            dce: 0,
-            flag: 0,
-            bbbv_solved: 0,
-            row,
-            column,
-            mouse_state: MouseState::UpUp,
-            game_board_state: GameBoardState::Ready,
-            pointer_x: 0,
-            pointer_y: 0,
-            pre_flag_num: 0,
-            middle_hold: false,
-            board_changed: false,
-        }
+    /// 可猜模式改局面
+    pub fn set_board(&mut self, board: T) {
+        self.board = board;
+        self.pointer_x = 0;
+        self.pointer_y = 0;
+        self.board_changed = true;
     }
     pub fn replace_board(&mut self, board: T) {
         self.board = board;

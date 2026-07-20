@@ -588,7 +588,8 @@ impl NewBaseVideo<&str> for BaseVideo<Vec<Vec<i32>>> {
 #[cfg(any(feature = "py", feature = "rs"))]
 impl NewBaseVideo2<Vec<Vec<i32>>, u8> for BaseVideo<SafeBoard> {
     fn new(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> BaseVideo<SafeBoard> {
-        let bbbv = cal_bbbv(&board);
+        // 安全性考虑，此时禁止计算3BV
+        // let bbbv = cal_bbbv(&board);
         // 这里算出来的雷数不一定准
         let mine_num = board.iter().fold(0, |y, row| {
             y + row
@@ -606,7 +607,7 @@ impl NewBaseVideo2<Vec<Vec<i32>>, u8> for BaseVideo<SafeBoard> {
             minesweeper_board: MinesweeperBoard::<SafeBoard>::new(board_clone),
             game_board_state: GameBoardState::Ready,
             static_params: StaticParams {
-                bbbv,
+                // bbbv,
                 ..StaticParams::default()
             },
             ..BaseVideo::<SafeBoard>::default()

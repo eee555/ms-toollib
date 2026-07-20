@@ -12,10 +12,10 @@ authors = ["Wang Jianing <wangjianing@88.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["js"]
+default = ["rs"]
 js = ["web-time"]
-py = ["rand", "tract-onnx"]
-rs = ["rand", "tract-onnx"]
+py = ["rand", "tract-onnx", "web-time"]
+rs = ["rand", "tract-onnx", "web-time"]
 
 [dependencies.rand]
 version = "0.8.3"

@@ -553,10 +553,12 @@ impl ByteReader for BaseVideo<Vec<Vec<i32>>> {
     }
 }
 
+// 单参数的初始化方法。可以通过文件名（除js端）、二进制数据
 pub trait NewBaseVideo<T> {
-    fn new(file_name: T) -> Self;
+    fn new(arg: T) -> Self;
 }
 
+// 双参数的初始化方法。可以通过局面+像素边长
 pub trait NewBaseVideo2<T, U> {
     fn new(board: T, cell_pixel_size: U) -> Self;
 }
@@ -580,6 +582,29 @@ impl NewBaseVideo<&str> for BaseVideo<Vec<Vec<i32>>> {
             raw_data,
             allow_set_rtime: true,
             ..BaseVideo::default()
+        }
+    }
+}
+
+/// 游戏前实例化，游戏中不断调用step方法来维护。
+impl NewBaseVideo2<Vec<Vec<i32>>, u8> for BaseVideo<Vec<Vec<i32>>> {
+    fn new(board: Vec<Vec<i32>>, cell_pixel_size: u8) -> BaseVideo<Vec<Vec<i32>>> {
+        let mine_num = board.iter().fold(0, |y, row| {
+            y + row
+                .iter()
+                .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
+        });
+        let board_clone = board.clone();
+        BaseVideo {
+            width: board[0].len(),
+            height: board.len(),
+            mine_num,
+            cell_pixel_size,
+            board,
+            minesweeper_board: MinesweeperBoard::<Vec<Vec<i32>>>::new(board_clone),
+            game_board_state: GameBoardState::Ready,
+            static_params: StaticParams::default(),
+            ..BaseVideo::<Vec<Vec<i32>>>::default()
         }
     }
 }

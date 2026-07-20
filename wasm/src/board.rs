@@ -2,6 +2,7 @@
 use crate::transfor::{js_value_to_vec_vec, vec_vec_to_js_value};
 use js_sys::Array;
 use ms;
+use ms::videos::base_video::NewBaseVideo2;
 use ms::videos::NewSomeVideo2;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
@@ -916,23 +917,7 @@ impl BaseVideo {
     #[wasm_bindgen(constructor)]
     pub fn new(board: JsValue, cell_pixel_size: u8) -> BaseVideo {
         let board_vec = js_value_to_vec_vec(board);
-        let bbbv = ms::cal_bbbv(&board_vec);
-        let mine_num = board_vec.iter().fold(0, |y, row| {
-            y + row
-                .iter()
-                .fold(0, |yy, x| if *x == -1 { yy + 1 } else { yy })
-        });
-        let mb = ms::MinesweeperBoard::<Vec<Vec<i32>>>::new(board_vec.clone());
-        let mut core = ms::BaseVideo::<Vec<Vec<i32>>>::default();
-        core.width = board_vec[0].len();
-        core.height = board_vec.len();
-        core.mine_num = mine_num;
-        core.cell_pixel_size = cell_pixel_size;
-        core.board = board_vec;
-        core.minesweeper_board = mb;
-        core.game_board_state = ms::GameBoardState::Ready;
-        core.static_params.bbbv = bbbv;
-        BaseVideo { core }
+        BaseVideo { core: ms::BaseVideo::<Vec<Vec<i32>>>::new(board_vec, cell_pixel_size) }
     }
     pub fn step(&mut self, e: &str, x: usize, y: usize) {
         self.core.step(e, (x, y)).unwrap();

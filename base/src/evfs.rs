@@ -1,5 +1,5 @@
-use crate::videos::{ErrReadVideoReason, EvfVideo, NewSomeVideo2};
 use crate::videos::byte_reader::ByteReader;
+use crate::videos::{ErrReadVideoReason, EvfVideo, NewSomeVideo2};
 #[cfg(any(feature = "py", feature = "rs"))]
 use std::fs;
 use std::ops::{Index, IndexMut};
@@ -179,10 +179,10 @@ impl Evfs {
             self.raw_data.push(0);
             let evf_raw_data = cell.evf_video.data.get_raw_data().unwrap();
             let evf_size = evf_raw_data.len() as u32;
-            self.raw_data.push((evf_size >> 24).try_into().unwrap());
-            self.raw_data.push((evf_size >> 16).try_into().unwrap());
-            self.raw_data.push((evf_size >> 8).try_into().unwrap());
-            self.raw_data.push((evf_size % 256).try_into().unwrap());
+            self.raw_data.push(((evf_size >> 24) & 0xff) as u8);
+            self.raw_data.push(((evf_size >> 16) & 0xff) as u8);
+            self.raw_data.push(((evf_size >> 8) & 0xff) as u8);
+            self.raw_data.push((evf_size & 0xff) as u8);
             self.raw_data.extend_from_slice(&evf_raw_data);
             self.raw_data.extend_from_slice(&cell.checksum);
         }
@@ -191,9 +191,9 @@ impl Evfs {
         let version = self.get_u8()?;
         match version {
             0 => self.parse_v0()?,
-            _ => {},
+            _ => {}
         }
-        
+
         for cell in self.cells.iter_mut() {
             if !cell.evf_video.data.can_analyse {
                 cell.evf_video.parse()?;
@@ -209,7 +209,10 @@ impl Evfs {
         }
         Ok(())
     }
-    pub fn analyse_for_features(&mut self, controller: &Vec<&str>) -> Result<(), ErrReadVideoReason> {
+    pub fn analyse_for_features(
+        &mut self,
+        controller: &Vec<&str>,
+    ) -> Result<(), ErrReadVideoReason> {
         for cell in self.cells.iter_mut() {
             if cell.evf_video.data.can_analyse {
                 cell.evf_video.data.analyse_for_features(&controller);
@@ -234,8 +237,7 @@ impl Evfs {
     }
 }
 
-
-impl ByteReader for Evfs  {
+impl ByteReader for Evfs {
     fn raw_data(&self) -> &[u8] {
         &self.raw_data
     }
@@ -244,7 +246,6 @@ impl ByteReader for Evfs  {
         &mut self.offset
     }
 }
-
 
 #[cfg(any(feature = "py", feature = "rs"))]
 impl Evfs {

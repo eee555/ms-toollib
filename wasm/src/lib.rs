@@ -33,6 +33,9 @@
 // 2026.6.4及以后的发布步骤：
 // 1. 检查版本号，修改Cargo.toml文件
 // 2. 直接打tag发布，如“1.5.10”
+// 3. 修改版本号，末尾添加“-alpha”
+// 4. wasm-pack build --target nodejs
+// 5. wasm-pack publish --target nodejs --tag alpha
 // 
 
 

@@ -838,6 +838,7 @@ impl<T> MinesweeperBoard<T> {
                 MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,
                 MouseState::UpDown => self.mouse_state = MouseState::Chording,
                 MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
+                MouseState::UpUp => self.mouse_state = MouseState::Chording,
                 _ => return Err(()),
             },
             // "crl" => match self.mouse_state {

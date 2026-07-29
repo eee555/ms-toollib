@@ -57,7 +57,7 @@
 //! 本工具箱不直接提供机扫（机器扫雷）相关工具；同时，不提倡纯粹机扫相关的研究，尤其不提倡那些通过机扫模拟人类扫雷的研究；使用机扫的录像攻击排名网站的审查体系是严格禁止的，任何相关尝试都是不道德的！
 
 // cargo doc --features rs --no-deps --open
-// cargo build --release --features py
+// cargo build --release --features rs
 // cargo bench
 // cargo publish --features rs --allow-dirty
 // 需要换成官方的源，不能用镜像
@@ -129,5 +129,5 @@ pub use crate::safe_board::SafeBoard;
 pub use crate::safe_board::SafeBoardRow;
 
 
-// 最大枚举长度限制。超过这个长度，概率计算不准。全雷网的高级没有发现超出此限制的。
+// 假如限时1秒，本项目最大枚举长度可以达到约70。除可猜模式几乎没有录像能达到，所以取消最大枚举长度限制。
 const ENUM_LIMIT: usize = 99999;

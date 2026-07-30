@@ -806,6 +806,7 @@ impl<T> BaseVideo<T> {
                                         }
                                     }
                                 }
+                                let _ = mark_board(&mut game_board_clone, true).unwrap();
                                 let p = cal_probability_cells_not_mine(
                                     &game_board_clone,
                                     self.mine_num as f64,

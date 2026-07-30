@@ -1073,9 +1073,9 @@ pub fn laymine_solvable_adjust(
 fn adjust_step(
     board: &Vec<Vec<i32>>,         // 当前的board，数字没有计算，只有0，-1，-10
     board_of_game: &Vec<Vec<i32>>, // 当前的board_of_game，只有10，1（没有计算的数字），11，0（起手位置）
-    remain_minenum: usize,     // 当前还要埋的雷数
-    remain_not_minenum: usize, // 当前还要埋的非雷数
-    remain_not_open: usize,    // 当前game_board上还要成功点开雷数，为0才是成功
+    remain_minenum: usize,         // 当前还要埋的雷数
+    remain_not_minenum: usize,     // 当前还要埋的非雷数
+    remain_not_open: usize,        // 当前game_board上还要成功点开雷数，为0才是成功
     depth: usize,
     max_depth: usize,
     total_calls: &mut usize,
@@ -1113,7 +1113,9 @@ fn adjust_step(
         for &(x, y) in xses.iter().flatten().flatten() {
             for m in max(1, x) - 1..min(row, x + 2) {
                 for n in max(1, y) - 1..min(column, y + 2) {
-                    if safe_zone.contains(&(m, n)) { continue; }
+                    if safe_zone.contains(&(m, n)) {
+                        continue;
+                    }
                     if board_clone[m][n] == -1 && game_board_clone[m][n] != 10 {
                         board_clone[m][n] = -10;
                         board_mod.push((m, n));
@@ -1131,7 +1133,9 @@ fn adjust_step(
             }
         }
         for &(x, y) in xses.iter().flatten().flatten() {
-            if safe_zone.contains(&(x, y)) { continue; }
+            if safe_zone.contains(&(x, y)) {
+                continue;
+            }
             if board_clone[x][y] == -1 {
                 board_clone[x][y] = -10;
                 delta_remain_minenum += 1;
@@ -1476,14 +1480,16 @@ pub fn obr_board(
     Ok(board)
 }
 
-
 /// 对局面用单集合、双集合判雷引擎，快速标雷、标非雷，以供概率计算引擎处理。这是非常重要的加速。  
 /// 相当于一种预处理，即先标出容易计算的。mark可能因为无解而报错，此时返回错误码。  
 /// 若不合法，直接中断，不继续标记。  
 /// 输入：游戏局面、是否全部重新标记（用户的游戏局面需要全部重标，或者需要统计数量）  
-/// 返回：成功为标记的非雷数、是雷数；失败为错误代码  
+/// 新版返回：成功为标记的非雷集合、是雷集合；失败为错误代码  
 /// - 注意：在rust中，cal_probability往往需要和mark_board搭配使用，而在其他语言（python）中可能不需要如此！这是由于其ffi不支持原地操作。
-pub fn mark_board(game_board: &mut Vec<Vec<i32>>, remark: bool) -> Result<(usize, usize), usize> {
+pub fn mark_board(
+    game_board: &mut Vec<Vec<i32>>,
+    remark: bool,
+) -> Result<(Vec<(usize, usize)>, Vec<(usize, usize)>), usize> {
     if remark {
         for row in game_board.iter_mut() {
             for num in row.iter_mut() {
@@ -1494,15 +1500,15 @@ pub fn mark_board(game_board: &mut Vec<Vec<i32>>, remark: bool) -> Result<(usize
         }
     }
     let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&game_board);
-    let mut not_mine_num = 0;
-    let mut is_mine_num = 0;
-    let (not, is) = solve_direct(&mut a_mats, &mut xs, &mut bs, game_board)?;
-    not_mine_num += not.len();
-    is_mine_num += is.len();
-    let (not, is) = solve_minus(&mut a_mats, &mut xs, &mut bs, game_board)?;
-    not_mine_num += not.len();
-    is_mine_num += is.len();
-    Ok((not_mine_num, is_mine_num))
+    let mut not_mine = vec![];
+    let mut is_mine = vec![];
+    let (mut not, mut is) = solve_direct(&mut a_mats, &mut xs, &mut bs, game_board)?;
+    not_mine.append(&mut not);
+    is_mine.append(&mut is);
+    let (mut not, mut is) = solve_minus(&mut a_mats, &mut xs, &mut bs, game_board)?;
+    not_mine.append(&mut not);
+    is_mine.append(&mut is);
+    Ok((not_mine, is_mine))
 }
 
 /// 求出游戏局面中所有非雷、是雷的位置。  
@@ -1636,7 +1642,7 @@ mod tests {
             vec![10, 10, 10, 10, 10, 10, 10, 10],
             vec![10, 10, 10, 10, 10, 10, 10, 10],
             vec![10, 10, 10, 10, 10, 10, 10, 10],
-            vec![10, 10, 10,  2, 10, 10, 10, 10],
+            vec![10, 10, 10, 2, 10, 10, 10, 10],
             vec![10, 10, 10, 10, 10, 10, 10, 10],
             vec![10, 10, 10, 10, 10, 10, 10, 10],
             vec![10, 10, 10, 10, 10, 10, 10, 10],
@@ -1650,14 +1656,14 @@ mod tests {
         );
         println!("{:?}", p);
     }
-    
+
     #[test]
     fn test_cal_probability_cells_not_mine_2() {
         let game_board = vec![
             vec![10, 10, 10, 10, 10, 10, 10, 10],
             vec![10, 10, 10, 10, 10, 10, 10, 10],
             vec![10, 10, 10, 10, 10, 10, 10, 10],
-            vec![10, 10, 10, 10,  1, 10, 10, 10],
+            vec![10, 10, 10, 10, 1, 10, 10, 10],
             vec![10, 10, 10, 10, 10, 10, 10, 10],
             vec![10, 10, 10, 10, 10, 10, 10, 10],
             vec![10, 10, 10, 10, 10, 10, 10, 10],
@@ -1667,7 +1673,16 @@ mod tests {
         let p = cal_probability_cells_not_mine(
             &game_board,
             11.0,
-            &vec![(2, 3), (2, 4), (2, 5), (3, 3), (3, 5), (4, 3), (4, 4), (4, 5)],
+            &vec![
+                (2, 3),
+                (2, 4),
+                (2, 5),
+                (3, 3),
+                (3, 5),
+                (4, 3),
+                (4, 4),
+                (4, 5),
+            ],
         );
         println!("{:?}", p);
     }

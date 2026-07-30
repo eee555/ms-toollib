@@ -221,7 +221,6 @@ Python >= 3.8, <= 3.13:
 ---
 
 ## 开发
-
 ```bash
 git clone https://github.com/eee555/ms_toollib.git
 cd base
@@ -236,6 +235,15 @@ cd ../c && cargo build --release
 详细见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
 ---
+
+### python-rust联调步骤
+假设有个py项目在C:\path\main.py，需要`import ms_toollib`
+```
+cd python_package
+cargo build --release
+cp .\target\release\ms_toollib.dll C:\path\ms_toollib.pyd
+```
+
 
 ## 相关项目
 

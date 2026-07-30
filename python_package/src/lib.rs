@@ -519,6 +519,24 @@ fn py_valid_time_period(software: &str) -> PyResult<(String, String)> {
 
 #[pymodule]
 fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    std::panic::set_hook(Box::new(|info| {
+        let msg = if let Some(s) = info.payload().downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "unknown panic".to_string()
+        };
+        let location = info
+            .location()
+            .map(|loc| format!("{}:{}:{}", loc.file(), loc.line(), loc.column()))
+            .unwrap_or_default();
+        let full = format!(
+            "Rust panic at {}\nmessage: {}\n\nstack trace omitted (run with RUST_BACKTRACE=1 for backtrace)\n",
+            location, msg,
+        );
+        let _ = std::fs::write("crash.log", &full);
+    }));
     m.add_function(wrap_pyfunction!(py_refresh_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_matrixs, m)?)?;
     m.add_function(wrap_pyfunction!(py_refresh_matrixses, m)?)?;

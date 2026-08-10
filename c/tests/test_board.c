@@ -3,15 +3,17 @@
 #include <malloc.h>
 #include "ms_toollib/ms_toollib.h"
 
-#pragma comment(lib,"ws2_32.lib")
-#pragma comment (lib,"Advapi32.lib")
-#pragma comment (lib,"Iphlpapi.lib")
-#pragma comment(lib, "Psapi.lib")
-#pragma comment(lib, "user32.lib")
-#pragma comment(lib, "userenv.lib")
-#pragma comment(lib, "bcrypt.lib")
-#pragma comment(lib, "ntdll.lib")
-#pragma comment(lib, "target/release/ms_toollib.lib")
+#ifdef _MSC_VER
+	#pragma comment(lib,"ws2_32.lib")
+	#pragma comment(lib,"Advapi32.lib")
+	#pragma comment(lib,"Iphlpapi.lib")
+	#pragma comment(lib, "Psapi.lib")
+	#pragma comment(lib, "user32.lib")
+	#pragma comment(lib, "userenv.lib")
+	#pragma comment(lib, "bcrypt.lib")
+	#pragma comment(lib, "ntdll.lib")
+	#pragma comment(lib, "target/release/ms_toollib.lib")
+#endif
 
 int main(void) {
 
@@ -87,4 +89,6 @@ int main(void) {
     }
     free_board_poss(board_poss_return);
 
+	getchar();
+	return 0;
 }

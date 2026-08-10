@@ -77,5 +77,6 @@ int main(void) {
     free_test_board(g);
 
     printf("\n=== Done ===\n");
+	getchar();
     return 0;
 }

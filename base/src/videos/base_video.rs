@@ -1236,6 +1236,8 @@ pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
         "元3.3.2" => Ok(("1783353600".to_string(), "4102415999".to_string())),
         // 2026-07-10 00:00:00 发布
         "元3.3.3" => Ok(("1783612800".to_string(), "4102415999".to_string())),
+        // 2026-08-10 00:00:00 发布
+        "元3.3.4" => Ok(("1786291200".to_string(), "4102415999".to_string())),
         _ => Err(String::from("Unknown software: ") + software),
     }
 }
@@ -1272,6 +1274,7 @@ impl<T> BaseVideo<T> {
             || self.software == "元3.3.1"
             || self.software == "元3.3.2"
             || self.software == "元3.3.3"
+            || self.software == "元3.3.4"
         {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和

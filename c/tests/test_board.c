@@ -4,9 +4,9 @@
 #include "ms_toollib/ms_toollib.h"
 
 #ifdef _MSC_VER
-	#pragma comment(lib,"ws2_32.lib")
-	#pragma comment(lib,"Advapi32.lib")
-	#pragma comment(lib,"Iphlpapi.lib")
+	#pragma comment(lib, "ws2_32.lib")
+	#pragma comment(lib, "Advapi32.lib")
+	#pragma comment(lib, "Iphlpapi.lib")
 	#pragma comment(lib, "Psapi.lib")
 	#pragma comment(lib, "user32.lib")
 	#pragma comment(lib, "userenv.lib")

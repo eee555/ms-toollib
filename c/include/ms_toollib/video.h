@@ -43,7 +43,7 @@ extern "C" {  // 对于C++，使用C名称修饰
 	double  base_video_get_rtime(void* ptr);
 	uint32_t base_video_get_rtime_ms(void* ptr);
 	double  base_video_get_etime(void* ptr);
-	Board   base_video_get_game_board(void* ptr);       // 返回的 Board 需用 free_board() 释放
+	struct Board base_video_get_game_board(void* ptr);       // 返回的 Board 需用 free_board() 释放
 	size_t  base_video_get_left(void* ptr);
 	size_t  base_video_get_right(void* ptr);
 	size_t  base_video_get_double(void* ptr);

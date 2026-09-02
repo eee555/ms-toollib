@@ -4,5 +4,6 @@
 #include "board.h"
 #include "probability.h"
 #include "zini.h"
+#include "video.h"
 
 #endif

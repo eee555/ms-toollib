@@ -345,14 +345,10 @@ fn board_12_works() {
     board[7][7] = 12;
     let ans = cal_probability_csp(&board, 10.0).unwrap();
     println!("{:?}", ans);
-    // 12格不在结果中
-    assert!(!ans.0.iter().any(|&(pos, _)| pos == (0, 0)));
-    assert!(!ans.0.iter().any(|&(pos, _)| pos == (7, 7)));
-    // 剩余62格，10雷 → 10/62
-    assert_eq!(ans.0.len(), 62);
-    for (_, p) in &ans.0 {
-        assert!((p - 10.0 / 62.0).abs() < 1e-10);
-    }
+    // 无witness（全10+安全已知12）→ CSP返回空edge_probs，
+    // 均匀概率10/62通过ans.1返回（与ENUM一致）
+    assert_eq!(ans.0.len(), 0);
+    assert!((ans.1 - 10.0 / 62.0).abs() < 1e-10);
     assert_eq!(ans.2, [0, 10, 62]);
     let ans = cal_probability_enum(&board, 10.0).unwrap();
     println!("{:?}", ans);

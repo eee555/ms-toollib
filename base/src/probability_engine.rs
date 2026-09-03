@@ -831,6 +831,20 @@ fn extract_board_state(board: &TileBoard) -> (Vec<Rc<Tile>>, Vec<Rc<Tile>>, usiz
     (witnesses, witnessed, squares_left, mines_left)
 }
 
+impl Drop for ProbabilityEngine {
+    fn drop(&mut self) {
+        // Box <-> BoxWitness 通过 Rc 互相引用形成强引用环，
+        // 若不在 drop 时打断，环上的 Box/BoxWitness（以及它们持有的 Tile）
+        // 引用计数永远无法归零，导致每次 cal_probability_* 调用都残留内存。
+        for w in &self.box_witnesses {
+            w.boxes.borrow_mut().clear();
+        }
+        for b in &self.boxes {
+            b.box_witnesses.borrow_mut().clear();
+        }
+    }
+}
+
 impl ProbabilityEngine {
     pub fn new(
         board: std::boxed::Box<dyn Board>,

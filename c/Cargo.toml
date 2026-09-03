@@ -12,6 +12,10 @@ crate-type = ["staticlib"] #静态库
 
 [profile.release]
 panic="abort"
+lto = true                # 启用链接时优化
+opt-level = "z"           # 优化大小（也可用 "s"）
+codegen-units = 1         # 单代码生成单元，利于LTO
+strip = true              # 自动剥离符号（Rust 1.59+）
 
 [profile.dev]
 panic="abort"

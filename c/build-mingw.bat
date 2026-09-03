@@ -8,5 +8,5 @@ cargo build --release --target x86_64-pc-windows-gnu
 
 :: 原静态库编译程序会产生3.6万条警告，因库中包含MSVC风格的链接器指令（.drectve段）
 :: 可利用MinGW的strip指令清除，需要添加MinGW的bin文件夹到环境变量
-cd target\x86_64-pc-windows-gnu\release
-strip --strip-unneeded libms_toollib.a
+::cd target\x86_64-pc-windows-gnu\release
+::strip --strip-unneeded libms_toollib.a  :: 新版已不再需要

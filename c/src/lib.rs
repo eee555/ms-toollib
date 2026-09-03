@@ -7,6 +7,10 @@ use ms_toollib::cal_probability_onboard as rs_cal_probability_onboard;
 use ms_toollib::cal_zini as rs_cal_zini;
 use ms_toollib::cal_rzini as rs_cal_rzini;
 use ms_toollib::laymine as rs_laymine;
+use ms_toollib::laymine_op as rs_laymine_op;
+use ms_toollib::is_solvable as rs_is_solvable;
+use ms_toollib::laymine_solvable as rs_laymine_solvable;
+use ms_toollib::laymine_solvable_adjust as rs_laymine_solvable_adjust;
 use std::alloc::{dealloc, Layout};
 use std::os::raw::c_void;
 use std::ffi::CString;
@@ -32,6 +36,12 @@ pub struct Row {
 pub struct Board {
     rows: *mut Row,
     n_row: usize,
+}
+
+#[repr(C)]
+pub struct BoardReturn {
+    board: Board,
+    success: u8,
 }
 
 #[repr(C)]
@@ -169,6 +179,57 @@ pub extern "C" fn laymine(
     //     n_row: row,
     // }
     vec_board_to_struct_board(b)
+}
+
+#[no_mangle]
+pub extern "C" fn laymine_op(
+    row: usize,
+    column: usize,
+    MineNum: usize,
+    X0: usize,
+    Y0: usize,
+) -> Board {
+    let b = rs_laymine_op(row, column, MineNum, X0, Y0);
+    vec_board_to_struct_board(b)
+}
+
+#[no_mangle]
+pub extern "C" fn is_solvable(board: Board, X0: usize, Y0: usize) -> u8 {
+    let b = struct_board_to_vec_board(board);
+    if rs_is_solvable(&b, X0, Y0) { 1 } else { 0 }
+}
+
+#[no_mangle]
+pub extern "C" fn laymine_solvable(
+    row: usize,
+    column: usize,
+    MineNum: usize,
+    X0: usize,
+    Y0: usize,
+    max_times: usize,
+) -> BoardReturn {
+    let (b, success) = rs_laymine_solvable(row, column, MineNum, X0, Y0, max_times);
+    let board = vec_board_to_struct_board(b);
+    BoardReturn {
+        board,
+        success: if success { 1 } else { 0 },
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn laymine_solvable_adjust(
+    row: usize,
+    column: usize,
+    MineNum: usize,
+    X0: usize,
+    Y0: usize,
+) -> BoardReturn {
+    let (b, success) = rs_laymine_solvable_adjust(row, column, MineNum, X0, Y0);
+    let board = vec_board_to_struct_board(b);
+    BoardReturn {
+        board,
+        success: if success { 1 } else { 0 },
+    }
 }
 
 #[no_mangle]

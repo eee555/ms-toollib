@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <malloc.h>
-#include "ms_toollib/board.h"
-#include "ms_toollib/probability.h"
-#include "ms_toollib/zini.h"
+#include "ms_toollib/ms_toollib.h"
 
 static struct Board make_board(size_t row, size_t col, int32_t src[][8]) {
     struct Board b = {
@@ -77,5 +75,6 @@ int main(void) {
     free_test_board(g);
 
     printf("\n=== Done ===\n");
+	getchar();
     return 0;
 }

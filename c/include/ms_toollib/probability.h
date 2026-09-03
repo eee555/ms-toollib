@@ -4,6 +4,10 @@
 #include <stddef.h>
 #include "board.h"
 
+#ifdef __cplusplus
+extern "C" {  // 对于C++，使用C名称修饰
+#endif
+
 struct RowPoss {
     double *cells_poss;
     size_t n_column;
@@ -23,5 +27,9 @@ struct BoardPossReturn {
 
 struct BoardPossReturn cal_probability_onboard(struct Board board_of_game, double mine_num);
 void free_board_poss(struct BoardPossReturn b);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

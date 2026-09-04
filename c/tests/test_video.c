@@ -5,15 +5,15 @@
 #include "ms_toollib/ms_toollib.h"
 
 #ifdef _MSC_VER
-#pragma comment(lib, "ws2_32.lib")
-#pragma comment(lib, "Advapi32.lib")
-#pragma comment(lib, "Iphlpapi.lib")
-#pragma comment(lib, "Psapi.lib")
-#pragma comment(lib, "user32.lib")
-#pragma comment(lib, "userenv.lib")
-#pragma comment(lib, "bcrypt.lib")
-#pragma comment(lib, "ntdll.lib")
-#pragma comment(lib, "target/release/ms_toollib.lib")
+	#pragma comment(lib, "ws2_32.lib")
+	#pragma comment(lib, "Advapi32.lib")
+	#pragma comment(lib, "Iphlpapi.lib")
+	#pragma comment(lib, "Psapi.lib")
+	#pragma comment(lib, "user32.lib")
+	#pragma comment(lib, "userenv.lib")
+	#pragma comment(lib, "bcrypt.lib")
+	#pragma comment(lib, "ntdll.lib")
+	#pragma comment(lib, "target/release/ms_toollib.lib")
 #endif
 
 /* ---------- 辅助：读取文件名 ---------- */
@@ -24,9 +24,9 @@ char* InputFileName(void) {
 	printf("[File]>");
 	fgets(temp, 256, stdin);
 	j = 0;
-	for (i = 0; i < 256; i++) {
-		if (temp[i] == '\n') break;
-		else if (temp[i] != '"') { // 过滤双引号
+	for(i = 0; i < 256; i++) {
+		if(temp[i] == '\n') break;
+		else if(temp[i] != '"') { // 过滤双引号
 			fileName[j] = temp[i];
 			j++;
 		}
@@ -38,16 +38,16 @@ char* InputFileName(void) {
 static int ends_with(const char *str, const char *suffix) {
 	size_t len_str = strlen(str);
 	size_t len_suf = strlen(suffix);
-	if (len_suf > len_str) return 0;
+	if(len_suf > len_str) return 0;
 	return strcmp(str + len_str - len_suf, suffix) == 0;
 }
 
 /* ---------- 打印 Board（辅助） ---------- */
 static void print_board(const char *title, struct Board b) {
 	printf("\n%s:\n", title);
-	for (size_t i = 0; i < b.n_row; i++) {
-		for (size_t j = 0; j < b.rows->n_column; j++) {
-			printf("%4d ", b.rows[i].cells[j]);
+	for(size_t i = 0; i < b.n_row; i++) {
+		for(size_t j = 0; j < b.rows->n_column; j++) {
+			printf("%2d ", b.rows[i].cells[j]);
 		}
 		printf("\n");
 	}
@@ -55,8 +55,8 @@ static void print_board(const char *title, struct Board b) {
 
 /* ---------- 主测试函数 ---------- */
 int main(void) {
-	char *filename = InputFileName();
-	if (!filename || strlen(filename) == 0) {
+	char *filename = InputFileName(); // 可能不支持中文路径
+	if(!filename || strlen(filename) == 0) {
 		printf("Invalid filename.\n");
 		free(filename);
 		return 1;
@@ -69,25 +69,25 @@ int main(void) {
 	void* (*data_ptr_func)(void*) = NULL;
 	
 	// 根据后缀选择对应的函数族
-	if (ends_with(filename, ".avf")) {
+	if(ends_with(filename, ".avf")) {
 		printf("Detected .avf format.\n");
 		video = avf_video_new(filename);
 		parse_func = avf_video_parse;
 		free_func = avf_video_free;
 		data_ptr_func = avf_video_data_ptr;
-	} else if (ends_with(filename, ".evf")) {
+	} else if(ends_with(filename, ".evf")) {
 		printf("Detected .evf format.\n");
 		video = evf_video_new(filename);
 		parse_func = evf_video_parse;
 		free_func = evf_video_free;
 		data_ptr_func = evf_video_data_ptr;
-	} else if (ends_with(filename, ".mvf")) {
+	} else if(ends_with(filename, ".mvf")) {
 		printf("Detected .mvf format.\n");
 		video = mvf_video_new(filename);
 		parse_func = mvf_video_parse;
 		free_func = mvf_video_free;
 		data_ptr_func = mvf_video_data_ptr;
-	} else if (ends_with(filename, ".rmv")) {
+	} else if(ends_with(filename, ".rmv")) {
 		printf("Detected .rmv format.\n");
 		video = rmv_video_new(filename);
 		parse_func = rmv_video_parse;
@@ -101,13 +101,13 @@ int main(void) {
 	
 	free(filename); // 不再需要文件名
 	
-	if (!video) {
+	if(!video) {
 		printf("Failed to create video object.\n");
 		return 1;
 	}
 	
 	// 解析视频
-	if (parse_func(video) != 0) {
+	if(parse_func(video) != 0) {
 		printf("Video parsing failed.\n");
 		free_func(video);
 		return 1;
@@ -115,17 +115,23 @@ int main(void) {
 	
 	// 获取 BaseVideo 数据指针（所有 base_video_* 函数都使用这个指针）
 	data = data_ptr_func(video);
-	if (!data) {
+	if(!data) {
 		printf("Failed to get data pointer.\n");
 		free_func(video);
 		return 1;
 	}
 	
+	// ---------- 必须先调用 analyse（触发信息和盘面计算） ----------
+	base_video_analyse(data);
+	printf("\nAnalyse called.\n");
+	
+	base_video_set_current_time(data, 999.999); // 定位到结束时刻，显示完整盘面和信息，analyse自动跟随时间触发
+	
 	// ---------- 打印基本信息 ----------
 	printf("\n========== Video Metadata ==========\n");
 	char *software = base_video_get_software(data);
 	char *player   = base_video_get_player(data);
-	printf("Software: %s\n", software ? software : "(null)");
+	printf("Software: %s\n", software ? software : "(null)"); // 中文可能乱码
 	printf("Player:   %s\n", player   ? player   : "(null)");
 	base_video_free_string(software);
 	base_video_free_string(player);
@@ -142,7 +148,7 @@ int main(void) {
 	// ---------- 时间信息 ----------
 	printf("\n========== Timing ==========\n");
 	printf("RTime (s):    %f\n", base_video_get_rtime(data));
-	printf("RTime (ms):   %u\n",  base_video_get_rtime_ms(data));
+	printf("RTime (ms):   %u\n", base_video_get_rtime_ms(data));
 	printf("ETime (s):    %f\n", base_video_get_etime(data));
 	printf("Current time: %f\n", base_video_get_current_time(data));
 	
@@ -170,37 +176,25 @@ int main(void) {
 	// ---------- 事件系统 ----------
 	size_t event_count = base_video_get_event_count(data);
 	printf("\nEvent count: %zu\n", event_count);
-	
 	size_t current_id = base_video_get_current_event_id(data);
 	printf("Current event ID: %zu\n", current_id);
-	// 尝试设置当前事件为0（测试）
-	uint8_t set_ok = base_video_set_current_event_id(data, 0);
-	printf("Set current event to 0: %s\n", set_ok ? "OK" : "Failed");
-	// 恢复原ID（方便后续遍历）
-	base_video_set_current_event_id(data, current_id);
 	
 	printf("\n--- Event List (up to first 20) ---\n");
 	size_t max_print = event_count < 20 ? event_count : 20;
-	for (size_t i = 0; i < max_print; i++) {
+	for(size_t i = 0; i < max_print; i++) {
 		double t = base_video_event_time(data, i);
 		char *desc = base_video_event_desc(data, i);
 		printf("[%zu] time=%.3f  desc=%s\n", i, t, desc ? desc : "(null)");
 		base_video_free_event_desc(desc);
 	}
-	if (event_count > 20) {
-		printf("... (truncated)\n");
-	}
+	if(event_count > 20) printf("... (truncated)\n");
 	
 	// ---------- 当前游戏盘面 ----------
 	struct Board game_board = base_video_get_game_board(data);
 	print_board("Current Game Board", game_board);
 	free_board(game_board);   // 必须释放
 	
-	// ---------- 调用 analyse（无输出，仅触发内部计算） ----------
-	base_video_analyse(data);
-	printf("\nAnalyse called (no output).\n");
-	
-	// ---------- 测试 set_current_time ----------
+	// ---------- 额外测试：跳转时间 ----------
 	double old_time = base_video_get_current_time(data);
 	base_video_set_current_time(data, 123.456);
 	printf("Current time after set: %f (restored later)\n", base_video_get_current_time(data));

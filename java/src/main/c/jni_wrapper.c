@@ -2,75 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ms_toollib/board.h"
-#include "ms_toollib/probability.h"
-#include "ms_toollib/zini.h"
-
-// ─── Video FFI declarations (implemented in Rust static lib) ───
-
-extern void* avf_video_new(const char *filename);
-extern void* avf_video_new_from_data(const unsigned char *data, size_t len, const char *filename);
-extern void  avf_video_free(void *ptr);
-extern int   avf_video_parse(void *ptr);
-extern void* avf_video_data_ptr(void *ptr);
-
-extern void* evf_video_new(const char *filename);
-extern void* evf_video_new_from_data(const unsigned char *data, size_t len, const char *filename);
-extern void  evf_video_free(void *ptr);
-extern int   evf_video_parse(void *ptr);
-extern void* evf_video_data_ptr(void *ptr);
-
-extern void* mvf_video_new(const char *filename);
-extern void* mvf_video_new_from_data(const unsigned char *data, size_t len, const char *filename);
-extern void  mvf_video_free(void *ptr);
-extern int   mvf_video_parse(void *ptr);
-extern void* mvf_video_data_ptr(void *ptr);
-
-extern void* rmv_video_new(const char *filename);
-extern void* rmv_video_new_from_data(const unsigned char *data, size_t len, const char *filename);
-extern void  rmv_video_free(void *ptr);
-extern int   rmv_video_parse(void *ptr);
-extern void* rmv_video_data_ptr(void *ptr);
-
-extern void  base_video_analyse(void *ptr);
-extern double base_video_get_rtime(void *ptr);
-extern unsigned int base_video_get_rtime_ms(void *ptr);
-extern double base_video_get_etime(void *ptr);
-extern size_t base_video_get_left(void *ptr);
-extern size_t base_video_get_right(void *ptr);
-extern size_t base_video_get_double(void *ptr);
-extern size_t base_video_get_cl(void *ptr);
-extern size_t base_video_get_flag(void *ptr);
-extern size_t base_video_get_bbbv_solved(void *ptr);
-extern size_t base_video_get_ce(void *ptr);
-extern double base_video_get_corr(void *ptr);
-extern double base_video_get_thrp(void *ptr);
-extern double base_video_get_ioe(void *ptr);
-extern double base_video_get_path(void *ptr);
-extern double base_video_get_stnb(void *ptr);
-extern size_t base_video_get_mouse_state(void *ptr);
-extern size_t base_video_get_current_event_id(void *ptr);
-extern unsigned char base_video_set_current_event_id(void *ptr, size_t id);
-extern double base_video_get_current_time(void *ptr);
-extern void   base_video_set_current_time(void *ptr, double t);
-extern size_t base_video_get_event_count(void *ptr);
-extern unsigned char base_video_is_valid(void *ptr);
-extern double base_video_event_time(void *ptr, size_t idx);
-extern char*  base_video_event_desc(void *ptr, size_t idx);
-extern void   base_video_free_event_desc(char *s);
-extern struct Board base_video_get_game_board(void *ptr);
-extern char*  base_video_get_software(void *ptr);
-extern char*  base_video_get_player(void *ptr);
-extern void   base_video_free_string(char *s);
-extern size_t base_video_get_width(void *ptr);
-extern size_t base_video_get_height(void *ptr);
-extern size_t base_video_get_mine_num(void *ptr);
-extern unsigned short base_video_get_mode(void *ptr);
-extern unsigned char  base_video_get_level(void *ptr);
-extern unsigned char  base_video_get_nf(void *ptr);
-extern unsigned char  base_video_get_is_completed(void *ptr);
-
-
+#include "ms_toollib/ms_toollib.h"
 
 static struct Board java2board(JNIEnv *env, jobjectArray jboard) {
     jsize rows = (*env)->GetArrayLength(env, jboard);

@@ -844,6 +844,10 @@ macro_rules! generate_video {
                 pub fn set_current_event_id(&mut self, id: usize) {
                     self.core.data.current_event_id = id
                 }
+                #[wasm_bindgen(getter = board)]
+                pub fn get_board(&self) -> JsValue {
+                    vec_vec_to_js_value(self.core.data.board.clone())
+                }
                 #[wasm_bindgen(getter = game_board)]
                 pub fn get_game_board(&self) -> JsValue {
                     vec_vec_to_js_value(self.core.data.get_game_board().clone())
@@ -1206,6 +1210,10 @@ impl BaseVideo {
     #[wasm_bindgen(getter = game_board_poss)]
     pub fn get_game_board_poss(&mut self) -> JsValue {
         vec_vec_to_js_value(self.core.get_game_board_poss())
+    }
+    #[wasm_bindgen(getter = board)]
+    pub fn get_board(&self) -> JsValue {
+        vec_vec_to_js_value(self.core.board.clone())
     }
     #[wasm_bindgen(getter = mouse_state)]
     pub fn get_mouse_state(&self) -> u32 {

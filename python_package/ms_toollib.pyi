@@ -456,6 +456,7 @@ class KeyDynamicParams:
     bbbv_solved: int
     op_solved: int
     isl_solved: int
+    pluck: float
 
 
 class MinesweeperBoard:

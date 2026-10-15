@@ -1754,6 +1754,7 @@ fn rmv1_utf8_basic() {
     let mut replay = RmvVideo::new("tests/assets/test_rmv1_utf8_basic.rmv");
     replay.parse().expect("parsing should succeed");
     assert_eq!(replay.data.player_identifier, "Thomas Kolar");
+    assert_eq!(replay.data.race_identifier, "42069");
     assert_eq!(replay.data.static_params.bbbv, 128);
     assert_eq!(replay.data.get_rtime_ms().unwrap(), 34884);
     assert_eq!(replay.data.start_time, 1731621352000000);
@@ -1772,6 +1773,7 @@ fn rmv2_utf8_basic() {
     let mut replay = RmvVideo::new("tests/assets/test_rmv2_utf8_basic.rmv");
     replay.parse().expect("parsing should succeed");
     assert_eq!(replay.data.player_identifier, "Thomas Kolar");
+    assert_eq!(replay.data.race_identifier, "1_801_ef120901a63b2bf6e172e547d5aa6a91");
     assert_eq!(replay.data.static_params.bbbv, 3);
     assert_eq!(replay.data.get_rtime_ms().unwrap(), 670);
     assert_eq!(replay.data.start_time, 1750292821000000);
@@ -1843,6 +1845,7 @@ fn rmv1_noutf8_but_valid_utf8() {
     let mut replay = RmvVideo::new("tests/assets/test_rmv1_noutf8_but_valid_utf8.rmv");
     replay.parse().expect("parsing should succeed");
     assert_eq!(replay.data.player_identifier, "aa葢aa Kolar");
+    assert_eq!(replay.data.race_identifier, "42069");
     assert_eq!(replay.data.get_rtime_ms().unwrap(), 34884);
     assert!(replay.data.is_completed);
 }
@@ -1853,6 +1856,7 @@ fn rmv2_24px() {
     let mut replay = RmvVideo::new("tests/assets/test_rmv2_24px.rmv");
     replay.parse().expect("parsing should succeed");
     assert_eq!(replay.data.player_identifier, "Thomas Kolar");
+    assert_eq!(replay.data.race_identifier, "1_849_2ccdbc0b6c181db60d13dfa8d5176b48");
     assert_eq!(replay.data.static_params.bbbv, 5);
     assert_eq!(replay.data.get_rtime_ms().unwrap(), 1849);
     assert!(replay.data.is_official);

@@ -320,6 +320,10 @@ impl KeyDynamicParams {
     pub fn get_isl_solved(&self) -> usize {
         self.core.isl_solved
     }
+    #[wasm_bindgen(getter = pluck)]
+    pub fn get_pluck(&self) -> f64 {
+        self.core.pluck
+    }
 }
 
 #[wasm_bindgen]

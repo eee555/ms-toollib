@@ -183,13 +183,12 @@ impl RmvVideo {
         // 这里是uint16，不合理
         let num_player_info = self.data.get_u16()?;
 
-        let mut token = vec![];
-
         // we need to store these in a buffer first, as how we parse them needs
         // to depend on the utf8 property
         let mut player_identifier_buffer = vec![];
         let mut unique_identifier_buffer = vec![];
         let mut country_buffer = vec![];
+        let mut token_buffer = vec![];
         if num_player_info > 0 {
             let name_length = self.data.get_u8()?;
             player_identifier_buffer = self.data.get_buffer(name_length)?;
@@ -203,10 +202,9 @@ impl RmvVideo {
             let country_length = self.data.get_u8()?;
             country_buffer = self.data.get_buffer(country_length)?;
         }
-        // 令牌不解析
         if num_player_info > 3 {
             let token_length = self.data.get_u8()?;
-            token = self.data.get_buffer(token_length as usize)?;
+            token_buffer = self.data.get_buffer(token_length as usize)?;
         }
 
         // timestamp_boardgen
@@ -308,12 +306,13 @@ impl RmvVideo {
             self.data.player_identifier = String::from_utf8(player_identifier_buffer).map_err(utf8_errfunc)?;
             self.data.unique_identifier = String::from_utf8(unique_identifier_buffer).map_err(utf8_errfunc)?;
             self.data.country = String::from_utf8(country_buffer).map_err(utf8_errfunc)?;
-            let _ = String::from_utf8(token.clone()).map_err(utf8_errfunc)?;
+            self.data.race_identifier = String::from_utf8(token_buffer).map_err(utf8_errfunc)?;
         }
         else {
             self.data.player_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(player_identifier_buffer)?;
             self.data.unique_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(unique_identifier_buffer)?;
             self.data.country = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(country_buffer)?;
+            self.data.race_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(token_buffer)?;
         }
 
         // 是不是第一个操作。录像里省略了第一个左键按下。

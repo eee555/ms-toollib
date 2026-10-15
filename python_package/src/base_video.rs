@@ -93,6 +93,10 @@ impl PyKeyDynamicParams {
     fn get_isl_solved(&self) -> PyResult<usize> {
         Ok(self.core.isl_solved)
     }
+    #[getter]
+    fn get_pluck(&self) -> PyResult<f64> {
+        Ok(self.core.pluck)
+    }
 }
 
 #[pyclass(name = "Event", unsendable)]

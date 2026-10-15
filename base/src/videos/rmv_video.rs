@@ -308,7 +308,7 @@ impl RmvVideo {
             self.data.player_identifier = String::from_utf8(player_identifier_buffer).map_err(utf8_errfunc)?;
             self.data.unique_identifier = String::from_utf8(unique_identifier_buffer).map_err(utf8_errfunc)?;
             self.data.country = String::from_utf8(country_buffer).map_err(utf8_errfunc)?;
-            let _ = String::from_utf8(token.clone()).map_err(utf8_errfunc)?;
+            self.data.race_identifier = String::from_utf8(token.clone()).map_err(utf8_errfunc)?;
         }
         else {
             self.data.player_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(player_identifier_buffer)?;

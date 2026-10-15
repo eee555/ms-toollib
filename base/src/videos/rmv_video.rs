@@ -314,6 +314,7 @@ impl RmvVideo {
             self.data.player_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(player_identifier_buffer)?;
             self.data.unique_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(unique_identifier_buffer)?;
             self.data.country = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(country_buffer)?;
+            self.data.race_identifier = <BaseVideo<Vec<Vec<i32>>>>::get_unknown_cp_encoding_string_from_buf(token)?;
         }
 
         // 是不是第一个操作。录像里省略了第一个左键按下。

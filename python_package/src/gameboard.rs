@@ -71,8 +71,9 @@ impl PyBoard {
         Ok(self.core.get_zini())
     }
     #[getter]
-    fn get_hzini(&mut self) -> PyResult<usize> {
-        Ok(self.core.get_hzini())
+    fn get_hzini(&mut self, py: Python<'_>) -> PyResult<usize> {
+        // The core owns only Rust data; each export task owns a separate Board.
+        Ok(py.detach(|| self.core.get_hzini()))
     }
     #[getter]
     fn get_op(&mut self) -> PyResult<usize> {

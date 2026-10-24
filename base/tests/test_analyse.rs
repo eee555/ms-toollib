@@ -2,8 +2,8 @@
 use ms_toollib::videos::base_video::NewBaseVideo2;
 use ms_toollib::videos::NewSomeVideo;
 use ms_toollib::{
-    AvfVideo, BaseVideo, Event, EvfVideo, GameBoardState, MinesweeperBoard, MvfVideo,
-    RmvVideo, SafeBoard,
+    AvfVideo, BaseVideo, Event, EvfVideo, GameBoardState, MinesweeperBoard, MouseEvent, MvfVideo,
+    RmvVideo, SafeBoard, VideoActionStateRecorder,
 };
 use std::thread;
 use std::time::Duration;
@@ -272,6 +272,237 @@ fn avf_video_works() {
     assert_eq!(video.data.get_pluck().unwrap(), 0.20115579693141436);
     video.data.set_current_time(999.999);
     assert_eq!(video.data.get_pluck().unwrap(), 0.3772470559870955);
+}
+
+fn append_trace_segment(
+    video: &mut BaseVideo<Vec<Vec<i32>>>,
+    start_time: &mut f64,
+    points: impl IntoIterator<Item = (u16, u16)>,
+) {
+    *start_time += 0.004;
+    video
+        .video_action_state_recorder
+        .push(VideoActionStateRecorder {
+            time: *start_time,
+            event: Some(Event::Mouse(MouseEvent {
+                mouse: "pf".to_string(),
+                x: 0,
+                y: 0,
+            })),
+            ..VideoActionStateRecorder::default()
+        });
+
+    for (x, y) in points {
+        *start_time += 0.004;
+        video
+            .video_action_state_recorder
+            .push(VideoActionStateRecorder {
+                time: *start_time,
+                event: Some(Event::Mouse(MouseEvent {
+                    mouse: "mv".to_string(),
+                    x,
+                    y,
+                })),
+                ..VideoActionStateRecorder::default()
+            });
+    }
+}
+
+fn append_click_holds(video: &mut BaseVideo<Vec<Vec<i32>>>, holds: &[f64]) {
+    for record in &mut video.video_action_state_recorder {
+        if let Some(Event::Mouse(mouse_event)) = &mut record.event {
+            if matches!(mouse_event.mouse.as_str(), "lc" | "lr" | "rc" | "rr" | "mc" | "mr") {
+                mouse_event.mouse = "pf".to_string();
+            }
+        }
+    }
+
+    let mut time = video
+        .video_action_state_recorder
+        .last()
+        .map_or(0.0, |record| record.time);
+    for &hold_time in holds {
+        time += 0.1;
+        video
+            .video_action_state_recorder
+            .push(VideoActionStateRecorder {
+                time,
+                event: Some(Event::Mouse(MouseEvent {
+                    mouse: "lc".to_string(),
+                    x: 0,
+                    y: 0,
+                })),
+                ..VideoActionStateRecorder::default()
+            });
+        time += hold_time;
+        video
+            .video_action_state_recorder
+            .push(VideoActionStateRecorder {
+                time,
+                event: Some(Event::Mouse(MouseEvent {
+                    mouse: "lr".to_string(),
+                    x: 0,
+                    y: 0,
+                })),
+                ..VideoActionStateRecorder::default()
+            });
+    }
+}
+
+#[test]
+fn user_mouse_trace_valid_checks_motion_samples() {
+    let mut video =
+        AvfVideo::new("../test_files/HI-SCORE Exp_49.25_3BV=127_3BVs=2.57_Wang Jianing G01825.avf");
+    video.parse().unwrap();
+    video.data.analyse();
+    assert_eq!(video.data.user_mouse_trace_valid(), 0);
+
+    let mut generated_trace = video.data.clone();
+    for record in &mut generated_trace.video_action_state_recorder {
+        if let Some(Event::Mouse(mouse_event)) = &mut record.event {
+            if mouse_event.mouse == "mv" {
+                mouse_event.mouse = "pf".to_string();
+            }
+        }
+    }
+    let mut last_time = generated_trace
+        .video_action_state_recorder
+        .last()
+        .unwrap()
+        .time;
+    for step in 0..31 {
+        last_time += 0.004;
+        generated_trace
+            .video_action_state_recorder
+            .push(VideoActionStateRecorder {
+                time: last_time,
+                event: Some(Event::Mouse(MouseEvent {
+                    mouse: "mv".to_string(),
+                    x: 100 + step,
+                    y: 100,
+                })),
+                ..VideoActionStateRecorder::default()
+            });
+    }
+    assert_eq!(generated_trace.user_mouse_trace_valid(), 1);
+    assert_eq!(generated_trace.is_valid(), 1);
+
+    // Each test case has three independent long paths, avoiding the repeated-step detector.
+    let mut straight_trace = video.data.clone();
+    for record in &mut straight_trace.video_action_state_recorder {
+        if let Some(Event::Mouse(mouse_event)) = &mut record.event {
+            if mouse_event.mouse == "mv" {
+                mouse_event.mouse = "pf".to_string();
+            }
+        }
+    }
+    let mut trace_time = straight_trace
+        .video_action_state_recorder
+        .last()
+        .unwrap()
+        .time;
+    for segment in 0..3 {
+        let mut x = 0u16;
+        let y = 300 + segment * 10;
+        let points = (0..64).map(|step| {
+            x += 1 + ((step * step + 3 * step) % 7) as u16;
+            (x, y)
+        });
+        append_trace_segment(&mut straight_trace, &mut trace_time, points);
+    }
+    assert_eq!(straight_trace.user_mouse_trace_valid(), 3);
+
+    let mut spline_trace = video.data.clone();
+    for record in &mut spline_trace.video_action_state_recorder {
+        if let Some(Event::Mouse(mouse_event)) = &mut record.event {
+            if mouse_event.mouse == "mv" {
+                mouse_event.mouse = "pf".to_string();
+            }
+        }
+    }
+    let mut trace_time = spline_trace
+        .video_action_state_recorder
+        .last()
+        .unwrap()
+        .time;
+    for segment in 0..3 {
+        let points = (0..64).map(|step| {
+            let t = step as f64 / 63.0;
+            let one_minus_t = 1.0 - t;
+            let x = (3.0 * one_minus_t * t * t * 1008.0 + t * t * t * 1008.0).round() as u16;
+            let y = 300
+                + segment * 10
+                + (3.0 * one_minus_t * one_minus_t * t * 1200.0
+                    + 3.0 * one_minus_t * t * t * 1200.0)
+                    .round() as u16;
+            (x, y)
+        });
+        append_trace_segment(&mut spline_trace, &mut trace_time, points);
+    }
+    assert_eq!(spline_trace.user_mouse_trace_valid(), 3);
+
+    let mut three_short_clicks = video.data.clone();
+    append_click_holds(&mut three_short_clicks, &[0.004, 0.006, 0.008]);
+    assert_eq!(three_short_clicks.user_mouse_trace_valid(), 0);
+
+    let mut isolated_short_clicks = video.data.clone();
+    append_click_holds(
+        &mut isolated_short_clicks,
+        &[0.004, 0.006, 0.008, 0.08, 0.08, 0.08, 0.08],
+    );
+    assert_eq!(isolated_short_clicks.user_mouse_trace_valid(), 0);
+
+    let mut four_short_clicks = video.data.clone();
+    append_click_holds(&mut four_short_clicks, &[0.004, 0.006, 0.008, 0.005]);
+    assert_eq!(four_short_clicks.user_mouse_trace_valid(), 3);
+
+    let mut ten_short_clicks = video.data.clone();
+    append_click_holds(
+        &mut ten_short_clicks,
+        &[
+            0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005,
+            0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08,
+        ],
+    );
+    assert_eq!(ten_short_clicks.user_mouse_trace_valid(), 3);
+
+    let mut eleven_short_clicks = video.data.clone();
+    append_click_holds(
+        &mut eleven_short_clicks,
+        &[
+            0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005,
+            0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08,
+        ],
+    );
+    assert_eq!(eleven_short_clicks.user_mouse_trace_valid(), 1);
+
+    let mut failing_median_trace = video.data.clone();
+    append_click_holds(&mut failing_median_trace, &[0.025; 7]);
+    assert_eq!(failing_median_trace.user_mouse_trace_valid(), 1);
+    assert_eq!(failing_median_trace.is_valid(), 1);
+
+    let mut suspect_median_trace = video.data.clone();
+    append_click_holds(&mut suspect_median_trace, &[0.035; 7]);
+    assert_eq!(suspect_median_trace.user_mouse_trace_valid(), 3);
+
+    let mut boundary_median_trace = video.data.clone();
+    append_click_holds(&mut boundary_median_trace, &[0.04; 7]);
+    assert_eq!(boundary_median_trace.user_mouse_trace_valid(), 0);
+
+    let mut normal_median_trace = video.data.clone();
+    append_click_holds(&mut normal_median_trace, &[0.08; 7]);
+    assert_eq!(normal_median_trace.user_mouse_trace_valid(), 0);
+
+    let mut unobservable_trace = video.data;
+    for record in &mut unobservable_trace.video_action_state_recorder {
+        if let Some(Event::Mouse(mouse_event)) = &mut record.event {
+            if mouse_event.mouse == "mv" {
+                mouse_event.x = 0;
+                mouse_event.y = 0;
+            }
+        }
+    }
+    assert_eq!(unobservable_trace.user_mouse_trace_valid(), 3);
 }
 
 #[test]
@@ -1934,8 +2165,3 @@ fn temp_rmv_video_works() {
     println!("right: {:?}", video.data.get_right());
     println!("double: {:?}", video.data.get_double());
 }
-
-
-
-
-

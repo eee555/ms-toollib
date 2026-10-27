@@ -345,21 +345,21 @@ impl<T> MinesweeperBoard<T> {
             }
         }
         if flaged_num == self.game_board[x][y] && flag_chording_useful {
-            for ch in &chording_cells {
-                if self.board[ch.0][ch.1] == -1 {
-                    self.game_board_state = GameBoardState::Loss;
-                }
-            }
+            // 先判断是否踩雷，踩雷时不能再走获胜判定，否则可能把 Loss 覆盖成 Win
+            let hit_mine = chording_cells
+                .iter()
+                .any(|ch| self.board[ch.0][ch.1] == -1);
             self.dce += 1;
             self.bbbv_solved += surround_bbbv;
             self.bbbv_solved += self.op_num_around_cell(x, y);
             refresh_board(&self.board, &mut self.game_board, chording_cells);
 
+            if hit_mine {
+                self.game_board_state = GameBoardState::Loss;
+                return Ok(4);
+            }
             if self.is_win() {
                 self.game_board_state = GameBoardState::Win;
-            }
-            if self.game_board_state == GameBoardState::Loss{
-                return Ok(4)
             }
             Ok(3)
         } else {

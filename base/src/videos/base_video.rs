@@ -1022,6 +1022,8 @@ impl<T> BaseVideo<T> {
                     .unwrap()
                     .as_micros() as u64;
                 self.game_board_state = GameBoardState::Loss;
+                // 同步局面状态机，否则后续鼠标事件仍会被当成有效操作处理
+                self.minesweeper_board.game_board_state = GameBoardState::Loss;
                 self.is_completed = false;
                 self.gather_params_after_game(time_ms, None);
                 Ok(0)

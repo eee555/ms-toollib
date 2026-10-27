@@ -209,6 +209,7 @@ impl<T> MinesweeperBoard<T> {
         }
         self.pointer_x = 0;
         self.pointer_y = 0;
+        self.pre_flag_num = 0;
         self.middle_hold = false;
         self.board_changed = false;
     }
@@ -465,6 +466,11 @@ impl<T> MinesweeperBoard<T> {
                     // arbiter这个奇葩，录像可能以中键的按下和抬起开始
                     return Ok(0);
                 }
+                "m" => {
+                    // 中键按下或抬起，需要记录状态供playing阶段的释放使用
+                    self.middle_hold = !self.middle_hold;
+                    return Ok(0);
+                }
                 "lc" => {
                     //  "l"处理不了，很复杂，以后再说
                     match self.mouse_state {
@@ -607,11 +613,7 @@ impl<T> MinesweeperBoard<T> {
                                 self.pre_flag_num -= 1;
                                 if self.pre_flag_num == 0 {
                                     self.game_board_state = GameBoardState::Ready;
-                                    self.flag = 0;
-                                    self.flaged_list.clear();
-                                    self.double = 0;
-                                    self.left = 0;
-                                    self.right = 0;
+                                    self.clear_click_num();
                                     self.game_board[pos.0][pos.1] = 10;
                                     return Ok(0);
                                 }
@@ -654,9 +656,16 @@ impl<T> MinesweeperBoard<T> {
                 "mc" => {
                     // 阿比特中有在预标雷阶段中键按下弹起
                     self.middle_hold = true;
+                    return Ok(0);
                 }
                 "mr" => {
                     self.middle_hold = false;
+                    return Ok(0);
+                }
+                "m" => {
+                    // 预标雷阶段局面内没有已打开的格子，中键弹起不会触发双击
+                    self.middle_hold = !self.middle_hold;
+                    return Ok(0);
                 }
                 _ => return Err(()),
             },
@@ -809,12 +818,17 @@ impl<T> MinesweeperBoard<T> {
                 }
                 // 以下情况其实是不可能的
                 MouseState::UpUp => {
-                    if self.game_board[pos.0][pos.1] < 10 {
-                        self.mouse_state = MouseState::UpDownNotFlag;
+                    if pos.0 < self.row && pos.1 < self.column {
+                        if self.game_board[pos.0][pos.1] < 10 {
+                            self.mouse_state = MouseState::UpDownNotFlag;
+                        } else {
+                            self.mouse_state = MouseState::UpDown;
+                        }
+                        return self.right_click(pos.0, pos.1);
                     } else {
-                        self.mouse_state = MouseState::UpDown;
+                        self.mouse_state = MouseState::UpDownNotFlag;
+                        self.right += 1;
                     }
-                    return self.right_click(pos.0, pos.1);
                 }
                 MouseState::DownUp => self.mouse_state = MouseState::Chording,
                 MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,
@@ -826,11 +840,17 @@ impl<T> MinesweeperBoard<T> {
             }
             "mr" => {
                 self.middle_hold = false;
+                if pos.0 == self.row && pos.1 == self.column {
+                    return Ok(0);
+                }
                 return self.chording_click(pos.0, pos.1);
             }
             "m" => {
                 self.middle_hold = !self.middle_hold;
                 if !self.middle_hold {
+                    if pos.0 == self.row && pos.1 == self.column {
+                        return Ok(0);
+                    }
                     return self.chording_click(pos.0, pos.1);
                 }
             }
@@ -947,6 +967,10 @@ impl<T> MinesweeperBoard<T> {
         self.double = 0;
         self.left = 0;
         self.right = 0;
+        // 预标雷阶段的 ce 也要清空，否则会残留到正式游戏中
+        self.lce = 0;
+        self.rce = 0;
+        self.dce = 0;
     }
 }
 

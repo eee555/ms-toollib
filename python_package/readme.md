@@ -81,6 +81,37 @@ See the [full documentation](https://docs.rs/ms_toollib/latest/ms_toollib) for d
 
 ## Source & Issues
 
+### Generate Python Type Stubs
+
+The source-based generator requires Python 3.10+ and two development-only packages:
+
+```bash
+pip install "tree-sitter>=0.25,<0.27" "tree-sitter-rust>=0.24,<0.25"
+python python_package/generate_pyi.py --compare python_package/ms_toollib.pyi
+```
+
+Run from the repository root. By default this writes
+`python_package/ms_toollib.generated.pyi`, leaving the existing stub unchanged.
+Use `--output python_package/ms_toollib.pyi` to explicitly replace the package stub.
+Use `--check` to verify the output is current without writing it, and `--diff`
+with `--compare` for a full text diff in addition to the semantic API report.
+
+The generator parses registered PyO3 functions and classes, renamed bindings,
+constructors, properties, signatures/defaults, documentation and nested Rust
+types. It expands the single-identifier `generate_video!` template used here.
+Unregistered event classes referenced by signatures are emitted as private
+support types. Getter-only properties remain read-only; setter-only properties
+use writable attribute annotations. Complex Rust default expressions use `...`.
+
+This is a source parser, not a Rust compiler: general macro expansion, conditional
+compilation, externally defined types and arbitrary PyO3 extensions are not
+supported. Unknown Rust types and unsupported top-level macros cause an error.
+`PyAny` remains `Any`; types selected dynamically inside Rust function bodies
+cannot be recovered from signatures. API comparison normalizes `typing.List`
+and `typing.Tuple` aliases, but is not a complete type-equivalence checker.
+
+Regression tests: `python -m unittest discover -s python_package -p test_generate_pyi.py`.
+
 - GitHub: <https://github.com/eee555/ms_toollib>
 - Documentation: <https://docs.rs/ms_toollib/latest/ms_toollib>
 - PyPI: <https://pypi.org/project/ms_toollib/>

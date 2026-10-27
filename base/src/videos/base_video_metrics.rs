@@ -228,6 +228,7 @@ impl<T> BaseVideo<T> {
             return Err(());
         };
         self.mode = mode;
+        self.minesweeper_board.mode = mode;
         Ok(0)
     }
     pub fn set_software(&mut self, software: String) -> Result<u8, ()> {

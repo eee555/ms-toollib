@@ -15,8 +15,12 @@ pub struct PySafeMinesweeperBoard {
 #[pymethods]
 impl PyMinesweeperBoard {
     #[new]
-    pub fn new(board: Vec<Vec<i32>>) -> PyMinesweeperBoard {
-        let c = MinesweeperBoard::<Vec<Vec<i32>>>::new(board.clone());
+    #[pyo3(signature = (board, mode = None))]
+    pub fn new(board: Vec<Vec<i32>>, mode: Option<u16>) -> PyMinesweeperBoard {
+        let mut c = MinesweeperBoard::<Vec<Vec<i32>>>::new(board.clone());
+        if let Some(mode) = mode {
+            c.set_mode(mode);
+        }
         PyMinesweeperBoard { core: c }
     }
     pub fn step(&mut self, e: &str, pos: (usize, usize)) {
@@ -31,7 +35,15 @@ impl PyMinesweeperBoard {
     // 这个方法与强可猜、弱可猜、埋雷有关
     #[setter]
     fn set_board(&mut self, board: Vec<Vec<i32>>) {
-        self.core.board = board;
+        self.core.replace_board(board);
+    }
+    #[getter]
+    fn get_mode(&self) -> PyResult<u16> {
+        Ok(self.core.mode)
+    }
+    #[setter]
+    fn set_mode(&mut self, mode: u16) {
+        self.core.mode = mode;
     }
     // #[setter]
     // fn set_game_board(&mut self, game_board: Vec<Vec<i32>>) {
@@ -151,8 +163,12 @@ impl PyMinesweeperBoard {
 #[pymethods]
 impl PySafeMinesweeperBoard {
     #[new]
-    pub fn new(board: Vec<Vec<i32>>) -> PySafeMinesweeperBoard {
-        let c = MinesweeperBoard::<SafeBoard>::new(SafeBoard::new(board));
+    #[pyo3(signature = (board, mode = None))]
+    pub fn new(board: Vec<Vec<i32>>, mode: Option<u16>) -> PySafeMinesweeperBoard {
+        let mut c = MinesweeperBoard::<SafeBoard>::new(SafeBoard::new(board));
+        if let Some(mode) = mode {
+            c.set_mode(mode);
+        }
         PySafeMinesweeperBoard { core: c }
     }
     pub fn step(&mut self, e: &str, pos: (usize, usize)) {
@@ -167,7 +183,15 @@ impl PySafeMinesweeperBoard {
     // 这个方法与强可猜、弱可猜、埋雷有关
     #[setter]
     fn set_board(&mut self, board: Vec<Vec<i32>>) {
-        self.core.board.set(board);
+        self.core.replace_board(SafeBoard::new(board));
+    }
+    #[getter]
+    fn get_mode(&self) -> PyResult<u16> {
+        Ok(self.core.mode)
+    }
+    #[setter]
+    fn set_mode(&mut self, mode: u16) {
+        self.core.mode = mode;
     }
     // #[setter]
     // fn set_game_board(&mut self, game_board: Vec<Vec<i32>>) {

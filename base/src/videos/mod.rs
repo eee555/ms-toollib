@@ -18,6 +18,7 @@ pub mod base_video_metrics;
 pub mod base_video_generate_evf;
 pub mod byte_reader;
 pub mod minesweeper_board;
+pub mod relayout;
 pub use minesweeper_board::{GameBoardState, MinesweeperBoard, MouseState};
 mod analyse_methods;
 

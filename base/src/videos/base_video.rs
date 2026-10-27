@@ -16,7 +16,7 @@ use std::fs;
 use std::rc::Rc;
 use web_time::{Instant, SystemTime, UNIX_EPOCH};
 
-use crate::safe_board::{BoardSize, EmptyBoard};
+use crate::safe_board::{BoardSize, EmptyBoard, ReplaceBoard};
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::safe_board::SafeBoard;
 
@@ -698,6 +698,7 @@ impl<T> BaseVideo<T> {
     {
         self.game_board_stream.clear();
         self.minesweeper_board = MinesweeperBoard::<T>::new_from_board(row, column);
+        self.minesweeper_board.mode = self.mode;
         self.width = column;
         self.height = row;
         self.cell_pixel_size = pix_size;
@@ -834,7 +835,7 @@ impl<T> BaseVideo<T> {
     /// - 如果操作发生在界外，要求转换成pos=(row*pixsize, column*pixsize)
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()>
     where
-        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
+        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug + ReplaceBoard,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         // 第一时间获取时间戳
@@ -852,6 +853,7 @@ impl<T> BaseVideo<T> {
         // 运行局面状态机
         let x = pos.0 / self.cell_pixel_size as usize;
         let y = pos.1 / self.cell_pixel_size as usize;
+        self.minesweeper_board.mode = self.mode;
         let a = self.minesweeper_board.step(e, (x, y))?;
         // 获取新的状态
         self.game_board_state = self.minesweeper_board.game_board_state;
@@ -1010,7 +1012,7 @@ impl<T> BaseVideo<T> {
     /// 游戏状态事件编码：{81: "replay", 82: "win", 83: "fail", 99: "error"}。
     pub fn step_game_state(&mut self, e: &str) -> Result<u8, ()>
     where
-        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
+        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug + ReplaceBoard,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         let step_instant = Instant::now();
@@ -1067,7 +1069,7 @@ impl<T> BaseVideo<T> {
     /// 游戏结束后，计算一批指标
     fn gather_params_after_game(&mut self, time_ms: u32, last_mouse_event: Option<MouseEvent>)
     where
-        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
+        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug + ReplaceBoard,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         assert!(
@@ -1077,6 +1079,7 @@ impl<T> BaseVideo<T> {
         if self.minesweeper_board.board_changed {
             // 此处是解决可猜模式中由于局面更改，扫完后，ce、bbbv_solved等计算不对，需要重来一遍
             self.minesweeper_board.reset();
+            self.minesweeper_board.mode = self.mode;
             for action_state in &self.video_action_state_recorder {
                 if let Some(Event::Mouse(mouse_event)) = &action_state.event {
                     let r = mouse_event.y as usize / self.cell_pixel_size as usize;

@@ -177,6 +177,31 @@ pub trait BoardSize {
     fn get_column(&self) -> usize;
 }
 
+/// 可被整体替换的雷局，供可猜/递归模式在状态机内部重排使用。
+pub trait ReplaceBoard {
+    fn replace_with(&mut self, board: Vec<Vec<i32>>);
+    fn to_vec_vec(&self) -> Vec<Vec<i32>>;
+}
+
+impl ReplaceBoard for Vec<Vec<i32>> {
+    fn replace_with(&mut self, board: Vec<Vec<i32>>) {
+        *self = board;
+    }
+    fn to_vec_vec(&self) -> Vec<Vec<i32>> {
+        self.clone()
+    }
+}
+
+#[cfg(any(feature = "py", feature = "rs"))]
+impl ReplaceBoard for SafeBoard {
+    fn replace_with(&mut self, board: Vec<Vec<i32>>) {
+        self.set(board);
+    }
+    fn to_vec_vec(&self) -> Vec<Vec<i32>> {
+        self.into_vec_vec()
+    }
+}
+
 pub trait EmptyBoard: Sized {
     fn empty_board(row: usize, column: usize) -> Self;
 }

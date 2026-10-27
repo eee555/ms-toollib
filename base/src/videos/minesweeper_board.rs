@@ -3,9 +3,14 @@ use crate::utils::refresh_board;
 #[cfg(any(feature = "py", feature = "rs"))]
 use crate::safe_board::SafeBoard;
 
-use crate::safe_board::{BoardSize, EmptyBoard};
+use crate::safe_board::{BoardSize, EmptyBoard, ReplaceBoard};
+use crate::videos::relayout;
 
 use std::cmp::{max, min};
+use std::collections::VecDeque;
+
+/// 可猜模式重排雷局的最大尝试次数（用于拒绝采样）
+const RELAYOUT_MAX_TRIALS: usize = 20;
 
 /// 没有时间、像素观念的局面状态机，侧重分析操作与局面的交互、推衍局面。在线地统计左右双击次数、ce次数、左键、右键、双击、当前解决的3BV。  
 /// - 局限：不关注具体的线路（没有像素观念），因此不能计算path等。  
@@ -68,6 +73,9 @@ pub struct MinesweeperBoard<T> {
     middle_hold: bool,
     // 是否曾经修改过局面，若修改过，结算时要从头算，因为ce没法增量算
     pub board_changed: bool,
+    /// 游戏模式，采用 evf 标准模式码。0 标准、6 强无猜、9 强可猜、10 弱可猜、
+    /// 11–16 递归系列。其余模式状态机按标准规则处理。
+    pub mode: u16,
 }
 
 impl Default for MinesweeperBoard<Vec<Vec<i32>>> {
@@ -93,6 +101,7 @@ impl Default for MinesweeperBoard<Vec<Vec<i32>>> {
             pre_flag_num: 0,
             middle_hold: false,
             board_changed: false,
+            mode: 0,
         }
     }
 }
@@ -121,6 +130,7 @@ impl Default for MinesweeperBoard<SafeBoard> {
             pre_flag_num: 0,
             middle_hold: false,
             board_changed: false,
+            mode: 0,
         }
     }
 }
@@ -184,6 +194,7 @@ impl<T: EmptyBoard> MinesweeperBoard<T> {
             pre_flag_num: 0,
             middle_hold: false,
             board_changed: false,
+            mode: 0,
         }
     }
 }
@@ -220,21 +231,90 @@ impl<T> MinesweeperBoard<T> {
         self.pointer_y = 0;
         self.board_changed = true;
     }
+    /// 设置游戏模式（evf 标准模式码）
+    pub fn set_mode(&mut self, mode: u16) {
+        self.mode = mode;
+    }
     pub fn replace_board(&mut self, board: T) {
         self.board = board;
         self.pointer_x = 0;
         self.pointer_y = 0;
         self.board_changed = true;
     }
-    /// Playing状态下的左击，没有按下抬起之分
-    fn left_click(&mut self, x: usize, y: usize) -> Result<u8, ()>
+    /// 模式是否要求重排后的雷局仍然可解
+    fn mode_requires_solvable(&self) -> bool {
+        matches!(self.mode, 9 | 14 | 15 | 16)
+    }
+    /// 模式是否属于可猜系列（9/10/14/15/16）
+    fn mode_is_guess(&self) -> bool {
+        matches!(self.mode, 9 | 10 | 14 | 15 | 16)
+    }
+    /// 双击后是否递归（11/13/14/16）
+    fn mode_rechord_on_double(&self) -> bool {
+        matches!(self.mode, 11 | 13 | 14 | 16)
+    }
+    /// 标雷后是否递归（12/13/15/16）
+    fn mode_rechord_on_flag(&self) -> bool {
+        matches!(self.mode, 12 | 13 | 15 | 16)
+    }
+    /// 尝试重排雷局。找不到满足条件的雷局时返回 `None`。
+    fn try_relayout(
+        &self,
+        must_not_mine: &[(usize, usize)],
+        must_mine: &[(usize, usize)],
+        require_solvable: bool,
+    ) -> Option<Vec<Vec<i32>>>
     where
-        T: std::ops::Index<usize> + BoardSize,
+        T: ReplaceBoard,
+    {
+        let board = self.board.to_vec_vec();
+        relayout::relayout(
+            &board,
+            &self.game_board,
+            must_not_mine,
+            must_mine,
+            require_solvable,
+            RELAYOUT_MAX_TRIALS,
+        )
+    }
+    /// 用新的雷局替换当前雷局，并重置胜利扫描游标。
+    fn replace_board_vec(&mut self, board: Vec<Vec<i32>>)
+    where
+        T: ReplaceBoard,
+    {
+        self.board.replace_with(board);
+        self.pointer_x = 0;
+        self.pointer_y = 0;
+        self.board_changed = true;
+    }
+    /// Playing状态下的左击，没有按下抬起之分
+    fn left_click(&mut self, x: usize, y: usize, is_opening: bool) -> Result<u8, ()>
+    where
+        T: std::ops::Index<usize> + BoardSize + ReplaceBoard,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         self.left += 1;
         if self.game_board[x][y] != 10 && self.game_board[x][y] != 12 {
             return Ok(0);
+        }
+        // 开局第一击豁免模式判定
+        if !is_opening && self.game_board[x][y] == 10 {
+            if self.mode == 6 {
+                // 强无猜：只要该格“可能是雷”，就重排成该格为雷的雷局，然后按踩雷判负
+                if self.board[x][y] != -1 {
+                    if let Some(new_board) = self.try_relayout(&[], &[(x, y)], false) {
+                        self.replace_board_vec(new_board);
+                    }
+                }
+            } else if self.mode_is_guess() && self.board[x][y] == -1 {
+                // 可猜：点到的实际是雷时，重排成该格非雷（9/14/15/16 还要求可解）
+                let require_solvable = self.mode_requires_solvable();
+                if let Some(new_board) =
+                    self.try_relayout(&[(x, y)], &[], require_solvable)
+                {
+                    self.replace_board_vec(new_board);
+                }
+            }
         }
         // refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
         match self.board[x][y] {
@@ -270,7 +350,7 @@ impl<T> MinesweeperBoard<T> {
     /// Playing状态下的右击，没有按下抬起之分
     fn right_click(&mut self, x: usize, y: usize) -> Result<u8, ()>
     where
-        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
+        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug + ReplaceBoard,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         self.right += 1;
@@ -278,11 +358,13 @@ impl<T> MinesweeperBoard<T> {
             return Ok(0);
         } else {
             // println!("{:?}", self.board);
+            let mut flag_added = false;
             if self.board[x][y] != -1 {
                 match self.game_board[x][y] {
                     10 => {
                         self.game_board[x][y] = 11;
                         self.flag += 1;
+                        flag_added = true;
                     }
                     11 => {
                         self.game_board[x][y] = 10;
@@ -299,6 +381,7 @@ impl<T> MinesweeperBoard<T> {
                             self.rce += 1;
                         }
                         self.flaged_list.push((x, y));
+                        flag_added = true;
                     }
                     11 => {
                         self.game_board[x][y] = 10;
@@ -307,16 +390,55 @@ impl<T> MinesweeperBoard<T> {
                     _ => return Err(()),
                 }
             }
+            // 标雷递归：对邻接的、旗数恰好等于数字的已打开格自动双击
+            if flag_added
+                && self.game_board_state == GameBoardState::Playing
+                && self.mode_rechord_on_flag()
+            {
+                let mut seeds = vec![];
+                for i in max(1, x) - 1..min(self.row, x + 2) {
+                    for j in max(1, y) - 1..min(self.column, y + 2) {
+                        if self.game_board[i][j] < 9 && self.board[i][j] != -1 {
+                            seeds.push((i, j));
+                        }
+                    }
+                }
+                self.run_recursive(seeds);
+            }
             Ok(1)
         }
     }
     /// Playing状态下的双击，没有按下抬起之分
     fn chording_click(&mut self, x: usize, y: usize) -> Result<u8, ()>
     where
-        T: std::ops::Index<usize> + BoardSize,
+        T: std::ops::Index<usize> + BoardSize + ReplaceBoard,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         self.double += 1;
+        let before = if self.mode_rechord_on_double() {
+            Some(self.game_board.clone())
+        } else {
+            None
+        };
+        let result = self.perform_chord(x, y, false)?;
+        if result == 3 {
+            if let Some(before) = before {
+                let opened = newly_opened(&before, &self.game_board);
+                self.run_recursive(opened);
+                if self.game_board_state == GameBoardState::Loss {
+                    return Ok(4);
+                }
+            }
+        }
+        Ok(result)
+    }
+    /// 执行双击的实质部分。`silent` 为 true 时是递归产生的自动双击，
+    /// 不计玩家操作次数（double/dce），但仍计入 bbbv_solved 并正常判胜负。
+    fn perform_chord(&mut self, x: usize, y: usize, silent: bool) -> Result<u8, ()>
+    where
+        T: std::ops::Index<usize> + BoardSize + ReplaceBoard,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
         // 在8、10、11、12上双击一定不会发生任何事情，但是在0上双击仍然可能有效！
         if self.game_board[x][y] >= 8 {
             return Ok(0);
@@ -324,7 +446,6 @@ impl<T> MinesweeperBoard<T> {
         let mut flag_chording_useful = false; // 双击有效的基础上，周围是否有未打开的格子
         let mut chording_cells = vec![]; // 未打开的格子的集合
         let mut flaged_num = 0; // 双击点周围的标雷数
-        let mut surround_bbbv = 0; // 周围的3BV
         for i in max(1, x) - 1..min(self.row, x + 2) {
             for j in max(1, y) - 1..min(self.column, y + 2) {
                 if i != x || j != y {
@@ -334,36 +455,127 @@ impl<T> MinesweeperBoard<T> {
                     if self.game_board[i][j] == 10 {
                         chording_cells.push((i, j));
                         flag_chording_useful = true;
-                        if self.board[i][j] > 0 {
-                            // 通过双击打开岛上的3BV
-                            if self.cell_is_bbbv(i, j) {
-                                surround_bbbv += 1;
-                            }
-                        }
                     }
                 }
             }
         }
-        if flaged_num == self.game_board[x][y] && flag_chording_useful {
-            // 先判断是否踩雷，踩雷时不能再走获胜判定，否则可能把 Loss 覆盖成 Win
-            let hit_mine = chording_cells
-                .iter()
-                .any(|ch| self.board[ch.0][ch.1] == -1);
-            self.dce += 1;
-            self.bbbv_solved += surround_bbbv;
-            self.bbbv_solved += self.op_num_around_cell(x, y);
-            refresh_board(&self.board, &mut self.game_board, chording_cells);
+        if flaged_num != self.game_board[x][y] || !flag_chording_useful {
+            return Ok(0);
+        }
 
-            if hit_mine {
-                self.game_board_state = GameBoardState::Loss;
-                return Ok(4);
+        // 模式处理：必要时重排雷局
+        if self.mode == 6 {
+            // 强无猜：只要本次将打开的格子中存在“可能是雷”的格子，就重排成它为雷的雷局
+            if !chording_cells
+                .iter()
+                .any(|c| self.board[c.0][c.1] == -1)
+            {
+                let mut replacement = None;
+                for &cell in &chording_cells {
+                    if let Some(new_board) = self.try_relayout(&[], &[cell], false) {
+                        replacement = Some(new_board);
+                        break;
+                    }
+                }
+                if let Some(new_board) = replacement {
+                    self.replace_board_vec(new_board);
+                }
             }
-            if self.is_win() {
-                self.game_board_state = GameBoardState::Win;
+        } else if self.mode_is_guess() {
+            // 可猜：本次将打开的实际是雷的格子，全部重排为非雷
+            let mines: Vec<(usize, usize)> = chording_cells
+                .iter()
+                .filter(|c| self.board[c.0][c.1] == -1)
+                .cloned()
+                .collect();
+            if !mines.is_empty() {
+                let require_solvable = self.mode_requires_solvable();
+                if let Some(new_board) = self.try_relayout(&mines, &[], require_solvable) {
+                    self.replace_board_vec(new_board);
+                }
             }
-            Ok(3)
-        } else {
-            Ok(0)
+        }
+
+        let mut surround_bbbv = 0; // 周围的3BV
+        for &(i, j) in &chording_cells {
+            if self.board[i][j] > 0 && self.cell_is_bbbv(i, j) {
+                surround_bbbv += 1;
+            }
+        }
+        // 先判断是否踩雷，踩雷时不能再走获胜判定，否则可能把 Loss 覆盖成 Win
+        let hit_mine = chording_cells
+            .iter()
+            .any(|ch| self.board[ch.0][ch.1] == -1);
+        if !silent {
+            self.dce += 1;
+        }
+        self.bbbv_solved += surround_bbbv;
+        self.bbbv_solved += self.op_num_around_cell(x, y);
+        refresh_board(&self.board, &mut self.game_board, chording_cells);
+
+        if hit_mine {
+            self.game_board_state = GameBoardState::Loss;
+            return Ok(4);
+        }
+        if self.is_win() {
+            self.game_board_state = GameBoardState::Win;
+        }
+        Ok(3)
+    }
+    /// 判断某个已打开的数字格是否可以（安全地）双击
+    fn chord_is_useful(&self, x: usize, y: usize) -> bool
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        if self.game_board[x][y] >= 8 || self.game_board[x][y] < 0 {
+            return false;
+        }
+        let mut flaged_num = 0;
+        let mut unopened = false;
+        for i in max(1, x) - 1..min(self.row, x + 2) {
+            for j in max(1, y) - 1..min(self.column, y + 2) {
+                if self.game_board[i][j] == 11 {
+                    flaged_num += 1;
+                } else if self.game_board[i][j] == 10 {
+                    unopened = true;
+                }
+            }
+        }
+        flaged_num == self.game_board[x][y] && unopened
+    }
+    /// 递归连锁：对队列中的格子依次执行静默双击，新打开的数字格继续入队。
+    fn run_recursive(&mut self, seeds: Vec<(usize, usize)>)
+    where
+        T: std::ops::Index<usize> + BoardSize + ReplaceBoard,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        let mut queue: VecDeque<(usize, usize)> = VecDeque::new();
+        for s in seeds {
+            queue.push_back(s);
+        }
+        let mut visited = vec![vec![false; self.column]; self.row];
+        while let Some((x, y)) = queue.pop_front() {
+            if matches!(
+                self.game_board_state,
+                GameBoardState::Win | GameBoardState::Loss
+            ) {
+                break;
+            }
+            if x >= self.row || y >= self.column || visited[x][y] {
+                continue;
+            }
+            visited[x][y] = true;
+            if !self.chord_is_useful(x, y) {
+                continue;
+            }
+            let before = self.game_board.clone();
+            let result = self.perform_chord(x, y, true);
+            if let Ok(3) = result {
+                for cell in newly_opened(&before, &self.game_board) {
+                    queue.push_back(cell);
+                }
+            }
         }
     }
     fn cell_is_bbbv(&self, x: usize, y: usize) -> bool
@@ -452,7 +664,7 @@ impl<T> MinesweeperBoard<T> {
     // 因此必须在UI层面防止调用，否则会产生意料之外的效果。
     pub fn step(&mut self, e: &str, pos: (usize, usize)) -> Result<u8, ()>
     where
-        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
+        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug + ReplaceBoard,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         assert!(
@@ -585,7 +797,7 @@ impl<T> MinesweeperBoard<T> {
                             // 预标雷阶段，在10上左键弹起
                             self.game_board_state = GameBoardState::Playing;
                             self.mouse_state = MouseState::UpUp;
-                            return self.left_click(pos.0, pos.1);
+                            return self.left_click(pos.0, pos.1, true);
                         } else {
                             // 预标雷阶段，在旗上左键弹起
                             self.left += 1;
@@ -694,7 +906,7 @@ impl<T> MinesweeperBoard<T> {
                         return Ok(0);
                     }
                     // println!("x={:?}, y={:?}", pos.0, pos.1);
-                    return self.left_click(pos.0, pos.1);
+                    return self.left_click(pos.0, pos.1, false);
                 }
                 MouseState::Chording => {
                     self.mouse_state = MouseState::UpDown;
@@ -725,7 +937,7 @@ impl<T> MinesweeperBoard<T> {
                         return Ok(0);
                     }
                     // println!("x={:?}, y={:?}", pos.0, pos.1);
-                    return self.left_click(pos.0, pos.1);
+                    return self.left_click(pos.0, pos.1, false);
                 }
                 MouseState::Chording => {
                     self.mouse_state = MouseState::UpDown;
@@ -906,7 +1118,7 @@ impl<T> MinesweeperBoard<T> {
     /// 开始游戏前的任何操作也都记录次数
     pub fn step_flow(&mut self, operation: &Vec<(String, (usize, usize))>) -> Result<(), ()>
     where
-        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug,
+        T: std::ops::Index<usize> + BoardSize + std::fmt::Debug + ReplaceBoard,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         for op in operation {
@@ -972,6 +1184,19 @@ impl<T> MinesweeperBoard<T> {
         self.rce = 0;
         self.dce = 0;
     }
+}
+
+/// 对比两次局面，返回新打开的格子
+fn newly_opened(before: &Vec<Vec<i32>>, after: &Vec<Vec<i32>>) -> Vec<(usize, usize)> {
+    let mut ans = vec![];
+    for i in 0..before.len() {
+        for j in 0..before[0].len() {
+            if before[i][j] >= 10 && after[i][j] < 10 {
+                ans.push((i, j));
+            }
+        }
+    }
+    ans
 }
 
 /// 鼠标状态

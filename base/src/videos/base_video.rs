@@ -699,6 +699,7 @@ impl<T> BaseVideo<T> {
         self.game_board_stream.clear();
         self.minesweeper_board = MinesweeperBoard::<T>::new_from_board(row, column);
         self.minesweeper_board.mode = self.mode;
+        self.minesweeper_board.use_question = self.use_question;
         self.width = column;
         self.height = row;
         self.cell_pixel_size = pix_size;
@@ -854,6 +855,7 @@ impl<T> BaseVideo<T> {
         let x = pos.0 / self.cell_pixel_size as usize;
         let y = pos.1 / self.cell_pixel_size as usize;
         self.minesweeper_board.mode = self.mode;
+        self.minesweeper_board.use_question = self.use_question;
         let a = self.minesweeper_board.step(e, (x, y))?;
         // 获取新的状态
         self.game_board_state = self.minesweeper_board.game_board_state;
@@ -1080,6 +1082,7 @@ impl<T> BaseVideo<T> {
             // 此处是解决可猜模式中由于局面更改，扫完后，ce、bbbv_solved等计算不对，需要重来一遍
             self.minesweeper_board.reset();
             self.minesweeper_board.mode = self.mode;
+            self.minesweeper_board.use_question = self.use_question;
             for action_state in &self.video_action_state_recorder {
                 if let Some(Event::Mouse(mouse_event)) = &action_state.event {
                     let r = mouse_event.y as usize / self.cell_pixel_size as usize;

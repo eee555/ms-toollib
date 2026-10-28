@@ -520,7 +520,7 @@ fn avf_video_works_other_encoding() {
 // cargo test --features rs -- --nocapture temp_avf_video_works
 fn temp_avf_video_works() {
     // 录像解析工具测试
-    let mut video = AvfVideo::new("../test_files/Wang_Jia_Ning_Beg_15.523bv24.avf");
+    let mut video = AvfVideo::new("../test_files/temp.avf");
 
     let r = video.parse();
     assert_eq!(r.unwrap(), ());

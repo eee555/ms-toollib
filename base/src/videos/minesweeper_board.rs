@@ -76,6 +76,9 @@ pub struct MinesweeperBoard<T> {
     /// 游戏模式，采用 evf 标准模式码。0 标准、6 强无猜、9 强可猜、10 弱可猜、
     /// 11–16 递归系列。其余模式状态机按标准规则处理。
     pub mode: u16,
+    /// 是否开启问号标记。开启后右键循环为 10→11→17→10；关闭为 10→11→10。
+    /// 问号格不参与双击（既不是雷也不算未打开的阻碍），但会阻挡获胜判定。
+    pub use_question: bool,
 }
 
 impl Default for MinesweeperBoard<Vec<Vec<i32>>> {
@@ -102,6 +105,7 @@ impl Default for MinesweeperBoard<Vec<Vec<i32>>> {
             middle_hold: false,
             board_changed: false,
             mode: 0,
+            use_question: false,
         }
     }
 }
@@ -131,6 +135,7 @@ impl Default for MinesweeperBoard<SafeBoard> {
             middle_hold: false,
             board_changed: false,
             mode: 0,
+            use_question: false,
         }
     }
 }
@@ -195,6 +200,7 @@ impl<T: EmptyBoard> MinesweeperBoard<T> {
             middle_hold: false,
             board_changed: false,
             mode: 0,
+            use_question: false,
         }
     }
 }
@@ -367,8 +373,12 @@ impl<T> MinesweeperBoard<T> {
                         flag_added = true;
                     }
                     11 => {
-                        self.game_board[x][y] = 10;
+                        // 开问号时先退为问号，再右击才取消标记
+                        self.game_board[x][y] = if self.use_question { 17 } else { 10 };
                         self.flag -= 1;
+                    }
+                    17 => {
+                        self.game_board[x][y] = 10;
                     }
                     _ => return Err(()),
                 }
@@ -384,8 +394,11 @@ impl<T> MinesweeperBoard<T> {
                         flag_added = true;
                     }
                     11 => {
-                        self.game_board[x][y] = 10;
+                        self.game_board[x][y] = if self.use_question { 17 } else { 10 };
                         self.flag -= 1;
+                    }
+                    17 => {
+                        self.game_board[x][y] = 10;
                     }
                     _ => return Err(()),
                 }
@@ -672,15 +685,36 @@ impl<T> MinesweeperBoard<T> {
                 || (pos.0 == self.row && pos.1 == self.column),
             "pos out of range"
         );
+        // "l"/"r"/"m" 是不确定按下还是抬起的事件（evf 标准），先按鼠标状态机解析成确定事件。
+        // 左键按下的状态：DownUp、Chording、ChordingNotFlag、DownUpAfterChording；
+        // 右键按下的状态：UpDown、Chording、ChordingNotFlag；
+        // 中键由 middle_hold 记录：按下翻译成 "mc"，抬起翻译成 "mr"。
+        let e = match e {
+            "l" => match self.mouse_state {
+                MouseState::DownUp
+                | MouseState::Chording
+                | MouseState::ChordingNotFlag
+                | MouseState::DownUpAfterChording => "lr",
+                _ => "lc",
+            },
+            "r" => match self.mouse_state {
+                MouseState::UpDown | MouseState::Chording | MouseState::ChordingNotFlag => "rr",
+                _ => "rc",
+            },
+            "m" => {
+                self.middle_hold = !self.middle_hold;
+                if self.middle_hold {
+                    "mc"
+                } else {
+                    "mr"
+                }
+            }
+            other => other,
+        };
         match self.game_board_state {
             GameBoardState::Ready => match e {
                 "mv" | "mc" | "mr" => {
                     // arbiter这个奇葩，录像可能以中键的按下和抬起开始
-                    return Ok(0);
-                }
-                "m" => {
-                    // 中键按下或抬起，需要记录状态供playing阶段的释放使用
-                    self.middle_hold = !self.middle_hold;
                     return Ok(0);
                 }
                 "lc" => {
@@ -817,18 +851,32 @@ impl<T> MinesweeperBoard<T> {
                     MouseState::UpUp => {
                         if pos.0 < self.row && pos.1 < self.column {
                             self.mouse_state = MouseState::UpDown;
-                            // 预标雷阶段，要么10，要么11，不可能出现<10
-                            if self.game_board[pos.0][pos.1] == 10 {
-                                self.pre_flag_num += 1;
-                                self.game_board_state = GameBoardState::PreFlaging;
-                            } else {
-                                self.pre_flag_num -= 1;
-                                if self.pre_flag_num == 0 {
-                                    self.game_board_state = GameBoardState::Ready;
-                                    self.clear_click_num();
-                                    self.game_board[pos.0][pos.1] = 10;
-                                    return Ok(0);
+                            // 预标雷阶段，要么10，要么11（开问号时还有17），不可能出现<10
+                            match self.game_board[pos.0][pos.1] {
+                                10 => {
+                                    self.pre_flag_num += 1;
+                                    self.game_board_state = GameBoardState::PreFlaging;
                                 }
+                                11 => {
+                                    self.pre_flag_num -= 1;
+                                    if !self.use_question && self.pre_flag_num == 0 {
+                                        self.game_board_state = GameBoardState::Ready;
+                                        self.clear_click_num();
+                                        self.game_board[pos.0][pos.1] = 10;
+                                        return Ok(0);
+                                    }
+                                    // 开问号时 11→17，局面上仍留问号标记，保持 PreFlaging
+                                }
+                                17 => {
+                                    // 17→10，pre_flag_num 不变；没有剩余旗时回到 Ready
+                                    let r = self.right_click(pos.0, pos.1);
+                                    if self.pre_flag_num == 0 {
+                                        self.game_board_state = GameBoardState::Ready;
+                                        self.clear_click_num();
+                                    }
+                                    return r;
+                                }
+                                _ => return Err(()),
                             }
                             return self.right_click(pos.0, pos.1);
                         } else {
@@ -872,11 +920,6 @@ impl<T> MinesweeperBoard<T> {
                 }
                 "mr" => {
                     self.middle_hold = false;
-                    return Ok(0);
-                }
-                "m" => {
-                    // 预标雷阶段局面内没有已打开的格子，中键弹起不会触发双击
-                    self.middle_hold = !self.middle_hold;
                     return Ok(0);
                 }
                 _ => return Err(()),
@@ -930,36 +973,6 @@ impl<T> MinesweeperBoard<T> {
                 MouseState::UpUp => self.mouse_state = MouseState::UpUp,
                 MouseState::Undefined => self.mouse_state = MouseState::UpUp,
             },
-            "l" => match self.mouse_state {
-                MouseState::DownUp => {
-                    self.mouse_state = MouseState::UpUp;
-                    if pos.0 == self.row && pos.1 == self.column {
-                        return Ok(0);
-                    }
-                    // println!("x={:?}, y={:?}", pos.0, pos.1);
-                    return self.left_click(pos.0, pos.1, false);
-                }
-                MouseState::Chording => {
-                    self.mouse_state = MouseState::UpDown;
-                    if pos.0 == self.row && pos.1 == self.column {
-                        return Ok(0);
-                    }
-                    return self.chording_click(pos.0, pos.1);
-                }
-                MouseState::DownUpAfterChording => self.mouse_state = MouseState::UpUp,
-                MouseState::ChordingNotFlag => {
-                    self.mouse_state = MouseState::UpDown;
-                    self.right -= 1;
-                    if pos.0 == self.row && pos.1 == self.column {
-                        return Ok(0);
-                    }
-                    return self.chording_click(pos.0, pos.1);
-                }
-                MouseState::UpUp => self.mouse_state = MouseState::DownUp,
-                MouseState::UpDown => self.mouse_state = MouseState::Chording,
-                MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
-                MouseState::Undefined => self.mouse_state = MouseState::UpUp,
-            },
             "rc" => match self.mouse_state {
                 MouseState::UpUp => {
                     // println!("{:?}", pos);
@@ -1010,42 +1023,6 @@ impl<T> MinesweeperBoard<T> {
                 MouseState::UpUp => self.mouse_state = MouseState::UpUp,
                 MouseState::Undefined => self.mouse_state = MouseState::UpUp,
             },
-            "r" => match self.mouse_state {
-                MouseState::UpDown => self.mouse_state = MouseState::UpUp,
-                MouseState::UpDownNotFlag => self.mouse_state = MouseState::UpUp,
-                MouseState::Chording => {
-                    self.mouse_state = MouseState::DownUpAfterChording;
-                    if pos.0 == self.row && pos.1 == self.column {
-                        return Ok(0);
-                    }
-                    return self.chording_click(pos.0, pos.1);
-                }
-                MouseState::ChordingNotFlag => {
-                    self.mouse_state = MouseState::DownUpAfterChording;
-                    self.right -= 1;
-                    if pos.0 == self.row && pos.1 == self.column {
-                        return Ok(0);
-                    }
-                    return self.chording_click(pos.0, pos.1);
-                }
-                // 以下情况其实是不可能的
-                MouseState::UpUp => {
-                    if pos.0 < self.row && pos.1 < self.column {
-                        if self.game_board[pos.0][pos.1] < 10 {
-                            self.mouse_state = MouseState::UpDownNotFlag;
-                        } else {
-                            self.mouse_state = MouseState::UpDown;
-                        }
-                        return self.right_click(pos.0, pos.1);
-                    } else {
-                        self.mouse_state = MouseState::UpDownNotFlag;
-                        self.right += 1;
-                    }
-                }
-                MouseState::DownUp => self.mouse_state = MouseState::Chording,
-                MouseState::DownUpAfterChording => self.mouse_state = MouseState::Chording,
-                MouseState::Undefined => self.mouse_state = MouseState::UpUp,
-            },
             "mv" => {}
             "mc" => {
                 self.middle_hold = true;
@@ -1056,15 +1033,6 @@ impl<T> MinesweeperBoard<T> {
                     return Ok(0);
                 }
                 return self.chording_click(pos.0, pos.1);
-            }
-            "m" => {
-                self.middle_hold = !self.middle_hold;
-                if !self.middle_hold {
-                    if pos.0 == self.row && pos.1 == self.column {
-                        return Ok(0);
-                    }
-                    return self.chording_click(pos.0, pos.1);
-                }
             }
             "cc" => match self.mouse_state {
                 MouseState::DownUp => self.mouse_state = MouseState::Chording,

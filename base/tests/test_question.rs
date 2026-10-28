@@ -1,5 +1,5 @@
 // 定向测试：问号标记（17）与 "l"/"r" 事件归一化
-use ms_toollib::{GameBoardState, MinesweeperBoard};
+use ms_toollib::{GameBoardState, MinesweeperBoard, MouseState};
 
 /// 4x4，雷在 (0,1)、(2,2)
 fn guess_board() -> Vec<Vec<i32>> {
@@ -160,6 +160,31 @@ fn question_preflag_cycle_in_ready() {
     b.step("lr", (0, 3)).unwrap();
     assert_eq!(b.game_board[0][3], 0);
     assert_eq!(b.game_board_state, GameBoardState::Playing);
+}
+
+#[test]
+fn release_on_flag_in_preflaging_restores_mouse_state() {
+    // 复现 temp.avf：预标雷阶段左键按下后在旗上弹起，之后右击必须能正常退标
+    let mut b = MinesweeperBoard::<Vec<Vec<i32>>>::new(guess_board());
+    b.step("rc", (0, 0)).unwrap();
+    b.step("rr", (0, 0)).unwrap();
+    assert_eq!(b.game_board[0][0], 11);
+    assert_eq!(b.game_board_state, GameBoardState::PreFlaging);
+    b.step("lc", (0, 1)).unwrap(); // 左键按下
+    b.step("lr", (0, 0)).unwrap(); // 在旗上弹起
+    assert_eq!(b.mouse_state, MouseState::UpUp);
+    // 右击退标，旗数清零后回到 Ready
+    b.step("rc", (0, 0)).unwrap();
+    assert_eq!(b.game_board[0][0], 10);
+    assert_eq!(b.flag, 0);
+    b.step("rr", (0, 0)).unwrap();
+    assert_eq!(b.game_board_state, GameBoardState::Ready);
+    // 随后仍可正常开局，未被误判为双击
+    b.step("lc", (0, 3)).unwrap();
+    b.step("lr", (0, 3)).unwrap();
+    assert_eq!(b.game_board[0][3], 0);
+    assert_eq!(b.game_board_state, GameBoardState::Playing);
+    assert_eq!(b.double, 0);
 }
 
 #[test]

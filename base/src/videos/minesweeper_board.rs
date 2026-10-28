@@ -833,10 +833,11 @@ impl<T> MinesweeperBoard<T> {
                             self.mouse_state = MouseState::UpUp;
                             return self.left_click(pos.0, pos.1, true);
                         } else {
-                            // 预标雷阶段，在旗上左键弹起
+                            // 预标雷阶段，在旗上左键弹起。左键已抬起，必须恢复鼠标状态，
+                            // 否则后续右击会被当成双击的右键跟进，导致旗再也退不掉
                             self.left += 1;
+                            self.mouse_state = MouseState::UpUp;
                             return Ok(0);
-                            // 往下走，左键数可能后面还需要+1
                         }
                     }
                     // _ => return Err(()),

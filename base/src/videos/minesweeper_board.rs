@@ -293,6 +293,14 @@ impl<T> MinesweeperBoard<T> {
         self.pointer_y = 0;
         self.board_changed = true;
     }
+    /// 当前局面是否存在可以用逻辑证明一定不是雷的未打开格子。
+    /// 弱无猜（7）只有在“还有可推出的安全格”时才判负；一个都推不出来（必须猜）时豁免。
+    fn has_provable_safe_cell(&self) -> bool
+    where
+        T: ReplaceBoard,
+    {
+        relayout::has_provable_safe_cell(&self.game_board)
+    }
     /// Playing状态下的左击，没有按下抬起之分
     fn left_click(&mut self, x: usize, y: usize, is_opening: bool) -> Result<u8, ()>
     where
@@ -309,6 +317,28 @@ impl<T> MinesweeperBoard<T> {
                 // 强无猜：只要该格“可能是雷”，就重排成该格为雷的雷局，然后按踩雷判负
                 if self.board[x][y] != -1 {
                     if let Some(new_board) = self.try_relayout(&[], &[(x, y)], false) {
+                        self.replace_board_vec(new_board);
+                    }
+                }
+            } else if self.mode == 7 {
+                // 弱无猜：局面里还有能用逻辑证明的安全格时，点到“可能是雷”的格子即判负；
+                // 一个能证明的安全格都没有（只能猜）时，这一击无论点在哪都不判负
+                if self.board[x][y] == -1 {
+                    if !self.has_provable_safe_cell() {
+                        if let Some(new_board) = self.try_relayout(&[(x, y)], &[], false) {
+                            self.replace_board_vec(new_board);
+                        }
+                    }
+                } else if self.has_provable_safe_cell() {
+                    // 该格“可能是雷”：存在一致雷局让它为雷，就把雷局换成其中之一，判负
+                    if let Some(new_board) = self.try_relayout(&[], &[(x, y)], false) {
+                        self.replace_board_vec(new_board);
+                    }
+                }
+            } else if self.mode == 8 {
+                // 准无猜：只有推不出任何安全格（只能猜）时，点到真雷才重排成非雷
+                if self.board[x][y] == -1 && !self.has_provable_safe_cell() {
+                    if let Some(new_board) = self.try_relayout(&[(x, y)], &[], false) {
                         self.replace_board_vec(new_board);
                     }
                 }
@@ -477,7 +507,14 @@ impl<T> MinesweeperBoard<T> {
         }
 
         // 模式处理：必要时重排雷局
-        if self.mode == 6 {
+        // 严苛判定：6 强无猜始终严苛；7 弱无猜只要局面里还有可推出的安全格就严苛
+        let provable_safe = if matches!(self.mode, 7 | 8) {
+            self.has_provable_safe_cell()
+        } else {
+            false
+        };
+        let strict = self.mode == 6 || (self.mode == 7 && provable_safe);
+        if strict {
             // 强无猜：只要本次将打开的格子中存在“可能是雷”的格子，就重排成它为雷的雷局
             if !chording_cells
                 .iter()
@@ -494,8 +531,8 @@ impl<T> MinesweeperBoard<T> {
                     self.replace_board_vec(new_board);
                 }
             }
-        } else if self.mode_is_guess() {
-            // 可猜：本次将打开的实际是雷的格子，全部重排为非雷
+        } else if (matches!(self.mode, 7 | 8) && !provable_safe) || self.mode_is_guess() {
+            // 可猜、准无猜、无解局面下的弱无猜：本次将打开的实际是雷的格子，重排为非雷
             let mines: Vec<(usize, usize)> = chording_cells
                 .iter()
                 .filter(|c| self.board[c.0][c.1] == -1)
@@ -503,7 +540,16 @@ impl<T> MinesweeperBoard<T> {
                 .collect();
             if !mines.is_empty() {
                 let require_solvable = self.mode_requires_solvable();
-                if let Some(new_board) = self.try_relayout(&mines, &[], require_solvable) {
+                // 弱无猜/准无猜保证玩家不会被判负，优先让所有将被打开的格子都非雷；
+                // 做不到时退而只保证原本是雷的格子非雷
+                let mut new_board = None;
+                if matches!(self.mode, 7 | 8) {
+                    new_board = self.try_relayout(&chording_cells, &[], require_solvable);
+                }
+                if new_board.is_none() {
+                    new_board = self.try_relayout(&mines, &[], require_solvable);
+                }
+                if let Some(new_board) = new_board {
                     self.replace_board_vec(new_board);
                 }
             }

@@ -348,6 +348,9 @@ impl BaseVideo<Vec<Vec<i32>>> {
         assert!(self.can_analyse, "调用parse或扫完前，不能调用analyse方法");
         // self.minesweeper_board
         let mut b = MinesweeperBoard::<Vec<Vec<i32>>>::new(self.board.clone());
+        // 播放推衍用的局面也要带上录像自身的模式和问号设置，否则回放时不会出现问号
+        b.mode = self.mode;
+        b.use_question = self.use_question;
         let mut first_game_board = GameBoard::new(self.mine_num);
         first_game_board.set_game_board(&vec![vec![10; self.width]; self.height]);
         self.game_board_stream

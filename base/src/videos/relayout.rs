@@ -142,6 +142,38 @@ pub fn is_solvable_from_game_board(board: &Vec<Vec<i32>>, game_board: &Vec<Vec<i
     }
 }
 
+/// 当前局面是否存在可以用逻辑证明一定不是雷的未打开格子。
+/// 这就是“有解”的判据：只要能推出至少一个安全格，玩家就不必猜。
+pub fn has_provable_safe_cell(game_board: &Vec<Vec<i32>>) -> bool {
+    if game_board.is_empty() {
+        return false;
+    }
+    let mut gb = game_board.clone();
+    for row in gb.iter_mut() {
+        for v in row.iter_mut() {
+            if *v > 10 {
+                *v = 10;
+            }
+        }
+    }
+    let (mut a_mats, mut xs, mut bs, _, _) = refresh_matrixs(&gb);
+    if bs.is_empty() {
+        return false;
+    }
+    if let Ok(ans) = solve_direct(&mut a_mats, &mut xs, &mut bs, &mut gb) {
+        if !ans.0.is_empty() {
+            return true;
+        }
+    }
+    if let Ok(ans) = solve_minus(&mut a_mats, &mut xs, &mut bs, &mut gb) {
+        if !ans.0.is_empty() {
+            return true;
+        }
+    }
+    let (not_mine, _) = solve_enumerate(&a_mats, &xs, &bs);
+    !not_mine.is_empty()
+}
+
 fn is_all_opened(game_board: &Vec<Vec<i32>>, board: &Vec<Vec<i32>>) -> bool {
     let row = board.len();
     let column = board[0].len();

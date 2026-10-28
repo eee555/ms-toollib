@@ -219,11 +219,14 @@ impl<T> BaseVideo<T> {
         self.is_fair = is_fair;
         Ok(0)
     }
-    /// 可猜模式必须在ready时设置模式，其它模式扫完再设置也可以
+    /// 可猜模式必须在ready时设置模式，其它模式扫完再设置也可以。
+    /// 允许在 PreFlaging 设置：图形界面是在按下左键后（此时已进入 PreFlaging）才埋雷、
+    /// 才把游戏模式告诉局面状态机，随后抬起左键的第一击由状态机按该模式处理。
     pub fn set_mode(&mut self, mode: u16) -> Result<u8, ()> {
         if self.game_board_state != GameBoardState::Loss
             && self.game_board_state != GameBoardState::Win
             && self.game_board_state != GameBoardState::Ready
+            && self.game_board_state != GameBoardState::PreFlaging
         {
             return Err(());
         };

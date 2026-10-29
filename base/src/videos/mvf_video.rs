@@ -1,4 +1,4 @@
-use crate::utils::cal_board_numbers;
+use crate::utils::{cal_bbbv, cal_board_numbers};
 use crate::videos::base_video::{BaseVideo, NewBaseVideo};
 use crate::videos::byte_reader::ByteReader;
 use crate::videos::types::{ErrReadVideoReason, Event, MouseEvent, VideoActionStateRecorder};
@@ -135,6 +135,183 @@ impl MvfVideo {
         } else {
             return 0;
         }
+    }
+    /// Clone 2006、2007的置换表，共48位。同样从rawvf的c代码翻译过来
+    fn clone_perm_2007(leading: u16) -> ([usize; 48], [u8; 48]) {
+        const MULT: f64 = 100000000.0;
+        let num1 = (leading as f64).sqrt();
+        let num2 = (leading as f64 + 1000.0).sqrt();
+        let num3 = (num1 + 1000.0).sqrt();
+        let num4 = (num2 + 1000.0).sqrt();
+        let magic = [
+            (num3 + 1000.0).cos(),
+            num2.sqrt().sin(),
+            num3.cos(),
+            (num1.sqrt() + 1000.0).sin(),
+            num4.cos(),
+            num4.sin(),
+        ];
+        let mut s = [b'0'; 48];
+        for (i, m) in magic.iter().enumerate() {
+            let text = format!("{:08}", (*m * MULT).abs().round_ties_even() as u64);
+            for (j, b) in text.as_bytes().iter().take(8).enumerate() {
+                s[i * 8 + j] = *b;
+            }
+        }
+        let mut byte = [0usize; 48];
+        let mut bit = [0u8; 48];
+        let mut cur = 0;
+        for d in b'0'..=b'9' {
+            for j in 0..48 {
+                if s[j] == d {
+                    byte[cur] = j / 8;
+                    bit[cur] = 1 << (j % 8);
+                    cur += 1;
+                }
+            }
+        }
+        (byte, bit)
+    }
+    fn apply_perm_2007(num: usize, byte: &[usize; 48], bit: &[u8; 48], e: &[u8; 6]) -> u16 {
+        if (e[byte[num]] & bit[num]) > 0 {
+            1
+        } else {
+            0
+        }
+    }
+    /// 读取Clone 2006、2007的录像
+    fn read_2007(&mut self) -> Result<(), ErrReadVideoReason> {
+        let mut e = [0u8; 6];
+        let cell = self.data.cell_pixel_size as i32;
+
+        // 读时间戳
+        let month = self.data.get_u8()? as u64;
+        let day = self.data.get_u8()? as u64;
+        let year = self.data.get_u16()? as u64;
+        let hour = self.data.get_u8()? as u64;
+        let minute = self.data.get_u8()? as u64;
+        let second = self.data.get_u8()? as u64;
+        // Clone 2007有把日期保存为00的bug，此时按当月1号计算
+        let days = self.data.days_since_epoch(year, month, day.max(1));
+        self.data.start_time = (days * 86400 + hour * 3600 + minute * 60 + second) * 1_000_000;
+
+        // 下面2 bytes是难度和模式
+        self.data.level = self.data.get_u8()? + 2;
+        self.data.mode = match self.data.get_u8()? {
+            1 => 0,
+            2 => 3,
+            3 => 1,
+            _ => 2,
+        };
+
+        // 下面3 bytes是时间，单位毫秒
+        let score_ms = self.data.get_u24()?;
+
+        // 是否开启了问号
+        self.data.use_question = self.data.get_u8()? != 0;
+
+        // 读取局面
+        self.read_board(-1)?;
+        // Clone 2006、2007的录像不保存3BV，由局面计算得出
+        self.data.static_params.bbbv = cal_bbbv(&self.data.board);
+
+        // 读取玩家名
+        let len = self.data.get_u8()?;
+        self.data.player_identifier = self.data.get_unknown_encoding_string(len)?;
+
+        // 前2 bytes决定文件的置换表
+        let leading = self.data.get_u16()?;
+        let (byte, bit) = Self::clone_perm_2007(leading);
+
+        // 鼠标事件的数量
+        let event_size = self.data.get_u24()?;
+        let (w_px, h_px) = (
+            self.data.width as i32 * cell,
+            self.data.height as i32 * cell,
+        );
+        let mut prev_lb = 0u16;
+        let mut prev_rb = 0u16;
+        let mut prev_mb = 0u16;
+        let mut prev_x = 0u16;
+        let mut prev_y = 0u16;
+        for idx in 0..event_size {
+            for k in 0..6 {
+                e[k] = self.data.get_u8()?;
+            }
+            let rb = Self::apply_perm_2007(0, &byte, &bit, &e);
+            let mb = Self::apply_perm_2007(1, &byte, &bit, &e);
+            let lb = Self::apply_perm_2007(2, &byte, &bit, &e);
+            let mut raw_x = 0u16;
+            let mut raw_y = 0u16;
+            let mut ths = 0u32;
+            for j in 0..11 {
+                raw_x |= Self::apply_perm_2007(14 + j, &byte, &bit, &e) << j;
+                raw_y |= Self::apply_perm_2007(3 + j, &byte, &bit, &e) << j;
+            }
+            for j in 0..22 {
+                ths |= (Self::apply_perm_2007(25 + j, &byte, &bit, &e) as u32) << j;
+            }
+            // 坐标要去掉32的偏移；落在局面外的坐标统一映射到右下角，
+            // 和0.97的处理方式一致（clone的录像局面外坐标不在右下角）。
+            // 是否发生了移动仍然按文件里的原始坐标判断。
+            let (xi, yi) = (raw_x as i32 - 32, raw_y as i32 - 32);
+            let (x, y) = if xi < 0 || yi < 0 || xi >= w_px || yi >= h_px {
+                (w_px as u16, h_px as u16)
+            } else {
+                (xi as u16, yi as u16)
+            };
+            let mouse_s = if idx == 0 {
+                // clone不会保存计时器开始前的鼠标事件，因此第一个事件直接按下
+                vec![if mb > 0 {
+                    "mc".to_string()
+                } else if rb > 0 {
+                    "rc".to_string()
+                } else if lb > 0 {
+                    "lc".to_string()
+                } else {
+                    "mv".to_string()
+                }]
+            } else {
+                self.parse_event(
+                    lb, rb, mb, raw_x, raw_y, prev_lb, prev_rb, prev_mb, prev_x, prev_y,
+                )
+            };
+            prev_x = raw_x;
+            prev_y = raw_y;
+            prev_lb = lb;
+            prev_rb = rb;
+            prev_mb = mb;
+
+            for mouse in mouse_s {
+                self.data
+                    .video_action_state_recorder
+                    .push(VideoActionStateRecorder {
+                        time: ths as f64 / 1000.0,
+                        event: Some(Event::Mouse(MouseEvent { mouse, x, y })),
+                        ..VideoActionStateRecorder::default()
+                    });
+            }
+        }
+        // 计算rtime。录像记录的时间是从第一次左键抬起开始的
+        let mut start_t = 0.0;
+        for v in &self.data.video_action_state_recorder {
+            if let Some(Event::Mouse(mouse_event)) = &v.event {
+                if mouse_event.mouse == "lr" {
+                    start_t = v.time;
+                    break;
+                }
+            }
+        }
+        let mut rtime = 0.0;
+        if let Some(last) = self.data.video_action_state_recorder.last() {
+            rtime = last.time - start_t;
+        }
+        // 录像头部的成绩时间是权威的，两者理论上应该相等
+        rtime = rtime.max(score_ms as f64 / 1000.0);
+        self.data.set_rtime(rtime).unwrap();
+        self.data.end_time =
+            self.data.start_time + (self.data.get_rtime_ms().unwrap_or(0) as u64) * 1000;
+        Ok(())
     }
     fn read_097(&mut self) -> Result<(), ErrReadVideoReason> {
         // 读时间戳
@@ -377,6 +554,13 @@ impl MvfVideo {
                 self.data.offset += 46;
                 self.data.software = "0.97 beta".to_string();
                 return self.read_097();
+            } else if c as char == '6' || c as char == '7' {
+                //Clone 2006、2007。版本号从53开始，正式数据从71开始
+                self.data.offset = 53;
+                let len = self.data.get_u8()?;
+                self.data.software = self.data.get_unknown_encoding_string(len)?;
+                self.data.offset = 71;
+                return self.read_2007();
             } else {
                 Ok(())
             }

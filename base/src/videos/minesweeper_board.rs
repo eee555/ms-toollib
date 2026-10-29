@@ -251,17 +251,21 @@ impl<T> MinesweeperBoard<T> {
     fn mode_requires_solvable(&self) -> bool {
         matches!(self.mode, 9 | 14 | 15 | 16)
     }
-    /// 模式是否属于可猜系列（9/10/14/15/16）
+    /// 模式是否属于可猜系列（9/10）。14/15/16 是"无猜 X 递归"，不叠加可猜重排。
     fn mode_is_guess(&self) -> bool {
-        matches!(self.mode, 9 | 10 | 14 | 15 | 16)
+        matches!(self.mode, 9 | 10)
     }
-    /// 双击后是否递归（11/13/14/16）
-    fn mode_rechord_on_double(&self) -> bool {
+    /// 双击递归：手动双击后自动扫全局执行（11 纯双击递归、13/16 双击标雷递归、14 无猜双击递归）
+    fn mode_auto_chord(&self) -> bool {
         matches!(self.mode, 11 | 13 | 14 | 16)
     }
-    /// 标雷后是否递归（12/13/15/16）
-    fn mode_rechord_on_flag(&self) -> bool {
+    /// 标雷递归：手动标雷后自动扫全局执行（12 纯标雷递归、13/16 双击标雷递归、15 无猜标雷递归）
+    fn mode_auto_flag(&self) -> bool {
         matches!(self.mode, 12 | 13 | 15 | 16)
+    }
+    /// 双击标雷递归：交替执行标雷→双击直到都不能动（13、16）
+    fn mode_both_recursive(&self) -> bool {
+        matches!(self.mode, 13 | 16)
     }
     /// 尝试重排雷局。找不到满足条件的雷局时返回 `None`。
     fn try_relayout(
@@ -433,20 +437,16 @@ impl<T> MinesweeperBoard<T> {
                     _ => return Err(()),
                 }
             }
-            // 标雷递归：对邻接的、旗数恰好等于数字的已打开格自动双击
+            // 标雷递归 / 双击标雷递归：手动标雷后自动跑递归
             if flag_added
                 && self.game_board_state == GameBoardState::Playing
-                && self.mode_rechord_on_flag()
+                && self.mode_auto_flag()
             {
-                let mut seeds = vec![];
-                for i in max(1, x) - 1..min(self.row, x + 2) {
-                    for j in max(1, y) - 1..min(self.column, y + 2) {
-                        if self.game_board[i][j] < 9 && self.board[i][j] != -1 {
-                            seeds.push((i, j));
-                        }
-                    }
+                if self.mode_both_recursive() {
+                    self.run_both_recursive();
+                } else {
+                    self.run_flag_recursive();
                 }
-                self.run_recursive(seeds);
             }
             Ok(1)
         }
@@ -458,19 +458,15 @@ impl<T> MinesweeperBoard<T> {
         T::Output: std::ops::Index<usize, Output = i32>,
     {
         self.double += 1;
-        let before = if self.mode_rechord_on_double() {
-            Some(self.game_board.clone())
-        } else {
-            None
-        };
         let result = self.perform_chord(x, y, false)?;
-        if result == 3 {
-            if let Some(before) = before {
-                let opened = newly_opened(&before, &self.game_board);
-                self.run_recursive(opened);
-                if self.game_board_state == GameBoardState::Loss {
-                    return Ok(4);
-                }
+        if self.game_board_state == GameBoardState::Loss {
+            return Ok(4);
+        }
+        if matches!(self.game_board_state, GameBoardState::Playing) && self.mode_auto_chord() {
+            if self.mode_both_recursive() {
+                self.run_both_recursive();
+            } else {
+                self.run_chord_recursive();
             }
         }
         Ok(result)
@@ -603,38 +599,107 @@ impl<T> MinesweeperBoard<T> {
         }
         flaged_num == self.game_board[x][y] && unopened
     }
-    /// 递归连锁：对队列中的格子依次执行静默双击，新打开的数字格继续入队。
-    fn run_recursive(&mut self, seeds: Vec<(usize, usize)>)
+    /// 单集合逻辑找必标雷：对每个已打开数字格，若 (数字 - 周围已标雷数) == 周围未开格数，
+    /// 则所有未开格都是雷。不使用子集差、枚举等高阶计算。
+    /// 返回本轮找到的新雷坐标列表（可能已被标过的不会重复返回）。
+    fn simple_flag_seek(&self) -> Vec<(usize, usize)>
+    where
+        T: std::ops::Index<usize> + BoardSize,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        let mut result = Vec::new();
+        for i in 0..self.row {
+            for j in 0..self.column {
+                let v = self.game_board[i][j];
+                if v <= 0 || v >= 9 {
+                    continue; // 只对已打开的 1-8 数字生效
+                }
+                let mut flagged = 0i32;
+                let mut unopened: Vec<(usize, usize)> = Vec::new();
+                for ni in i.saturating_sub(1)..=i.saturating_add(1).min(self.row - 1) {
+                    for nj in j.saturating_sub(1)..=j.saturating_add(1).min(self.column - 1) {
+                        if ni == i && nj == j { continue; }
+                        match self.game_board[ni][nj] {
+                            11 => flagged += 1,
+                            10 => unopened.push((ni, nj)),
+                            _ => {}
+                        }
+                    }
+                }
+                let remaining = v as i32 - flagged;
+                if remaining > 0 && remaining == unopened.len() as i32 {
+                    for pos in unopened {
+                        // 可能已被前一个数字格标过，跳过
+                        if !result.contains(&pos) && self.game_board[pos.0][pos.1] == 10 {
+                            result.push(pos);
+                        }
+                    }
+                }
+            }
+        }
+        result
+    }
+    /// 自动标雷：反复跑 simple_flag_seek，直到找不到新雷。
+    fn run_flag_recursive(&mut self)
     where
         T: std::ops::Index<usize> + BoardSize + ReplaceBoard,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
-        let mut queue: VecDeque<(usize, usize)> = VecDeque::new();
-        for s in seeds {
-            queue.push_back(s);
-        }
-        let mut visited = vec![vec![false; self.column]; self.row];
-        while let Some((x, y)) = queue.pop_front() {
-            if matches!(
-                self.game_board_state,
-                GameBoardState::Win | GameBoardState::Loss
-            ) {
-                break;
-            }
-            if x >= self.row || y >= self.column || visited[x][y] {
-                continue;
-            }
-            visited[x][y] = true;
-            if !self.chord_is_useful(x, y) {
-                continue;
-            }
-            let before = self.game_board.clone();
-            let result = self.perform_chord(x, y, true);
-            if let Ok(3) = result {
-                for cell in newly_opened(&before, &self.game_board) {
-                    queue.push_back(cell);
+        loop {
+            if matches!(self.game_board_state, GameBoardState::Win | GameBoardState::Loss) { break; }
+            let mines = self.simple_flag_seek();
+            if mines.is_empty() { break; }
+            for (x, y) in mines {
+                if !matches!(self.game_board_state, GameBoardState::Playing) { break; }
+                if self.game_board[x][y] == 10 {
+                    self.game_board[x][y] = 11;
+                    self.flag += 1;
+                    if self.board[x][y] == -1 && !self.flaged_list.contains(&(x, y)) {
+                        self.flaged_list.push((x, y));
+                    }
                 }
             }
+        }
+    }
+    /// 自动双击：反复扫全局找所有 chord_is_useful 的格子静默双击，直到没有新格被打开。
+    fn run_chord_recursive(&mut self)
+    where
+        T: std::ops::Index<usize> + BoardSize + ReplaceBoard,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        loop {
+            if matches!(self.game_board_state, GameBoardState::Win | GameBoardState::Loss) { break; }
+            let mut any = false;
+            for i in 0..self.row {
+                for j in 0..self.column {
+                    if !matches!(self.game_board_state, GameBoardState::Playing) { break; }
+                    if self.chord_is_useful(i, j) {
+                        let before = self.game_board.clone();
+                        let _ = self.perform_chord(i, j, true);
+                        if self.game_board_state == GameBoardState::Loss { return; }
+                        if !newly_opened(&before, &self.game_board).is_empty() {
+                            any = true;
+                        }
+                    }
+                }
+            }
+            if !any { break; }
+        }
+    }
+    /// 双击标雷递归：交替跑标雷→双击→标雷→双击，直到两者都无新动作。
+    fn run_both_recursive(&mut self)
+    where
+        T: std::ops::Index<usize> + BoardSize + ReplaceBoard,
+        T::Output: std::ops::Index<usize, Output = i32>,
+    {
+        loop {
+            if matches!(self.game_board_state, GameBoardState::Win | GameBoardState::Loss) { break; }
+            self.run_flag_recursive();
+            if !matches!(self.game_board_state, GameBoardState::Playing) { break; }
+            let before = self.game_board.clone();
+            self.run_chord_recursive();
+            if self.game_board_state == GameBoardState::Loss { return; }
+            if self.game_board == before { break; }
         }
     }
     fn cell_is_bbbv(&self, x: usize, y: usize) -> bool

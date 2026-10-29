@@ -68,11 +68,17 @@ Acknowledgments: 13688 (testing), ralokt (suggestions), 9952 (suggestions), 36 (
 - "To Be Solvable": The algorithm does not guarantee that the game board is always solvable. However, it can always determine whether the game board is unsolvable. During the game, even if the player encounters an unsolvable game board, the next click will not result in a loss. Example of this rule includes Freesweeper.
 - "Strong Guessable": Although the algorithm guarantees that there is always a solution on the game board, it is still possible to guess where the mines are even when the game board can be determined. Furthermore, even if a guess is wrong, if there is a probability that the cell is not a mine, the game board will automatically adjust to make sure that the cell is indeed not a mine. Additionally, in the following steps, the game board will continually adjust to ensure that no guessing is required.
 - "Weak Guessable": The algorithm does not guarantee that there is always a solution on the game board in advance. Players can guess where the mines are at will. Furthermore, even if a guess is wrong, if there is a probability that the square is not a mine, the game board will automatically adjust to make sure that the square is indeed not a mine.
+- "Chording Recursive (standard recursive)": The board is planted with mines using the standard random distribution. After the player performs the first **effective manual chording** (i.e., chords on an already-opened number cell whose unopened neighbors equal its flag count, so that the chord would open at least one new cell), the state machine automatically scans the **entire board** for every number cell that satisfies `chord_is_useful` and performs a silent chord on each. After each full scan, if any new cells were opened, the scan repeats until a full scan opens nothing. Silent chords do not contribute to the player's `double` or `dce` counters. This mode does not auto-flag; left-clicking on a real mine results in an immediate loss.
+- "Flag Recursive": The board is planted with mines using the standard random distribution. After the player performs the first **effective manual flag**, the state machine automatically scans the board with a **single-set logic**: for each opened number cell, let `v` be its digit, `flagged` the number of already-marked mines around it, and `unopened` the number of unopened neighbors. If `v - flagged == unopened > 0`, then every unopened neighbor is necessarily a mine and should be silently flagged. Silent flags do not contribute to the player's `right` or `rce` counters. **Higher-order reasoning such as subset difference or enumeration is not used.** This mode does not auto-chord; left-clicking on a real mine results in an immediate loss.
+- "Chording Flag Recursive": The board is planted with mines using the standard random distribution. Triggered by either the player's first manual chord or first manual flag, the state machine **alternates Flag Recursive (single-set) and Chording Recursive (global scan)**: first one pass of flag recursion, then one pass of chording recursion, then one pass of flag recursion, and so on — until a single full round of both passes produces no new actions.
+- "Solvable Chording Recursive": The board is planted by an algorithm that guarantees a solvable layout (the `laymine_solvable` pipeline in Python). The in-game behavior is **identical to Chording Recursive (mode 11)**. This mode does **not** stack guessable relayout logic — left-clicking on a real mine results in an immediate loss; the board is never replanted at runtime.
+- "Solvable Flag Recursive": The board is planted by an algorithm that guarantees a solvable layout. The in-game behavior is **identical to Flag Recursive (mode 12)**. This mode does **not** stack guessable relayout logic — left-clicking on a real mine results in an immediate loss.
+- "Solvable Chording Flag Recursive": The board is planted by an algorithm that guarantees a solvable layout. The in-game behavior is **identical to Chording Flag Recursive (mode 13)**. This mode does **not** stack guessable relayout logic — left-clicking on a real mine results in an immediate loss.
 
 The various modes and their names can be further summarized as shown in the following diagram.
 ![](md_pic/mode_en.svg)
 
-### v0.4 (Used by Metasweeper 3.2.1)
+### v0.4 (Used by Metasweeper 3.2.1 - 3.3.4)
 
 Format Description:
 
@@ -140,62 +146,3 @@ Format Description:
 27. Fixed length 2 bytes, uint16: Checksum length.
 28. Variable length binary data: Checksum.
 
-### v0.3 (Used by Metasweeper 3.1.9, Metasweeper 3.1.11, Metasweeper 3.2.0)
-
-Format Description:
-
-1. Fixed length 1 byte: version number. The version described in this specification is '\3'.
-2. Fixed length 1 byte: summary. In high-trust scenarios, it reduces parsing complexity.
-
-    > Fixed length 1 bit (2e7): Whether the game is completed, 1 means completed. The software proves that the game is completed, i.e., no mines were hit, and no values overflowed. No other conditions are guaranteed.
-
-    > Fixed length 1 bit (2e6): Whether it is official, 1 means official. The software proves that the game is official, definitely completed, including no 3BV filter used, no auxiliary functions used, standard mode, and no values overflowed. Not necessarily meeting extra 3BV constraints for ranking sites. (This flag is convenient for ranking sites supporting only standard mode minesweeper)
-
-    > Fixed length 1 bit (2e5): Whether it is fair, 1 means fair. The software proves that the game is fairly completed, definitely completed, for example, no 3BV filter used, no auxiliary functions used, and no values overflowed. Fair and official are different: only standard game mode can be official, while modes like upk, solvable, etc., are not official but can be fairly completed. If official, it must be fair. (This flag is convenient for ranking sites supporting multiple modes)
-
-    > Fixed length 1 bit (2e4): Whether it is no flag (NF), 1 is NF, equivalent to right == 0; 0 for others.
-    
-    > Remaining bits reserved and set to 0; added based on ranking sites, score statistics application developers' requirements.
-3. Fixed length 1 byte: game settings. These settings aim to provide convenience (or inconvenience) to players while being widely recognized as not affecting the formality or fairness of the score.
-
-    > Fixed length 1 bit (2e7): Whether to disable question marks, 1 means disabled.
-
-    > Fixed length 1 bit (2e6): The mouse pointer cannot move out of the board, 1 means cannot move out.
-
-    > Fixed length 1 bit (2e5): Whether automatic restart on loss is enabled, 1 means enabled.
-
-    > Remaining bits reserved and set to 0; added based on clones developers' requirements.
-
-4. Fixed length 1 byte: number of rows.
-5. Fixed length 1 byte: number of columns.
-6. Fixed length 2 bytes: number of mines, big-endian.
-7. Fixed length 1 byte: cell size.
-8. Fixed length 2 bytes: game mode (symbols and meanings: 0->standard, 1->upk; 2->cheat; 3->Density (from Viennasweeper software), 4->win7, 5->Competitive Solvable, 6->Strong Solvable, 7->Weak Solvable, 8->To Be Solvable, 9->Strong Guessable, 10->Weak Guessable, 11->Chording Recursive (standard recursive), 12->Flag Recursive, 13->Chording Flag Recursive, remaining reserved, added based on new clones developers' requirements), big-endian.
-9.  Fixed length 2 bytes: 3BV value, big-endian.
-10. Fixed length 3 bytes: time (rtime), in milliseconds, big-endian.
-11. A string ending with '\0': source of the recording. For example, if it comes from Meta Minesweeper 3.1, it is "Meta 3.1". Ranking sites need to check the source of the recording.
-12. A string ending with '\0': user identifier (the user wants the ranking site or software to prominently display this identifier)
-13. A string ending with '\0': championship identifier (the user wants to use this identifier as a credential to participate in a championship but does not want the ranking site or software to display this identifier)
-14. A string ending with '\0': unique identifier (the user wants to distinguish from other users with the same name, such as nickname, saolei.wang ID, province, email, online name, motto, but does not want the ranking site or software to display this identifier)
-15. A string ending with '\0': start timestamp, recommended to use the total microseconds since January 1, 1970, in Greenwich Mean Time. The time of the first left-click released on a non-flagged cell.
-16. A string ending with '\0': end timestamp, recommended to use the total microseconds since January 1, 1970, in Greenwich Mean Time.
-17. A string ending with '\0': country or region name or code. It is recommended to use the two-letter uppercase code of the ISO 3166-1:2020 standard country or region code so that the player can correctly display the national flag.
-18. A string ending with '\0': device information-related UUID, preferably 32 bits. Note that developers need to protect users' privacy.
-19. Variable length ⌈number of rows × number of columns / 8⌉ bytes: 1 represents a mine, 0 represents a not mine. The ***i × number of columns + j***th bit represents whether the *i*th (starting from 0) row, *j*th (starting from 0) column is a mine. For example, the following 3 rows, 4 columns board (with * representing mines):  
-        [[1, 3, &ast;, &ast;],
-         [3, &ast;, &ast;, &ast;],
-         [&ast;, &ast;, &ast;, &ast;]]
-    is recorded as `00110111 11110000`.
-20. Mouse event format (loop structure):
-
-    > Fixed length 1 byte: operation type. 1: "mv"; 2: "lc"; 3: "lr"; 4: "rc"; 5: "rr"; 6: "mc"; 7: "mr"; 8: "pf"; 9: "cc"; 10: "l"; 11: "r"; 12: "m"; remaining reserved (except '\0', '\255').
-
-    > Fixed length 3 bytes: timestamp, in milliseconds. Recorded from the first left or right click that affects the game board as 0, then incremented. The timestamp of the first left-click release on a non-flagged cell may not be 0, and the timestamp of the last operation is greater than or equal to the actual time used. Big-endian.
-
-    > Fixed length 2 bytes: distance from the left border, in pixels. The distance of operations outside the board is recorded as "number of columns × cell size". Big-endian.
-
-    > Fixed length 2 bytes: distance from the top border, in pixels. The distance of operations outside the board is recorded as "number of rows × cell size". Big-endian.
-
-21. Fixed length 1 byte: '\0' indicates a checksum (recording directly generated by software); '\255' indicates no checksum (e.g., translated from avf files).
-
-22. Fixed length 32 bytes: checksum, optional.

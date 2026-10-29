@@ -184,74 +184,146 @@ fn flag_at(b: &mut MinesweeperBoard<Vec<Vec<i32>>>, pos: (usize, usize)) {
 
 #[test]
 fn mode_12_flag_recursion() {
-    let mut b = board_of(12, chain_board(), flag_game_board());
-    flag_at(&mut b, (1, 0));
-    assert_ne!(b.game_board_state, GameBoardState::Loss);
-    // 标雷后，(1,1) 周围的格子被自动双击打开
-    assert!(b.game_board[1][2] < 10);
-    assert_eq!(b.right, 1);
-    assert_eq!(b.rce, 1);
-    // 自动双击不计入玩家双击次数
-    assert_eq!(b.double, 0);
-    assert_eq!(b.dce, 0);
+    // 2×2 局面：[[ -1, -1 ], [ 2, 2 ]]
+    // game_board 打开 (1,0)=2, (1,1)=2。手动标 (0,0) 后，(1,0)=2 旗数=1，剩余=1，
+    // 未开格只剩 (0,1) → 单集合推必标雷，自动标 (0,1)
+    let board = vec![vec![-1, -1], vec![2, 2]];
+    let mut gb = vec![vec![10; 2]; 2];
+    gb[1][0] = 2;
+    gb[1][1] = 2;
+    let mut b = board_of(12, board, gb);
+    flag_at(&mut b, (0, 0));
+    assert_eq!(b.game_board[0][1], 11); // 自动标雷
+    assert_eq!(b.flag, 2);               // 手动 1 + 自动 1
+    assert_eq!(b.double, 0);             // mode 12 只自动标雷，不自动双击
+}
+
+#[test]
+fn mode_12_flag_recursion_chain() {
+    // 链式自动标雷：手动标一个 → 触发两个 → 再触发一个
+    // 3×3 局面：
+    //   [[ -1, 2, -1 ],
+    //    [  2, 3,  2 ],
+    //    [ -1, 2, -1 ]]
+    // 雷 (0,0) (0,2) (2,0) (2,2)
+    let board = vec![
+        vec![-1, 2, -1],
+        vec![2, 3, 2],
+        vec![-1, 2, -1],
+    ];
+    let mut gb = vec![vec![10; 3]; 3];
+    gb[0][1] = 2;
+    gb[1][0] = 2;
+    gb[1][1] = 3;
+    gb[1][2] = 2;
+    gb[2][1] = 2;
+    let mut b = board_of(12, board, gb);
+    flag_at(&mut b, (0, 0));
+    // 第 1 轮：(0,1)=2 → (0,2)；(1,0)=2 → (2,0)
+    assert_eq!(b.game_board[0][2], 11);
+    assert_eq!(b.game_board[2][0], 11);
+    // 第 2 轮：(2,1)=2 → (2,2)
+    assert_eq!(b.game_board[2][2], 11);
+    assert_eq!(b.flag, 4);
 }
 
 #[test]
 fn mode_13_both_recursions() {
-    let mut chained = board_of(13, chain_board(), chain_game_board());
-    chord_at(&mut chained, (1, 1));
-    assert!(chained.game_board[0][3] < 10);
-    assert_eq!(chained.double, 1);
-    assert_eq!(chained.dce, 1);
+    // 13 = 双击标雷递归：交替跑标雷↔双击
+    // 先手动双击触发全局双击连锁
+    let mut chorded = board_of(13, chain_board(), chain_game_board());
+    chord_at(&mut chorded, (1, 1));
+    assert!(chorded.game_board[0][3] < 10);
+    assert_eq!(chorded.double, 1);
+    assert_eq!(chorded.dce, 1);
 
-    let mut flagged = board_of(13, chain_board(), flag_game_board());
-    flag_at(&mut flagged, (1, 0));
-    assert!(flagged.game_board[1][2] < 10);
-    assert_eq!(flagged.double, 0);
-    assert_eq!(flagged.dce, 0);
+    // 链式自动标雷 + 自动双击的组合局面：手动标一个 → 自动标一堆 → 自动双击一堆
+    // 3×3 局面：
+    //   [[ -1, 2, -1 ],
+    //    [  2, 3,  2 ],
+    //    [ -1, 2, -1 ]]
+    let board = vec![
+        vec![-1, 2, -1],
+        vec![2, 3, 2],
+        vec![-1, 2, -1],
+    ];
+    let mut gb = vec![vec![10; 3]; 3];
+    gb[0][1] = 2;
+    gb[1][0] = 2;
+    gb[1][1] = 3;
+    gb[1][2] = 2;
+    gb[2][1] = 2;
+    let mut flagged = board_of(13, board, gb);
+    flag_at(&mut flagged, (0, 0));
+    // run_flag_recursive → 自动标 (0,2), (2,0), (2,2)
+    assert_eq!(flagged.game_board[0][2], 11);
+    assert_eq!(flagged.game_board[2][0], 11);
+    assert_eq!(flagged.game_board[2][2], 11);
+    // 所有 4 个雷都被标完，局面应该能自动判胜（全标雷 + 全打开）
+    assert!(
+        flagged.game_board_state == GameBoardState::Win
+            || matches!(flagged.game_board_state, GameBoardState::Playing)
+    );
+    assert_eq!(flagged.double, 0); // 全部自动完成，玩家没手动双击
+}
+
+// ---- 14/15/16：无猜 X 递归。开局埋雷是 Python 侧负责（laymine_solvable），
+//      状态机只负责游戏进行期的递归连锁，行为与 11/12/13 完全一致。
+//      左键踩雷直接判负——这里用 guess_board（有歧义的局面）验证状态机不做可猜重排。
+
+#[test]
+fn mode_14_click_on_mine_loses() {
+    // 无猜双击递归：左键踩雷直接判负（状态机不做可猜重排）
+    let mut b = board_of(14, guess_board(), guess_game_board());
+    click(&mut b, (2, 2)); // (2,2) 是雷
+    assert_eq!(b.game_board_state, GameBoardState::Loss);
+    assert!(!b.board_changed);
 }
 
 #[test]
-fn mode_14_guess_and_chord_recursion() {
-    // 可猜重排 + 双击递归
-    let mut guess = board_of(14, guess_board(), guess_game_board());
-    click(&mut guess, (2, 2));
-    assert_ne!(guess.game_board_state, GameBoardState::Loss);
-    assert_ne!(guess.board[2][2], -1);
-
-    let mut chained = board_of(14, chain_board(), chain_game_board());
-    chord_at(&mut chained, (1, 1));
-    assert!(chained.game_board[0][3] < 10);
-    assert_eq!(chained.dce, 1);
+fn mode_14_chord_recursion() {
+    // 双击递归仍然有效：手动双击后自动扫全局执行
+    let mut b = board_of(14, chain_board(), chain_game_board());
+    chord_at(&mut b, (1, 1));
+    assert!(b.game_board[0][3] < 10);
+    assert_eq!(b.double, 1);
+    assert_eq!(b.dce, 1);
 }
 
 #[test]
-fn mode_15_guess_and_flag_recursion() {
-    let mut guess = board_of(15, guess_board(), guess_game_board());
-    click(&mut guess, (2, 2));
-    assert_ne!(guess.game_board_state, GameBoardState::Loss);
-    assert_ne!(guess.board[2][2], -1);
-
-    let mut flagged = board_of(15, chain_board(), flag_game_board());
-    flag_at(&mut flagged, (1, 0));
-    assert!(flagged.game_board[1][2] < 10);
-    assert_eq!(flagged.dce, 0);
+fn mode_15_click_on_mine_loses() {
+    let mut b = board_of(15, guess_board(), guess_game_board());
+    click(&mut b, (2, 2));
+    assert_eq!(b.game_board_state, GameBoardState::Loss);
 }
 
 #[test]
-fn mode_16_guess_and_both_recursions() {
-    let mut guess = board_of(16, guess_board(), guess_game_board());
-    click(&mut guess, (2, 2));
-    assert_ne!(guess.game_board_state, GameBoardState::Loss);
-    assert_ne!(guess.board[2][2], -1);
+fn mode_15_flag_recursion() {
+    let board = vec![vec![-1, -1], vec![2, 2]];
+    let mut gb = vec![vec![10; 2]; 2];
+    gb[1][0] = 2;
+    gb[1][1] = 2;
+    let mut b = board_of(15, board, gb);
+    flag_at(&mut b, (0, 0));
+    assert_eq!(b.game_board[0][1], 11);
+    assert_eq!(b.flag, 2);
+}
 
-    let mut chained = board_of(16, chain_board(), chain_game_board());
-    chord_at(&mut chained, (1, 1));
-    assert!(chained.game_board[0][3] < 10);
+#[test]
+fn mode_16_both_recursions() {
+    // 双击 + 标雷两种触发都有效
+    let mut chorded = board_of(16, chain_board(), chain_game_board());
+    chord_at(&mut chorded, (1, 1));
+    assert!(chorded.game_board[0][3] < 10);
 
-    let mut flagged = board_of(16, chain_board(), flag_game_board());
-    flag_at(&mut flagged, (1, 0));
-    assert!(flagged.game_board[1][2] < 10);
+    let board = vec![vec![-1, -1], vec![2, 2]];
+    let mut gb = vec![vec![10; 2]; 2];
+    gb[1][0] = 2;
+    gb[1][1] = 2;
+    let mut flagged = board_of(16, board, gb);
+    flag_at(&mut flagged, (0, 0));
+    assert_eq!(flagged.game_board[0][1], 11);
+    assert_eq!(flagged.flag, 2);
 }
 
 /// 除 (2,1) 以外的非雷格全部打开：(2,1) 由引擎判定为一定不是雷，局面可解

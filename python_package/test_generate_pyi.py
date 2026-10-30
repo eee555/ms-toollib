@@ -32,6 +32,15 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(self.surface["BaseVideo.__init__"], "(self, board: list[list[int]], cell_pixel_size: int=16) -> None")
         self.assertEqual(self.surface["Board.hzini"], "attribute: int")
 
+    def test_pluck_related_properties(self) -> None:
+        checked_in = api_surface((DIRECTORY / "ms_toollib.pyi").read_text(encoding="utf-8"))
+        for name in ("KeyDynamicParams", "BaseVideo", "AvfVideo", "EvfVideo", "MvfVideo", "RmvVideo"):
+            for attribute in ("pluck", "luck", "expected_bbbv_solved_per_attempt", "expected_bbbv_solved_per_win",
+                              "expected_time_per_attempt", "expected_time_per_win"):
+                key = f"{name}.{attribute}"
+                self.assertEqual(self.surface[key], "attribute: float")
+                self.assertEqual(checked_in[key], self.surface[key])
+
     def test_macro_classes(self) -> None:
         for name in ("AvfVideo", "EvfVideo", "MvfVideo", "RmvVideo"):
             self.assertEqual(self.surface[f"{name}.__init__"], "(self, file_name: str='', raw_data: list[int]=...) -> None")

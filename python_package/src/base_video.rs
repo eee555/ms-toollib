@@ -97,6 +97,26 @@ impl PyKeyDynamicParams {
     fn get_pluck(&self) -> PyResult<f64> {
         Ok(self.core.pluck)
     }
+    #[getter]
+    fn get_luck(&self) -> PyResult<f64> {
+        Ok(self.core.get_luck())
+    }
+    #[getter]
+    fn get_expected_bbbv_solved_per_attempt(&self) -> PyResult<f64> {
+        Ok(self.core.expected_bbbv_solved_per_attempt)
+    }
+    #[getter]
+    fn get_expected_bbbv_solved_per_win(&self) -> PyResult<f64> {
+        Ok(self.core.expected_bbbv_solved_per_win)
+    }
+    #[getter]
+    fn get_expected_time_per_attempt(&self) -> PyResult<f64> {
+        Ok(self.core.expected_time_per_attempt)
+    }
+    #[getter]
+    fn get_expected_time_per_win(&self) -> PyResult<f64> {
+        Ok(self.core.expected_time_per_win)
+    }
 }
 
 #[pyclass(name = "Event", unsendable)]
@@ -703,6 +723,26 @@ impl PyBaseVideo {
     #[getter]
     fn get_pluck(&mut self) -> PyResult<f64> {
         Ok(self.core.get_pluck().unwrap())
+    }
+    #[getter]
+    fn get_luck(&mut self) -> PyResult<f64> {
+        Ok(self.core.get_luck().unwrap())
+    }
+    #[getter]
+    fn get_expected_bbbv_solved_per_attempt(&mut self) -> PyResult<f64> {
+        Ok(self.core.get_expected_bbbv_solved_per_attempt().unwrap())
+    }
+    #[getter]
+    fn get_expected_bbbv_solved_per_win(&mut self) -> PyResult<f64> {
+        Ok(self.core.get_expected_bbbv_solved_per_win().unwrap())
+    }
+    #[getter]
+    fn get_expected_time_per_attempt(&mut self) -> PyResult<f64> {
+        Ok(self.core.get_expected_time_per_attempt().unwrap())
+    }
+    #[getter]
+    fn get_expected_time_per_win(&mut self) -> PyResult<f64> {
+        Ok(self.core.get_expected_time_per_win().unwrap())
     }
     // #[getter]
     // fn get_events_len(&self) -> PyResult<usize> {

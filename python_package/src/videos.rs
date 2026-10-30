@@ -307,6 +307,26 @@ macro_rules! generate_video {
                 Ok(self.core.data.get_pluck().unwrap())
             }
             #[getter]
+            fn get_luck(&mut self) -> PyResult<f64> {
+                Ok(self.core.data.get_luck().unwrap())
+            }
+            #[getter]
+            fn get_expected_bbbv_solved_per_attempt(&mut self) -> PyResult<f64> {
+                Ok(self.core.data.get_expected_bbbv_solved_per_attempt().unwrap())
+            }
+            #[getter]
+            fn get_expected_bbbv_solved_per_win(&mut self) -> PyResult<f64> {
+                Ok(self.core.data.get_expected_bbbv_solved_per_win().unwrap())
+            }
+            #[getter]
+            fn get_expected_time_per_attempt(&mut self) -> PyResult<f64> {
+                Ok(self.core.data.get_expected_time_per_attempt().unwrap())
+            }
+            #[getter]
+            fn get_expected_time_per_win(&mut self) -> PyResult<f64> {
+                Ok(self.core.data.get_expected_time_per_win().unwrap())
+            }
+            #[getter]
             fn get_events(&self) -> PyResult<Vec<PyVideoActionStateRecorder>> {
                 Ok(self
                     .core

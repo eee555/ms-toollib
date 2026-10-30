@@ -21,6 +21,10 @@ public class BaseVideo {
     public double getThrp() { return nativeGetThrp(nativePtr); }
     public double getIoe() { return nativeGetIoe(nativePtr); }
     public double getPath() { return nativeGetPath(nativePtr); }
+    /** Effective-click distance normalized to 16 pixels per cell. */
+    public double getCPath() { return nativeGetCPath(nativePtr); }
+    /** Effective-click distance between cell coordinates, normalized to 16 pixels per cell. */
+    public double getEPath() { return nativeGetEPath(nativePtr); }
     public double getStnb() { return nativeGetStnb(nativePtr); }
     public int getMouseState() { return nativeGetMouseState(nativePtr); }
     public int getCurrentEventId() { return nativeGetCurrentEventId(nativePtr); }
@@ -57,6 +61,8 @@ public class BaseVideo {
     static native double nativeGetThrp(long ptr);
     static native double nativeGetIoe(long ptr);
     static native double nativeGetPath(long ptr);
+    static native double nativeGetCPath(long ptr);
+    static native double nativeGetEPath(long ptr);
     static native double nativeGetStnb(long ptr);
     static native int nativeGetMouseState(long ptr);
     static native int nativeGetCurrentEventId(long ptr);

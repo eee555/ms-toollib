@@ -518,6 +518,29 @@ impl<T> BaseVideo<T> {
             self.video_action_state_recorder.last().unwrap().path
         }
     }
+    /// 累计相邻有效点击的直线距离，按每格16像素归一化，不取整。
+    /// 有效点击指增加lce、rce或dce的事件，包括计入ce的预标雷。
+    /// 少于两次有效点击时为0；播放时返回当前事件的累计值。
+    pub fn get_c_path(&self) -> f64 {
+        if self.game_board_state == GameBoardState::Display {
+            self.video_action_state_recorder.get(self.current_event_id)
+        } else {
+            self.video_action_state_recorder.last()
+        }
+        .map_or(0.0, |event| event.c_path)
+    }
+
+    /// 累计相邻有效点击所在格子的欧氏距离，按每格16像素归一化，不取整。
+    /// 点击像素坐标先整除格子边长得到行列坐标；同格距离为0，相邻对角格为16*sqrt(2)。
+    pub fn get_e_path(&self) -> f64 {
+        if self.game_board_state == GameBoardState::Display {
+            self.video_action_state_recorder.get(self.current_event_id)
+        } else {
+            self.video_action_state_recorder.last()
+        }
+        .map_or(0.0, |event| event.e_path)
+    }
+
     pub fn get_etime(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
         if self.game_board_state == GameBoardState::Display {

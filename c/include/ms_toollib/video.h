@@ -50,6 +50,8 @@ extern "C" {  // 对于C++，使用C名称修饰
 	size_t  base_video_get_cl(void* ptr);
 	size_t  base_video_get_flag(void* ptr);
 	size_t  base_video_get_bbbv_solved(void* ptr);
+	size_t  base_video_get_bbbv_solved_nf(void* ptr);
+	size_t  base_video_get_bbbv_solved_fl(void* ptr);
 	size_t  base_video_get_ce(void* ptr);
 	double  base_video_get_corr(void* ptr);
 	double  base_video_get_thrp(void* ptr);

@@ -247,6 +247,14 @@ macro_rules! generate_video {
                 Ok(self.core.data.get_bbbv_solved().unwrap())
             }
             #[getter]
+            fn get_bbbv_solved_nf(&self) -> PyResult<usize> {
+                Ok(self.core.data.get_bbbv_solved_nf().unwrap())
+            }
+            #[getter]
+            fn get_bbbv_solved_fl(&self) -> PyResult<usize> {
+                Ok(self.core.data.get_bbbv_solved_fl().unwrap())
+            }
+            #[getter]
             fn get_lce(&self) -> PyResult<usize> {
                 Ok(self.core.data.get_lce().unwrap())
             }

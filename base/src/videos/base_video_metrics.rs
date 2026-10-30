@@ -1,6 +1,6 @@
 use crate::miscellaneous::s_to_ms;
 use crate::videos::{BaseVideo, Event};
-use crate::{GameBoardState, MouseState};
+use crate::{GameBoardState, KeyDynamicParams, MouseState};
 use web_time::Instant;
 // BaseVideo指标计算和获取的方法
 
@@ -547,20 +547,30 @@ impl<T> BaseVideo<T> {
         }
         Ok(bbbv_solved as f64 / self.game_dynamic_params.rtime)
     }
+    /// 已解决的总3BV，等于bbbv_solved_nf + bbbv_solved_fl。
     pub fn get_bbbv_solved(&self) -> Result<usize, ()> {
+        Ok(self.get_bbbv_solved_params()?.get_bbbv_solved())
+    }
+
+    /// 通过有效左击解决的3BV；播放时取当前事件，否则取结束时的快照。
+    pub fn get_bbbv_solved_nf(&self) -> Result<usize, ()> {
+        Ok(self.get_bbbv_solved_params()?.bbbv_solved_nf)
+    }
+
+    /// 通过双击等其他方式解决的3BV，包括递归中的静默双击。
+    pub fn get_bbbv_solved_fl(&self) -> Result<usize, ()> {
+        Ok(self.get_bbbv_solved_params()?.bbbv_solved_fl)
+    }
+
+    fn get_bbbv_solved_params(&self) -> Result<&KeyDynamicParams, ()> {
         match self.game_board_state {
-            GameBoardState::Display => Ok(self.video_action_state_recorder[self.current_event_id]
-                .key_dynamic_params
-                .bbbv_solved),
-            // GameBoardState::Win | GameBoardState::Loss => Ok(self
-            //     .video_dynamic_params
-            //     .bbbv_solved),
-            GameBoardState::Win | GameBoardState::Loss => Ok(self
+            GameBoardState::Display => Ok(&self.video_action_state_recorder[self.current_event_id]
+                .key_dynamic_params),
+            GameBoardState::Win | GameBoardState::Loss => Ok(&self
                 .video_action_state_recorder
                 .last()
                 .unwrap()
-                .key_dynamic_params
-                .bbbv_solved),
+                .key_dynamic_params),
             _ => Err(()),
         }
     }

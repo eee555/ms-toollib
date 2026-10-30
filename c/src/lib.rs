@@ -79,7 +79,8 @@ pub struct MinesweeperBoard {
     chording: usize,
     ces: usize,
     flag: usize,
-    bbbv_solved: usize,
+    bbbv_solved_nf: usize,
+    bbbv_solved_fl: usize,
     row: usize,
     column: usize,
     mouse_state: MouseState,
@@ -343,7 +344,8 @@ pub extern "C" fn free_board_poss(board_poss: BoardPossReturn) {
 //         chording: 0,
 //         ces: 0,
 //         flag: 0,
-//         bbbv_solved: 0,
+//         bbbv_solved_nf: 0,
+//         bbbv_solved_fl: 0,
 //         flaged_list: ptr::null_mut() as *mut Pointer,
 //         mouse_state: MouseState::UpUp,
 //         game_board_state: GameBoardState::Ready,
@@ -502,6 +504,10 @@ pub extern "C" fn base_video_get_cl(ptr: *mut c_void) -> usize { bv!(ptr).get_cl
 pub extern "C" fn base_video_get_flag(ptr: *mut c_void) -> usize { bv!(ptr).get_flag() }
 #[no_mangle]
 pub extern "C" fn base_video_get_bbbv_solved(ptr: *mut c_void) -> usize { bv!(ptr).get_bbbv_solved().unwrap_or(0) }
+#[no_mangle]
+pub extern "C" fn base_video_get_bbbv_solved_nf(ptr: *mut c_void) -> usize { bv!(ptr).get_bbbv_solved_nf().unwrap_or(0) }
+#[no_mangle]
+pub extern "C" fn base_video_get_bbbv_solved_fl(ptr: *mut c_void) -> usize { bv!(ptr).get_bbbv_solved_fl().unwrap_or(0) }
 #[no_mangle]
 pub extern "C" fn base_video_get_ce(ptr: *mut c_void) -> usize { bv!(ptr).get_ce().unwrap_or(0) }
 #[no_mangle]

@@ -156,6 +156,19 @@ julia demos/julia/callms_toollib.jl
 | **局面识别** | 图片输入 → 识别局面（需 `rs` 或 `py` feature） |
 | **录像分析** | 效率指标、pluck 检测、跳判检测 |
 
+### 已解决的3BV
+
+- `bbbv_solved_nf`：通过有效左击（`lce` / `left_ce`）解决的3BV。
+- `bbbv_solved_fl`：通过双击（`dce` / `double_ce`）等其他方式解决的3BV，包括递归中的静默双击。
+
+这两个参数按解决3BV的动作分类；标雷、退旗和无效操作本身不增加它们。
+空区计入使其完整展开的那次动作，打开空边数字本身不增加3BV。
+实时状态机、录像事件快照和最终分析结果都分别保存这两项；重开时清零，换盘后的结束结算会重新计算。
+
+`bbbv_solved` 读取接口保留，返回 `bbbv_solved_nf + bbbv_solved_fl`；速度和效率指标仍使用总量。
+Rust 直接访问状态字段的代码需改用上述两个字段，或调用 `get_bbbv_solved()` 获取总量。
+Python、JavaScript 使用对应的只读属性；录像播放时返回当前事件的累计值。
+
 ---
 
 ## 版本号

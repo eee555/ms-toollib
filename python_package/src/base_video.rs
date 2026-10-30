@@ -83,7 +83,15 @@ impl PyKeyDynamicParams {
     }
     #[getter]
     fn get_bbbv_solved(&self) -> PyResult<usize> {
-        Ok(self.core.bbbv_solved)
+        Ok(self.core.get_bbbv_solved())
+    }
+    #[getter]
+    fn get_bbbv_solved_nf(&self) -> PyResult<usize> {
+        Ok(self.core.bbbv_solved_nf)
+    }
+    #[getter]
+    fn get_bbbv_solved_fl(&self) -> PyResult<usize> {
+        Ok(self.core.bbbv_solved_fl)
     }
     #[getter]
     fn get_op_solved(&self) -> PyResult<usize> {
@@ -643,6 +651,14 @@ impl PyBaseVideo {
     #[getter]
     fn get_bbbv_solved(&self) -> PyResult<usize> {
         Ok(self.core.get_bbbv_solved().unwrap())
+    }
+    #[getter]
+    fn get_bbbv_solved_nf(&self) -> PyResult<usize> {
+        Ok(self.core.get_bbbv_solved_nf().unwrap())
+    }
+    #[getter]
+    fn get_bbbv_solved_fl(&self) -> PyResult<usize> {
+        Ok(self.core.get_bbbv_solved_fl().unwrap())
     }
     #[getter]
     fn get_lce(&self) -> PyResult<usize> {

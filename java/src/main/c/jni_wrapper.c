@@ -250,6 +250,8 @@ JNIEXPORT jint JNICALL Java_ms_1toollib_BaseVideo_nativeGetDouble(JNIEnv *env, j
 JNIEXPORT jint JNICALL Java_ms_1toollib_BaseVideo_nativeGetCl(JNIEnv *env, jclass cls, jlong ptr) { return (jint)base_video_get_cl((void*)ptr); }
 JNIEXPORT jint JNICALL Java_ms_1toollib_BaseVideo_nativeGetFlag(JNIEnv *env, jclass cls, jlong ptr) { return (jint)base_video_get_flag((void*)ptr); }
 JNIEXPORT jint JNICALL Java_ms_1toollib_BaseVideo_nativeGetBbbvSolved(JNIEnv *env, jclass cls, jlong ptr) { return (jint)base_video_get_bbbv_solved((void*)ptr); }
+JNIEXPORT jint JNICALL Java_ms_1toollib_BaseVideo_nativeGetBbbvSolvedNf(JNIEnv *env, jclass cls, jlong ptr) { return (jint)base_video_get_bbbv_solved_nf((void*)ptr); }
+JNIEXPORT jint JNICALL Java_ms_1toollib_BaseVideo_nativeGetBbbvSolvedFl(JNIEnv *env, jclass cls, jlong ptr) { return (jint)base_video_get_bbbv_solved_fl((void*)ptr); }
 JNIEXPORT jint JNICALL Java_ms_1toollib_BaseVideo_nativeGetCe(JNIEnv *env, jclass cls, jlong ptr) { return (jint)base_video_get_ce((void*)ptr); }
 JNIEXPORT jdouble JNICALL Java_ms_1toollib_BaseVideo_nativeGetCorr(JNIEnv *env, jclass cls, jlong ptr) { return (jdouble)base_video_get_corr((void*)ptr); }
 JNIEXPORT jdouble JNICALL Java_ms_1toollib_BaseVideo_nativeGetThrp(JNIEnv *env, jclass cls, jlong ptr) { return (jdouble)base_video_get_thrp((void*)ptr); }

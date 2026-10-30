@@ -32,6 +32,15 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(self.surface["BaseVideo.__init__"], "(self, board: list[list[int]], cell_pixel_size: int=16) -> None")
         self.assertEqual(self.surface["Board.hzini"], "attribute: int")
 
+    def test_split_bbbv_solved_properties(self) -> None:
+        checked_in = api_surface((DIRECTORY / "ms_toollib.pyi").read_text(encoding="utf-8"))
+        for name in ("MinesweeperBoard", "SafeMinesweeperBoard", "KeyDynamicParams", "BaseVideo",
+                     "AvfVideo", "EvfVideo", "MvfVideo", "RmvVideo"):
+            for attribute in ("bbbv_solved", "bbbv_solved_nf", "bbbv_solved_fl"):
+                key = f"{name}.{attribute}"
+                self.assertEqual(self.surface[key], "attribute: int")
+                self.assertEqual(checked_in[key], self.surface[key])
+
     def test_macro_classes(self) -> None:
         for name in ("AvfVideo", "EvfVideo", "MvfVideo", "RmvVideo"):
             self.assertEqual(self.surface[f"{name}.__init__"], "(self, file_name: str='', raw_data: list[int]=...) -> None")

@@ -59,8 +59,10 @@ pub struct MinesweeperBoard<T> {
     pub dce: usize,
     /// 标雷数
     pub flag: usize,
-    /// 已解决的3BV数
-    pub bbbv_solved: usize,
+    /// 通过有效左击（lce）解决的3BV数。
+    pub bbbv_solved_nf: usize,
+    /// 通过双击等其他方式解决的3BV数，包括递归中的静默双击。
+    pub bbbv_solved_fl: usize,
     pub row: usize,
     pub column: usize,
     pub mouse_state: MouseState,
@@ -94,7 +96,8 @@ impl Default for MinesweeperBoard<Vec<Vec<i32>>> {
             rce: 0,
             dce: 0,
             flag: 0,
-            bbbv_solved: 0,
+            bbbv_solved_nf: 0,
+            bbbv_solved_fl: 0,
             row: 0,
             column: 0,
             mouse_state: MouseState::Undefined,
@@ -124,7 +127,8 @@ impl Default for MinesweeperBoard<SafeBoard> {
             rce: 0,
             dce: 0,
             flag: 0,
-            bbbv_solved: 0,
+            bbbv_solved_nf: 0,
+            bbbv_solved_fl: 0,
             row: 0,
             column: 0,
             mouse_state: MouseState::Undefined,
@@ -189,7 +193,8 @@ impl<T: EmptyBoard> MinesweeperBoard<T> {
             rce: 0,
             dce: 0,
             flag: 0,
-            bbbv_solved: 0,
+            bbbv_solved_nf: 0,
+            bbbv_solved_fl: 0,
             row,
             column,
             mouse_state: MouseState::UpUp,
@@ -206,6 +211,11 @@ impl<T: EmptyBoard> MinesweeperBoard<T> {
 }
 
 impl<T> MinesweeperBoard<T> {
+    /// 已解决的总3BV，由左击和其他方式的解决量相加得到。
+    pub fn get_bbbv_solved(&self) -> usize {
+        self.bbbv_solved_nf + self.bbbv_solved_fl
+    }
+
     // 初始化。对应强化学习领域gym的api中的reset。
     pub fn reset(&mut self) {
         self.game_board = vec![vec![10; self.column]; self.row];
@@ -218,7 +228,8 @@ impl<T> MinesweeperBoard<T> {
         self.dce = 0;
         self.flag = 0;
         self.left = 0;
-        self.bbbv_solved = 0;
+        self.bbbv_solved_nf = 0;
+        self.bbbv_solved_fl = 0;
         self.flaged_list = vec![];
         self.mouse_state = MouseState::UpUp;
         if self.game_board_state != GameBoardState::Display {
@@ -360,7 +371,7 @@ impl<T> MinesweeperBoard<T> {
         match self.board[x][y] {
             0 => {
                 if self.cell_is_op_completed(x, y, &mut vec![vec![false; self.column]; self.row]) {
-                    self.bbbv_solved += 1;
+                    self.bbbv_solved_nf += 1;
                 }
                 self.lce += 1;
                 refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
@@ -377,7 +388,7 @@ impl<T> MinesweeperBoard<T> {
             _ => {
                 refresh_board(&self.board, &mut self.game_board, vec![(x, y)]);
                 if self.cell_is_bbbv(x, y) {
-                    self.bbbv_solved += 1;
+                    self.bbbv_solved_nf += 1;
                 }
                 self.lce += 1;
                 if self.is_win() {
@@ -472,7 +483,7 @@ impl<T> MinesweeperBoard<T> {
         Ok(result)
     }
     /// 执行双击的实质部分。`silent` 为 true 时是递归产生的自动双击，
-    /// 不计玩家操作次数（double/dce），但仍计入 bbbv_solved 并正常判胜负。
+    /// 不计玩家操作次数（double/dce），但仍计入 bbbv_solved_fl 并正常判胜负。
     fn perform_chord(&mut self, x: usize, y: usize, silent: bool) -> Result<u8, ()>
     where
         T: std::ops::Index<usize> + BoardSize + ReplaceBoard,
@@ -564,8 +575,8 @@ impl<T> MinesweeperBoard<T> {
         if !silent {
             self.dce += 1;
         }
-        self.bbbv_solved += surround_bbbv;
-        self.bbbv_solved += self.op_num_around_cell(x, y);
+        self.bbbv_solved_fl += surround_bbbv;
+        self.bbbv_solved_fl += self.op_num_around_cell(x, y);
         refresh_board(&self.board, &mut self.game_board, chording_cells);
 
         if hit_mine {

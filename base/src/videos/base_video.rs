@@ -227,6 +227,8 @@ pub struct BaseVideo<T> {
     pub last_in_board_pos: (u16, u16),
     // 在last_in_board_pos位置，path的值，用于计算path
     pub last_in_board_pos_path: f64,
+    /// 最后一次增加ce的点击位置，单位为像素，顺序为（距离上方，距离左侧）。
+    pub last_effective_click_pos: Option<(usize, usize)>,
 }
 
 impl Default for BaseVideo<Vec<Vec<i32>>> {
@@ -280,6 +282,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             video_playing_pix_size_k: 1.0,
             last_in_board_pos: (u16::MAX, u16::MAX),
             last_in_board_pos_path: 0.0,
+            last_effective_click_pos: None,
         }
     }
 }
@@ -336,6 +339,7 @@ impl Default for BaseVideo<SafeBoard> {
             video_playing_pix_size_k: 1.0,
             last_in_board_pos: (u16::MAX, u16::MAX),
             last_in_board_pos_path: 0.0,
+            last_effective_click_pos: None,
         }
     }
 }
@@ -346,6 +350,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
     pub fn analyse(&mut self) {
         // println!("{:?}, ", self.board);
         assert!(self.can_analyse, "调用parse或扫完前，不能调用analyse方法");
+        self.reset_click_paths();
         // self.minesweeper_board
         let mut b = MinesweeperBoard::<Vec<Vec<i32>>>::new(self.board.clone());
         // 播放推衍用的局面也要带上录像自身的模式和问号设置，否则回放时不会出现问号
@@ -356,8 +361,13 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.game_board_stream
             .push(Rc::new(RefCell::new(first_game_board)));
         for ide in 0..self.video_action_state_recorder.len() {
+            let old_ce = b.lce + b.rce + b.dce;
+            let mut effective_click_pos = None;
             // 控制svi的生命周期
             let svi = &mut self.video_action_state_recorder[ide];
+            // 非鼠标事件和无效操作也保留已经累计的距离。
+            svi.c_path = self.game_dynamic_params.c_path;
+            svi.e_path = self.game_dynamic_params.e_path;
             if let Some(Event::Mouse(mouse_event)) = &svi.event {
                 svi.prior_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
                 if mouse_event.mouse != "mv" {
@@ -384,6 +394,9 @@ impl BaseVideo<Vec<Vec<i32>>> {
                         .unwrap();
                     // println!("     {:?}, {:?}", svi.mouse, b.mouse_state);
                     svi.useful_level = u_level;
+                    if b.lce + b.rce + b.dce > old_ce {
+                        effective_click_pos = Some((mouse_event.y as usize, mouse_event.x as usize));
+                    }
                     if u_level >= 1 {
                         let mut g_b = GameBoard::new(self.mine_num);
                         g_b.set_game_board(&b.game_board);
@@ -442,6 +455,13 @@ impl BaseVideo<Vec<Vec<i32>>> {
             } else {
                 continue;
             }
+            if b.game_board_state == GameBoardState::Ready {
+                self.reset_click_paths();
+            } else if let Some(pos) = effective_click_pos {
+                self.update_click_paths(pos);
+            }
+            self.video_action_state_recorder[ide].c_path = self.game_dynamic_params.c_path;
+            self.video_action_state_recorder[ide].e_path = self.game_dynamic_params.e_path;
         }
         let rtime = self.game_dynamic_params.rtime;
         let bbbv = self.static_params.bbbv as f64;
@@ -644,6 +664,26 @@ impl NewBaseVideo2<Vec<Vec<i32>>, u8> for BaseVideo<SafeBoard> {
 }
 
 impl<T> BaseVideo<T> {
+    fn reset_click_paths(&mut self) {
+        self.last_effective_click_pos = None;
+        self.game_dynamic_params.c_path = 0.0;
+        self.game_dynamic_params.e_path = 0.0;
+    }
+
+    /// 仅在lce、rce或dce增长时调用，包括计入本局ce的预标雷。
+    fn update_click_paths(&mut self, pos: (usize, usize)) {
+        if let Some(previous) = self.last_effective_click_pos {
+            let size = self.cell_pixel_size as usize;
+            let dy = pos.0 as f64 - previous.0 as f64;
+            let dx = pos.1 as f64 - previous.1 as f64;
+            self.game_dynamic_params.c_path += dy.hypot(dx) * 16.0 / size as f64;
+            let dr = (pos.0 / size) as f64 - (previous.0 / size) as f64;
+            let dc = (pos.1 / size) as f64 - (previous.1 / size) as f64;
+            self.game_dynamic_params.e_path += dr.hypot(dc) * 16.0;
+        }
+        self.last_effective_click_pos = Some(pos);
+    }
+
     /// 通过文件名构造。
     // #[cfg(any(feature = "py", feature = "rs"))]
     // pub fn new_with_file(file_name: &str) -> BaseVideo<Vec<Vec<i32>>> {
@@ -716,6 +756,7 @@ impl<T> BaseVideo<T> {
         }
         self.last_in_board_pos = (u16::MAX, u16::MAX);
         self.last_in_board_pos_path = 0.0;
+        self.reset_click_paths();
     }
     /// 两种情况调用：游戏开始前、可猜模式（尺寸相等，雷数不检查）
     pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()>
@@ -859,13 +900,21 @@ impl<T> BaseVideo<T> {
         let y = pos.1 / self.cell_pixel_size as usize;
         self.minesweeper_board.mode = self.mode;
         self.minesweeper_board.use_question = self.use_question;
+        let old_ce =
+            self.minesweeper_board.lce + self.minesweeper_board.rce + self.minesweeper_board.dce;
         let a = self.minesweeper_board.step(e, (x, y))?;
+        // 在结束结算可能重算状态机之前，记录这一步是否增加了ce。
+        let mut effective_click = self.minesweeper_board.lce
+            + self.minesweeper_board.rce
+            + self.minesweeper_board.dce
+            > old_ce;
         // 获取新的状态
         self.game_board_state = self.minesweeper_board.game_board_state;
         match self.game_board_state {
             GameBoardState::Ready => {
                 self.game_board_stream.clear();
                 self.video_action_state_recorder.clear();
+                self.reset_click_paths();
                 return Ok(0);
             }
             GameBoardState::PreFlaging => {
@@ -900,14 +949,16 @@ impl<T> BaseVideo<T> {
                     .as_micros() as u64;
                 self.is_completed = false;
                 // 点一下左键可能直接获胜，但不可能直接失败
-                self.gather_params_after_game(
-                    time_ms,
-                    Some(MouseEvent {
-                        mouse: e.to_string(),
-                        x: pos.1 as u16,
-                        y: pos.0 as u16,
-                    }),
-                );
+                effective_click = self
+                    .gather_params_after_game(
+                        time_ms,
+                        Some(MouseEvent {
+                            mouse: e.to_string(),
+                            x: pos.1 as u16,
+                            y: pos.0 as u16,
+                        }),
+                    )
+                    .unwrap_or(effective_click);
             }
             GameBoardState::Win => {
                 self.end_time = SystemTime::now()
@@ -920,15 +971,20 @@ impl<T> BaseVideo<T> {
                     self.start_time = self.end_time.clone();
                     self.game_start_ms = time_ms;
                 }
-                self.gather_params_after_game(
-                    time_ms,
-                    Some(MouseEvent {
-                        mouse: e.to_string(),
-                        x: pos.1 as u16,
-                        y: pos.0 as u16,
-                    }),
-                );
+                effective_click = self
+                    .gather_params_after_game(
+                        time_ms,
+                        Some(MouseEvent {
+                            mouse: e.to_string(),
+                            x: pos.1 as u16,
+                            y: pos.0 as u16,
+                        }),
+                    )
+                    .unwrap_or(effective_click);
             }
+        }
+        if effective_click {
+            self.update_click_paths(pos);
         }
         // 维护path，挺复杂的
         let mut path = 0.0;
@@ -1008,6 +1064,8 @@ impl<T> BaseVideo<T> {
                     pluck: f64::NAN,
                 },
                 path,
+                c_path: self.game_dynamic_params.c_path,
+                e_path: self.game_dynamic_params.e_path,
             });
         // println!("push: {:?}, {:?}, ({:?}, {:?})", time, e, pos.0, pos.1);
         Ok(0)
@@ -1032,7 +1090,7 @@ impl<T> BaseVideo<T> {
                 // 同步局面状态机，否则后续鼠标事件仍会被当成有效操作处理
                 self.minesweeper_board.game_board_state = GameBoardState::Loss;
                 self.is_completed = false;
-                self.gather_params_after_game(time_ms, None);
+                let _ = self.gather_params_after_game(time_ms, None);
                 Ok(0)
             }
             _ => Err(()),
@@ -1071,8 +1129,12 @@ impl<T> BaseVideo<T> {
             }
         }
     }
-    /// 游戏结束后，计算一批指标
-    fn gather_params_after_game(&mut self, time_ms: u32, last_mouse_event: Option<MouseEvent>)
+    /// 游戏结束后，计算一批指标。换盘重算时返回最后一次鼠标操作是否增加ce。
+    fn gather_params_after_game(
+        &mut self,
+        time_ms: u32,
+        last_mouse_event: Option<MouseEvent>,
+    ) -> Option<bool>
     where
         T: std::ops::Index<usize> + BoardSize + std::fmt::Debug + ReplaceBoard,
         T::Output: std::ops::Index<usize, Output = i32>,
@@ -1081,25 +1143,54 @@ impl<T> BaseVideo<T> {
             self.game_board_state == GameBoardState::Loss
                 || self.game_board_state == GameBoardState::Win
         );
+        let mut recomputed_effective_click = None;
         if self.minesweeper_board.board_changed {
             // 此处是解决可猜模式中由于局面更改，扫完后，ce、bbbv_solved等计算不对，需要重来一遍
             self.minesweeper_board.reset();
             self.minesweeper_board.mode = self.mode;
             self.minesweeper_board.use_question = self.use_question;
-            for action_state in &self.video_action_state_recorder {
-                if let Some(Event::Mouse(mouse_event)) = &action_state.event {
+            self.reset_click_paths();
+            for ide in 0..self.video_action_state_recorder.len() {
+                let mut effective_click_pos = None;
+                if let Some(Event::Mouse(mouse_event)) = &self.video_action_state_recorder[ide].event {
                     let r = mouse_event.y as usize / self.cell_pixel_size as usize;
                     let c = mouse_event.x as usize / self.cell_pixel_size as usize;
+                    let old_ce = self.minesweeper_board.lce
+                        + self.minesweeper_board.rce
+                        + self.minesweeper_board.dce;
                     self.minesweeper_board
                         .step(&mouse_event.mouse, (r, c))
                         .unwrap();
+                    if self.minesweeper_board.lce
+                        + self.minesweeper_board.rce
+                        + self.minesweeper_board.dce
+                        > old_ce
+                    {
+                        effective_click_pos = Some((mouse_event.y as usize, mouse_event.x as usize));
+                    }
                 }
+                if self.minesweeper_board.game_board_state == GameBoardState::Ready {
+                    self.reset_click_paths();
+                } else if let Some(pos) = effective_click_pos {
+                    self.update_click_paths(pos);
+                }
+                self.video_action_state_recorder[ide].c_path = self.game_dynamic_params.c_path;
+                self.video_action_state_recorder[ide].e_path = self.game_dynamic_params.e_path;
             }
             // 可猜模式中，假如局面发生过修改，且以点脸等reset方式结束游戏，就没有最后一步鼠标操作
             if let Some(mouse_e) = last_mouse_event {
                 let r = mouse_e.y as usize / self.cell_pixel_size as usize;
                 let c = mouse_e.x as usize / self.cell_pixel_size as usize;
+                let old_ce = self.minesweeper_board.lce
+                    + self.minesweeper_board.rce
+                    + self.minesweeper_board.dce;
                 self.minesweeper_board.step(&mouse_e.mouse, (r, c)).unwrap();
+                recomputed_effective_click = Some(
+                    self.minesweeper_board.lce
+                        + self.minesweeper_board.rce
+                        + self.minesweeper_board.dce
+                        > old_ce,
+                );
             }
         }
         // 点一下左键可能直接获胜，但不可能直接失败
@@ -1129,6 +1220,7 @@ impl<T> BaseVideo<T> {
         self.game_dynamic_params.flag_s = self.minesweeper_board.flag as f64 / t;
         self.game_dynamic_params.cl_s = self.game_dynamic_params.cl as f64 / t;
         self.cal_static_params();
+        recomputed_effective_click
     }
     // 计算除fps、bbbv以外的静态指标。因为bbbv是计算动态指标的基础
     fn cal_static_params(&mut self)

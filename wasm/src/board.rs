@@ -534,6 +534,14 @@ impl VideoActionStateRecorder {
     pub fn get_path(&self) -> f64 {
         self.core.path
     }
+    #[wasm_bindgen(getter = c_path)]
+    pub fn get_c_path(&self) -> f64 {
+        self.core.c_path
+    }
+    #[wasm_bindgen(getter = e_path)]
+    pub fn get_e_path(&self) -> f64 {
+        self.core.e_path
+    }
     #[wasm_bindgen(getter = mouse_state)]
     pub fn get_mouse_state(&self) -> usize {
         match self.core.mouse_state {
@@ -805,6 +813,14 @@ macro_rules! generate_video {
                 #[wasm_bindgen(getter = path)]
                 pub fn get_path(&self) -> f64 {
                     self.core.data.get_path()
+                }
+                #[wasm_bindgen(getter = c_path)]
+                pub fn get_c_path(&self) -> f64 {
+                    self.core.data.get_c_path()
+                }
+                #[wasm_bindgen(getter = e_path)]
+                pub fn get_e_path(&self) -> f64 {
+                    self.core.data.get_e_path()
                 }
                 #[wasm_bindgen(getter = ce_s)]
                 pub fn get_ce_s(&self) -> f64 {
@@ -1173,6 +1189,14 @@ impl BaseVideo {
     #[wasm_bindgen(getter = path)]
     pub fn get_path(&self) -> f64 {
         self.core.get_path()
+    }
+    #[wasm_bindgen(getter = c_path)]
+    pub fn get_c_path(&self) -> f64 {
+        self.core.get_c_path()
+    }
+    #[wasm_bindgen(getter = e_path)]
+    pub fn get_e_path(&self) -> f64 {
+        self.core.get_e_path()
     }
     #[wasm_bindgen(getter = ce_s)]
     pub fn get_ce_s(&self) -> f64 {

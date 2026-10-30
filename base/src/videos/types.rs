@@ -178,6 +178,10 @@ pub struct KeyDynamicParams {
     pub op_solved: usize,
     pub isl_solved: usize,
     pub pluck: f64,
+    pub expected_bbbv_solved_per_attempt: f64,
+    pub expected_bbbv_solved_per_win: f64,
+    pub expected_time_per_attempt: f64,
+    pub expected_time_per_win: f64,
 }
 
 impl Default for KeyDynamicParams {
@@ -194,7 +198,35 @@ impl Default for KeyDynamicParams {
             op_solved: 0,
             isl_solved: 0,
             pluck: f64::NAN,
+            expected_bbbv_solved_per_attempt: f64::NAN,
+            expected_bbbv_solved_per_win: f64::NAN,
+            expected_time_per_attempt: f64::NAN,
+            expected_time_per_win: f64::NAN,
         }
+    }
+}
+
+impl KeyDynamicParams {
+    pub fn get_luck(&self) -> f64 {
+        self.get_pluck_metrics().get_luck()
+    }
+
+    pub(crate) fn get_pluck_metrics(&self) -> VideoAnalyseParams {
+        VideoAnalyseParams {
+            pluck: self.pluck,
+            expected_bbbv_solved_per_attempt: self.expected_bbbv_solved_per_attempt,
+            expected_bbbv_solved_per_win: self.expected_bbbv_solved_per_win,
+            expected_time_per_attempt: self.expected_time_per_attempt,
+            expected_time_per_win: self.expected_time_per_win,
+        }
+    }
+
+    pub(crate) fn set_pluck_metrics(&mut self, params: VideoAnalyseParams) {
+        self.pluck = params.pluck;
+        self.expected_bbbv_solved_per_attempt = params.expected_bbbv_solved_per_attempt;
+        self.expected_bbbv_solved_per_win = params.expected_bbbv_solved_per_win;
+        self.expected_time_per_attempt = params.expected_time_per_attempt;
+        self.expected_time_per_win = params.expected_time_per_win;
     }
 }
 
@@ -289,13 +321,32 @@ impl Default for VideoDynamicParams {
 
 /// 需要分析才能计算出的指标，通常计算代价很大。最终结果
 /// 游戏阶段不能展示，录像播放时可以展示
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct VideoAnalyseParams {
     pub pluck: f64,
+    /// 沿录像累计的Luck加权3BV解决量，使用操作后的Luck。
+    pub expected_bbbv_solved_per_attempt: f64,
+    /// 上述解决量除以当前Luck；直接累计归一化值以避免Luck下溢。
+    pub expected_bbbv_solved_per_win: f64,
+    /// 沿录像累计的Luck加权游戏时间，单位为秒，使用操作前的Luck。
+    pub expected_time_per_attempt: f64,
+    pub expected_time_per_win: f64,
 }
 
 impl Default for VideoAnalyseParams {
     fn default() -> Self {
-        VideoAnalyseParams { pluck: f64::NAN }
+        VideoAnalyseParams {
+            pluck: f64::NAN,
+            expected_bbbv_solved_per_attempt: f64::NAN,
+            expected_bbbv_solved_per_win: f64::NAN,
+            expected_time_per_attempt: f64::NAN,
+            expected_time_per_win: f64::NAN,
+        }
+    }
+}
+
+impl VideoAnalyseParams {
+    pub fn get_luck(&self) -> f64 {
+        10.0_f64.powf(-self.pluck)
     }
 }

@@ -324,6 +324,26 @@ impl KeyDynamicParams {
     pub fn get_pluck(&self) -> f64 {
         self.core.pluck
     }
+    #[wasm_bindgen(getter = luck)]
+    pub fn get_luck(&self) -> f64 {
+        self.core.get_luck()
+    }
+    #[wasm_bindgen(getter = expected_bbbv_solved_per_attempt)]
+    pub fn get_expected_bbbv_solved_per_attempt(&self) -> f64 {
+        self.core.expected_bbbv_solved_per_attempt
+    }
+    #[wasm_bindgen(getter = expected_bbbv_solved_per_win)]
+    pub fn get_expected_bbbv_solved_per_win(&self) -> f64 {
+        self.core.expected_bbbv_solved_per_win
+    }
+    #[wasm_bindgen(getter = expected_time_per_attempt)]
+    pub fn get_expected_time_per_attempt(&self) -> f64 {
+        self.core.expected_time_per_attempt
+    }
+    #[wasm_bindgen(getter = expected_time_per_win)]
+    pub fn get_expected_time_per_win(&self) -> f64 {
+        self.core.expected_time_per_win
+    }
 }
 
 #[wasm_bindgen]
@@ -585,6 +605,26 @@ macro_rules! generate_video {
                 #[wasm_bindgen(getter = pluck)]
                 pub fn get_pluck(&mut self) -> f64 {
                     self.core.data.get_pluck().unwrap()
+                }
+                #[wasm_bindgen(getter = luck)]
+                pub fn get_luck(&mut self) -> f64 {
+                    self.core.data.get_luck().unwrap()
+                }
+                #[wasm_bindgen(getter = expected_bbbv_solved_per_attempt)]
+                pub fn get_expected_bbbv_solved_per_attempt(&mut self) -> f64 {
+                    self.core.data.get_expected_bbbv_solved_per_attempt().unwrap()
+                }
+                #[wasm_bindgen(getter = expected_bbbv_solved_per_win)]
+                pub fn get_expected_bbbv_solved_per_win(&mut self) -> f64 {
+                    self.core.data.get_expected_bbbv_solved_per_win().unwrap()
+                }
+                #[wasm_bindgen(getter = expected_time_per_attempt)]
+                pub fn get_expected_time_per_attempt(&mut self) -> f64 {
+                    self.core.data.get_expected_time_per_attempt().unwrap()
+                }
+                #[wasm_bindgen(getter = expected_time_per_win)]
+                pub fn get_expected_time_per_win(&mut self) -> f64 {
+                    self.core.data.get_expected_time_per_win().unwrap()
                 }
                 #[wasm_bindgen(getter = raw_data)]
                 pub fn get_raw_data(&self) -> Vec<u8> {
@@ -1193,6 +1233,26 @@ impl BaseVideo {
     #[wasm_bindgen(getter = pluck)]
     pub fn get_pluck(&mut self) -> f64 {
         self.core.get_pluck().unwrap()
+    }
+    #[wasm_bindgen(getter = luck)]
+    pub fn get_luck(&mut self) -> f64 {
+        self.core.get_luck().unwrap()
+    }
+    #[wasm_bindgen(getter = expected_bbbv_solved_per_attempt)]
+    pub fn get_expected_bbbv_solved_per_attempt(&mut self) -> f64 {
+        self.core.get_expected_bbbv_solved_per_attempt().unwrap()
+    }
+    #[wasm_bindgen(getter = expected_bbbv_solved_per_win)]
+    pub fn get_expected_bbbv_solved_per_win(&mut self) -> f64 {
+        self.core.get_expected_bbbv_solved_per_win().unwrap()
+    }
+    #[wasm_bindgen(getter = expected_time_per_attempt)]
+    pub fn get_expected_time_per_attempt(&mut self) -> f64 {
+        self.core.get_expected_time_per_attempt().unwrap()
+    }
+    #[wasm_bindgen(getter = expected_time_per_win)]
+    pub fn get_expected_time_per_win(&mut self) -> f64 {
+        self.core.get_expected_time_per_win().unwrap()
     }
     #[wasm_bindgen(getter = events)]
     pub fn get_events(&self) -> JsValue {

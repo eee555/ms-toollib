@@ -22,9 +22,7 @@ use crate::safe_board::SafeBoard;
 
 use crate::{GameBoardState, MinesweeperBoard};
 // use tract_onnx::prelude::Op;
-use crate::algorithms::cal_probability_cells_not_mine;
-use crate::mark_board;
-use std::cmp::{max, min};
+use std::cmp::max;
 
 use crate::videos::byte_reader::ByteReader;
 use crate::videos::types::{
@@ -346,6 +344,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
     pub fn analyse(&mut self) {
         // println!("{:?}, ", self.board);
         assert!(self.can_analyse, "调用parse或扫完前，不能调用analyse方法");
+        self.video_analyse_params = VideoAnalyseParams::default();
         // self.minesweeper_board
         let mut b = MinesweeperBoard::<Vec<Vec<i32>>>::new(self.board.clone());
         // 播放推衍用的局面也要带上录像自身的模式和问号设置，否则回放时不会出现问号
@@ -358,6 +357,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
         for ide in 0..self.video_action_state_recorder.len() {
             // 控制svi的生命周期
             let svi = &mut self.video_action_state_recorder[ide];
+            svi.key_dynamic_params.set_pluck_metrics(VideoAnalyseParams::default());
             if let Some(Event::Mouse(mouse_event)) = &svi.event {
                 svi.prior_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
                 if mouse_event.mouse != "mv" {
@@ -711,6 +711,7 @@ impl<T> BaseVideo<T> {
         self.static_params = StaticParams::default();
         self.game_dynamic_params = GameDynamicParams::default();
         self.video_dynamic_params = VideoDynamicParams::default();
+        self.video_analyse_params = VideoAnalyseParams::default();
         if self.game_board_state != GameBoardState::Display {
             self.game_board_state = GameBoardState::Ready;
         }
@@ -761,78 +762,55 @@ impl<T> BaseVideo<T> {
         }
         Ok(0)
     }
-    // 播放阶段计算pluck。Display阶段返回缓存值，Win/Loss阶段实时计算。
-    pub fn get_pluck(&mut self) -> Result<f64, ()> {
+    // 播放时读取快照；游戏结束后按需计算并缓存所有pluck相关指标。
+    fn get_pluck_metrics(&mut self) -> Result<VideoAnalyseParams, ()> {
         match self.game_board_state {
-            GameBoardState::Display => Ok(self.video_action_state_recorder[self.current_event_id]
-                .key_dynamic_params
-                .pluck),
+            GameBoardState::Display => {
+                let Some(record) = self.video_action_state_recorder.get(self.current_event_id) else {
+                    return Ok(VideoAnalyseParams::default());
+                };
+                let mut params = record.key_dynamic_params.get_pluck_metrics();
+                // Time continues between events without another probability calculation.
+                let event_time = (record.time - self.delta_time)
+                    .clamp(0.0, self.game_dynamic_params.rtime.max(0.0));
+                let extra = (self.current_time - event_time).max(0.0);
+                params.expected_time_per_attempt += params.get_luck() * extra;
+                params.expected_time_per_win += extra;
+                Ok(params)
+            }
             GameBoardState::Win | GameBoardState::Loss => {
-                let pluck = self.video_analyse_params.pluck;
-                if pluck.is_nan() {
-                    let mut pluck = 0.0;
-                    let mut has_begin = false;
-                    for vas in self.video_action_state_recorder.iter_mut() {
-                        if let Some(Event::Mouse(e)) = &vas.event {
-                            if vas.useful_level == 2 {
-                                if !has_begin {
-                                    has_begin = true;
-                                    continue;
-                                }
-                                let x = (e.y / self.cell_pixel_size as u16) as usize;
-                                let y = (e.x / self.cell_pixel_size as u16) as usize;
-                                let p = 1.0
-                                    - vas
-                                        .prior_game_board
-                                        .as_ref()
-                                        .unwrap()
-                                        .borrow_mut()
-                                        .get_poss()[x][y];
-                                if p <= 0.0 {
-                                    return Ok(f64::INFINITY);
-                                } else if p < 1.0 {
-                                    pluck -= p.log10();
-                                }
-                            } else if vas.useful_level == 3 {
-                                let x = (e.y / self.cell_pixel_size as u16) as usize;
-                                let y = (e.x / self.cell_pixel_size as u16) as usize;
-                                let mut game_board_clone = vas
-                                    .prior_game_board
-                                    .as_ref()
-                                    .unwrap()
-                                    .borrow_mut()
-                                    .game_board
-                                    .clone();
-                                let mut chording_cells = vec![];
-                                for m in max(1, x) - 1..min(self.height, x + 2) {
-                                    for n in max(1, y) - 1..min(self.width, y + 2) {
-                                        if game_board_clone[m][n] == 10 {
-                                            chording_cells.push((m, n));
-                                        }
-                                    }
-                                }
-                                let _ = mark_board(&mut game_board_clone, true).unwrap();
-                                let p = cal_probability_cells_not_mine(
-                                    &game_board_clone,
-                                    self.mine_num as f64,
-                                    &chording_cells,
-                                );
-                                if p <= 0.0 {
-                                    return Ok(f64::INFINITY);
-                                } else if p > 0.0 {
-                                    pluck -= p.log10();
-                                }
-                            } else if vas.useful_level == 4 {
-                                return Ok(f64::INFINITY);
-                            }
-                        }
-                    }
-                    return Ok(pluck);
+                if self.video_analyse_params.pluck.is_nan() {
+                    super::pluck::analyse(self, f64::INFINITY);
                 }
-                Ok(pluck)
+                Ok(self.video_analyse_params)
             }
             _ => Err(()),
         }
+    }
+
+    pub fn get_pluck(&mut self) -> Result<f64, ()> {
+        Ok(self.get_pluck_metrics()?.pluck)
+    }
+
+    pub fn get_luck(&mut self) -> Result<f64, ()> {
+        Ok(self.get_pluck_metrics()?.get_luck())
+    }
+
+    pub fn get_expected_bbbv_solved_per_attempt(&mut self) -> Result<f64, ()> {
+        Ok(self.get_pluck_metrics()?.expected_bbbv_solved_per_attempt)
+    }
+
+    pub fn get_expected_bbbv_solved_per_win(&mut self) -> Result<f64, ()> {
+        Ok(self.get_pluck_metrics()?.expected_bbbv_solved_per_win)
+    }
+
+    /// Luck-weighted playing time in seconds, paid before each action's risk.
+    pub fn get_expected_time_per_attempt(&mut self) -> Result<f64, ()> {
+        Ok(self.get_pluck_metrics()?.expected_time_per_attempt)
+    }
+
+    pub fn get_expected_time_per_win(&mut self) -> Result<f64, ()> {
+        Ok(self.get_pluck_metrics()?.expected_time_per_win)
     }
     /// 实施鼠标动作
     /// - pos的单位是像素，(距离上方，距离左侧)
@@ -1006,6 +984,7 @@ impl<T> BaseVideo<T> {
                     op_solved: 0,
                     isl_solved: 0,
                     pluck: f64::NAN,
+                    ..KeyDynamicParams::default()
                 },
                 path,
             });
@@ -1086,7 +1065,7 @@ impl<T> BaseVideo<T> {
             self.minesweeper_board.reset();
             self.minesweeper_board.mode = self.mode;
             self.minesweeper_board.use_question = self.use_question;
-            for action_state in &self.video_action_state_recorder {
+            for action_state in &mut self.video_action_state_recorder {
                 if let Some(Event::Mouse(mouse_event)) = &action_state.event {
                     let r = mouse_event.y as usize / self.cell_pixel_size as usize;
                     let c = mouse_event.x as usize / self.cell_pixel_size as usize;
@@ -1094,6 +1073,7 @@ impl<T> BaseVideo<T> {
                         .step(&mouse_event.mouse, (r, c))
                         .unwrap();
                 }
+                action_state.key_dynamic_params.bbbv_solved = self.minesweeper_board.bbbv_solved;
             }
             // 可猜模式中，假如局面发生过修改，且以点脸等reset方式结束游戏，就没有最后一步鼠标操作
             if let Some(mouse_e) = last_mouse_event {

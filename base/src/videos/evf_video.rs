@@ -131,11 +131,11 @@ impl EvfVideo {
         let start_time = self.data.get_utf8_c_string('\0')?;
         let end_time = self.data.get_utf8_c_string('\0')?;
         match self.data.software.as_str() {
-            "Arbiter" => {
+            s if s.starts_with("Arbiter") => {
                 self.data.start_time = self.data.parse_avf_start_timestamp(&start_time)?;
                 self.data.end_time = self.data.parse_avf_end_timestamp(&start_time, &end_time)?;
             }
-            "Viennasweeper" => {
+            s if s.starts_with("Viennasweeper") => {
                 self.data.start_time = start_time
                     .parse::<u64>()
                     .map_err(|_| ErrReadVideoReason::InvalidParams)?
@@ -253,11 +253,11 @@ impl EvfVideo {
         let start_time = self.data.get_utf8_c_string('\0')?;
         let end_time = self.data.get_utf8_c_string('\0')?;
         match self.data.software.as_str() {
-            "Arbiter" => {
+            s if s.starts_with("Arbiter") => {
                 self.data.start_time = self.data.parse_avf_start_timestamp(&start_time)?;
                 self.data.end_time = self.data.parse_avf_end_timestamp(&start_time, &end_time)?;
             }
-            "Viennasweeper" => {
+            s if s.starts_with("Viennasweeper") => {
                 self.data.start_time = start_time
                     .parse::<u64>()
                     .map_err(|_| ErrReadVideoReason::InvalidParams)?
@@ -380,11 +380,11 @@ impl EvfVideo {
         let start_time = self.data.get_utf8_c_string('\0')?;
         let end_time = self.data.get_utf8_c_string('\0')?;
         match self.data.software.as_str() {
-            "Arbiter" => {
+            s if s.starts_with("Arbiter") => {
                 self.data.start_time = self.data.parse_avf_start_timestamp(&start_time)?;
                 self.data.end_time = self.data.parse_avf_end_timestamp(&start_time, &end_time)?;
             }
-            "Viennasweeper" => {
+            s if s.starts_with("Viennasweeper") => {
                 self.data.start_time = start_time
                     .parse::<u64>()
                     .map_err(|_| ErrReadVideoReason::InvalidParams)?

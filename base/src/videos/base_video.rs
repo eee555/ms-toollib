@@ -109,7 +109,8 @@ use crate::videos::types::{
 /// ```
 #[derive(Clone)]
 pub struct BaseVideo<T> {
-    /// 软件名，包括："Viennasweeper"、"0.97 beta"、"Arbiter"、"元3.1.9"、"元3.1.11"、"元3.2.0"等
+    /// 软件名和版本号，包括："Arbiter 0.46"、"Minesweeper Clone 0.97 beta"、
+    /// "Minesweeper Clone 2007"、"Viennasweeper"、"元3.1.9"、"元3.2.0"等
     pub software: String,
     /// 转码用的软件名，包括："元3.1.11"、"元3.2.0"等
     pub translate_software: String,
@@ -1222,13 +1223,16 @@ impl<T> BaseVideo<T> {
     }
 }
 
-/// 软件的合法时间范围。单位为秒。没人用，暂时搁置。
+/// 软件的合法时间范围。单位为秒。不同软件版本的合法时间段可能不同，暂无资料时先统一占位，待手动调整。
 pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
     match software {
-        // 永久
-        "Arbiter" => Ok(("0".to_string(), "4102415999".to_string())),
-        // 未确定
-        "0.97 beta" => Ok(("0".to_string(), "0".to_string())),
+        // 永久。Arbiter各子版本的时间范围可能不同，先按相同范围占位
+        "Arbiter 0.46.2" | "Arbiter 0.48.5" | "Arbiter 0.49.3" | "Arbiter 0.49.4"
+        | "Arbiter 0.49.6" | "Arbiter 0.50.1" | "Arbiter 0.52" | "Arbiter 0.52.2"
+        | "Arbiter 0.52.3" => Ok(("0".to_string(), "4102415999".to_string())),
+        // 未确定。Minesweeper Clone的0.97与2007各版本，先按相同范围占位
+        "Minesweeper Clone 0.97 beta" | "Minesweeper Clone 2007 release 1"
+        | "Minesweeper Clone 2007 release 2" => Ok(("0".to_string(), "4102415999".to_string())),
         // 2023-04-24 00:00:00 前，发现影响公平性的漏洞失效
         "Viennasweeper" => Ok(("0".to_string(), "1682265600".to_string())),
         // 2024-07-26 00:00:00 发布，2026-03-03 00:00:00发现影响公平性的漏洞失效
@@ -1359,23 +1363,37 @@ impl<T> BaseVideo<T> {
     /// 按排名网站的自动审核规则检查录像。必须先调用 `analyse()`，再调用本方法。
     ///
     /// 检查顺序：
-    /// 1. 检查录像软件是否支持，并按软件版本检查校验和、是否公平及允许的游戏模式。
+    /// 1. 检查录像软件是否支持，并按软件版本检查时间戳是否在合法时间段内，再检查校验和、是否公平及允许的游戏模式。
     /// 2. 检查录像事件是否足以提供操作细节，以及录像是否完成。
     /// 3. 最后调用 [`user_mouse_trace_valid`](Self::user_mouse_trace_valid)，检查重复移动、
     ///    按键按住时长、极短按次数和轨迹熵等鼠标特征。
     ///
-    /// 本方法不检查校验码，也不能仅凭鼠标轨迹证明录像一定由真人操作。也不检查录像的时间戳是否在软件的合法时间范围内。
+    /// 本方法不检查校验码，也不能仅凭鼠标轨迹证明录像一定由真人操作。
     ///
     /// 返回值：
     /// - `0`：通过。通过当前自动检查，未发现已实现规则标记的异常；不代表绝对证明真实。
     /// - `1`：不通过。发现明确不符合规则的情况，例如录像未完成、软件/公平性校验失败，或鼠标特征达到不通过阈值。
     /// - `3`：可疑。无法确认或需要人工复核，例如操作细节不足、模式不在允许范围，或鼠标特征达到可疑阈值。
     pub fn is_valid(&self) -> u8 {
-        if self.software == "Arbiter" {
+        // 不同软件版本的合法时间段不同，按software的具体版本查表；未登记的版本视为不合法
+        let (period_start, period_end) = match valid_time_period(&self.software) {
+            Ok(v) => v,
+            Err(_) => return 1,
+        };
+        if !self.time_in_period(&period_start, &period_end) {
+            return 1;
+        }
+        // software是“软件名+版本号”，这里按软件名前缀判断，同时兼容不带版本号的旧值
+        let software = self.software.as_str();
+        if software.starts_with("Arbiter") {
             // 对于arbiter，开源界没有鉴定的能力，只能追溯
-        } else if self.software == "Viennasweeper" {
-        } else if self.software == "0.97 beta" {
-        } else if self.software == "元3.1.9" {
+        } else if software.starts_with("Viennasweeper") {
+        } else if software.starts_with("0.97 beta")
+            || software.starts_with("Minesweeper Clone 0.97")
+            || software.starts_with("Minesweeper Clone 2006")
+            || software.starts_with("Minesweeper Clone 2007")
+        {
+        } else if software.starts_with("元3.1.9") {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和
                 return 1;
@@ -1424,6 +1442,19 @@ impl<T> BaseVideo<T> {
         }
 
         self.user_mouse_trace_valid()
+    }
+
+    /// 判断录像开始时间是否落在给定的合法时间段内。参数为秒，[`start_time`](Self::start_time)为微秒。
+    fn time_in_period(&self, start_sec: &str, end_sec: &str) -> bool {
+        let start = match start_sec.parse::<u64>() {
+            Ok(v) => v * 1_000_000,
+            Err(_) => return false,
+        };
+        let end = match end_sec.parse::<u64>() {
+            Ok(v) => v * 1_000_000,
+            Err(_) => return false,
+        };
+        self.start_time >= start && self.start_time <= end
     }
 
     /// 检查录像中的鼠标轨迹是否有明显程序化特征。

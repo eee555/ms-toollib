@@ -593,7 +593,7 @@ fn mvf_video_works() {
             1, 1
         ]
     );
-    assert_eq!(video.data.software, "0.97 beta");
+    assert_eq!(video.data.software, "Minesweeper Clone 0.97 beta");
     assert_eq!(video.data.width, 30);
     assert_eq!(video.data.height, 16);
     assert_eq!(video.data.mine_num, 99);

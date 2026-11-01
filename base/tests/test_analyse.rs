@@ -2019,7 +2019,10 @@ fn rmv2_utf8_basic() {
     assert_eq!(replay.data.game_dynamic_params.left, 1);
     assert_eq!(replay.data.game_dynamic_params.right, 1);
     assert_eq!(replay.data.game_dynamic_params.double, 2);
-    assert_eq!(replay.data.software, "Viennasweeper".to_string());
+    assert_eq!(
+        replay.data.software,
+        "Vienna Minesweeper - Release 5.0.0a2".to_string()
+    );
 }
 
 #[test]
@@ -2101,7 +2104,10 @@ fn rmv2_24px() {
     assert_eq!(replay.data.game_dynamic_params.left, 3);
     assert_eq!(replay.data.game_dynamic_params.right, 1);
     assert_eq!(replay.data.game_dynamic_params.double, 3);
-    assert_eq!(replay.data.software, "Viennasweeper".to_string());
+    assert_eq!(
+        replay.data.software,
+        "Vienna Minesweeper - Release 5.0.0b4".to_string()
+    );
 }
 
 #[test]

@@ -1225,16 +1225,59 @@ impl<T> BaseVideo<T> {
 
 /// 软件的合法时间范围。单位为秒。不同软件版本的合法时间段可能不同，暂无资料时先统一占位，待手动调整。
 pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
+    // Arbiter 的取值依据官方开发帖 https://minesweepergame.com/forum/viewtopic.php?t=82 还原的发布历史。
+    // 起点 = 该版本发布日期：发布前不可能存在由该版本生成的录像。
+    // 终点 = 下一个新版本发布日 + 1 年：旧版本被新版本取代满一年后失效；末版 0.52.3 无后继，取“永久”。
+    //   这条“一年失效”的时效规则由本库维护者确定，论坛和排行榜都没有同类明文记载。公开资料只提供两点：
+    //   1. 各版本的发布日期，来自 t=82 的回帖时间与附件名（arbiter_0_XX_X.zip）；
+    //   2. 世界排行榜从未封禁任何 Arbiter 版本：https://minesweepergame.com/ranking-rules.php 至今仍把
+    //      Arbiter 0.52.3 列为官方版本，https://minesweepergame.com/clone-cheats.php 也没有 Arbiter 的封禁条目。
+    //   因此这里的“失效”只是版本更替后的时效，不是封禁；0.49.3 之前的 PRNG 多实例漏洞、0.50.1 被公开的内存
+    //   读取器针对，也只会加重人工复核（自 2012-12 起新纪录均须 3 名管理员审核，见 t=82 的 p1709）。
+    // 跳号版本（0.49.1、0.49.2、0.51、0.52.1）在论坛里没有任何发布记录，按不存在处理，即 0.48.5 以 0.49.3
+    // 为后继、0.50.1 以 0.52 为后继；0.49.5 有发布日期（2012-06-01），作为 0.49.4 的后继计入。
+    // 日期均取当日 00:00:00 UTC，只精确到日：论坛帖本身只记载到日。
     match software {
-        // 永久。Arbiter各子版本的时间范围可能不同，先按相同范围占位
-        "Arbiter 0.46.2" | "Arbiter 0.48.5" | "Arbiter 0.49.3" | "Arbiter 0.49.4"
-        | "Arbiter 0.49.6" | "Arbiter 0.50.1" | "Arbiter 0.52" | "Arbiter 0.52.2"
-        | "Arbiter 0.52.3" => Ok(("0".to_string(), "4102415999".to_string())),
+        // 起点：发布日期未见于论坛帖（0.46 系早于 0.47 debug 4 的 2009-09-28），保守取 0
+        // 终点：后继 0.47 final 于 2009-11-09 发布，`arbiter_0_47.zip`，满一年后失效
+        "Arbiter 0.46.2" => Ok(("0".to_string(), "1289260800".to_string())),
+        // 2010-11-22 发布（arbiter_0_48_5.zip，https://minesweepergame.com/forum/viewtopic.php?t=82&start=25）
+        // 终点：后继 0.49.3 于 2012-03-15 发布，满一年后失效
+        "Arbiter 0.48.5" => Ok(("1290384000".to_string(), "1363305600".to_string())),
+        // 2012-03-15 发布（arbiter_0_49_3.zip，同上；安全更新，修复 PRNG 多实例漏洞）
+        // 终点：后继 0.49.4 于 2012-04-16 发布，满一年后失效
+        "Arbiter 0.49.3" => Ok(("1331769600".to_string(), "1366070400".to_string())),
+        // 2012-04-16 发布（https://minesweepergame.com/forum/viewtopic.php?p=1245#p1245）
+        // 终点：后继 0.49.5 于 2012-06-01 发布（arbiter_0_49_5.zip，p1326），满一年后失效
+        "Arbiter 0.49.4" => Ok(("1334534400".to_string(), "1370044800".to_string())),
+        // 2013-03-30 发布（https://minesweepergame.com/forum/viewtopic.php?p=1636#p1636）
+        // 终点：后继 0.50.1 于 2013-10-01 发布，满一年后失效
+        "Arbiter 0.49.6" => Ok(("1364601600".to_string(), "1412121600".to_string())),
+        // 2013-10-01 发布（https://minesweepergame.com/forum/viewtopic.php?p=1747#p1747）
+        // 2013-10-23 起被公开的内存读取器针对，但这只加重复核，不改变时效
+        // 终点：后继 0.52 于 2013-12-09 发布，满一年后失效
+        "Arbiter 0.50.1" => Ok(("1380585600".to_string(), "1418083200".to_string())),
+        // 2013-12-09 发布（https://minesweepergame.com/forum/viewtopic.php?p=1773#p1773）
+        // 终点：后继 0.52.2 于 2013-12-28 发布，满一年后失效，即只有约 19 天的新版本空窗
+        "Arbiter 0.52" => Ok(("1386547200".to_string(), "1419724800".to_string())),
+        // 2013-12-28 发布（https://minesweepergame.com/forum/viewtopic.php?p=1782#p1782）
+        // 终点：后继 0.52.3 于 2014-06-12 发布，满一年后失效
+        "Arbiter 0.52.2" => Ok(("1388188800".to_string(), "1434067200".to_string())),
+        // 2014-06-12 发布（https://minesweepergame.com/forum/viewtopic.php?p=1888#p1888）
+        // 终点：此后 11 年无新版本发布，也没有后继，按永久处理
+        "Arbiter 0.52.3" => Ok(("1402531200".to_string(), "4102415999".to_string())),
         // 未确定。Minesweeper Clone的0.97与2007各版本，先按相同范围占位
         "Minesweeper Clone 0.97 beta" | "Minesweeper Clone 2007 release 1"
         | "Minesweeper Clone 2007 release 2" => Ok(("0".to_string(), "4102415999".to_string())),
         // 2023-04-24 00:00:00 前，发现影响公平性的漏洞失效
         "Viennasweeper" => Ok(("0".to_string(), "1682265600".to_string())),
+        // Vienna各版本时间范围待定，先按相同范围占位，待手动调整
+        "Vienna Minesweeper - Home Edition - Release 2.2"
+        | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0C"
+        | "Vienna Minesweeper - Release 4.0.0" | "Vienna Minesweeper - Release 5.0.0a2"
+        | "Vienna Minesweeper - Release 5.0.0b4" => {
+            Ok(("0".to_string(), "4102415999".to_string()))
+        }
         // 2024-07-26 00:00:00 发布，2026-03-03 00:00:00发现影响公平性的漏洞失效
         "元3.1.9" => Ok(("1721836800".to_string(), "1772467200".to_string())),
         // 2024-09-10 00:00:00 发布，2026-03-03 00:00:00发现影响公平性的漏洞失效

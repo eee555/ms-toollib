@@ -76,7 +76,9 @@ impl<T> BaseVideo<T> {
                 let now = Instant::now();
                 // return now.duration_since(self.game_start_instant).as_millis() as f64 / 1000.0;
                 let time_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
-                return (time_ms - self.game_start_ms) as f64 / 1000.0;
+                // time_ms 为截断取整、game_start_ms 为四舍五入取整，
+                // 进入 Playing 的首毫秒内前者可能比后者小 1，直接相减会导致 u32 下溢
+                return time_ms.saturating_sub(self.game_start_ms) as f64 / 1000.0;
             }
             GameBoardState::PreFlaging => {
                 let now = Instant::now();

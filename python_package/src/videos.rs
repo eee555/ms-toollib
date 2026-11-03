@@ -247,12 +247,12 @@ macro_rules! generate_video {
                 Ok(self.core.data.get_bbbv_solved().unwrap())
             }
             #[getter]
-            fn get_bbbv_solved_nf(&self) -> PyResult<usize> {
-                Ok(self.core.data.get_bbbv_solved_nf().unwrap())
+            fn get_bbbv_solved_left(&self) -> PyResult<usize> {
+                Ok(self.core.data.get_bbbv_solved_left().unwrap())
             }
             #[getter]
-            fn get_bbbv_solved_fl(&self) -> PyResult<usize> {
-                Ok(self.core.data.get_bbbv_solved_fl().unwrap())
+            fn get_bbbv_solved_chord(&self) -> PyResult<usize> {
+                Ok(self.core.data.get_bbbv_solved_chord().unwrap())
             }
             #[getter]
             fn get_lce(&self) -> PyResult<usize> {
@@ -293,6 +293,14 @@ macro_rules! generate_video {
             #[getter]
             fn get_path(&self) -> PyResult<f64> {
                 Ok(self.core.data.get_path())
+            }
+            #[getter]
+            fn get_c_path(&self) -> PyResult<f64> {
+                Ok(self.core.data.get_c_path())
+            }
+            #[getter]
+            fn get_e_path(&self) -> PyResult<f64> {
+                Ok(self.core.data.get_e_path())
             }
             #[getter]
             fn get_ce_s(&self) -> PyResult<f64> {

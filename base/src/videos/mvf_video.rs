@@ -552,13 +552,20 @@ impl MvfVideo {
             if c as char == '5' {
                 //Clone 0.97
                 self.data.offset += 46;
-                self.data.software = "0.97 beta".to_string();
+                self.data.software = "Minesweeper Clone 0.97 beta".to_string();
                 return self.read_097();
             } else if c as char == '6' || c as char == '7' {
                 //Clone 2006、2007。版本号从53开始，正式数据从71开始
                 self.data.offset = 53;
                 let len = self.data.get_u8()?;
-                self.data.software = self.data.get_unknown_encoding_string(len)?;
+                // 版本串形如“2007 release 1”，这里枚举录像包中出现的全部取值
+                let version = match self.data.get_unknown_encoding_string(len)?.as_str() {
+                    "2007 release 1" => "2007 release 1",
+                    "2007 release 2" => "2007 release 2",
+                    // 版本串未登记：直接报错
+                    _ => return Err(ErrReadVideoReason::InvalidParams),
+                };
+                self.data.software = format!("Minesweeper Clone {}", version);
                 self.data.offset = 71;
                 return self.read_2007();
             } else {

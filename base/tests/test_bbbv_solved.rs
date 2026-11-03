@@ -36,14 +36,14 @@ fn chord(video: &mut Video, cell: (usize, usize)) {
     action(video, "rr", cell);
 }
 
-fn assert_solved(video: &Video, nf: usize, fl: usize) {
+fn assert_solved(video: &Video, left_bbbv: usize, chord_bbbv: usize) {
     let board = &video.minesweeper_board;
-    assert_eq!((board.bbbv_solved_nf, board.bbbv_solved_fl), (nf, fl));
-    assert_eq!(board.get_bbbv_solved(), nf + fl);
+    assert_eq!((board.bbbv_solved_left, board.bbbv_solved_chord), (left_bbbv, chord_bbbv));
+    assert_eq!(board.get_bbbv_solved(), left_bbbv + chord_bbbv);
     if let Some(event) = video.video_action_state_recorder.last() {
         let params = &event.key_dynamic_params;
-        assert_eq!((params.bbbv_solved_nf, params.bbbv_solved_fl), (nf, fl));
-        assert_eq!(params.get_bbbv_solved(), nf + fl);
+        assert_eq!((params.bbbv_solved_left, params.bbbv_solved_chord), (left_bbbv, chord_bbbv));
+        assert_eq!(params.get_bbbv_solved(), left_bbbv + chord_bbbv);
     }
 }
 
@@ -73,11 +73,11 @@ fn mixed_video() -> Video {
 #[test]
 fn left_and_chord_solutions_are_counted_separately() {
     let video = mixed_video();
-    assert_eq!(video.get_bbbv_solved_nf().unwrap(), 4);
-    assert_eq!(video.get_bbbv_solved_fl().unwrap(), 4);
+    assert_eq!(video.get_bbbv_solved_left().unwrap(), 4);
+    assert_eq!(video.get_bbbv_solved_chord().unwrap(), 4);
     assert_eq!(video.get_bbbv_solved().unwrap(), video.static_params.bbbv);
-    assert_eq!(video.video_dynamic_params.bbbv_solved_nf, 4);
-    assert_eq!(video.video_dynamic_params.bbbv_solved_fl, 4);
+    assert_eq!(video.video_dynamic_params.bbbv_solved_left, 4);
+    assert_eq!(video.video_dynamic_params.bbbv_solved_chord, 4);
     assert_eq!(video.video_dynamic_params.get_bbbv_solved(), 8);
 }
 
@@ -118,7 +118,7 @@ fn partially_blocked_opening_is_credited_when_completed() {
 }
 
 #[test]
-fn losing_chord_still_credits_safe_cells_to_fl() {
+fn losing_chord_still_credits_safe_cells_to_chord() {
     let mut video = Video::new(numbered_board(), 24);
     left(&mut video, (0, 0));
     right(&mut video, (0, 1)); // 错旗使双击同时打开安全格(1,0)并触雷。
@@ -129,7 +129,7 @@ fn losing_chord_still_credits_safe_cells_to_fl() {
 }
 
 #[test]
-fn recursive_chords_credit_fl_even_without_manual_dce() {
+fn recursive_chords_credit_chord_even_without_manual_dce() {
     for mode in [11, 13] {
         let mut video = Video::new(numbered_board(), 24);
         video.set_mode(mode).unwrap();
@@ -148,8 +148,8 @@ fn recursive_chords_credit_fl_even_without_manual_dce() {
 fn reset_clears_both_counters() {
     let mut video = mixed_video();
     video.minesweeper_board.reset();
-    assert_eq!(video.minesweeper_board.bbbv_solved_nf, 0);
-    assert_eq!(video.minesweeper_board.bbbv_solved_fl, 0);
+    assert_eq!(video.minesweeper_board.bbbv_solved_left, 0);
+    assert_eq!(video.minesweeper_board.bbbv_solved_chord, 0);
     video.reset(3, 3, 24);
     video.set_board(numbered_board()).unwrap();
     assert_eq!(video.video_dynamic_params.get_bbbv_solved(), 0);
@@ -169,12 +169,12 @@ fn evf_roundtrip_and_seek_preserve_both_counters_and_total_metrics() {
     for (id, expected) in live.video_action_state_recorder.iter().enumerate().rev() {
         parsed.data.set_current_event_id(id).unwrap();
         assert_eq!(
-            parsed.data.get_bbbv_solved_nf().unwrap(),
-            expected.key_dynamic_params.bbbv_solved_nf
+            parsed.data.get_bbbv_solved_left().unwrap(),
+            expected.key_dynamic_params.bbbv_solved_left
         );
         assert_eq!(
-            parsed.data.get_bbbv_solved_fl().unwrap(),
-            expected.key_dynamic_params.bbbv_solved_fl
+            parsed.data.get_bbbv_solved_chord().unwrap(),
+            expected.key_dynamic_params.bbbv_solved_chord
         );
         assert_eq!(
             parsed.data.get_bbbv_solved().unwrap(),
@@ -202,8 +202,8 @@ fn evf_roundtrip_and_seek_preserve_both_counters_and_total_metrics() {
         });
     parsed.data.analyse();
     parsed.data.set_current_time(f64::INFINITY);
-    assert_eq!(parsed.data.get_bbbv_solved_nf().unwrap(), 4);
-    assert_eq!(parsed.data.get_bbbv_solved_fl().unwrap(), 4);
+    assert_eq!(parsed.data.get_bbbv_solved_left().unwrap(), 4);
+    assert_eq!(parsed.data.get_bbbv_solved_chord().unwrap(), 4);
     assert_eq!(parsed.data.get_bbbv_solved().unwrap(), 8);
 }
 

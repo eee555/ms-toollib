@@ -239,13 +239,13 @@ impl MinesweeperBoard {
     pub fn get_bbbv_solved(&self) -> u32 {
         self.core.get_bbbv_solved() as u32
     }
-    #[wasm_bindgen(getter = bbbv_solved_nf)]
-    pub fn get_bbbv_solved_nf(&self) -> u32 {
-        self.core.bbbv_solved_nf as u32
+    #[wasm_bindgen(getter = bbbv_solved_left)]
+    pub fn get_bbbv_solved_left(&self) -> u32 {
+        self.core.bbbv_solved_left as u32
     }
-    #[wasm_bindgen(getter = bbbv_solved_fl)]
-    pub fn get_bbbv_solved_fl(&self) -> u32 {
-        self.core.bbbv_solved_fl as u32
+    #[wasm_bindgen(getter = bbbv_solved_chord)]
+    pub fn get_bbbv_solved_chord(&self) -> u32 {
+        self.core.bbbv_solved_chord as u32
     }
     #[wasm_bindgen(getter = row)]
     pub fn get_row(&self) -> u32 {
@@ -320,13 +320,13 @@ impl KeyDynamicParams {
     pub fn get_bbbv_solved(&self) -> usize {
         self.core.get_bbbv_solved()
     }
-    #[wasm_bindgen(getter = bbbv_solved_nf)]
-    pub fn get_bbbv_solved_nf(&self) -> usize {
-        self.core.bbbv_solved_nf
+    #[wasm_bindgen(getter = bbbv_solved_left)]
+    pub fn get_bbbv_solved_left(&self) -> usize {
+        self.core.bbbv_solved_left
     }
-    #[wasm_bindgen(getter = bbbv_solved_fl)]
-    pub fn get_bbbv_solved_fl(&self) -> usize {
-        self.core.bbbv_solved_fl
+    #[wasm_bindgen(getter = bbbv_solved_chord)]
+    pub fn get_bbbv_solved_chord(&self) -> usize {
+        self.core.bbbv_solved_chord
     }
     #[wasm_bindgen(getter = op_solved)]
     pub fn get_op_solved(&self) -> usize {
@@ -549,6 +549,14 @@ impl VideoActionStateRecorder {
     #[wasm_bindgen(getter = path)]
     pub fn get_path(&self) -> f64 {
         self.core.path
+    }
+    #[wasm_bindgen(getter = c_path)]
+    pub fn get_c_path(&self) -> f64 {
+        self.core.c_path
+    }
+    #[wasm_bindgen(getter = e_path)]
+    pub fn get_e_path(&self) -> f64 {
+        self.core.e_path
     }
     #[wasm_bindgen(getter = mouse_state)]
     pub fn get_mouse_state(&self) -> usize {
@@ -782,13 +790,13 @@ macro_rules! generate_video {
                 pub fn get_bbbv_solved(&self) -> usize {
                     self.core.data.get_bbbv_solved().unwrap()
                 }
-                #[wasm_bindgen(getter = bbbv_solved_nf)]
-                pub fn get_bbbv_solved_nf(&self) -> usize {
-                    self.core.data.get_bbbv_solved_nf().unwrap()
+                #[wasm_bindgen(getter = bbbv_solved_left)]
+                pub fn get_bbbv_solved_left(&self) -> usize {
+                    self.core.data.get_bbbv_solved_left().unwrap()
                 }
-                #[wasm_bindgen(getter = bbbv_solved_fl)]
-                pub fn get_bbbv_solved_fl(&self) -> usize {
-                    self.core.data.get_bbbv_solved_fl().unwrap()
+                #[wasm_bindgen(getter = bbbv_solved_chord)]
+                pub fn get_bbbv_solved_chord(&self) -> usize {
+                    self.core.data.get_bbbv_solved_chord().unwrap()
                 }
                 #[wasm_bindgen(getter = lce)]
                 pub fn get_lce(&self) -> usize {
@@ -829,6 +837,14 @@ macro_rules! generate_video {
                 #[wasm_bindgen(getter = path)]
                 pub fn get_path(&self) -> f64 {
                     self.core.data.get_path()
+                }
+                #[wasm_bindgen(getter = c_path)]
+                pub fn get_c_path(&self) -> f64 {
+                    self.core.data.get_c_path()
+                }
+                #[wasm_bindgen(getter = e_path)]
+                pub fn get_e_path(&self) -> f64 {
+                    self.core.data.get_e_path()
                 }
                 #[wasm_bindgen(getter = ce_s)]
                 pub fn get_ce_s(&self) -> f64 {
@@ -1158,13 +1174,13 @@ impl BaseVideo {
     pub fn get_bbbv_solved(&self) -> usize {
         self.core.get_bbbv_solved().unwrap()
     }
-    #[wasm_bindgen(getter = bbbv_solved_nf)]
-    pub fn get_bbbv_solved_nf(&self) -> usize {
-        self.core.get_bbbv_solved_nf().unwrap()
+    #[wasm_bindgen(getter = bbbv_solved_left)]
+    pub fn get_bbbv_solved_left(&self) -> usize {
+        self.core.get_bbbv_solved_left().unwrap()
     }
-    #[wasm_bindgen(getter = bbbv_solved_fl)]
-    pub fn get_bbbv_solved_fl(&self) -> usize {
-        self.core.get_bbbv_solved_fl().unwrap()
+    #[wasm_bindgen(getter = bbbv_solved_chord)]
+    pub fn get_bbbv_solved_chord(&self) -> usize {
+        self.core.get_bbbv_solved_chord().unwrap()
     }
     #[wasm_bindgen(getter = lce)]
     pub fn get_lce(&self) -> usize {
@@ -1205,6 +1221,14 @@ impl BaseVideo {
     #[wasm_bindgen(getter = path)]
     pub fn get_path(&self) -> f64 {
         self.core.get_path()
+    }
+    #[wasm_bindgen(getter = c_path)]
+    pub fn get_c_path(&self) -> f64 {
+        self.core.get_c_path()
+    }
+    #[wasm_bindgen(getter = e_path)]
+    pub fn get_e_path(&self) -> f64 {
+        self.core.get_e_path()
     }
     #[wasm_bindgen(getter = ce_s)]
     pub fn get_ce_s(&self) -> f64 {

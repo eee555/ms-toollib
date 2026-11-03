@@ -76,7 +76,9 @@ impl<T> BaseVideo<T> {
                 let now = Instant::now();
                 // return now.duration_since(self.game_start_instant).as_millis() as f64 / 1000.0;
                 let time_ms = now.duration_since(self.video_start_instant).as_millis() as u32;
-                return (time_ms - self.game_start_ms) as f64 / 1000.0;
+                // time_ms 为截断取整、game_start_ms 为四舍五入取整，
+                // 进入 Playing 的首毫秒内前者可能比后者小 1，直接相减会导致 u32 下溢
+                return time_ms.saturating_sub(self.game_start_ms) as f64 / 1000.0;
             }
             GameBoardState::PreFlaging => {
                 let now = Instant::now();
@@ -518,6 +520,29 @@ impl<T> BaseVideo<T> {
             self.video_action_state_recorder.last().unwrap().path
         }
     }
+    /// 累计相邻有效点击的直线距离，按每格16像素归一化，不取整。
+    /// 有效点击指增加lce、rce或dce的事件，包括计入ce的预标雷。
+    /// 少于两次有效点击时为0；播放时返回当前事件的累计值。
+    pub fn get_c_path(&self) -> f64 {
+        if self.game_board_state == GameBoardState::Display {
+            self.video_action_state_recorder.get(self.current_event_id)
+        } else {
+            self.video_action_state_recorder.last()
+        }
+        .map_or(0.0, |event| event.c_path)
+    }
+
+    /// 累计相邻有效点击所在格子的欧氏距离，按每格16像素归一化，不取整。
+    /// 点击像素坐标先整除格子边长得到行列坐标；同格距离为0，相邻对角格为16*sqrt(2)。
+    pub fn get_e_path(&self) -> f64 {
+        if self.game_board_state == GameBoardState::Display {
+            self.video_action_state_recorder.get(self.current_event_id)
+        } else {
+            self.video_action_state_recorder.last()
+        }
+        .map_or(0.0, |event| event.e_path)
+    }
+
     pub fn get_etime(&self) -> Result<f64, ()> {
         let bbbv_solved = self.get_bbbv_solved()?;
         if self.game_board_state == GameBoardState::Display {
@@ -547,19 +572,19 @@ impl<T> BaseVideo<T> {
         }
         Ok(bbbv_solved as f64 / self.game_dynamic_params.rtime)
     }
-    /// 已解决的总3BV，等于bbbv_solved_nf + bbbv_solved_fl。
+    /// 已解决的总3BV，等于bbbv_solved_left + bbbv_solved_chord。
     pub fn get_bbbv_solved(&self) -> Result<usize, ()> {
         Ok(self.get_bbbv_solved_params()?.get_bbbv_solved())
     }
 
     /// 通过有效左击解决的3BV；播放时取当前事件，否则取结束时的快照。
-    pub fn get_bbbv_solved_nf(&self) -> Result<usize, ()> {
-        Ok(self.get_bbbv_solved_params()?.bbbv_solved_nf)
+    pub fn get_bbbv_solved_left(&self) -> Result<usize, ()> {
+        Ok(self.get_bbbv_solved_params()?.bbbv_solved_left)
     }
 
     /// 通过双击等其他方式解决的3BV，包括递归中的静默双击。
-    pub fn get_bbbv_solved_fl(&self) -> Result<usize, ()> {
-        Ok(self.get_bbbv_solved_params()?.bbbv_solved_fl)
+    pub fn get_bbbv_solved_chord(&self) -> Result<usize, ()> {
+        Ok(self.get_bbbv_solved_params()?.bbbv_solved_chord)
     }
 
     fn get_bbbv_solved_params(&self) -> Result<&KeyDynamicParams, ()> {

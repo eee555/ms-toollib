@@ -55,6 +55,10 @@ extern "C" {  // 对于C++，使用C名称修饰
 	double  base_video_get_thrp(void* ptr);
 	double  base_video_get_ioe(void* ptr);
 	double  base_video_get_path(void* ptr);
+	// Effective-click distance in pixels normalized to 16 pixels per cell.
+	double  base_video_get_c_path(void* ptr);
+	// Effective-click distance between cell coordinates, normalized to 16 pixels per cell.
+	double  base_video_get_e_path(void* ptr);
 	double  base_video_get_stnb(void* ptr);
 	size_t  base_video_get_mouse_state(void* ptr);
 	size_t  base_video_get_current_event_id(void* ptr);

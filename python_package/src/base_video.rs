@@ -373,6 +373,14 @@ impl PyVideoActionStateRecorder {
         Ok(self.core.path)
     }
     #[getter]
+    fn get_c_path(&self) -> PyResult<f64> {
+        Ok(self.core.c_path)
+    }
+    #[getter]
+    fn get_e_path(&self) -> PyResult<f64> {
+        Ok(self.core.e_path)
+    }
+    #[getter]
     fn get_mouse_state(&self) -> PyResult<usize> {
         match self.core.mouse_state {
             MouseState::UpUp => Ok(1),
@@ -683,6 +691,14 @@ impl PyBaseVideo {
     #[getter]
     fn get_path(&self) -> PyResult<f64> {
         Ok(self.core.get_path())
+    }
+    #[getter]
+    fn get_c_path(&self) -> PyResult<f64> {
+        Ok(self.core.get_c_path())
+    }
+    #[getter]
+    fn get_e_path(&self) -> PyResult<f64> {
+        Ok(self.core.get_e_path())
     }
     #[getter]
     fn get_ce_s(&self) -> PyResult<f64> {

@@ -513,6 +513,10 @@ pub extern "C" fn base_video_get_ioe(ptr: *mut c_void) -> f64 { bv!(ptr).get_ioe
 #[no_mangle]
 pub extern "C" fn base_video_get_path(ptr: *mut c_void) -> f64 { bv!(ptr).get_path() }
 #[no_mangle]
+pub extern "C" fn base_video_get_c_path(ptr: *mut c_void) -> f64 { bv!(ptr).get_c_path() }
+#[no_mangle]
+pub extern "C" fn base_video_get_e_path(ptr: *mut c_void) -> f64 { bv!(ptr).get_e_path() }
+#[no_mangle]
 pub extern "C" fn base_video_get_stnb(ptr: *mut c_void) -> f64 { bv!(ptr).get_stnb().unwrap_or(0.0) }
 #[no_mangle]
 pub extern "C" fn base_video_get_mouse_state(ptr: *mut c_void) -> usize { bv!(ptr).get_mouse_state() }

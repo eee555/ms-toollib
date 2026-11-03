@@ -31,6 +31,12 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(self.surface["cal_rzini"], "(board: list[list[int]], loop_count: int=100) -> int")
         self.assertEqual(self.surface["BaseVideo.__init__"], "(self, board: list[list[int]], cell_pixel_size: int=16) -> None")
         self.assertEqual(self.surface["Board.hzini"], "attribute: int")
+        checked_in = api_surface((DIRECTORY / "ms_toollib.pyi").read_text(encoding="utf-8"))
+        for name in ("BaseVideo", "AvfVideo", "EvfVideo", "MvfVideo", "RmvVideo", "VideoActionStateRecorder"):
+            self.assertEqual(self.surface[f"{name}.c_path"], "attribute: float")
+            self.assertEqual(self.surface[f"{name}.e_path"], "attribute: float")
+            self.assertEqual(checked_in[f"{name}.c_path"], self.surface[f"{name}.c_path"])
+            self.assertEqual(checked_in[f"{name}.e_path"], self.surface[f"{name}.e_path"])
 
     def test_macro_classes(self) -> None:
         for name in ("AvfVideo", "EvfVideo", "MvfVideo", "RmvVideo"):

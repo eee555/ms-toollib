@@ -102,6 +102,10 @@ pub struct VideoActionStateRecorder {
     /// 指标状态(该活动完成后的、后验的), mv也会记录，浪费了空间
     pub key_dynamic_params: KeyDynamicParams,
     pub path: f64,
+    /// 相邻有效点击的像素直线距离累计，折算到每格16像素；有效点击以ce增长为准。
+    pub c_path: f64,
+    /// 相邻有效点击所在格子的欧氏距离累计，折算到每格16像素。
+    pub e_path: f64,
 }
 
 impl Default for VideoActionStateRecorder {
@@ -116,6 +120,8 @@ impl Default for VideoActionStateRecorder {
             mouse_state: MouseState::Undefined,
             key_dynamic_params: KeyDynamicParams::default(),
             path: 0.0,
+            c_path: 0.0,
+            e_path: 0.0,
         }
     }
 }
@@ -218,6 +224,10 @@ pub struct GameDynamicParams {
     pub flag_s: f64,
     /// 四舍五入折算到16像素边长，最终路径长度
     pub path: f64,
+    /// 相邻有效点击的直线距离累计，折算到每格16像素，不取整。
+    pub c_path: f64,
+    /// 相邻有效点击所在格子的欧氏距离累计，折算到每格16像素，不取整。
+    pub e_path: f64,
 }
 
 impl Default for GameDynamicParams {
@@ -236,6 +246,8 @@ impl Default for GameDynamicParams {
             cl_s: 0.0,
             flag_s: 0.0,
             path: 0.0,
+            c_path: 0.0,
+            e_path: 0.0,
         }
     }
 }

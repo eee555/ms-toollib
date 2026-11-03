@@ -287,6 +287,14 @@ macro_rules! generate_video {
                 Ok(self.core.data.get_path())
             }
             #[getter]
+            fn get_c_path(&self) -> PyResult<f64> {
+                Ok(self.core.data.get_c_path())
+            }
+            #[getter]
+            fn get_e_path(&self) -> PyResult<f64> {
+                Ok(self.core.data.get_e_path())
+            }
+            #[getter]
             fn get_ce_s(&self) -> PyResult<f64> {
                 Ok(self.core.data.get_ce_s().unwrap())
             }

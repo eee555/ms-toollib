@@ -255,6 +255,8 @@ JNIEXPORT jdouble JNICALL Java_ms_1toollib_BaseVideo_nativeGetCorr(JNIEnv *env, 
 JNIEXPORT jdouble JNICALL Java_ms_1toollib_BaseVideo_nativeGetThrp(JNIEnv *env, jclass cls, jlong ptr) { return (jdouble)base_video_get_thrp((void*)ptr); }
 JNIEXPORT jdouble JNICALL Java_ms_1toollib_BaseVideo_nativeGetIoe(JNIEnv *env, jclass cls, jlong ptr) { return (jdouble)base_video_get_ioe((void*)ptr); }
 JNIEXPORT jdouble JNICALL Java_ms_1toollib_BaseVideo_nativeGetPath(JNIEnv *env, jclass cls, jlong ptr) { return (jdouble)base_video_get_path((void*)ptr); }
+JNIEXPORT jdouble JNICALL Java_ms_1toollib_BaseVideo_nativeGetCPath(JNIEnv *env, jclass cls, jlong ptr) { return (jdouble)base_video_get_c_path((void*)ptr); }
+JNIEXPORT jdouble JNICALL Java_ms_1toollib_BaseVideo_nativeGetEPath(JNIEnv *env, jclass cls, jlong ptr) { return (jdouble)base_video_get_e_path((void*)ptr); }
 JNIEXPORT jdouble JNICALL Java_ms_1toollib_BaseVideo_nativeGetStnb(JNIEnv *env, jclass cls, jlong ptr) { return (jdouble)base_video_get_stnb((void*)ptr); }
 JNIEXPORT jint JNICALL Java_ms_1toollib_BaseVideo_nativeGetMouseState(JNIEnv *env, jclass cls, jlong ptr) { return (jint)base_video_get_mouse_state((void*)ptr); }
 JNIEXPORT jint JNICALL Java_ms_1toollib_BaseVideo_nativeGetCurrentEventId(JNIEnv *env, jclass cls, jlong ptr) { return (jint)base_video_get_current_event_id((void*)ptr); }

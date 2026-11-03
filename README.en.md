@@ -175,6 +175,26 @@ Python >= 3.8, <= 3.13:
 | **OCR** | Image → board state (`rs` or `py` feature) |
 | **Analysis** | Efficiency, pluck, jump detection |
 
+### Effective-click path metrics
+
+`ce = lce + rce + dce`. An effective click is a mouse event that increases one of these counters:
+opening a safe cell, flagging a particular mine correctly for the first time, or a useful chord
+(including a chord that hits a mine). Moves, ineffective clicks, wrong flags, unflags, repeated flags
+on the same mine, and automatic recursive actions that do not increase ce are excluded.
+Preflags that contribute to this game's ce are included. Cancelling all preflags back to Ready or
+resetting the game clears both metrics.
+
+Let effective-click pixel coordinates be `p_i = (x_i, y_i)`, the cell size be `s` pixels, and
+cell coordinates be `q_i = (floor(x_i / s), floor(y_i / s))`:
+
+- `c_path = (16 / s) × Σ ‖p_i − p_(i−1)‖₂`: cumulative straight-line click distance, using the same scale as `path`.
+- `e_path = 16 × Σ ‖q_i − q_(i−1)‖₂`: cumulative Euclidean distance between cell coordinates, normalized to 16 pixels per cell.
+  Clicks in the same cell contribute 0; orthogonally adjacent cells contribute 16 and diagonally adjacent cells contribute `16√2`.
+
+Both metrics are 0 before the second effective click and retain floating-point precision.
+Live games return the latest cumulative value; replay playback returns the value at the current event.
+Rust exposes `get_c_path()` / `get_e_path()`; Python and JavaScript expose read-only `c_path` / `e_path` properties.
+
 ---
 
 ## Build Dependencies

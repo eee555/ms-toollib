@@ -175,41 +175,6 @@ Python >= 3.8, <= 3.13:
 | **OCR** | Image → board state (`rs` or `py` feature) |
 | **Analysis** | Efficiency, pluck, jump detection |
 
-### Solved 3BV
-
-- `bbbv_solved_left`: 3BV solved by effective left clicks (`lce` / `left_ce`).
-- `bbbv_solved_chord`: 3BV solved by chords (`dce` / `double_ce`) and other actions, including silent recursive chords.
-
-Attribution follows the action that solves each 3BV unit. Flags, unflags, and ineffective actions
-do not contribute. An opening is credited to the action that fully opens it; opening its border
-numbers alone does not contribute 3BV. The state machine, event snapshots, and final analysis
-store both counters. Reset clears them; end-of-game rescoring after a board change recalculates them.
-
-The `bbbv_solved` accessor remains available as `bbbv_solved_left + bbbv_solved_chord`.
-Speed and efficiency metrics continue to use this total. Rust callers accessing the old state field
-must use the two new fields or call `get_bbbv_solved()`. Python and JavaScript expose read-only
-properties; during playback they return the cumulative values at the current event.
-
-### Effective-click path metrics
-
-`ce = lce + rce + dce`. An effective click is a mouse event that increases one of these counters:
-opening a safe cell, flagging a particular mine correctly for the first time, or a useful chord
-(including a chord that hits a mine). Moves, ineffective clicks, wrong flags, unflags, repeated flags
-on the same mine, and automatic recursive actions that do not increase ce are excluded.
-Preflags that contribute to this game's ce are included. Cancelling all preflags back to Ready or
-resetting the game clears both metrics.
-
-Let effective-click pixel coordinates be `p_i = (x_i, y_i)`, the cell size be `s` pixels, and
-cell coordinates be `q_i = (floor(x_i / s), floor(y_i / s))`:
-
-- `c_path = (16 / s) × Σ ‖p_i − p_(i−1)‖₂`: cumulative straight-line click distance, using the same scale as `path`.
-- `e_path = 16 × Σ ‖q_i − q_(i−1)‖₂`: cumulative Euclidean distance between cell coordinates, normalized to 16 pixels per cell.
-  Clicks in the same cell contribute 0; orthogonally adjacent cells contribute 16 and diagonally adjacent cells contribute `16√2`.
-
-Both metrics are 0 before the second effective click and retain floating-point precision.
-Live games return the latest cumulative value; replay playback returns the value at the current event.
-Rust exposes `get_c_path()` / `get_e_path()`; Python and JavaScript expose read-only `c_path` / `e_path` properties.
-
 ---
 
 ## Build Dependencies

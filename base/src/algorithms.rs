@@ -806,7 +806,8 @@ pub fn try_solve(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> (Vec<Vec<i32>>,
             if ans.0.is_empty() && ans.1.is_empty() {
                 let ans = solve_enumerate(&a_mats, &xs, &bs);
                 if ans.0.is_empty() && ans.1.is_empty() {
-                    return (minesweeper_board.game_board, minesweeper_board.bbbv_solved);
+                    let bbbv_solved = minesweeper_board.get_bbbv_solved();
+                    return (minesweeper_board.game_board, bbbv_solved);
                 } else {
                     not_mine = ans.0
                 }
@@ -828,7 +829,8 @@ pub fn try_solve(board: &Vec<Vec<i32>>, x0: usize, y0: usize) -> (Vec<Vec<i32>>,
         }
         let _ = minesweeper_board.step_flow(&operation);
         if minesweeper_board.game_board_state == GameBoardState::Win {
-            return (minesweeper_board.game_board, minesweeper_board.bbbv_solved);
+            let bbbv_solved = minesweeper_board.get_bbbv_solved();
+            return (minesweeper_board.game_board, bbbv_solved);
         }
     }
 }

@@ -68,7 +68,7 @@ fn minesweeper_board_works() {
         ]
     );
     assert_eq!(my_board.game_board_state, GameBoardState::Playing);
-    assert_eq!(my_board.bbbv_solved, 1);
+    assert_eq!(my_board.get_bbbv_solved(), 1);
 }
 
 #[test]
@@ -1412,7 +1412,7 @@ fn base_video_works_2_win() {
         .unwrap();
 
     println!("game_board_state:{:?}", my_board.game_board_state);
-    println!("bbbv_solved:{:?}", my_board.bbbv_solved);
+    println!("bbbv_solved:{:?}", my_board.get_bbbv_solved());
     println!("game_board:{:?}", my_board.game_board);
 
     //     let mut video = BaseVideo::<Vec<Vec<i32>>>::new_before_game(board, 27);

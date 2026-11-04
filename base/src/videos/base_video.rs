@@ -366,6 +366,9 @@ impl BaseVideo<Vec<Vec<i32>>> {
             let mut effective_click_pos = None;
             // 控制svi的生命周期
             let svi = &mut self.video_action_state_recorder[ide];
+            // 游戏状态事件也保留已经解决的3BV。
+            svi.key_dynamic_params.bbbv_solved_left = b.bbbv_solved_left;
+            svi.key_dynamic_params.bbbv_solved_chord = b.bbbv_solved_chord;
             // 非鼠标事件和无效操作也保留已经累计的距离。
             svi.c_path = self.game_dynamic_params.c_path;
             svi.e_path = self.game_dynamic_params.e_path;
@@ -382,7 +385,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
                     //     b.left,
                     //     b.right,
                     //     b.double,
-                    //     b.bbbv_solved
+                    //     b.get_bbbv_solved()
                     // );
                     let u_level = b
                         .step(
@@ -412,7 +415,8 @@ impl BaseVideo<Vec<Vec<i32>>> {
                 svi.mouse_state = b.mouse_state.clone();
                 svi.key_dynamic_params.left = b.left;
                 svi.key_dynamic_params.right = b.right;
-                svi.key_dynamic_params.bbbv_solved = b.bbbv_solved;
+                svi.key_dynamic_params.bbbv_solved_left = b.bbbv_solved_left;
+                svi.key_dynamic_params.bbbv_solved_chord = b.bbbv_solved_chord;
                 svi.key_dynamic_params.double = b.double;
                 svi.key_dynamic_params.lce = b.lce;
                 svi.key_dynamic_params.rce = b.rce;
@@ -478,8 +482,9 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.game_dynamic_params.left_s = b.left as f64 / rtime;
         self.game_dynamic_params.right = b.right;
         self.game_dynamic_params.right_s = b.right as f64 / rtime;
-        // println!("---{:?}", b.bbbv_solved);
-        self.video_dynamic_params.bbbv_solved = b.bbbv_solved;
+        // println!("---{:?}", b.get_bbbv_solved());
+        self.video_dynamic_params.bbbv_solved_left = b.bbbv_solved_left;
+        self.video_dynamic_params.bbbv_solved_chord = b.bbbv_solved_chord;
         self.video_dynamic_params.lce = b.lce;
         self.video_dynamic_params.rce = b.rce;
         self.video_dynamic_params.dce = b.dce;
@@ -493,18 +498,18 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.video_dynamic_params.rqp = rtime * rtime / bbbv;
         if self.height == 8 && self.width == 8 && self.mine_num == 10 {
             self.video_dynamic_params.stnb =
-                36.0 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
+                36.0 / (rtime.powf(1.7) / bbbv) * (b.get_bbbv_solved() as f64 / bbbv).powf(0.5);
         } else if self.height == 16 && self.width == 16 && self.mine_num == 40 {
             self.video_dynamic_params.stnb =
-                162.0 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
+                162.0 / (rtime.powf(1.7) / bbbv) * (b.get_bbbv_solved() as f64 / bbbv).powf(0.5);
         } else if self.height == 16 && self.width == 30 && self.mine_num == 99 {
             self.video_dynamic_params.stnb =
-                435.0 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
+                435.0 / (rtime.powf(1.7) / bbbv) * (b.get_bbbv_solved() as f64 / bbbv).powf(0.5);
         } // 凡自定义的stnb都等于0
-        self.video_dynamic_params.ioe = b.bbbv_solved as f64 / self.game_dynamic_params.cl as f64;
+        self.video_dynamic_params.ioe = b.get_bbbv_solved() as f64 / self.game_dynamic_params.cl as f64;
         self.video_dynamic_params.corr =
             (b.lce + b.rce + b.dce) as f64 / self.game_dynamic_params.cl as f64;
-        self.video_dynamic_params.thrp = b.bbbv_solved as f64 / (b.lce + b.rce + b.dce) as f64;
+        self.video_dynamic_params.thrp = b.get_bbbv_solved() as f64 / (b.lce + b.rce + b.dce) as f64;
         // 最后，计算静态指标
         self.cal_static_params();
     }
@@ -1059,7 +1064,8 @@ impl<T> BaseVideo<T> {
                     rce: self.minesweeper_board.rce,
                     dce: self.minesweeper_board.dce,
                     flag: self.minesweeper_board.flag,
-                    bbbv_solved: self.minesweeper_board.bbbv_solved,
+                    bbbv_solved_left: self.minesweeper_board.bbbv_solved_left,
+                    bbbv_solved_chord: self.minesweeper_board.bbbv_solved_chord,
                     op_solved: 0,
                     isl_solved: 0,
                     pluck: f64::NAN,
@@ -1177,6 +1183,10 @@ impl<T> BaseVideo<T> {
                 }
                 self.video_action_state_recorder[ide].c_path = self.game_dynamic_params.c_path;
                 self.video_action_state_recorder[ide].e_path = self.game_dynamic_params.e_path;
+                // 换盘重算时，事件快照里的已解决3BV也要跟着重新累计。
+                let params = &mut self.video_action_state_recorder[ide].key_dynamic_params;
+                params.bbbv_solved_left = self.minesweeper_board.bbbv_solved_left;
+                params.bbbv_solved_chord = self.minesweeper_board.bbbv_solved_chord;
             }
             // 可猜模式中，假如局面发生过修改，且以点脸等reset方式结束游戏，就没有最后一步鼠标操作
             if let Some(mouse_e) = last_mouse_event {
@@ -1203,11 +1213,13 @@ impl<T> BaseVideo<T> {
         self.game_dynamic_params.rtime_ms = t_ms;
         if self.game_board_state == GameBoardState::Loss {
             self.video_dynamic_params.etime =
-                t / self.minesweeper_board.bbbv_solved as f64 * self.static_params.bbbv as f64;
+                t / self.minesweeper_board.get_bbbv_solved() as f64 * self.static_params.bbbv as f64;
         } else {
             self.video_dynamic_params.etime = t;
         }
 
+        self.video_dynamic_params.bbbv_solved_left = self.minesweeper_board.bbbv_solved_left;
+        self.video_dynamic_params.bbbv_solved_chord = self.minesweeper_board.bbbv_solved_chord;
         self.game_dynamic_params.left = self.minesweeper_board.left;
         self.game_dynamic_params.right = self.minesweeper_board.right;
         self.game_dynamic_params.double = self.minesweeper_board.double;

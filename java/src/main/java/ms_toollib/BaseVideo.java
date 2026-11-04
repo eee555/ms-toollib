@@ -16,6 +16,8 @@ public class BaseVideo {
     public int getCl() { return nativeGetCl(nativePtr); }
     public int getFlag() { return nativeGetFlag(nativePtr); }
     public int getBbbvSolved() { return nativeGetBbbvSolved(nativePtr); }
+    public int getBbbvSolvedLeft() { return nativeGetBbbvSolvedLeft(nativePtr); }
+    public int getBbbvSolvedChord() { return nativeGetBbbvSolvedChord(nativePtr); }
     public int getCe() { return nativeGetCe(nativePtr); }
     public double getCorr() { return nativeGetCorr(nativePtr); }
     public double getThrp() { return nativeGetThrp(nativePtr); }
@@ -56,6 +58,8 @@ public class BaseVideo {
     static native int nativeGetCl(long ptr);
     static native int nativeGetFlag(long ptr);
     static native int nativeGetBbbvSolved(long ptr);
+    static native int nativeGetBbbvSolvedLeft(long ptr);
+    static native int nativeGetBbbvSolvedChord(long ptr);
     static native int nativeGetCe(long ptr);
     static native double nativeGetCorr(long ptr);
     static native double nativeGetThrp(long ptr);

@@ -101,13 +101,13 @@ pub(super) fn analyse<T>(video: &mut BaseVideo<T>, failure_pluck: f64) {
             let solved = if is_mouse {
                 record
                     .key_dynamic_params
-                    .bbbv_solved
+                    .get_bbbv_solved()
                     .saturating_sub(previous_solved)
             } else {
                 0
             };
             if is_mouse {
-                previous_solved = record.key_dynamic_params.bbbv_solved;
+                previous_solved = record.key_dynamic_params.get_bbbv_solved();
             }
             let safety = if first_click {
                 1.0

@@ -31,6 +31,21 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(self.surface["cal_rzini"], "(board: list[list[int]], loop_count: int=100) -> int")
         self.assertEqual(self.surface["BaseVideo.__init__"], "(self, board: list[list[int]], cell_pixel_size: int=16) -> None")
         self.assertEqual(self.surface["Board.hzini"], "attribute: int")
+        checked_in = api_surface((DIRECTORY / "ms_toollib.pyi").read_text(encoding="utf-8"))
+        for name in ("BaseVideo", "AvfVideo", "EvfVideo", "MvfVideo", "RmvVideo", "VideoActionStateRecorder"):
+            self.assertEqual(self.surface[f"{name}.c_path"], "attribute: float")
+            self.assertEqual(self.surface[f"{name}.e_path"], "attribute: float")
+            self.assertEqual(checked_in[f"{name}.c_path"], self.surface[f"{name}.c_path"])
+            self.assertEqual(checked_in[f"{name}.e_path"], self.surface[f"{name}.e_path"])
+
+    def test_split_bbbv_solved_properties(self) -> None:
+        checked_in = api_surface((DIRECTORY / "ms_toollib.pyi").read_text(encoding="utf-8"))
+        for name in ("MinesweeperBoard", "SafeMinesweeperBoard", "KeyDynamicParams", "BaseVideo",
+                     "AvfVideo", "EvfVideo", "MvfVideo", "RmvVideo"):
+            for attribute in ("bbbv_solved", "bbbv_solved_left", "bbbv_solved_chord"):
+                key = f"{name}.{attribute}"
+                self.assertEqual(self.surface[key], "attribute: int")
+                self.assertEqual(checked_in[key], self.surface[key])
 
     def test_pluck_related_properties(self) -> None:
         checked_in = api_surface((DIRECTORY / "ms_toollib.pyi").read_text(encoding="utf-8"))

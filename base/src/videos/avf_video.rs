@@ -117,9 +117,9 @@ impl NewSomeVideo2<Vec<u8>, &str> for AvfVideo {
 
 impl AvfVideo {
     pub fn parse(&mut self) -> Result<(), ErrReadVideoReason> {
-        // 按源码，第一位是版本号，0.52.3是34
-        match self.data.get_u8() {
-            Ok(_) => {}
+        // 首位是次版本号，如0.46的录像为46、0.52为52
+        let ver = match self.data.get_u8() {
+            Ok(v) => v,
             Err(_) => return Err(ErrReadVideoReason::FileIsEmpty),
         };
         // 按源码，该四位全是随机数
@@ -168,43 +168,46 @@ impl AvfVideo {
                 }
             }
         }
-        // 动态的全局校验过程，不管。目的是读取country。
-        let mut t = 0;
-        for x in 0..self.data.width {
-            for y in 0..self.data.height {
-                let a2res = match self.data.board[y][x] {
-                    -1 => 10,
-                    e @ _ => e as usize + 1,
-                };
-                t += a2res * (x + x * y);
+        // 0.47之前的版本没有这个校验段，也没有国家字段，直接去找时间戳
+        if ver >= 47 {
+            // 动态的全局校验过程，不管。目的是读取country。
+            let mut t = 0;
+            for x in 0..self.data.width {
+                for y in 0..self.data.height {
+                    let a2res = match self.data.board[y][x] {
+                        -1 => 10,
+                        e @ _ => e as usize + 1,
+                    };
+                    t += a2res * (x + x * y);
+                }
             }
-        }
-        let s = t.to_string(); // 将 t 转换为字符串
-        let mut s1 = String::new(); // 初始化 s1 为空字符串
+            let s = t.to_string(); // 将 t 转换为字符串
+            let mut s1 = String::new(); // 初始化 s1 为空字符串
 
-        // 遍历 s 中的每个字符
-        for c in s.chars() {
-            let new_char = (c as u8 - 45) as char; // 将字符的 ASCII 码值减去 45 并转换回字符
-            s1.push(new_char); // 将变换后的字符添加到 s1 中
+            // 遍历 s 中的每个字符
+            for c in s.chars() {
+                let new_char = (c as u8 - 45) as char; // 将字符的 ASCII 码值减去 45 并转换回字符
+                s1.push(new_char); // 将变换后的字符添加到 s1 中
+            }
+            for _ in 0..s1.to_string().len() + 4 {
+                self.data.get_char()?;
+            }
+            // 中国8，英格兰10， 法国12，美国41
+            // print!("{:?}, ", self.data.get_u8()?);
+            // https://www.qqxiuzi.cn/zh/region-codes.htm
+            self.data.country = match self.data.get_u8()? {
+                8 | 37 => "CN".to_string(),
+                10 => "GB".to_string(), // 英格兰
+                12 => "FR".to_string(),
+                13 => "DE".to_string(),
+                23 => "KR".to_string(),
+                29 => "PL".to_string(),
+                31 => "RU".to_string(),
+                41 => "US".to_string(),
+                69 => "JP".to_string(),
+                _ => "XX".to_string(),
+            };
         }
-        for _ in 0..s1.to_string().len() + 4 {
-            self.data.get_char()?;
-        }
-        // 中国8，英格兰10， 法国12，美国41
-        // print!("{:?}, ", self.data.get_u8()?);
-        // https://www.qqxiuzi.cn/zh/region-codes.htm
-        self.data.country = match self.data.get_u8()? {
-            8 | 37 => "CN".to_string(),
-            10 => "GB".to_string(), // 英格兰
-            12 => "FR".to_string(),
-            13 => "DE".to_string(),
-            23 => "KR".to_string(),
-            29 => "PL".to_string(),
-            31 => "RU".to_string(),
-            41 => "US".to_string(),
-            69 => "JP".to_string(),
-            _ => "XX".to_string(),
-        };
 
         let mut buffer: [char; 5] = ['\0'; 5];
 
@@ -289,8 +292,10 @@ impl AvfVideo {
             buffer[0] = buffer[1];
             buffer[1] = self.data.get_char()?;
         }
+        // 0.46及更早的版本此处是“3BV/已解3BV”，例如“154/154”，只取前一个
         let s = self.data.get_utf8_c_string('T')?;
-        self.data.static_params.bbbv = match s.parse() {
+        let bbbv_str = s.split('/').next().unwrap_or("").trim().to_string();
+        self.data.static_params.bbbv = match bbbv_str.parse() {
             Ok(v) => v,
             Err(_) => return Err(ErrReadVideoReason::InvalidParams),
         };
@@ -301,13 +306,52 @@ impl AvfVideo {
             Err(_) => return Err(ErrReadVideoReason::InvalidParams),
         };
         let mut buffer = [0u8; 8];
-        while buffer[2] != 1 || buffer[1] > 1 {
-            buffer[0] = buffer[1];
-            buffer[1] = buffer[2];
-            buffer[2] = self.data.get_u8()?;
-        }
-        for i in 3..8 {
-            buffer[i] = self.data.get_u8()?;
+        if ver < 47 {
+            // 老版本事件区前的填充字节数不固定（常见5个或6个），
+            // 用“整段事件流的鼠标编码是否合法”来选出正确的对齐位置
+            let start = self.data.offset;
+            let mut best_skip = 0usize;
+            let mut best_count = 0usize;
+            let mut best_ended = false;
+            {
+                let raw = self.data.raw_data();
+                for skip in 0..=24usize {
+                    let mut pos = start + skip;
+                    let mut count = 0usize;
+                    let mut ended = false;
+                    while pos + 8 <= raw.len() {
+                        let b = &raw[pos..pos + 8];
+                        if b[6] == 0 && b[2] == 0 {
+                            // 终止事件
+                            ended = true;
+                            break;
+                        }
+                        if !matches!(b[0], 1 | 3 | 5 | 9 | 11 | 17 | 21 | 33 | 65 | 145 | 193) {
+                            break;
+                        }
+                        count += 1;
+                        pos += 8;
+                    }
+                    if count > best_count || (count == best_count && ended && !best_ended) {
+                        best_count = count;
+                        best_ended = ended;
+                        best_skip = skip;
+                    }
+                }
+            }
+            self.data.offset = start + best_skip;
+            for i in 0..8 {
+                buffer[i] = self.data.get_u8()?;
+            }
+        } else {
+            while buffer[2] != 1 || buffer[1] > 1 {
+                buffer[0] = buffer[1];
+                buffer[1] = buffer[2];
+                buffer[2] = self.data.get_u8()?;
+            }
+            for i in 3..8 {
+                buffer[i] = self.data.get_u8()?;
+            }
         }
         loop {
             self.data
@@ -362,16 +406,65 @@ impl AvfVideo {
                 self.data.set_rtime(_time_from_header).unwrap();
             }
         }
-        // 标识符
-        while self.data.get_char()? != 'S' {}
-        while self.data.get_char()? != 'k' {}
-        while self.data.get_char()? != 'i' {}
-        while self.data.get_char()? != 'n' {}
-        while self.data.get_char()? != ':' {}
-        while self.data.get_char()? != '\r' {}
-        self.data.player_identifier = self.data.get_unknown_encoding_c_string('\r')?;
-        self.data.software = "Arbiter".to_string();
+        if ver >= 47 {
+            // 标识符
+            while self.data.get_char()? != 'S' {}
+            while self.data.get_char()? != 'k' {}
+            while self.data.get_char()? != 'i' {}
+            while self.data.get_char()? != 'n' {}
+            while self.data.get_char()? != ':' {}
+            while self.data.get_char()? != '\r' {}
+            self.data.player_identifier = self.data.get_unknown_encoding_c_string('\r')?;
+        } else {
+            // 0.47之前的录像尾部没有Realtime、Skin字段，结构为“cs=”+校验和+“\r”+玩家名+“\r”
+            let mut buffer = [0u8; 3];
+            while !(buffer[0] == b'c' && buffer[1] == b's' && buffer[2] == b'=') {
+                buffer[0] = buffer[1];
+                buffer[1] = buffer[2];
+                buffer[2] = self.data.get_u8()?;
+            }
+            // 跳过“cs=”后的16字节校验和和换行，再读玩家名
+            for _ in 0..17 {
+                self.data.get_u8()?;
+            }
+            self.data.player_identifier = self.data.get_unknown_encoding_c_string('\r')?;
+        }
+        // 软件名+版本号。这里枚举Arbiter所有合法版本号（与录像包中Program串的取值一一对应）
+        let version = match self.program_version().as_str() {
+            "0.46.2" => "0.46.2",
+            "0.48.5" => "0.48.5",
+            "0.49.3" => "0.49.3",
+            "0.49.4" => "0.49.4",
+            "0.49.6" => "0.49.6",
+            "0.50.1" => "0.50.1",
+            "0.52" => "0.52",
+            "0.52.2" => "0.52.2",
+            "0.52.3" => "0.52.3",
+            // 版本未登记：直接报错，防止假冒录像
+            _ => return Err(ErrReadVideoReason::InvalidParams),
+        };
+        self.data.software = format!("Arbiter {}", version);
         self.data.can_analyse = true;
         Ok(())
+    }
+
+    /// 按固定位置读取尾部Program串中的版本号。格式严格为“Minesweeper Arbiter X.Y[.Z]. Copyright”，
+    /// 位置或格式不符直接panic，不做任何回退（安全模型要求）。
+    fn program_version(&self) -> String {
+        let raw = self.data.raw_data();
+        let tail = &raw[self.data.offset..];
+        let tail = tail
+            .strip_prefix(&b"Minesweeper Arbiter "[..])
+            .expect("Program串不是以“Minesweeper Arbiter ”开头");
+        let mut end = 0;
+        while end < tail.len() && (tail[end].is_ascii_digit() || tail[end] == b'.') {
+            end += 1;
+        }
+        let token = std::str::from_utf8(&tail[..end]).expect("版本号不是有效的UTF-8");
+        assert!(
+            token.ends_with('.') && tail[end..].starts_with(b" Copyright"),
+            "版本号格式错误: {token}"
+        );
+        token.trim_end_matches('.').to_string()
     }
 }

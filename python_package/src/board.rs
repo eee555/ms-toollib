@@ -1,4 +1,4 @@
-﻿use itertools::Itertools;
+use itertools::Itertools;
 use ms_toollib_original::*;
 use pyo3::prelude::*;
 
@@ -124,7 +124,15 @@ impl PyMinesweeperBoard {
     }
     #[getter]
     fn get_bbbv_solved(&self) -> PyResult<usize> {
-        Ok(self.core.bbbv_solved)
+        Ok(self.core.get_bbbv_solved())
+    }
+    #[getter]
+    fn get_bbbv_solved_left(&self) -> PyResult<usize> {
+        Ok(self.core.bbbv_solved_left)
+    }
+    #[getter]
+    fn get_bbbv_solved_chord(&self) -> PyResult<usize> {
+        Ok(self.core.bbbv_solved_chord)
     }
     #[getter]
     fn get_row(&self) -> PyResult<usize> {
@@ -272,7 +280,15 @@ impl PySafeMinesweeperBoard {
     }
     #[getter]
     fn get_bbbv_solved(&self) -> PyResult<usize> {
-        Ok(self.core.bbbv_solved)
+        Ok(self.core.get_bbbv_solved())
+    }
+    #[getter]
+    fn get_bbbv_solved_left(&self) -> PyResult<usize> {
+        Ok(self.core.bbbv_solved_left)
+    }
+    #[getter]
+    fn get_bbbv_solved_chord(&self) -> PyResult<usize> {
+        Ok(self.core.bbbv_solved_chord)
     }
     #[getter]
     fn get_row(&self) -> PyResult<usize> {

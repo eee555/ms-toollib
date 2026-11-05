@@ -107,7 +107,8 @@ use crate::videos::types::{
 /// ```
 #[derive(Clone)]
 pub struct BaseVideo<T> {
-    /// 软件名，包括："Viennasweeper"、"0.97 beta"、"Arbiter"、"元3.1.9"、"元3.1.11"、"元3.2.0"等
+    /// 软件名和版本号，包括："Arbiter 0.46"、"Minesweeper Clone 0.97 beta"、
+    /// "Minesweeper Clone 2007"、"Viennasweeper"、"元3.1.9"、"元3.2.0"等
     pub software: String,
     /// 转码用的软件名，包括："元3.1.11"、"元3.2.0"等
     pub translate_software: String,
@@ -225,6 +226,8 @@ pub struct BaseVideo<T> {
     pub last_in_board_pos: (u16, u16),
     // 在last_in_board_pos位置，path的值，用于计算path
     pub last_in_board_pos_path: f64,
+    /// 最后一次增加ce的点击位置，单位为像素，顺序为（距离上方，距离左侧）。
+    pub last_effective_click_pos: Option<(usize, usize)>,
 }
 
 impl Default for BaseVideo<Vec<Vec<i32>>> {
@@ -278,6 +281,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             video_playing_pix_size_k: 1.0,
             last_in_board_pos: (u16::MAX, u16::MAX),
             last_in_board_pos_path: 0.0,
+            last_effective_click_pos: None,
         }
     }
 }
@@ -334,6 +338,7 @@ impl Default for BaseVideo<SafeBoard> {
             video_playing_pix_size_k: 1.0,
             last_in_board_pos: (u16::MAX, u16::MAX),
             last_in_board_pos_path: 0.0,
+            last_effective_click_pos: None,
         }
     }
 }
@@ -344,6 +349,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
     pub fn analyse(&mut self) {
         // println!("{:?}, ", self.board);
         assert!(self.can_analyse, "调用parse或扫完前，不能调用analyse方法");
+        self.reset_click_paths();
         self.video_analyse_params = VideoAnalyseParams::default();
         // self.minesweeper_board
         let mut b = MinesweeperBoard::<Vec<Vec<i32>>>::new(self.board.clone());
@@ -355,9 +361,18 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.game_board_stream
             .push(Rc::new(RefCell::new(first_game_board)));
         for ide in 0..self.video_action_state_recorder.len() {
+            let old_ce = b.lce + b.rce + b.dce;
+            let mut effective_click_pos = None;
             // 控制svi的生命周期
             let svi = &mut self.video_action_state_recorder[ide];
-            svi.key_dynamic_params.set_pluck_metrics(VideoAnalyseParams::default());
+            svi.key_dynamic_params
+                .set_pluck_metrics(VideoAnalyseParams::default());
+            // 游戏状态事件也保留已经解决的3BV。
+            svi.key_dynamic_params.bbbv_solved_left = b.bbbv_solved_left;
+            svi.key_dynamic_params.bbbv_solved_chord = b.bbbv_solved_chord;
+            // 非鼠标事件和无效操作也保留已经累计的距离。
+            svi.c_path = self.game_dynamic_params.c_path;
+            svi.e_path = self.game_dynamic_params.e_path;
             if let Some(Event::Mouse(mouse_event)) = &svi.event {
                 svi.prior_game_board = Some(Rc::clone(self.game_board_stream.last().unwrap()));
                 if mouse_event.mouse != "mv" {
@@ -371,7 +386,7 @@ impl BaseVideo<Vec<Vec<i32>>> {
                     //     b.left,
                     //     b.right,
                     //     b.double,
-                    //     b.bbbv_solved
+                    //     b.get_bbbv_solved()
                     // );
                     let u_level = b
                         .step(
@@ -384,6 +399,9 @@ impl BaseVideo<Vec<Vec<i32>>> {
                         .unwrap();
                     // println!("     {:?}, {:?}", svi.mouse, b.mouse_state);
                     svi.useful_level = u_level;
+                    if b.lce + b.rce + b.dce > old_ce {
+                        effective_click_pos = Some((mouse_event.y as usize, mouse_event.x as usize));
+                    }
                     if u_level >= 1 {
                         let mut g_b = GameBoard::new(self.mine_num);
                         g_b.set_game_board(&b.game_board);
@@ -398,7 +416,8 @@ impl BaseVideo<Vec<Vec<i32>>> {
                 svi.mouse_state = b.mouse_state.clone();
                 svi.key_dynamic_params.left = b.left;
                 svi.key_dynamic_params.right = b.right;
-                svi.key_dynamic_params.bbbv_solved = b.bbbv_solved;
+                svi.key_dynamic_params.bbbv_solved_left = b.bbbv_solved_left;
+                svi.key_dynamic_params.bbbv_solved_chord = b.bbbv_solved_chord;
                 svi.key_dynamic_params.double = b.double;
                 svi.key_dynamic_params.lce = b.lce;
                 svi.key_dynamic_params.rce = b.rce;
@@ -442,6 +461,13 @@ impl BaseVideo<Vec<Vec<i32>>> {
             } else {
                 continue;
             }
+            if b.game_board_state == GameBoardState::Ready {
+                self.reset_click_paths();
+            } else if let Some(pos) = effective_click_pos {
+                self.update_click_paths(pos);
+            }
+            self.video_action_state_recorder[ide].c_path = self.game_dynamic_params.c_path;
+            self.video_action_state_recorder[ide].e_path = self.game_dynamic_params.e_path;
         }
         let rtime = self.game_dynamic_params.rtime;
         let bbbv = self.static_params.bbbv as f64;
@@ -457,8 +483,9 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.game_dynamic_params.left_s = b.left as f64 / rtime;
         self.game_dynamic_params.right = b.right;
         self.game_dynamic_params.right_s = b.right as f64 / rtime;
-        // println!("---{:?}", b.bbbv_solved);
-        self.video_dynamic_params.bbbv_solved = b.bbbv_solved;
+        // println!("---{:?}", b.get_bbbv_solved());
+        self.video_dynamic_params.bbbv_solved_left = b.bbbv_solved_left;
+        self.video_dynamic_params.bbbv_solved_chord = b.bbbv_solved_chord;
         self.video_dynamic_params.lce = b.lce;
         self.video_dynamic_params.rce = b.rce;
         self.video_dynamic_params.dce = b.dce;
@@ -472,18 +499,18 @@ impl BaseVideo<Vec<Vec<i32>>> {
         self.video_dynamic_params.rqp = rtime * rtime / bbbv;
         if self.height == 8 && self.width == 8 && self.mine_num == 10 {
             self.video_dynamic_params.stnb =
-                36.0 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
+                36.0 / (rtime.powf(1.7) / bbbv) * (b.get_bbbv_solved() as f64 / bbbv).powf(0.5);
         } else if self.height == 16 && self.width == 16 && self.mine_num == 40 {
             self.video_dynamic_params.stnb =
-                162.0 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
+                162.0 / (rtime.powf(1.7) / bbbv) * (b.get_bbbv_solved() as f64 / bbbv).powf(0.5);
         } else if self.height == 16 && self.width == 30 && self.mine_num == 99 {
             self.video_dynamic_params.stnb =
-                435.0 / (rtime.powf(1.7) / bbbv) * (b.bbbv_solved as f64 / bbbv).powf(0.5);
+                435.0 / (rtime.powf(1.7) / bbbv) * (b.get_bbbv_solved() as f64 / bbbv).powf(0.5);
         } // 凡自定义的stnb都等于0
-        self.video_dynamic_params.ioe = b.bbbv_solved as f64 / self.game_dynamic_params.cl as f64;
+        self.video_dynamic_params.ioe = b.get_bbbv_solved() as f64 / self.game_dynamic_params.cl as f64;
         self.video_dynamic_params.corr =
             (b.lce + b.rce + b.dce) as f64 / self.game_dynamic_params.cl as f64;
-        self.video_dynamic_params.thrp = b.bbbv_solved as f64 / (b.lce + b.rce + b.dce) as f64;
+        self.video_dynamic_params.thrp = b.get_bbbv_solved() as f64 / (b.lce + b.rce + b.dce) as f64;
         // 最后，计算静态指标
         self.cal_static_params();
     }
@@ -644,6 +671,26 @@ impl NewBaseVideo2<Vec<Vec<i32>>, u8> for BaseVideo<SafeBoard> {
 }
 
 impl<T> BaseVideo<T> {
+    fn reset_click_paths(&mut self) {
+        self.last_effective_click_pos = None;
+        self.game_dynamic_params.c_path = 0.0;
+        self.game_dynamic_params.e_path = 0.0;
+    }
+
+    /// 仅在lce、rce或dce增长时调用，包括计入本局ce的预标雷。
+    fn update_click_paths(&mut self, pos: (usize, usize)) {
+        if let Some(previous) = self.last_effective_click_pos {
+            let size = self.cell_pixel_size as usize;
+            let dy = pos.0 as f64 - previous.0 as f64;
+            let dx = pos.1 as f64 - previous.1 as f64;
+            self.game_dynamic_params.c_path += dy.hypot(dx) * 16.0 / size as f64;
+            let dr = (pos.0 / size) as f64 - (previous.0 / size) as f64;
+            let dc = (pos.1 / size) as f64 - (previous.1 / size) as f64;
+            self.game_dynamic_params.e_path += dr.hypot(dc) * 16.0;
+        }
+        self.last_effective_click_pos = Some(pos);
+    }
+
     /// 通过文件名构造。
     // #[cfg(any(feature = "py", feature = "rs"))]
     // pub fn new_with_file(file_name: &str) -> BaseVideo<Vec<Vec<i32>>> {
@@ -717,6 +764,7 @@ impl<T> BaseVideo<T> {
         }
         self.last_in_board_pos = (u16::MAX, u16::MAX);
         self.last_in_board_pos_path = 0.0;
+        self.reset_click_paths();
     }
     /// 两种情况调用：游戏开始前、可猜模式（尺寸相等，雷数不检查）
     pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> Result<u8, ()>
@@ -837,13 +885,21 @@ impl<T> BaseVideo<T> {
         let y = pos.1 / self.cell_pixel_size as usize;
         self.minesweeper_board.mode = self.mode;
         self.minesweeper_board.use_question = self.use_question;
+        let old_ce =
+            self.minesweeper_board.lce + self.minesweeper_board.rce + self.minesweeper_board.dce;
         let a = self.minesweeper_board.step(e, (x, y))?;
+        // 在结束结算可能重算状态机之前，记录这一步是否增加了ce。
+        let mut effective_click = self.minesweeper_board.lce
+            + self.minesweeper_board.rce
+            + self.minesweeper_board.dce
+            > old_ce;
         // 获取新的状态
         self.game_board_state = self.minesweeper_board.game_board_state;
         match self.game_board_state {
             GameBoardState::Ready => {
                 self.game_board_stream.clear();
                 self.video_action_state_recorder.clear();
+                self.reset_click_paths();
                 return Ok(0);
             }
             GameBoardState::PreFlaging => {
@@ -878,14 +934,16 @@ impl<T> BaseVideo<T> {
                     .as_micros() as u64;
                 self.is_completed = false;
                 // 点一下左键可能直接获胜，但不可能直接失败
-                self.gather_params_after_game(
-                    time_ms,
-                    Some(MouseEvent {
-                        mouse: e.to_string(),
-                        x: pos.1 as u16,
-                        y: pos.0 as u16,
-                    }),
-                );
+                effective_click = self
+                    .gather_params_after_game(
+                        time_ms,
+                        Some(MouseEvent {
+                            mouse: e.to_string(),
+                            x: pos.1 as u16,
+                            y: pos.0 as u16,
+                        }),
+                    )
+                    .unwrap_or(effective_click);
             }
             GameBoardState::Win => {
                 self.end_time = SystemTime::now()
@@ -898,15 +956,20 @@ impl<T> BaseVideo<T> {
                     self.start_time = self.end_time.clone();
                     self.game_start_ms = time_ms;
                 }
-                self.gather_params_after_game(
-                    time_ms,
-                    Some(MouseEvent {
-                        mouse: e.to_string(),
-                        x: pos.1 as u16,
-                        y: pos.0 as u16,
-                    }),
-                );
+                effective_click = self
+                    .gather_params_after_game(
+                        time_ms,
+                        Some(MouseEvent {
+                            mouse: e.to_string(),
+                            x: pos.1 as u16,
+                            y: pos.0 as u16,
+                        }),
+                    )
+                    .unwrap_or(effective_click);
             }
+        }
+        if effective_click {
+            self.update_click_paths(pos);
         }
         // 维护path，挺复杂的
         let mut path = 0.0;
@@ -980,13 +1043,16 @@ impl<T> BaseVideo<T> {
                     rce: self.minesweeper_board.rce,
                     dce: self.minesweeper_board.dce,
                     flag: self.minesweeper_board.flag,
-                    bbbv_solved: self.minesweeper_board.bbbv_solved,
+                    bbbv_solved_left: self.minesweeper_board.bbbv_solved_left,
+                    bbbv_solved_chord: self.minesweeper_board.bbbv_solved_chord,
                     op_solved: 0,
                     isl_solved: 0,
                     pluck: f64::NAN,
                     ..KeyDynamicParams::default()
                 },
                 path,
+                c_path: self.game_dynamic_params.c_path,
+                e_path: self.game_dynamic_params.e_path,
             });
         // println!("push: {:?}, {:?}, ({:?}, {:?})", time, e, pos.0, pos.1);
         Ok(0)
@@ -1011,7 +1077,7 @@ impl<T> BaseVideo<T> {
                 // 同步局面状态机，否则后续鼠标事件仍会被当成有效操作处理
                 self.minesweeper_board.game_board_state = GameBoardState::Loss;
                 self.is_completed = false;
-                self.gather_params_after_game(time_ms, None);
+                let _ = self.gather_params_after_game(time_ms, None);
                 Ok(0)
             }
             _ => Err(()),
@@ -1050,8 +1116,12 @@ impl<T> BaseVideo<T> {
             }
         }
     }
-    /// 游戏结束后，计算一批指标
-    fn gather_params_after_game(&mut self, time_ms: u32, last_mouse_event: Option<MouseEvent>)
+    /// 游戏结束后，计算一批指标。换盘重算时返回最后一次鼠标操作是否增加ce。
+    fn gather_params_after_game(
+        &mut self,
+        time_ms: u32,
+        last_mouse_event: Option<MouseEvent>,
+    ) -> Option<bool>
     where
         T: std::ops::Index<usize> + BoardSize + std::fmt::Debug + ReplaceBoard,
         T::Output: std::ops::Index<usize, Output = i32>,
@@ -1060,26 +1130,58 @@ impl<T> BaseVideo<T> {
             self.game_board_state == GameBoardState::Loss
                 || self.game_board_state == GameBoardState::Win
         );
+        let mut recomputed_effective_click = None;
         if self.minesweeper_board.board_changed {
             // 此处是解决可猜模式中由于局面更改，扫完后，ce、bbbv_solved等计算不对，需要重来一遍
             self.minesweeper_board.reset();
             self.minesweeper_board.mode = self.mode;
             self.minesweeper_board.use_question = self.use_question;
-            for action_state in &mut self.video_action_state_recorder {
-                if let Some(Event::Mouse(mouse_event)) = &action_state.event {
+            self.reset_click_paths();
+            for ide in 0..self.video_action_state_recorder.len() {
+                let mut effective_click_pos = None;
+                if let Some(Event::Mouse(mouse_event)) = &self.video_action_state_recorder[ide].event {
                     let r = mouse_event.y as usize / self.cell_pixel_size as usize;
                     let c = mouse_event.x as usize / self.cell_pixel_size as usize;
+                    let old_ce = self.minesweeper_board.lce
+                        + self.minesweeper_board.rce
+                        + self.minesweeper_board.dce;
                     self.minesweeper_board
                         .step(&mouse_event.mouse, (r, c))
                         .unwrap();
+                    if self.minesweeper_board.lce
+                        + self.minesweeper_board.rce
+                        + self.minesweeper_board.dce
+                        > old_ce
+                    {
+                        effective_click_pos = Some((mouse_event.y as usize, mouse_event.x as usize));
+                    }
                 }
-                action_state.key_dynamic_params.bbbv_solved = self.minesweeper_board.bbbv_solved;
+                if self.minesweeper_board.game_board_state == GameBoardState::Ready {
+                    self.reset_click_paths();
+                } else if let Some(pos) = effective_click_pos {
+                    self.update_click_paths(pos);
+                }
+                self.video_action_state_recorder[ide].c_path = self.game_dynamic_params.c_path;
+                self.video_action_state_recorder[ide].e_path = self.game_dynamic_params.e_path;
+                // 换盘重算时，事件快照里的已解决3BV也要跟着重新累计。
+                let params = &mut self.video_action_state_recorder[ide].key_dynamic_params;
+                params.bbbv_solved_left = self.minesweeper_board.bbbv_solved_left;
+                params.bbbv_solved_chord = self.minesweeper_board.bbbv_solved_chord;
             }
             // 可猜模式中，假如局面发生过修改，且以点脸等reset方式结束游戏，就没有最后一步鼠标操作
             if let Some(mouse_e) = last_mouse_event {
                 let r = mouse_e.y as usize / self.cell_pixel_size as usize;
                 let c = mouse_e.x as usize / self.cell_pixel_size as usize;
+                let old_ce = self.minesweeper_board.lce
+                    + self.minesweeper_board.rce
+                    + self.minesweeper_board.dce;
                 self.minesweeper_board.step(&mouse_e.mouse, (r, c)).unwrap();
+                recomputed_effective_click = Some(
+                    self.minesweeper_board.lce
+                        + self.minesweeper_board.rce
+                        + self.minesweeper_board.dce
+                        > old_ce,
+                );
             }
         }
         // 点一下左键可能直接获胜，但不可能直接失败
@@ -1091,11 +1193,13 @@ impl<T> BaseVideo<T> {
         self.game_dynamic_params.rtime_ms = t_ms;
         if self.game_board_state == GameBoardState::Loss {
             self.video_dynamic_params.etime =
-                t / self.minesweeper_board.bbbv_solved as f64 * self.static_params.bbbv as f64;
+                t / self.minesweeper_board.get_bbbv_solved() as f64 * self.static_params.bbbv as f64;
         } else {
             self.video_dynamic_params.etime = t;
         }
 
+        self.video_dynamic_params.bbbv_solved_left = self.minesweeper_board.bbbv_solved_left;
+        self.video_dynamic_params.bbbv_solved_chord = self.minesweeper_board.bbbv_solved_chord;
         self.game_dynamic_params.left = self.minesweeper_board.left;
         self.game_dynamic_params.right = self.minesweeper_board.right;
         self.game_dynamic_params.double = self.minesweeper_board.double;
@@ -1109,6 +1213,7 @@ impl<T> BaseVideo<T> {
         self.game_dynamic_params.flag_s = self.minesweeper_board.flag as f64 / t;
         self.game_dynamic_params.cl_s = self.game_dynamic_params.cl as f64 / t;
         self.cal_static_params();
+        recomputed_effective_click
     }
     // 计算除fps、bbbv以外的静态指标。因为bbbv是计算动态指标的基础
     fn cal_static_params(&mut self)
@@ -1202,15 +1307,61 @@ impl<T> BaseVideo<T> {
     }
 }
 
-/// 软件的合法时间范围。单位为秒。没人用，暂时搁置。
+/// 软件的合法时间范围。单位为秒。不同软件版本的合法时间段可能不同，暂无资料时先统一占位，待手动调整。
 pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
+    // Arbiter 的取值依据官方开发帖 https://minesweepergame.com/forum/viewtopic.php?t=82 还原的发布历史。
+    // 起点 = 该版本发布日期：发布前不可能存在由该版本生成的录像。
+    // 终点 = 下一个新版本发布日 + 1 年：旧版本被新版本取代满一年后失效；末版 0.52.3 无后继，取“永久”。
+    //   这条“一年失效”的时效规则由本库维护者确定，论坛和排行榜都没有同类明文记载。公开资料只提供两点：
+    //   1. 各版本的发布日期，来自 t=82 的回帖时间与附件名（arbiter_0_XX_X.zip）；
+    //   2. 世界排行榜从未封禁任何 Arbiter 版本：https://minesweepergame.com/ranking-rules.php 至今仍把
+    //      Arbiter 0.52.3 列为官方版本，https://minesweepergame.com/clone-cheats.php 也没有 Arbiter 的封禁条目。
+    //   因此这里的“失效”只是版本更替后的时效，不是封禁；0.49.3 之前的 PRNG 多实例漏洞、0.50.1 被公开的内存
+    //   读取器针对，也只会加重人工复核（自 2012-12 起新纪录均须 3 名管理员审核，见 t=82 的 p1709）。
+    // 跳号版本（0.49.1、0.49.2、0.51、0.52.1）在论坛里没有任何发布记录，按不存在处理，即 0.48.5 以 0.49.3
+    // 为后继、0.50.1 以 0.52 为后继；0.49.5 有发布日期（2012-06-01），作为 0.49.4 的后继计入。
+    // 日期均取当日 00:00:00 UTC，只精确到日：论坛帖本身只记载到日。
     match software {
-        // 永久
-        "Arbiter" => Ok(("0".to_string(), "4102415999".to_string())),
-        // 未确定
-        "0.97 beta" => Ok(("0".to_string(), "0".to_string())),
+        // 起点：发布日期未见于论坛帖（0.46 系早于 0.47 debug 4 的 2009-09-28），保守取 0
+        // 终点：后继 0.47 final 于 2009-11-09 发布，`arbiter_0_47.zip`，满一年后失效
+        "Arbiter 0.46.2" => Ok(("0".to_string(), "1289260800".to_string())),
+        // 2010-11-22 发布（arbiter_0_48_5.zip，https://minesweepergame.com/forum/viewtopic.php?t=82&start=25）
+        // 终点：后继 0.49.3 于 2012-03-15 发布，满一年后失效
+        "Arbiter 0.48.5" => Ok(("1290384000".to_string(), "1363305600".to_string())),
+        // 2012-03-15 发布（arbiter_0_49_3.zip，同上；安全更新，修复 PRNG 多实例漏洞）
+        // 终点：后继 0.49.4 于 2012-04-16 发布，满一年后失效
+        "Arbiter 0.49.3" => Ok(("1331769600".to_string(), "1366070400".to_string())),
+        // 2012-04-16 发布（https://minesweepergame.com/forum/viewtopic.php?p=1245#p1245）
+        // 终点：后继 0.49.5 于 2012-06-01 发布（arbiter_0_49_5.zip，p1326），满一年后失效
+        "Arbiter 0.49.4" => Ok(("1334534400".to_string(), "1370044800".to_string())),
+        // 2013-03-30 发布（https://minesweepergame.com/forum/viewtopic.php?p=1636#p1636）
+        // 终点：后继 0.50.1 于 2013-10-01 发布，满一年后失效
+        "Arbiter 0.49.6" => Ok(("1364601600".to_string(), "1412121600".to_string())),
+        // 2013-10-01 发布（https://minesweepergame.com/forum/viewtopic.php?p=1747#p1747）
+        // 2013-10-23 起被公开的内存读取器针对，但这只加重复核，不改变时效
+        // 终点：后继 0.52 于 2013-12-09 发布，满一年后失效
+        "Arbiter 0.50.1" => Ok(("1380585600".to_string(), "1418083200".to_string())),
+        // 2013-12-09 发布（https://minesweepergame.com/forum/viewtopic.php?p=1773#p1773）
+        // 终点：后继 0.52.2 于 2013-12-28 发布，满一年后失效，即只有约 19 天的新版本空窗
+        "Arbiter 0.52" => Ok(("1386547200".to_string(), "1419724800".to_string())),
+        // 2013-12-28 发布（https://minesweepergame.com/forum/viewtopic.php?p=1782#p1782）
+        // 终点：后继 0.52.3 于 2014-06-12 发布，满一年后失效
+        "Arbiter 0.52.2" => Ok(("1388188800".to_string(), "1434067200".to_string())),
+        // 2014-06-12 发布（https://minesweepergame.com/forum/viewtopic.php?p=1888#p1888）
+        // 终点：此后 11 年无新版本发布，也没有后继，按永久处理
+        "Arbiter 0.52.3" => Ok(("1402531200".to_string(), "4102415999".to_string())),
+        // 未确定。Minesweeper Clone的0.97与2007各版本，先按相同范围占位
+        "Minesweeper Clone 0.97 beta" | "Minesweeper Clone 2007 release 1"
+        | "Minesweeper Clone 2007 release 2" => Ok(("0".to_string(), "4102415999".to_string())),
         // 2023-04-24 00:00:00 前，发现影响公平性的漏洞失效
         "Viennasweeper" => Ok(("0".to_string(), "1682265600".to_string())),
+        // Vienna各版本时间范围待定，先按相同范围占位，待手动调整
+        "Vienna Minesweeper - Home Edition - Release 2.2"
+        | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0C"
+        | "Vienna Minesweeper - Release 4.0.0" | "Vienna Minesweeper - Release 5.0.0a2"
+        | "Vienna Minesweeper - Release 5.0.0b4" => {
+            Ok(("0".to_string(), "4102415999".to_string()))
+        }
         // 2024-07-26 00:00:00 发布，2026-03-03 00:00:00发现影响公平性的漏洞失效
         "元3.1.9" => Ok(("1721836800".to_string(), "1772467200".to_string())),
         // 2024-09-10 00:00:00 发布，2026-03-03 00:00:00发现影响公平性的漏洞失效
@@ -1339,23 +1490,37 @@ impl<T> BaseVideo<T> {
     /// 按排名网站的自动审核规则检查录像。必须先调用 `analyse()`，再调用本方法。
     ///
     /// 检查顺序：
-    /// 1. 检查录像软件是否支持，并按软件版本检查校验和、是否公平及允许的游戏模式。
+    /// 1. 检查录像软件是否支持，并按软件版本检查时间戳是否在合法时间段内，再检查校验和、是否公平及允许的游戏模式。
     /// 2. 检查录像事件是否足以提供操作细节，以及录像是否完成。
     /// 3. 最后调用 [`user_mouse_trace_valid`](Self::user_mouse_trace_valid)，检查重复移动、
     ///    按键按住时长、极短按次数和轨迹熵等鼠标特征。
     ///
-    /// 本方法不检查校验码，也不能仅凭鼠标轨迹证明录像一定由真人操作。也不检查录像的时间戳是否在软件的合法时间范围内。
+    /// 本方法不检查校验码，也不能仅凭鼠标轨迹证明录像一定由真人操作。
     ///
     /// 返回值：
     /// - `0`：通过。通过当前自动检查，未发现已实现规则标记的异常；不代表绝对证明真实。
     /// - `1`：不通过。发现明确不符合规则的情况，例如录像未完成、软件/公平性校验失败，或鼠标特征达到不通过阈值。
     /// - `3`：可疑。无法确认或需要人工复核，例如操作细节不足、模式不在允许范围，或鼠标特征达到可疑阈值。
     pub fn is_valid(&self) -> u8 {
-        if self.software == "Arbiter" {
+        // 不同软件版本的合法时间段不同，按software的具体版本查表；未登记的版本视为不合法
+        let (period_start, period_end) = match valid_time_period(&self.software) {
+            Ok(v) => v,
+            Err(_) => return 1,
+        };
+        if !self.time_in_period(&period_start, &period_end) {
+            return 1;
+        }
+        // software是“软件名+版本号”，这里按软件名前缀判断，同时兼容不带版本号的旧值
+        let software = self.software.as_str();
+        if software.starts_with("Arbiter") {
             // 对于arbiter，开源界没有鉴定的能力，只能追溯
-        } else if self.software == "Viennasweeper" {
-        } else if self.software == "0.97 beta" {
-        } else if self.software == "元3.1.9" {
+        } else if software.starts_with("Viennasweeper") {
+        } else if software.starts_with("0.97 beta")
+            || software.starts_with("Minesweeper Clone 0.97")
+            || software.starts_with("Minesweeper Clone 2006")
+            || software.starts_with("Minesweeper Clone 2007")
+        {
+        } else if software.starts_with("元3.1.9") {
             if self.checksum.iter().all(|&e| e == self.checksum[0]) {
                 // 大概率是使用了测试用的校验和
                 return 1;
@@ -1404,6 +1569,19 @@ impl<T> BaseVideo<T> {
         }
 
         self.user_mouse_trace_valid()
+    }
+
+    /// 判断录像开始时间是否落在给定的合法时间段内。参数为秒，[`start_time`](Self::start_time)为微秒。
+    fn time_in_period(&self, start_sec: &str, end_sec: &str) -> bool {
+        let start = match start_sec.parse::<u64>() {
+            Ok(v) => v * 1_000_000,
+            Err(_) => return false,
+        };
+        let end = match end_sec.parse::<u64>() {
+            Ok(v) => v * 1_000_000,
+            Err(_) => return false,
+        };
+        self.start_time >= start && self.start_time <= end
     }
 
     /// 检查录像中的鼠标轨迹是否有明显程序化特征。

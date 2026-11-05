@@ -102,6 +102,10 @@ pub struct VideoActionStateRecorder {
     /// 指标状态(该活动完成后的、后验的), mv也会记录，浪费了空间
     pub key_dynamic_params: KeyDynamicParams,
     pub path: f64,
+    /// 相邻有效点击的像素直线距离累计，折算到每格16像素；有效点击以ce增长为准。
+    pub c_path: f64,
+    /// 相邻有效点击所在格子的欧氏距离累计，折算到每格16像素。
+    pub e_path: f64,
 }
 
 impl Default for VideoActionStateRecorder {
@@ -116,6 +120,8 @@ impl Default for VideoActionStateRecorder {
             mouse_state: MouseState::Undefined,
             key_dynamic_params: KeyDynamicParams::default(),
             path: 0.0,
+            c_path: 0.0,
+            e_path: 0.0,
         }
     }
 }
@@ -174,7 +180,10 @@ pub struct KeyDynamicParams {
     pub rce: usize,
     pub dce: usize,
     pub flag: usize,
-    pub bbbv_solved: usize,
+    /// 通过有效左击解决的3BV数。
+    pub bbbv_solved_left: usize,
+    /// 通过双击等其他方式解决的3BV数。
+    pub bbbv_solved_chord: usize,
     pub op_solved: usize,
     pub isl_solved: usize,
     pub pluck: f64,
@@ -194,7 +203,8 @@ impl Default for KeyDynamicParams {
             rce: 0,
             dce: 0,
             flag: 0,
-            bbbv_solved: 0,
+            bbbv_solved_left: 0,
+            bbbv_solved_chord: 0,
             op_solved: 0,
             isl_solved: 0,
             pluck: f64::NAN,
@@ -207,6 +217,11 @@ impl Default for KeyDynamicParams {
 }
 
 impl KeyDynamicParams {
+    /// 已解决的总3BV。
+    pub fn get_bbbv_solved(&self) -> usize {
+        self.bbbv_solved_left + self.bbbv_solved_chord
+    }
+
     pub fn get_luck(&self) -> f64 {
         self.get_pluck_metrics().get_luck()
     }
@@ -250,6 +265,10 @@ pub struct GameDynamicParams {
     pub flag_s: f64,
     /// 四舍五入折算到16像素边长，最终路径长度
     pub path: f64,
+    /// 相邻有效点击的直线距离累计，折算到每格16像素，不取整。
+    pub c_path: f64,
+    /// 相邻有效点击所在格子的欧氏距离累计，折算到每格16像素，不取整。
+    pub e_path: f64,
 }
 
 impl Default for GameDynamicParams {
@@ -268,6 +287,8 @@ impl Default for GameDynamicParams {
             cl_s: 0.0,
             flag_s: 0.0,
             path: 0.0,
+            c_path: 0.0,
+            e_path: 0.0,
         }
     }
 }
@@ -278,7 +299,10 @@ impl Default for GameDynamicParams {
 pub struct VideoDynamicParams {
     pub etime: f64,
     pub bbbv_s: f64,
-    pub bbbv_solved: usize,
+    /// 通过有效左击解决的3BV数。
+    pub bbbv_solved_left: usize,
+    /// 通过双击等其他方式解决的3BV数。
+    pub bbbv_solved_chord: usize,
     pub stnb: f64,
     pub rqp: f64,
     pub qg: f64,
@@ -301,7 +325,8 @@ impl Default for VideoDynamicParams {
         VideoDynamicParams {
             etime: 0.0,
             bbbv_s: 0.0,
-            bbbv_solved: 0,
+            bbbv_solved_left: 0,
+            bbbv_solved_chord: 0,
             stnb: 0.0,
             rqp: 0.0,
             qg: 0.0,
@@ -316,6 +341,13 @@ impl Default for VideoDynamicParams {
             op_solved: 0,
             isl_solved: 0,
         }
+    }
+}
+
+impl VideoDynamicParams {
+    /// 已解决的总3BV。
+    pub fn get_bbbv_solved(&self) -> usize {
+        self.bbbv_solved_left + self.bbbv_solved_chord
     }
 }
 

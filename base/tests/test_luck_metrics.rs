@@ -37,7 +37,7 @@ fn mouse(
         useful_level: useful,
         prior_game_board: Some(prior),
         key_dynamic_params: KeyDynamicParams {
-            bbbv_solved: solved,
+            bbbv_solved_left: solved,
             ..KeyDynamicParams::default()
         },
         ..VideoActionStateRecorder::default()
@@ -103,10 +103,10 @@ fn risky_action_without_bv_progress_still_changes_luck_and_time_weights() {
     // 控制解决量快照，验证概率计算不依赖本次是否推进BV。
     video.video_action_state_recorder[3]
         .key_dynamic_params
-        .bbbv_solved = 1;
+        .bbbv_solved_left = 1;
     video.video_action_state_recorder[4]
         .key_dynamic_params
-        .bbbv_solved = 1;
+        .bbbv_solved_left = 1;
     video.analyse_for_features(&vec!["pluck"]);
     video.set_current_time(f64::INFINITY);
     close(video.get_luck().unwrap(), 1.0 / 3.0);
@@ -285,7 +285,7 @@ fn board_change_updates_bv_snapshots_before_lazy_luck_analysis() {
     assert_eq!(
         video.video_action_state_recorder[1]
             .key_dynamic_params
-            .bbbv_solved,
+            .get_bbbv_solved(),
         1
     );
     // (0,1)仍显示1，但新雷盘中它属于空区边缘，不再单独计BV。
@@ -299,7 +299,7 @@ fn board_change_updates_bv_snapshots_before_lazy_luck_analysis() {
     assert_eq!(
         video.video_action_state_recorder[1]
             .key_dynamic_params
-            .bbbv_solved,
+            .get_bbbv_solved(),
         0
     );
     close(video.get_luck().unwrap(), 1.0);

@@ -177,8 +177,8 @@ impl RmvVideo {
             // trailing "#\n"
             self.data.offset += 2;
         }
-        // skip version_info
-        self.data.offset += version_info_size as usize;
+        // 读取version_info（软件版本字符串），用于software字段
+        let version_info = self.data.get_buffer(version_info_size as usize)?;
 
         // 这里是uint16，不合理
         let num_player_info = self.data.get_u16()?;
@@ -415,18 +415,44 @@ impl RmvVideo {
         self.data.start_time = timestamp_boardgen as u64 * 1000000;
         self.data.end_time =
             self.data.start_time + (self.data.get_rtime_ms().unwrap() as u64) * 1000;
-        self.data.software = if format_version == 1 {
+        // software使用录像中version_info的原始版本字符串，去掉版权声明尾部
+        let version_info = String::from_utf8_lossy(&version_info);
+        let version = if let Some(i) = version_info.find(" Copyright") {
+            &version_info[..i]
+        } else if let Some(i) = version_info.find("(c)") {
+            &version_info[..i]
+        } else if let Some(i) = version_info.find("(C)") {
+            &version_info[..i]
+        } else {
+            &version_info
+        };
+        let version = version.trim_end();
+        self.data.software = if !version.is_empty() {
+            // 显式枚举 .rmv 的 version_info 中可能出现的全部版本字符串（已去掉版权尾部），
+            // 与 avf 的版本白名单同样严格：未登记的版本直接报错，防止假冒录像。
+            // 新增版本时必须在此登记，否则该版本生成的录像会被判为非法。
+            match version {
+                "Vienna Minesweeper - Home Edition - Release 2.2"
+                | "Vienna Minesweeper - Home Edition - Release 3.0H"
+                | "Vienna Minesweeper - Home Edition - Release 3.0.2H"
+                | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0C"
+                | "Vienna Minesweeper - Release 4.0.0"
+                | "Vienna Minesweeper - Release 5.0.0a2"
+                | "Vienna Minesweeper - Release 5.0.0b4" => version.to_string(),
+                _ => return Err(ErrReadVideoReason::InvalidParams),
+            }
+        } else if format_version == 1 {
+            // rmv1 可以不写 version_info，此时只知道软件名、无从得知版本号
             "Viennasweeper".to_string()
         } else {
             match clone_id {
                 0 => match clone_name {
                     Some(s) => s,
-                    None => {
-                        return Err(ErrReadVideoReason::InvalidParams)
-                    },
+                    None => return Err(ErrReadVideoReason::InvalidParams),
                 },
                 1 => "Viennasweeper".to_string(),
-                _ => "Unknown".to_string(),
+                // 未登记的克隆标识同样直接报错
+                _ => return Err(ErrReadVideoReason::InvalidParams),
             }
         };
         self.data.is_official = self.data.is_completed;

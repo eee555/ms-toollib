@@ -615,7 +615,40 @@ fn mvf_video_works() {
     // video.data.print_comments();
 }
 
+#[test]
+// cargo test --features rs -- --nocapture mvf_video_unknown_hack_works
+fn mvf_video_unknown_hack_works() {
+    // Clone 0.97 "Unknown Hack"：文件头不是常见的 0x11 0x4D，
+    // 而是以 0x00 0x00 开头，真正的数据从偏移 7 开始。
+    let mut video =
+        MvfVideo::new("../test_files/Exp 100.17s - 3BV 131 - # 2051 Huang Qi (2008-06-07).mvf");
 
+    let r = video.parse();
+    assert_eq!(r.unwrap(), ());
+    assert_eq!(video.data.software, "Minesweeper Clone 0.97 Unknown Hack");
+    assert_eq!(video.data.width, 30);
+    assert_eq!(video.data.height, 16);
+    assert_eq!(video.data.mine_num, 99);
+    assert_eq!(video.data.static_params.bbbv, 131);
+    assert!(video.data.is_completed);
+    assert!(!video.data.use_question);
+    assert_eq!(video.data.player_identifier, "huangqi (shenzhen)");
+    assert_eq!(video.data.level, 5);
+    assert_eq!(video.data.mode, 0);
+    // 与 Clone 0.97 beta 的既有行为一致：rtime 由事件时间推得，
+    // 可能比文件头记录的成绩时间少 0.01 秒（此文件头为 100.17）。
+    assert_eq!(video.data.get_rtime().unwrap(), 100.16);
+    assert_eq!(video.data.get_rtime_ms().unwrap(), 100160);
+
+    video.data.analyse();
+    // MVF 解析后处于 Display（回放）状态，需要把时间拨到结尾才能读到最终指标。
+    video.data.set_current_time(999.99);
+    assert_eq!(video.data.game_board_state, GameBoardState::Display);
+    assert!(video.data.is_completed);
+    assert_eq!(video.data.get_bbbv_solved().unwrap(), 131);
+    assert_eq!(video.data.get_video_start_time().unwrap(), -0.01);
+    assert_eq!(video.data.get_video_end_time().unwrap(), 100.16);
+}
 
 #[test]
 // cargo test --features rs -- --nocapture temp_mvf_video_works

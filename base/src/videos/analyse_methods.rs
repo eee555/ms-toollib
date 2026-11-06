@@ -1,4 +1,3 @@
-use crate::algorithms::{cal_probability_cells_not_mine, mark_board};
 use crate::utils::is_good_chording;
 use crate::videos::base_video::BaseVideo;
 use crate::videos::types::Event;
@@ -281,77 +280,7 @@ pub fn analyse_vision_transfer(video: &mut BaseVideo<Vec<Vec<i32>>>) {
 
 /// 计算回放的录像的各个时刻的pluck参数
 pub fn analyse_pluck(video: &mut BaseVideo<Vec<Vec<i32>>>) {
-    let mut pluck = 0.0;
-    let mut has_begin = false;
-    for vas in video.video_action_state_recorder.iter_mut() {
-        if let Some(Event::Mouse(mouse_event)) = &vas.event {
-            if vas.useful_level == 2 {
-                // 有效的左键
-                if !has_begin {
-                    has_begin = true;
-                    vas.key_dynamic_params.pluck = 0.0;
-                    continue;
-                }
-                let r = (mouse_event.y / video.cell_pixel_size as u16) as usize;
-                let c = (mouse_event.x / video.cell_pixel_size as u16) as usize;
-                // 安全的概率
-                let p = 1.0
-                    - vas
-                        .prior_game_board
-                        .as_ref()
-                        .unwrap()
-                        .borrow_mut()
-                        .get_poss()[r][c];
-                if p <= 0.0 || pluck == f64::MAX {
-                    pluck = f64::MAX;
-                } else if p < 1.0 {
-                    pluck -= p.log10();
-                }
-            } else if vas.useful_level == 3 {
-                // 有效的双键
-                let r = (mouse_event.y / video.cell_pixel_size as u16) as usize;
-                let c = (mouse_event.x / video.cell_pixel_size as u16) as usize;
-                let mut game_board_clone_clean = vas
-                    .prior_game_board
-                    .as_ref()
-                    .unwrap()
-                    .borrow_mut()
-                    .game_board
-                    .clone();
-                let mut chording_cells = vec![];
-                for m in max(1, r) - 1..min(video.height, r + 2) {
-                    for n in max(1, c) - 1..min(video.width, c + 2) {
-                        if game_board_clone_clean[m][n] == 10 {
-                            chording_cells.push((m, n));
-                        }
-                    }
-                }
-
-                let _ = mark_board(&mut game_board_clone_clean, true).unwrap();
-                // 安全的概率
-                let p = cal_probability_cells_not_mine(
-                    &game_board_clone_clean,
-                    video.mine_num as f64,
-                    &chording_cells,
-                );
-
-                if p <= 0.0 || pluck == f64::MAX {
-                    pluck = f64::MAX;
-                } else if p > 0.0 {
-                    pluck -= p.log10();
-                }
-            } else if vas.useful_level == 4 {
-                pluck = f64::MAX;
-            }
-
-            if has_begin {
-                vas.key_dynamic_params.pluck = pluck;
-            } else {
-                vas.key_dynamic_params.pluck = 0.0;
-            }
-        }
-    }
-    video.video_analyse_params.pluck = pluck;
+    super::pluck::analyse(video, f64::MAX);
 }
 
 #[derive(Debug, PartialEq)]

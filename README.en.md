@@ -175,6 +175,38 @@ Python >= 3.8, <= 3.13:
 | **OCR** | Image → board state (`rs` or `py` feature) |
 | **Analysis** | Efficiency, pluck, jump detection |
 
+### Pluck-related metrics
+
+`analyse_for_features(["pluck"])` computes all metrics below together. They accumulate along
+the replay using the existing first-effective-left-click exemption and pre-action single-cell
+or joint chord safety probabilities.
+
+Let `L_i` be cumulative safety after action `i`, with `L_0 = 1`, `ΔB_i` the newly solved BV,
+and `Δt_i` the time elapsed since the previous event:
+
+| Property | Definition |
+|----------|------------|
+| `pluck` | `-log10(L_i)`, retaining existing failure markers |
+| `luck` | `10^(-pluck)` |
+| `expected_bbbv_solved_per_attempt` | `Σ L_i × ΔB_i` |
+| `expected_bbbv_solved_per_win` | Accumulated weighted BV divided by current `L_i` |
+| `expected_time_per_attempt` | `Σ L_(i-1) × Δt_i`, in seconds |
+| `expected_time_per_win` | Accumulated weighted time divided by current `L_i`, in seconds |
+
+`per_attempt` denotes an expectation for one attempt; `per_win` denotes the expected cumulative amount per win.
+
+Time is paid before the action's risk; BV is credited afterward. Moves, waits, and guesses
+that solve no BV still affect time/risk. Multiple BV solved together contribute their full count.
+Pre-game time is excluded. A fatal action follows existing pluck semantics: luck becomes 0,
+both `per_win` values become positive infinity, and accumulated weighted work/time are retained.
+Normalized values accumulate directly to avoid dividing an underflowed Luck.
+
+Python and JavaScript expose read-only properties; Rust exposes `get_<property>()` methods.
+Playback uses event snapshots and continues time accumulation between events at the current Luck.
+Before feature analysis these values are NaN. After a game finishes, reading any metric computes
+and caches the entire result on demand. Reset and reanalysis invalidate the cache.
+`KeyDynamicParams` also exposes these values at each event's timestamp.
+
 ---
 
 ## Build Dependencies

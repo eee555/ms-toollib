@@ -29,6 +29,22 @@ use crate::videos::types::{
     Event, GameDynamicParams, KeyDynamicParams, MouseEvent, StaticParams, VideoActionStateRecorder,
     VideoAnalyseParams, VideoDynamicParams,
 };
+
+#[cfg(any(feature = "py", feature = "rs"))]
+pub struct LivePluckSnapshot(Option<super::pluck::live::Worker>, bool);
+
+#[cfg(any(feature = "py", feature = "rs"))]
+impl LivePluckSnapshot {
+    pub fn ready(&self) -> Result<Option<f64>, &'static str> {
+        if !self.1 { return Err("live pluck is disabled"); }
+        self.0.as_ref().map_or(Ok(Some(0.0)), |worker| worker.ready_checked())
+    }
+
+    pub fn wait(&self) -> Result<f64, &'static str> {
+        if !self.1 { return Err("live pluck is disabled"); }
+        self.0.as_ref().map_or(Ok(0.0), |worker| worker.wait())
+    }
+}
 /// 扫雷游戏状态机
 /// 功能：整局游戏的全部信息。自动推导局面、计算数据、计时、保存文件等功能。
 /// 以下是在python中调用的示例。
@@ -206,6 +222,10 @@ pub struct BaseVideo<T> {
     pub video_dynamic_params: VideoDynamicParams,
     /// 最终的录像需要分析才能计算的指标，计算代价最大
     pub video_analyse_params: VideoAnalyseParams,
+    #[cfg(any(feature = "py", feature = "rs"))]
+    live_pluck: Option<super::pluck::live::Worker>,
+    #[cfg(any(feature = "py", feature = "rs"))]
+    live_pluck_enabled: bool,
     // /// 最终的路径长度
     // pub path: usize,
     // /// 开始扫前，已经标上的雷。如果操作流中包含标这些雷的过程，
@@ -273,6 +293,10 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             game_dynamic_params: GameDynamicParams::default(),
             video_dynamic_params: VideoDynamicParams::default(),
             video_analyse_params: VideoAnalyseParams::default(),
+            #[cfg(any(feature = "py", feature = "rs"))]
+            live_pluck: None,
+            #[cfg(any(feature = "py", feature = "rs"))]
+            live_pluck_enabled: false,
             checksum: vec![],
             can_analyse: false,
             // net_start_time: 0.0,
@@ -330,6 +354,10 @@ impl Default for BaseVideo<SafeBoard> {
             game_dynamic_params: GameDynamicParams::default(),
             video_dynamic_params: VideoDynamicParams::default(),
             video_analyse_params: VideoAnalyseParams::default(),
+            #[cfg(any(feature = "py", feature = "rs"))]
+            live_pluck: None,
+            #[cfg(any(feature = "py", feature = "rs"))]
+            live_pluck_enabled: false,
             checksum: vec![],
             can_analyse: false,
             // net_start_time: 0.0,
@@ -755,6 +783,8 @@ impl<T> BaseVideo<T> {
         self.cell_pixel_size = pix_size;
         self.video_action_state_recorder.clear();
         self.raw_data.clear();
+        #[cfg(any(feature = "py", feature = "rs"))]
+        { self.live_pluck = None; }
         self.static_params = StaticParams::default();
         self.game_dynamic_params = GameDynamicParams::default();
         self.video_dynamic_params = VideoDynamicParams::default();
@@ -772,7 +802,9 @@ impl<T> BaseVideo<T> {
         T: std::ops::Index<usize> + BoardSize + From<Vec<Vec<i32>>> + Clone,
         T::Output: std::ops::Index<usize, Output = i32>,
     {
-        assert!(!board.is_empty());
+        if board.len() != self.height || board.iter().any(|row| row.len() != self.width) {
+            return Err(());
+        }
         match self.game_board_state {
             GameBoardState::Ready | GameBoardState::PreFlaging => {
                 if self.width != board[0].len() || self.height != board.len() {
@@ -840,6 +872,41 @@ impl<T> BaseVideo<T> {
         Ok(self.get_pluck_metrics()?.pluck)
     }
 
+    /// Enable asynchronous calculation, including prior actions in this game.
+    /// Disabling releases the current worker; queued work and existing snapshots
+    /// finish independently. Re-enabling rebuilds from the recorded actions.
+    /// Reset clears the result but preserves this setting.
+    #[cfg(any(feature = "py", feature = "rs"))]
+    pub fn set_live_pluck_enabled(&mut self, enabled: bool) {
+        if enabled == self.live_pluck_enabled { return; }
+        self.live_pluck_enabled = enabled;
+        self.live_pluck = None;
+        if enabled {
+            for record in &self.video_action_state_recorder {
+                if matches!(record.useful_level, 2 | 3) {
+                    self.live_pluck.get_or_insert_with(super::pluck::live::Worker::new)
+                        .submit(record, self.cell_pixel_size, self.mine_num);
+                }
+            }
+        }
+    }
+
+    #[cfg(any(feature = "py", feature = "rs"))]
+    pub fn live_pluck_enabled(&self) -> bool { self.live_pluck_enabled }
+
+    /// Capture the current game's submitted actions before resetting or disabling.
+    #[cfg(any(feature = "py", feature = "rs"))]
+    pub fn live_pluck_snapshot(&self) -> LivePluckSnapshot {
+        LivePluckSnapshot(self.live_pluck.clone(), self.live_pluck_enabled)
+    }
+
+    /// Returns None when disabled or while submitted actions are being analysed.
+    #[cfg(any(feature = "py", feature = "rs"))]
+    pub fn get_live_pluck(&self) -> Option<f64> {
+        if !self.live_pluck_enabled { return None; }
+        self.live_pluck.as_ref().map_or(Some(0.0), |worker| worker.ready())
+    }
+
     pub fn get_luck(&mut self) -> Result<f64, ()> {
         Ok(self.get_pluck_metrics()?.get_luck())
     }
@@ -899,6 +966,8 @@ impl<T> BaseVideo<T> {
             GameBoardState::Ready => {
                 self.game_board_stream.clear();
                 self.video_action_state_recorder.clear();
+                #[cfg(any(feature = "py", feature = "rs"))]
+                { self.live_pluck = None; }
                 self.reset_click_paths();
                 return Ok(0);
             }
@@ -1054,6 +1123,11 @@ impl<T> BaseVideo<T> {
                 c_path: self.game_dynamic_params.c_path,
                 e_path: self.game_dynamic_params.e_path,
             });
+        #[cfg(any(feature = "py", feature = "rs"))]
+        if self.live_pluck_enabled && matches!(a, 2 | 3) {
+            let worker = self.live_pluck.get_or_insert_with(super::pluck::live::Worker::new);
+            worker.submit(self.video_action_state_recorder.last().unwrap(), self.cell_pixel_size, self.mine_num);
+        }
         // println!("push: {:?}, {:?}, ({:?}, {:?})", time, e, pos.0, pos.1);
         Ok(0)
     }

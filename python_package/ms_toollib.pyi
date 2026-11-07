@@ -351,6 +351,16 @@ class AvfVideo:
     def country(self, country: str) -> None: ...
 
 
+class LivePluckSnapshot:
+    """A fixed action boundary; poll returns None while pending, wait blocks.
+
+    Both raise RuntimeError if disabled at capture or the worker fails.
+    Snapshots remain valid after reset or disabling.
+    """
+    def poll(self) -> float | None: ...
+    def wait(self) -> float: ...
+
+
 class BaseVideo:
     def __init__(self, board: list[list[int]], cell_pixel_size: int = 16) -> None: ...
 
@@ -367,6 +377,18 @@ class BaseVideo:
     def step(self, e: str, pos: tuple[int, int]) -> None: ...
 
     def step_game_state(self, e: str) -> None: ...
+
+    live_pluck_enabled: bool
+    """Opt in to asynchronous calculation; reset preserves the setting.
+
+    Enabling includes earlier actions; disabling releases the current worker,
+    whose queued work can still finish for previously captured snapshots.
+    """
+
+    @property
+    def live_pluck(self) -> float | None: ...
+
+    def live_pluck_snapshot(self) -> LivePluckSnapshot: ...
 
     def reset(self, row: int, column: int, pix_size: int) -> None: ...
 

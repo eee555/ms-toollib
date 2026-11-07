@@ -1,5 +1,5 @@
 // 定向测试：局面状态机内置的 EVF 模式（6 / 7 / 8 / 9 / 10 / 11–16）
-use ms_toollib::{GameBoardState, MinesweeperBoard};
+use ms_toollib::{GameBoardState, MinesweeperBoard, MouseState};
 
 /// 4x4，雷在 (0,1)、(2,2)。
 /// 从 (0,3) 开始扫开一片区域后，局面仍有歧义（不可解）。
@@ -462,4 +462,21 @@ fn mode_8_solvable_chord_still_loses() {
     chord_at(&mut b, (1, 2));
     assert_eq!(b.game_board_state, GameBoardState::Loss);
     assert!(!b.board_changed);
+}
+
+#[test]
+fn mode_6_sentinel_press_is_not_a_phantom_click() {
+    // 按住空格看概率时，ui 把鼠标操作重定向到局面外的哨兵坐标 (row, column)。
+    // 该序列：局面外按下左键 → 松开空格 → 在局面内松开左键，
+    // 不应被当成一次真实点击，更不该在无猜模式下判负。
+    let mut b = board_of(6, guess_board(), guess_game_board());
+    b.step("lc", (4, 4)).unwrap();
+    assert_eq!(b.mouse_state, MouseState::UpUp);
+    b.step("lr", (1, 1)).unwrap();
+    assert_eq!(b.game_board_state, GameBoardState::Playing);
+    assert_eq!(b.mouse_state, MouseState::UpUp);
+    assert!(!b.board_changed);
+    assert_eq!(b.board[1][1], 2); // 没有发生重排
+    assert_eq!(b.game_board[1][1], 10); // 没有被打开
+    assert_eq!(b.left, 1); // 局面外的左键也计入次数
 }

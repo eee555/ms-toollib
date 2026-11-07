@@ -1052,17 +1052,26 @@ impl<T> MinesweeperBoard<T> {
         }
         // 状态为playing，就继续往下走
         match e {
-            "lc" => match self.mouse_state {
-                MouseState::UpUp => self.mouse_state = MouseState::DownUp,
-                MouseState::UpDown => self.mouse_state = MouseState::Chording,
-                MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
-                // 以下情况其实是不可能的
-                MouseState::DownUp => {} // 左键按下后、窗口失焦、左键按下
-                MouseState::DownUpAfterChording => {}
-                MouseState::Chording => {}
-                MouseState::ChordingNotFlag => {}
-                MouseState::Undefined => self.mouse_state = MouseState::DownUp,
-            },
+            "lc" => {
+                if pos.0 == self.row && pos.1 == self.column {
+                    // 局面外的左键按下（ui 用哨兵坐标表示“操作不在局面上”，例如按住空格看概率时）。
+                    // 不能进入 DownUp 状态：否则局面内松开左键会被当成一次真实点击，
+                    // 无猜等模式下该格“可能是雷”时直接重排雷局判负。
+                    self.left += 1;
+                    return Ok(0);
+                }
+                match self.mouse_state {
+                    MouseState::UpUp => self.mouse_state = MouseState::DownUp,
+                    MouseState::UpDown => self.mouse_state = MouseState::Chording,
+                    MouseState::UpDownNotFlag => self.mouse_state = MouseState::ChordingNotFlag,
+                    // 以下情况其实是不可能的
+                    MouseState::DownUp => {} // 左键按下后、窗口失焦、左键按下
+                    MouseState::DownUpAfterChording => {}
+                    MouseState::Chording => {}
+                    MouseState::ChordingNotFlag => {}
+                    MouseState::Undefined => self.mouse_state = MouseState::DownUp,
+                }
+            }
             "lr" => match self.mouse_state {
                 MouseState::DownUp => {
                     self.mouse_state = MouseState::UpUp;

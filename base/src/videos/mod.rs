@@ -21,6 +21,7 @@ pub mod minesweeper_board;
 pub mod relayout;
 pub use minesweeper_board::{GameBoardState, MinesweeperBoard, MouseState};
 mod analyse_methods;
+mod pluck;
 
 pub trait NewSomeVideo<T> {
     fn new(file_name: T) -> Self;

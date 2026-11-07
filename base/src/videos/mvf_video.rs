@@ -571,6 +571,12 @@ impl MvfVideo {
             } else {
                 Ok(())
             }
+        } else if c == 0x00 && d == 0x00 {
+            // Clone 0.97 的一个未知修改版（rawvf 中称为 "0.97 Unknown Hack"）：
+            // 文件头以 00 00 开头，真正的 0.97 数据（日期、统计、局面、事件）从偏移 7 开始。
+            self.data.offset = 7;
+            self.data.software = "Minesweeper Clone 0.97 Unknown Hack".to_string();
+            return self.read_097();
         } else {
             Ok(())
         }

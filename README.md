@@ -156,6 +156,35 @@ julia demos/julia/callms_toollib.jl
 | **局面识别** | 图片输入 → 识别局面（需 `rs` 或 `py` feature） |
 | **录像分析** | 效率指标、pluck 检测、跳判检测 |
 
+### pluck 相关指标
+
+通过 `analyse_for_features(["pluck"])` 一次计算以下所有指标。它们沿当前录像累计，
+与现有 pluck 共用首个有效左击豁免，以及基于操作前局面的单格／双击联合安全概率。
+
+设第 `i` 次操作后的累计安全权重为 `L_i`，`L_0 = 1`，新增解决量为 `ΔB_i`，
+自上次事件至本次操作的耗时为 `Δt_i`：
+
+| 参数 | 定义 |
+|------|------|
+| `pluck` | `-log10(L_i)`，保留原有接口和失败标记 |
+| `luck` | `10^(-pluck)` |
+| `expected_bbbv_solved_per_attempt` | `Σ L_i × ΔB_i` |
+| `expected_bbbv_solved_per_win` | 上述累计解决量除以当前 `L_i` |
+| `expected_time_per_attempt` | `Σ L_(i-1) × Δt_i`，单位为秒 |
+| `expected_time_per_win` | 上述累计时间除以当前 `L_i`，单位为秒 |
+
+`per_attempt` 表示单次尝试的期望量，`per_win` 表示每次获胜的期望累计量。
+
+时间使用操作前的 Luck，BV 贡献使用操作后的 Luck；移动、等待和不推进 BV 的猜雷也计入相应时间／风险。
+一次解决多个 BV 时按新增数量累计，预标雷等游戏计时开始前的时间不计入。
+触雷沿用原 pluck 约定：`luck = 0`，两个 `per_win` 指标为正无穷；已累计的加权工作量和耗时保留。
+归一化结果直接累计，避免先求极小 Luck 再除法导致的数值下溢问题。
+
+Python、JavaScript 使用同名只读属性；Rust 使用 `get_<参数名>()`。
+录像播放读取事件快照，并在事件之间按当前 Luck 继续累计时间。
+尚未执行 pluck 特征分析时返回 NaN。游戏结束后首次读取任一指标会按需计算并缓存全部结果；
+重开或重新 `analyse()` 会使缓存失效。`KeyDynamicParams` 同时提供事件时刻的这些数值。
+
 ---
 
 ## 版本号

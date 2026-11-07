@@ -32,3 +32,6 @@ test_files/temp.mvf
 /__pycache__
 /.trae
 test_files/temp.avf
+/.vendor
+/.vendor_tools
+/.cargo-home

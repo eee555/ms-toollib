@@ -20,7 +20,7 @@ pub use gameboard::{PyBoard, PyGameBoard};
 
 mod base_video;
 pub use base_video::{
-    PyBaseVideo, PyKeyDynamicParams, PySafeBoard, PySafeBoardRow, PyVideoActionStateRecorder,
+    PyBaseVideo, PyKeyDynamicParams, PyLivePluckSnapshot, PySafeBoard, PySafeBoardRow, PyVideoActionStateRecorder,
 };
 
 // mod avf_video;
@@ -576,6 +576,7 @@ fn ms_toollib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<MvfVideo>()?;
     m.add_class::<EvfVideo>()?;
     m.add_class::<PyBaseVideo>()?;
+    m.add_class::<PyLivePluckSnapshot>()?;
     m.add_class::<PyGameBoard>()?;
     m.add_class::<PyBoard>()?;
     m.add_class::<PySafeBoard>()?;

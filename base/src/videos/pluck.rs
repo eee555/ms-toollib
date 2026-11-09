@@ -2,7 +2,6 @@ use super::{BaseVideo, Event, VideoActionStateRecorder, VideoAnalyseParams};
 use crate::algorithms::{cal_probability_cells_not_mine, mark_board};
 
 /// A worker owns its inputs; it never accesses the live video's Rc/RefCell state.
-#[cfg(any(feature = "py", feature = "rs"))]
 pub(super) mod live {
     use crate::GameBoard;
     use std::sync::{mpsc, Arc, Condvar, Mutex};

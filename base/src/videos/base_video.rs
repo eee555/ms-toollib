@@ -30,10 +30,8 @@ use crate::videos::types::{
     VideoAnalyseParams, VideoDynamicParams,
 };
 
-#[cfg(any(feature = "py", feature = "rs"))]
 pub struct LivePluckSnapshot(Option<super::pluck::live::Worker>, bool);
 
-#[cfg(any(feature = "py", feature = "rs"))]
 impl LivePluckSnapshot {
     pub fn ready(&self) -> Result<Option<f64>, &'static str> {
         if !self.1 { return Err("live pluck is disabled"); }
@@ -222,9 +220,7 @@ pub struct BaseVideo<T> {
     pub video_dynamic_params: VideoDynamicParams,
     /// 最终的录像需要分析才能计算的指标，计算代价最大
     pub video_analyse_params: VideoAnalyseParams,
-    #[cfg(any(feature = "py", feature = "rs"))]
     live_pluck: Option<super::pluck::live::Worker>,
-    #[cfg(any(feature = "py", feature = "rs"))]
     live_pluck_enabled: bool,
     // /// 最终的路径长度
     // pub path: usize,
@@ -293,9 +289,7 @@ impl Default for BaseVideo<Vec<Vec<i32>>> {
             game_dynamic_params: GameDynamicParams::default(),
             video_dynamic_params: VideoDynamicParams::default(),
             video_analyse_params: VideoAnalyseParams::default(),
-            #[cfg(any(feature = "py", feature = "rs"))]
             live_pluck: None,
-            #[cfg(any(feature = "py", feature = "rs"))]
             live_pluck_enabled: false,
             checksum: vec![],
             can_analyse: false,
@@ -354,9 +348,7 @@ impl Default for BaseVideo<SafeBoard> {
             game_dynamic_params: GameDynamicParams::default(),
             video_dynamic_params: VideoDynamicParams::default(),
             video_analyse_params: VideoAnalyseParams::default(),
-            #[cfg(any(feature = "py", feature = "rs"))]
             live_pluck: None,
-            #[cfg(any(feature = "py", feature = "rs"))]
             live_pluck_enabled: false,
             checksum: vec![],
             can_analyse: false,

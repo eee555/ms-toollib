@@ -4,6 +4,22 @@ use ms_toollib_original::videos::types::KeyDynamicParams;
 use ms_toollib_original::*;
 use pyo3::{IntoPyObjectExt, prelude::*};
 
+#[pyclass(name = "LivePluckSnapshot")]
+pub struct PyLivePluckSnapshot {
+    core: ms_toollib_original::videos::base_video::LivePluckSnapshot,
+}
+
+#[pymethods]
+impl PyLivePluckSnapshot {
+    fn poll(&self) -> PyResult<Option<f64>> {
+        self.core.ready().map_err(pyo3::exceptions::PyRuntimeError::new_err)
+    }
+
+    fn wait(&self, py: Python<'_>) -> PyResult<f64> {
+        py.detach(|| self.core.wait()).map_err(pyo3::exceptions::PyRuntimeError::new_err)
+    }
+}
+
 #[pyclass(name = "SafeBoardRow")]
 pub struct PySafeBoardRow {
     pub core: SafeBoardRow,
@@ -487,6 +503,23 @@ impl PyBaseVideo {
     pub fn step_game_state(&mut self, e: &str) {
         self.core.step_game_state(e).unwrap();
     }
+    /// Enable live calculation (default false). Reset preserves this setting.
+    #[getter]
+    fn get_live_pluck_enabled(&self) -> bool {
+        self.core.live_pluck_enabled()
+    }
+    #[setter]
+    fn set_live_pluck_enabled(&mut self, enabled: bool) {
+        self.core.set_live_pluck_enabled(enabled);
+    }
+    /// None indicates disabled or background calculation still in progress.
+    #[getter]
+    fn get_live_pluck(&self) -> Option<f64> {
+        self.core.get_live_pluck()
+    }
+    fn live_pluck_snapshot(&self) -> PyLivePluckSnapshot {
+        PyLivePluckSnapshot { core: self.core.live_pluck_snapshot() }
+    }
     pub fn reset(&mut self, row: usize, column: usize, pix_size: u8) {
         self.core.reset(row, column, pix_size);
     }
@@ -808,8 +841,10 @@ impl PyBaseVideo {
     }
     // 这个方法与强可猜、弱可猜、埋雷有关
     #[setter]
-    pub fn set_board(&mut self, board: Vec<Vec<i32>>) {
-        self.core.set_board(board).unwrap();
+    pub fn set_board(&mut self, board: Vec<Vec<i32>>) -> PyResult<()> {
+        self.core.set_board(board).map(|_| ()).map_err(|_| {
+            pyo3::exceptions::PyValueError::new_err("invalid board dimensions or game state")
+        })
     }
     #[getter]
     fn get_board(&self) -> PyResult<PySafeBoard> {

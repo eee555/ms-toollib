@@ -1,6 +1,136 @@
 use super::{BaseVideo, Event, VideoActionStateRecorder, VideoAnalyseParams};
 use crate::algorithms::{cal_probability_cells_not_mine, mark_board};
 
+/// A worker owns its inputs; it never accesses the live video's Rc/RefCell state.
+pub(super) mod live {
+    use crate::GameBoard;
+    use std::sync::{mpsc, Arc, Condvar, Mutex};
+
+    struct Action {
+        board: Vec<Vec<i32>>,
+        mine_num: usize,
+        row: usize,
+        column: usize,
+        useful: u8,
+    }
+
+    #[derive(Clone)]
+    pub struct Worker {
+        sender: mpsc::Sender<Action>,
+        result: Arc<(Mutex<(Vec<f64>, bool)>, Condvar)>,
+        submitted: usize,
+    }
+
+    impl Worker {
+        pub fn new() -> Self {
+            let (sender, receiver) = mpsc::channel::<Action>();
+            let result = Arc::new((Mutex::new((vec![0.0], false)), Condvar::new()));
+            let output = Arc::clone(&result);
+            std::thread::spawn(move || {
+                let mut first = true;
+                let mut pluck = 0.0;
+                let completed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| for action in receiver {
+                    if first && action.useful == 2 {
+                        first = false;
+                    } else {
+                        let safety = if action.useful == 2 {
+                            let mut board = GameBoard::new(action.mine_num);
+                            board.set_game_board(&action.board);
+                            1.0 - board.get_poss()[action.row][action.column]
+                        } else {
+                            let mut board = action.board;
+                            let mut cells = Vec::new();
+                            for r in action.row.saturating_sub(1)..(action.row + 2).min(board.len()) {
+                                for c in action.column.saturating_sub(1)..(action.column + 2).min(board[r].len()) {
+                                    if board[r][c] == 10 { cells.push((r, c)); }
+                                }
+                            }
+                            super::mark_board(&mut board, true).unwrap();
+                            super::cal_probability_cells_not_mine(&board, action.mine_num as f64, &cells)
+                        };
+                        if safety <= 0.0 { pluck = f64::INFINITY; }
+                        else if safety < 1.0 { pluck -= safety.log10(); }
+                    }
+                    let mut result = output.0.lock().unwrap();
+                    result.0.push(pluck);
+                    output.1.notify_all();
+                }));
+                if completed.is_err() {
+                    output.0.lock().unwrap_or_else(|e| e.into_inner()).1 = true;
+                    output.1.notify_all();
+                }
+            });
+            Self { sender, result, submitted: 0 }
+        }
+
+        pub fn submit(&mut self, record: &super::VideoActionStateRecorder, pixel: u8, mine_num: usize) {
+            if !matches!(record.useful_level, 2 | 3) { return; }
+            let (Some(super::Event::Mouse(mouse)), Some(prior)) = (&record.event, &record.prior_game_board) else { return; };
+            let action = Action {
+                board: prior.borrow().game_board.clone(), mine_num,
+                row: mouse.y as usize / pixel as usize,
+                column: mouse.x as usize / pixel as usize,
+                useful: record.useful_level,
+            };
+            self.submitted += 1;
+            if self.sender.send(action).is_err() {
+                self.result.0.lock().unwrap_or_else(|e| e.into_inner()).1 = true;
+                self.result.1.notify_all();
+            }
+        }
+
+        pub fn ready(&self) -> Option<f64> {
+            self.ready_checked().ok().flatten()
+        }
+
+        pub fn ready_checked(&self) -> Result<Option<f64>, &'static str> {
+            let result = match self.result.0.try_lock() {
+                Ok(result) => result,
+                Err(std::sync::TryLockError::WouldBlock) => return Ok(None),
+                Err(std::sync::TryLockError::Poisoned(_)) => return Err("live pluck result lock poisoned"),
+            };
+            if let Some(value) = result.0.get(self.submitted) { return Ok(Some(*value)); }
+            if result.1 { return Err("live pluck worker failed"); }
+            Ok(None)
+        }
+
+        pub fn wait(&self) -> Result<f64, &'static str> {
+            let mut result = self.result.0.lock().map_err(|_| "live pluck result lock poisoned")?;
+            loop {
+                if let Some(value) = result.0.get(self.submitted) { return Ok(*value); }
+                if result.1 { return Err("live pluck worker failed"); }
+                result = self.result.1.wait(result).map_err(|_| "live pluck result lock poisoned")?;
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn wait_wakes_all_and_preserves_results_on_failure() {
+            let (sender, _receiver) = mpsc::channel();
+            let result = Arc::new((Mutex::new((vec![0.0], false)), Condvar::new()));
+            let worker = Worker { sender, result: Arc::clone(&result), submitted: 1 };
+            let threads: Vec<_> = (0..2).map(|_| {
+                let worker = worker.clone();
+                std::thread::spawn(move || worker.wait())
+            }).collect();
+            {
+                let mut state = result.0.lock().unwrap();
+                state.0.push(0.5);
+                state.1 = true;
+                result.1.notify_all();
+            }
+            for thread in threads { assert_eq!(thread.join().unwrap(), Ok(0.5)); }
+            assert_eq!(worker.wait(), Ok(0.5));
+            let later = Worker { submitted: 2, ..worker };
+            assert_eq!(later.wait(), Err("live pluck worker failed"));
+        }
+    }
+}
+
 /// 同时维护加权累计值和归一化值，避免用已下溢的Luck做除法。
 struct Accumulator {
     params: VideoAnalyseParams,

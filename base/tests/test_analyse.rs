@@ -1,5 +1,5 @@
 // 测试录像分析模块
-use ms_toollib::videos::base_video::NewBaseVideo2;
+use ms_toollib::videos::base_video::{valid_time_period, NewBaseVideo2};
 use ms_toollib::videos::NewSomeVideo;
 use ms_toollib::{
     AvfVideo, BaseVideo, Event, EvfVideo, GameBoardState, MinesweeperBoard, MouseEvent, MvfVideo,
@@ -567,6 +567,45 @@ fn rmv_video_works() {
     // video.data.analyse_for_features(vec!["jump_judge", "survive_poss"]);
     // video.data.print_comments();
     // video.data.is_valid();
+}
+
+#[test]
+fn rmv_scoreganizer_302c_works() {
+    // Regression test for issue #36: 1.6.1 的严格 version_info 白名单漏掉了
+    // Vienna Scoreganizer 3.0.2C，导致 1.6.0 可解析的历史录像被拒绝。
+    let mut video = RmvVideo::new("../test_files/3819-Time-1616-NF-9469-32-20151031.rmv");
+    video.parse().unwrap();
+    video.data.analyse();
+    assert_eq!(
+        video.data.software,
+        "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0.2C"
+    );
+    assert_eq!(video.data.get_rtime_ms().unwrap(), 9469);
+    assert_eq!(video.data.static_params.bbbv, 32);
+    // 补齐 valid_time_period 和 is_valid 的软件分支后，该录像应通过审核。
+    assert_eq!(video.data.is_valid(), 0);
+}
+
+#[test]
+fn vienna_versions_are_recognised() {
+    // RMV version_info 白名单、valid_time_period 和 is_valid 的软件分支必须
+    // 覆盖同一批 Vienna 版本，否则录像虽能解析却会在审核时被判为非法。
+    let versions = [
+        "Vienna Minesweeper - Home Edition - Release 2.2",
+        "Vienna Minesweeper - Home Edition - Release 3.0H",
+        "Vienna Minesweeper - Home Edition - Release 3.0.2H",
+        "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0C",
+        "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0.2C",
+        "Vienna Minesweeper - Release 4.0.0",
+        "Vienna Minesweeper - Release 5.0.0a2",
+        "Vienna Minesweeper - Release 5.0.0b4",
+    ];
+    for version in versions {
+        assert!(
+            valid_time_period(version).is_ok(),
+            "missing valid_time_period for {version}"
+        );
+    }
 }
 
 #[test]

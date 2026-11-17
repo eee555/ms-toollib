@@ -406,7 +406,7 @@ impl AvfVideo {
                 self.data.set_rtime(_time_from_header).unwrap();
             }
         }
-        if ver >= 47 {
+        if ver > 47 {
             // 标识符
             while self.data.get_char()? != 'S' {}
             while self.data.get_char()? != 'k' {}
@@ -416,7 +416,7 @@ impl AvfVideo {
             while self.data.get_char()? != '\r' {}
             self.data.player_identifier = self.data.get_unknown_encoding_c_string('\r')?;
         } else {
-            // 0.47之前的录像尾部没有Realtime、Skin字段，结构为“cs=”+校验和+“\r”+玩家名+“\r”
+            // 0.47及更早的录像尾部没有Realtime、Skin字段，结构为“cs=”+校验和+“\r”+玩家名+“\r”
             let mut buffer = [0u8; 3];
             while !(buffer[0] == b'c' && buffer[1] == b's' && buffer[2] == b'=') {
                 buffer[0] = buffer[1];
@@ -432,6 +432,7 @@ impl AvfVideo {
         // 软件名+版本号。这里枚举Arbiter所有合法版本号（与录像包中Program串的取值一一对应）
         let version = match self.program_version().as_str() {
             "0.46.2" => "0.46.2",
+            "0.47" => "0.47",
             "0.48.5" => "0.48.5",
             "0.49.3" => "0.49.3",
             "0.49.4" => "0.49.4",

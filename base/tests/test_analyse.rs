@@ -517,6 +517,22 @@ fn avf_video_works_other_encoding() {
 }
 
 #[test]
+fn avf_arbiter_047_works() {
+    // 回归测试：0.47 录像尾部仍用“cs=”格式而非“Skin:”，且版本白名单与
+    // 有效期表此前都漏掉 0.47，导致 2009 年的合法录像解析失败、审核不通过。
+    let mut video =
+        AvfVideo::new("../test_files/1090-Time-FL-30x16-32.950-102-3.192-20090929.avf");
+    video.parse().unwrap();
+    video.data.analyse();
+    assert_eq!(video.data.software, "Arbiter 0.47");
+    assert_eq!(video.data.player_identifier, "Ian Fraser<mouse>Logitech");
+    assert_eq!(video.data.static_params.bbbv, 102);
+    assert_eq!(video.data.get_rtime_ms().unwrap(), 32950);
+    assert_eq!(video.data.start_time, 1254249868910000u64);
+    assert_eq!(video.data.is_valid(), 0);
+}
+
+#[test]
 // cargo test --features rs -- --nocapture temp_avf_video_works
 fn temp_avf_video_works() {
     // 录像解析工具测试

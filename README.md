@@ -192,8 +192,8 @@ Python、JavaScript 使用同名只读属性；Rust 使用 `get_<参数名>()`�
 | 平台 | 最新版本 | 发布渠道 |
 |------|----------|----------|
 | Rust crate | 1.5.16 | [crates.io](https://crates.io/crates/ms_toollib) |
-| Python | 1.6.1 | `pip install ms-toollib` |
-| WASM (bundler) | 1.6.1 | `npm install ms-toollib` |
+| Python | 1.6.2 | `pip install ms-toollib` |
+| WASM (bundler) | 1.6.2 | `npm install ms-toollib` |
 | WASM (Node.js) | 1.5.16-alpha | `npm install ms-toollib@alpha` |
 | C | 0.2.0 | 源码编译 |
 | C++ | 0.2.0 | 源码编译（Corrosion + CXX） |

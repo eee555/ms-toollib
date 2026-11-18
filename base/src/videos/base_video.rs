@@ -1391,6 +1391,9 @@ pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
         // 起点：发布日期未见于论坛帖（0.46 系早于 0.47 debug 4 的 2009-09-28），保守取 0
         // 终点：后继 0.47 final 于 2009-11-09 发布，`arbiter_0_47.zip`，满一年后失效
         "Arbiter 0.46.2" => Ok(("0".to_string(), "1289260800".to_string())),
+        // 2009-09-28 发布 0.47 debug 4（`arbiter_0_47.zip`），2009-11-09 发布 0.47 final；
+        // 终点：后继 0.48.5 于 2010-11-22 发布，满一年后失效
+        "Arbiter 0.47" => Ok(("1254096000".to_string(), "1321920000".to_string())),
         // 2010-11-22 发布（arbiter_0_48_5.zip，https://minesweepergame.com/forum/viewtopic.php?t=82&start=25）
         // 终点：后继 0.49.3 于 2012-03-15 发布，满一年后失效
         "Arbiter 0.48.5" => Ok(("1290384000".to_string(), "1363305600".to_string())),

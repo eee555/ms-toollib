@@ -436,6 +436,7 @@ impl RmvVideo {
                 | "Vienna Minesweeper - Home Edition - Release 3.0H"
                 | "Vienna Minesweeper - Home Edition - Release 3.0.2H"
                 | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0C"
+                | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0.2C"
                 | "Vienna Minesweeper - Release 4.0.0"
                 | "Vienna Minesweeper - Release 5.0.0a2"
                 | "Vienna Minesweeper - Release 5.0.0b4" => version.to_string(),

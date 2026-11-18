@@ -616,8 +616,12 @@ macro_rules! generate_video {
                         core: ms::$some_video::new(data, file_name),
                     }
                 }
-                pub fn parse(&mut self) {
-                    self.core.parse().unwrap();
+                pub fn parse(&mut self) -> Result<(), JsValue> {
+                    // 返回 Err 而不是 panic：wasm-bindgen 会把 Err 转成可捕获的 JS 异常，
+                    // 且不会在 &mut self 借期内展开，调用方 catch 后仍可安全调用 free()。
+                    self.core
+                        .parse()
+                        .map_err(|e| JsValue::from_str(&format!("failed to parse video: {e:?}")))
                 }
                 pub fn analyse(&mut self) {
                     self.core.data.analyse();

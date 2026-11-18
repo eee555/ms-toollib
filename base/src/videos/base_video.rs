@@ -1423,7 +1423,10 @@ pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
         "Viennasweeper" => Ok(("0".to_string(), "1682265600".to_string())),
         // Vienna各版本时间范围待定，先按相同范围占位，待手动调整
         "Vienna Minesweeper - Home Edition - Release 2.2"
+        | "Vienna Minesweeper - Home Edition - Release 3.0H"
+        | "Vienna Minesweeper - Home Edition - Release 3.0.2H"
         | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0C"
+        | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0.2C"
         | "Vienna Minesweeper - Release 4.0.0" | "Vienna Minesweeper - Release 5.0.0a2"
         | "Vienna Minesweeper - Release 5.0.0b4" => {
             Ok(("0".to_string(), "4102415999".to_string()))
@@ -1580,7 +1583,9 @@ impl<T> BaseVideo<T> {
         let software = self.software.as_str();
         if software.starts_with("Arbiter") {
             // 对于arbiter，开源界没有鉴定的能力，只能追溯
-        } else if software.starts_with("Viennasweeper") {
+        } else if software.starts_with("Viennasweeper")
+            || software.starts_with("Vienna Minesweeper")
+        {
         } else if software.starts_with("0.97 beta")
             || software.starts_with("Minesweeper Clone 0.97")
             || software.starts_with("Minesweeper Clone 2006")

@@ -439,6 +439,7 @@ impl RmvVideo {
                 | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0.2C"
                 | "Vienna Minesweeper - Release 4.0.0"
                 | "Vienna Minesweeper - Release 5.0.0a2"
+                | "Vienna Minesweeper - Release 5.0.0b1"
                 | "Vienna Minesweeper - Release 5.0.0b4" => version.to_string(),
                 _ => return Err(ErrReadVideoReason::InvalidParams),
             }

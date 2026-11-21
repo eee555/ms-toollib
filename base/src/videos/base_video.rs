@@ -1384,8 +1384,9 @@ pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
     //      Arbiter 0.52.3 列为官方版本，https://minesweepergame.com/clone-cheats.php 也没有 Arbiter 的封禁条目。
     //   因此这里的“失效”只是版本更替后的时效，不是封禁；0.49.3 之前的 PRNG 多实例漏洞、0.50.1 被公开的内存
     //   读取器针对，也只会加重人工复核（自 2012-12 起新纪录均须 3 名管理员审核，见 t=82 的 p1709）。
-    // 跳号版本（0.49.1、0.49.2、0.51、0.52.1）在论坛里没有任何发布记录，按不存在处理，即 0.48.5 以 0.49.3
-    // 为后继、0.50.1 以 0.52 为后继；0.49.5 有发布日期（2012-06-01），作为 0.49.4 的后继计入。
+    // 跳号版本（0.49.1、0.49.2、0.52.1）在论坛里没有任何发布记录，按不存在处理，即 0.48.5 以 0.49.3
+    // 为后继、0.50.1 以有明确发布日期的 0.52 为后继；0.49.5 有发布日期（2012-06-01），作为 0.49.4 的后继计入。
+    // 0.51 已见于实际录像，但发布日期暂无可靠资料，先按占位起点处理。
     // 日期均取当日 00:00:00 UTC，只精确到日：论坛帖本身只记载到日。
     match software {
         // 起点：发布日期未见于论坛帖（0.46 系早于 0.47 debug 4 的 2009-09-28），保守取 0
@@ -1410,6 +1411,9 @@ pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
         // 2013-10-23 起被公开的内存读取器针对，但这只加重复核，不改变时效
         // 终点：后继 0.52 于 2013-12-09 发布，满一年后失效
         "Arbiter 0.50.1" => Ok(("1380585600".to_string(), "1418083200".to_string())),
+        // 发布日期暂无可靠资料，按本函数的占位规则从 0 开始
+        // 终点：后继 0.52 于 2013-12-09 发布，满一年后失效
+        "Arbiter 0.51" => Ok(("0".to_string(), "1418083200".to_string())),
         // 2013-12-09 发布（https://minesweepergame.com/forum/viewtopic.php?p=1773#p1773）
         // 终点：后继 0.52.2 于 2013-12-28 发布，满一年后失效，即只有约 19 天的新版本空窗
         "Arbiter 0.52" => Ok(("1386547200".to_string(), "1419724800".to_string())),
@@ -1431,7 +1435,7 @@ pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
         | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0C"
         | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0.2C"
         | "Vienna Minesweeper - Release 4.0.0" | "Vienna Minesweeper - Release 5.0.0a2"
-        | "Vienna Minesweeper - Release 5.0.0b4" => {
+        | "Vienna Minesweeper - Release 5.0.0b1" | "Vienna Minesweeper - Release 5.0.0b4" => {
             Ok(("0".to_string(), "4102415999".to_string()))
         }
         // 2024-07-26 00:00:00 发布，2026-03-03 00:00:00发现影响公平性的漏洞失效

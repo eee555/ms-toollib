@@ -18,6 +18,26 @@ pub enum ErrReadVideoReason {
     Utf8Error,
 }
 
+impl std::fmt::Display for ErrReadVideoReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::CanNotFindFile => write!(f, "Cannot find file"),
+            Self::FileIsTooShort => write!(f, "File is too short"),
+            Self::FileIsNotRmv => write!(f, "File is not RMV"),
+            Self::FileIsEmpty => write!(f, "File is empty"),
+            Self::InvalidBoardSize => write!(f, "Invalid board size"),
+            Self::InvalidLevel => write!(f, "Invalid level"),
+            Self::InvalidParams => write!(f, "Invalid video parameters"),
+            Self::InvalidVideoEvent => write!(f, "Invalid video event"),
+            Self::InvalidMinePosition => write!(f, "Invalid mine position"),
+            Self::VersionBackward => write!(f, "Unsupported newer video version"),
+            Self::Utf8Error => write!(f, "Invalid UTF-8 string"),
+        }
+    }
+}
+
+impl std::error::Error for ErrReadVideoReason {}
+
 #[derive(Clone)]
 pub enum Event {
     Mouse(MouseEvent),

@@ -428,21 +428,13 @@ impl RmvVideo {
         };
         let version = version.trim_end();
         self.data.software = if !version.is_empty() {
-            // 显式枚举 .rmv 的 version_info 中可能出现的全部版本字符串（已去掉版权尾部），
-            // 与 avf 的版本白名单同样严格：未登记的版本直接报错，防止假冒录像。
-            // 新增版本时必须在此登记，否则该版本生成的录像会被判为非法。
-            match version {
-                "Vienna Minesweeper - Home Edition - Release 2.2"
-                | "Vienna Minesweeper - Home Edition - Release 3.0H"
-                | "Vienna Minesweeper - Home Edition - Release 3.0.2H"
-                | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0C"
-                | "Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0.2C"
-                | "Vienna Minesweeper - Release 4.0.0"
-                | "Vienna Minesweeper - Release 5.0.0a2"
-                | "Vienna Minesweeper - Release 5.0.0b1"
-                | "Vienna Minesweeper - Release 5.0.0b4" => version.to_string(),
-                _ => return Err(ErrReadVideoReason::InvalidParams),
-            }
+            // version已登记的典型取值：
+            // - Vienna Minesweeper - Home Edition - Release 2.2 / 3.0H / 3.0.2H
+            // - Vienna Minesweeper - Scoreganizer Client Edition - Release 3.0C / 3.0.2C
+            // - Vienna Minesweeper - Release 4.0.0 / 5.0.0a2 / 5.0.0b1 / 5.0.0b4
+            // 原始串还可能带“ (copyright by RT&R 2005/2012)”等版权尾部，上面已去除。
+            // 未知取值也会原样保留并按RMV容器版本尽力解析，由is_valid判为不合法。
+            version.to_string()
         } else if format_version == 1 {
             // rmv1 可以不写 version_info，此时只知道软件名、无从得知版本号
             "Viennasweeper".to_string()

@@ -1423,9 +1423,11 @@ pub fn valid_time_period(software: &str) -> Result<(String, String), String> {
         // 2014-06-12 发布（https://minesweepergame.com/forum/viewtopic.php?p=1888#p1888）
         // 终点：此后 11 年无新版本发布，也没有后继，按永久处理
         "Arbiter 0.52.3" => Ok(("1402531200".to_string(), "4102415999".to_string())),
-        // 未确定。Minesweeper Clone的0.97与2007各版本，先按相同范围占位
+        // Minesweeper Clone于2013-06-30后被扫雷网禁用；起始日期待考，仍按0处理
+        // 参考：https://m.baike.com/wiki/Minesweeper%20Arbiter/9085870
+        // 终点：北京时间2013-07-01 00:00:00前一秒，此后的Clone录像不再被承认
         "Minesweeper Clone 0.97 beta" | "Minesweeper Clone 2007 release 1"
-        | "Minesweeper Clone 2007 release 2" => Ok(("0".to_string(), "4102415999".to_string())),
+        | "Minesweeper Clone 2007 release 2" => Ok(("0".to_string(), "1372607999".to_string())),
         // 2023-04-24 00:00:00 前，发现影响公平性的漏洞失效
         "Viennasweeper" => Ok(("0".to_string(), "1682265600".to_string())),
         // Vienna各版本时间范围待定，先按相同范围占位，待手动调整

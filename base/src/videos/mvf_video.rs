@@ -558,13 +558,9 @@ impl MvfVideo {
                 //Clone 2006、2007。版本号从53开始，正式数据从71开始
                 self.data.offset = 53;
                 let len = self.data.get_u8()?;
-                // 版本串形如“2007 release 1”，这里枚举录像包中出现的全部取值
-                let version = match self.data.get_unknown_encoding_string(len)?.as_str() {
-                    "2007 release 1" => "2007 release 1",
-                    "2007 release 2" => "2007 release 2",
-                    // 版本串未登记：直接报错
-                    _ => return Err(ErrReadVideoReason::InvalidParams),
-                };
+                // version已登记的取值为“2007 release 1”和“2007 release 2”。
+                // 未知取值也会保留并按2006/2007结构尽力解析，由is_valid判为不合法。
+                let version = self.data.get_unknown_encoding_string(len)?;
                 self.data.software = format!("Minesweeper Clone {}", version);
                 self.data.offset = 71;
                 return self.read_2007();

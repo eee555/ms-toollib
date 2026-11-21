@@ -90,8 +90,10 @@ impl PyEvfs {
     pub fn generate_evfs_v0_raw_data(&mut self) {
         self.core.generate_evfs_v0_raw_data();
     }
-    pub fn parse(&mut self) {
-        self.core.parse().unwrap();
+    pub fn parse(&mut self) -> PyResult<()> {
+        self.core
+            .parse()
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("录像解析失败：{e}")))
     }
     pub fn analyse(&mut self) {
         self.core.analyse().unwrap();

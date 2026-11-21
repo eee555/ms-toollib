@@ -621,7 +621,7 @@ macro_rules! generate_video {
                     // 且不会在 &mut self 借期内展开，调用方 catch 后仍可安全调用 free()。
                     self.core
                         .parse()
-                        .map_err(|e| JsValue::from_str(&format!("failed to parse video: {e:?}")))
+                        .map_err(|e| JsValue::from_str(&format!("failed to parse video: {e}")))
                 }
                 pub fn analyse(&mut self) {
                     self.core.data.analyse();

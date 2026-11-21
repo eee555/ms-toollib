@@ -27,8 +27,10 @@ macro_rules! generate_video {
                     return $name { core: c };
                 }
             }
-            pub fn parse(&mut self) {
-                self.core.parse().unwrap();
+            pub fn parse(&mut self) -> PyResult<()> {
+                self.core.parse().map_err(|e| {
+                    pyo3::exceptions::PyValueError::new_err(format!("录像解析失败：{e}"))
+                })
             }
             pub fn analyse(&mut self) {
                 self.core.data.analyse();

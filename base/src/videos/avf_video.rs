@@ -429,44 +429,33 @@ impl AvfVideo {
             }
             self.data.player_identifier = self.data.get_unknown_encoding_c_string('\r')?;
         }
-        // 软件名+版本号。这里枚举Arbiter所有合法版本号（与录像包中Program串的取值一一对应）
-        let version = match self.program_version().as_str() {
-            "0.46.2" => "0.46.2",
-            "0.47" => "0.47",
-            "0.48.5" => "0.48.5",
-            "0.49.3" => "0.49.3",
-            "0.49.4" => "0.49.4",
-            "0.49.6" => "0.49.6",
-            "0.50.1" => "0.50.1",
-            "0.51" => "0.51",
-            "0.52" => "0.52",
-            "0.52.2" => "0.52.2",
-            "0.52.3" => "0.52.3",
-            // 版本未登记：直接报错，防止假冒录像
-            _ => return Err(ErrReadVideoReason::InvalidParams),
+        // version已登记的典型取值：0.46.2、0.47、0.48.5、0.49.3、0.49.4、0.49.6、
+        // 0.50.1、0.51、0.52、0.52.2、0.52.3；完整software会带“Arbiter ”前缀。
+        // 解析阶段保留版本信息，不在此判断版本是否合法；未知版本由 is_valid() 拒绝。
+        self.data.software = match self.program_version() {
+            Some(version) => format!("Arbiter {version}"),
+            None => "Arbiter".to_string(),
         };
-        self.data.software = format!("Arbiter {}", version);
         self.data.can_analyse = true;
         Ok(())
     }
 
-    /// 按固定位置读取尾部Program串中的版本号。格式严格为“Minesweeper Arbiter X.Y[.Z]. Copyright”，
-    /// 位置或格式不符直接panic，不做任何回退（安全模型要求）。
-    fn program_version(&self) -> String {
+    /// 从尾部Program串尽力提取版本号；格式异常时返回None，不影响主体结构解析。
+    fn program_version(&self) -> Option<String> {
         let raw = self.data.raw_data();
-        let tail = &raw[self.data.offset..];
-        let tail = tail
-            .strip_prefix(&b"Minesweeper Arbiter "[..])
-            .expect("Program串不是以“Minesweeper Arbiter ”开头");
+        let tail = raw.get(self.data.offset..)?;
+        let tail = tail.strip_prefix(&b"Minesweeper Arbiter "[..])?;
         let mut end = 0;
         while end < tail.len() && (tail[end].is_ascii_digit() || tail[end] == b'.') {
             end += 1;
         }
-        let token = std::str::from_utf8(&tail[..end]).expect("版本号不是有效的UTF-8");
-        assert!(
-            token.ends_with('.') && tail[end..].starts_with(b" Copyright"),
-            "版本号格式错误: {token}"
-        );
-        token.trim_end_matches('.').to_string()
+        let token = std::str::from_utf8(&tail[..end])
+            .ok()?
+            .trim_end_matches('.');
+        if token.is_empty() {
+            None
+        } else {
+            Some(token.to_string())
+        }
     }
 }
